@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Starter project intentionally contains placeholder layouts, drawables, colors, and dimensions for feature teams. -->
+    <issue id="UnusedResources" severity="ignore" />
+
+    <!-- Keep dependency versions stable for the initial team handoff; upgrade deliberately in a separate dependency task. -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+</lint>
