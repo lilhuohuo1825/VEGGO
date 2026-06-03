@@ -48,6 +48,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    buildFeatures {
+        viewBinding=true
+    }
 }
 
 dependencies {
@@ -83,4 +86,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+
+    // Thư viện hỗ trợ Đăng nhập bằng tài khoản Google
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 }
