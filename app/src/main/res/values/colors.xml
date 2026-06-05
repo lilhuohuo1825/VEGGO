@@ -1,10 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="veggo_green">#2E7D32</color>
-    <color name="veggo_leaf">#66BB6A</color>
-    <color name="veggo_surface">#F7FAF7</color>
-    <color name="veggo_text_primary">#172017</color>
-    <color name="veggo_text_secondary">#5F6F60</color>
+
+    <!-- Neutral -->
+    <color name="neutral_100">#1E1E1E</color>
+    <color name="neutral_90">#424242</color>
+    <color name="neutral_80">#616161</color>
+    <color name="neutral_70">#757575</color>
+    <color name="neutral_60">#9E9E9E</color>
+    <color name="neutral_50">#C2C2C2</color>
+    <color name="neutral_40">#E0E0E0</color>
+    <color name="neutral_30">#EDEDED</color>
+    <color name="neutral_20">#F5F5F5</color>
+    <color name="neutral_10">#FFFFFF</color>
+
+    <!-- Primary / Success -->
+    <color name="primary_main">#57AF37</color>
+    <color name="primary_hover">#167728</color>
+    <color name="primary_light">#7CCF5B</color>
+    <color name="primary_bg">#EAF7E8</color>
+
+    <!-- Secondary / Warning -->
+    <color name="secondary_main">#F2CD38</color>
+    <color name="secondary_hover">#EAB600</color>
+    <color name="secondary_bg">#FFF8E1</color>
+
+    <!-- Danger -->
+    <color name="danger_main">#EF5350</color>
+    <color name="danger_hover">#CA3E3C</color>
+    <color name="danger_bg">#FFE8E8</color>
+
+    <!-- Info -->
+    <color name="info_main">#42A5F5</color>
+    <color name="info_hover">#2E7DD1</color>
+    <color name="info_bg">#EAF4FE</color>
+
+    <!-- Background -->
+    <color name="background_main">#FFFFFF</color>
+
 </resources>
