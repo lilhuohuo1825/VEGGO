@@ -1,0 +1,1850 @@
+[{
+  "_id": {
+    "$oid": "69aa123456789abcdef00001"
+  },
+  "ma_kho": "WH001",
+  "ten_kho": "Tổng kho VGreen - Cần Thơ",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "20",
+    "duong": "Lê Lợi",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "20 Đường Lê Lợi, phường Cái Khế, Quận Ninh Kiều, TP. Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 10.0451,
+    "lng": 105.7842
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02923812345"
+    ],
+    "email": "wh_cantho@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00002"
+  },
+  "ma_kho": "WH002",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 2",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "126",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Bến Nghé",
+    "quan_huyen": "Quận 1",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "760",
+    "dia_chi_day_du": "126 Đường Hùng Vương, Phường Bến Nghé, Quận 1, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 12.4553,
+    "lng": 106.4729
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839809570"
+    ],
+    "email": "wh_2@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00003"
+  },
+  "ma_kho": "WH003",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 3",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "217",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "217 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 10.3496,
+    "lng": 105.1874
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839343962"
+    ],
+    "email": "wh_3@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00004"
+  },
+  "ma_kho": "WH004",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 4",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "102",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "102 Đường Phan Chu Trinh, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 17.8762,
+    "lng": 106.4026
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839539898"
+    ],
+    "email": "wh_4@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00005"
+  },
+  "ma_kho": "WH005",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 5",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "143",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dịch Vọng",
+    "quan_huyen": "Quận Cầu Giấy",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "005",
+    "dia_chi_day_du": "143 Đường Hoàng Diệu, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 18.9037,
+    "lng": 105.013
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839944962"
+    ],
+    "email": "wh_5@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00006"
+  },
+  "ma_kho": "WH006",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 6",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "175",
+    "duong": "Nguyễn Văn Linh",
+    "phuong_xa": "Phường Bồ Đề",
+    "quan_huyen": "Quận Long Biên",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "004",
+    "dia_chi_day_du": "175 Đường Nguyễn Văn Linh, Phường Bồ Đề, Quận Long Biên, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 13.0566,
+    "lng": 105.4306
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839900581"
+    ],
+    "email": "wh_6@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00007"
+  },
+  "ma_kho": "WH007",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 7",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "195",
+    "duong": "Nguyễn Huệ",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "195 Đường Nguyễn Huệ, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 11.0639,
+    "lng": 106.695
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839733052"
+    ],
+    "email": "wh_7@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00008"
+  },
+  "ma_kho": "WH008",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 8",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "275",
+    "duong": "Võ Văn Kiệt",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "275 Đường Võ Văn Kiệt, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 11.3731,
+    "lng": 106.8446
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839182627"
+    ],
+    "email": "wh_8@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00009"
+  },
+  "ma_kho": "WH009",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 9",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "454",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "454 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 19.4788,
+    "lng": 106.1547
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839838797"
+    ],
+    "email": "wh_9@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00010"
+  },
+  "ma_kho": "WH010",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 10",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "396",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Bến Nghé",
+    "quan_huyen": "Quận 1",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "760",
+    "dia_chi_day_du": "396 Đường Điện Biên Phủ, Phường Bến Nghé, Quận 1, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 13.1833,
+    "lng": 105.1596
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839344098"
+    ],
+    "email": "wh_10@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00011"
+  },
+  "ma_kho": "WH011",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 11",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "233",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Tân Phong",
+    "quan_huyen": "Quận 7",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "778",
+    "dia_chi_day_du": "233 Đường Hùng Vương, Phường Tân Phong, Quận 7, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 16.9925,
+    "lng": 105.7297
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839488162"
+    ],
+    "email": "wh_11@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00012"
+  },
+  "ma_kho": "WH012",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 12",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "360",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "360 Đường Hùng Vương, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 20.3032,
+    "lng": 106.2961
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839738720"
+    ],
+    "email": "wh_12@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00013"
+  },
+  "ma_kho": "WH013",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 13",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "84",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Bồ Đề",
+    "quan_huyen": "Quận Long Biên",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "004",
+    "dia_chi_day_du": "84 Đường Điện Biên Phủ, Phường Bồ Đề, Quận Long Biên, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 15.0849,
+    "lng": 105.5399
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839771088"
+    ],
+    "email": "wh_13@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00014"
+  },
+  "ma_kho": "WH014",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 14",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "432",
+    "duong": "Trần Hưng Đạo",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "432 Đường Trần Hưng Đạo, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 18.4514,
+    "lng": 105.1119
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839961722"
+    ],
+    "email": "wh_14@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00015"
+  },
+  "ma_kho": "WH015",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 15",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "138",
+    "duong": "Nguyễn Văn Linh",
+    "phuong_xa": "Phường Tân Phong",
+    "quan_huyen": "Quận 7",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "778",
+    "dia_chi_day_du": "138 Đường Nguyễn Văn Linh, Phường Tân Phong, Quận 7, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 10.7281,
+    "lng": 106.8263
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839694731"
+    ],
+    "email": "wh_15@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00016"
+  },
+  "ma_kho": "WH016",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 16",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "203",
+    "duong": "Võ Văn Kiệt",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "203 Đường Võ Văn Kiệt, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 19.7315,
+    "lng": 106.2857
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839249811"
+    ],
+    "email": "wh_16@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00017"
+  },
+  "ma_kho": "WH017",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 17",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "382",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "382 Đường Điện Biên Phủ, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 16.175,
+    "lng": 105.5255
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839712982"
+    ],
+    "email": "wh_17@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00018"
+  },
+  "ma_kho": "WH018",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 18",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "113",
+    "duong": "Trần Hưng Đạo",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "113 Đường Trần Hưng Đạo, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 20.9706,
+    "lng": 105.2767
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839617488"
+    ],
+    "email": "wh_18@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00019"
+  },
+  "ma_kho": "WH019",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 19",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "79",
+    "duong": "Nguyễn Huệ",
+    "phuong_xa": "Phường Bến Nghé",
+    "quan_huyen": "Quận 1",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "760",
+    "dia_chi_day_du": "79 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 16.9019,
+    "lng": 106.5842
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839542666"
+    ],
+    "email": "wh_19@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00020"
+  },
+  "ma_kho": "WH020",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 20",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "196",
+    "duong": "Nguyễn Văn Linh",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "196 Đường Nguyễn Văn Linh, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 16.5548,
+    "lng": 105.9361
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839363626"
+    ],
+    "email": "wh_20@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00021"
+  },
+  "ma_kho": "WH021",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 21",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "350",
+    "duong": "Nguyễn Huệ",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "350 Đường Nguyễn Huệ, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 19.7327,
+    "lng": 106.5018
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839905934"
+    ],
+    "email": "wh_21@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00022"
+  },
+  "ma_kho": "WH022",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 22",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "223",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "223 Đường Hùng Vương, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 11.7397,
+    "lng": 105.0065
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839857168"
+    ],
+    "email": "wh_22@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00023"
+  },
+  "ma_kho": "WH023",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 23",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "468",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "468 Đường Phan Chu Trinh, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 11.1705,
+    "lng": 106.2506
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839982554"
+    ],
+    "email": "wh_23@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00024"
+  },
+  "ma_kho": "WH024",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 24",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "192",
+    "duong": "Cách Mạng Tháng Tám",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "192 Đường Cách Mạng Tháng Tám, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 18.3876,
+    "lng": 106.0788
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839916449"
+    ],
+    "email": "wh_24@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00025"
+  },
+  "ma_kho": "WH025",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 25",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "166",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "166 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 15.3747,
+    "lng": 105.2237
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839480612"
+    ],
+    "email": "wh_25@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00026"
+  },
+  "ma_kho": "WH026",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 26",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "124",
+    "duong": "Lê Lợi",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "124 Đường Lê Lợi, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 19.6581,
+    "lng": 106.8939
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839189814"
+    ],
+    "email": "wh_26@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00027"
+  },
+  "ma_kho": "WH027",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 27",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "393",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "393 Đường Phan Chu Trinh, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 11.3834,
+    "lng": 106.3195
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839676510"
+    ],
+    "email": "wh_27@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00028"
+  },
+  "ma_kho": "WH028",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 28",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "447",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Dịch Vọng",
+    "quan_huyen": "Quận Cầu Giấy",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "005",
+    "dia_chi_day_du": "447 Đường Phan Chu Trinh, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 16.6725,
+    "lng": 106.9287
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839665492"
+    ],
+    "email": "wh_28@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00029"
+  },
+  "ma_kho": "WH029",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 29",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "205",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Bồ Đề",
+    "quan_huyen": "Quận Long Biên",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "004",
+    "dia_chi_day_du": "205 Đường Hùng Vương, Phường Bồ Đề, Quận Long Biên, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 20.9466,
+    "lng": 106.2998
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839559381"
+    ],
+    "email": "wh_29@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00030"
+  },
+  "ma_kho": "WH030",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 30",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "127",
+    "duong": "Nguyễn Huệ",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "127 Đường Nguyễn Huệ, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 12.4717,
+    "lng": 105.6762
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839716886"
+    ],
+    "email": "wh_30@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00031"
+  },
+  "ma_kho": "WH031",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 31",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "113",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "113 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 10.0791,
+    "lng": 106.4157
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839161733"
+    ],
+    "email": "wh_31@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00032"
+  },
+  "ma_kho": "WH032",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 32",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "441",
+    "duong": "Lê Lợi",
+    "phuong_xa": "Phường Hàng Bạc",
+    "quan_huyen": "Quận Hoàn Kiếm",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "001",
+    "dia_chi_day_du": "441 Đường Lê Lợi, Phường Hàng Bạc, Quận Hoàn Kiếm, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 13.6347,
+    "lng": 106.0283
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839392004"
+    ],
+    "email": "wh_32@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00033"
+  },
+  "ma_kho": "WH033",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 33",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "68",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "68 Đường Phan Chu Trinh, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 17.9569,
+    "lng": 106.7648
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839704201"
+    ],
+    "email": "wh_33@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00034"
+  },
+  "ma_kho": "WH034",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 34",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "414",
+    "duong": "Võ Văn Kiệt",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "414 Đường Võ Văn Kiệt, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 14.4777,
+    "lng": 105.1887
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839790993"
+    ],
+    "email": "wh_34@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00035"
+  },
+  "ma_kho": "WH035",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 35",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "211",
+    "duong": "Nguyễn Văn Linh",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "211 Đường Nguyễn Văn Linh, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 15.1373,
+    "lng": 106.4582
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839806073"
+    ],
+    "email": "wh_35@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00036"
+  },
+  "ma_kho": "WH036",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 36",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "373",
+    "duong": "Nguyễn Văn Linh",
+    "phuong_xa": "Phường Bến Nghé",
+    "quan_huyen": "Quận 1",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "760",
+    "dia_chi_day_du": "373 Đường Nguyễn Văn Linh, Phường Bến Nghé, Quận 1, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 13.7323,
+    "lng": 106.7233
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839360735"
+    ],
+    "email": "wh_36@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00037"
+  },
+  "ma_kho": "WH037",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 37",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "230",
+    "duong": "Phan Chu Trinh",
+    "phuong_xa": "Phường Hàng Bạc",
+    "quan_huyen": "Quận Hoàn Kiếm",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "001",
+    "dia_chi_day_du": "230 Đường Phan Chu Trinh, Phường Hàng Bạc, Quận Hoàn Kiếm, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 11.542,
+    "lng": 105.367
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839585100"
+    ],
+    "email": "wh_37@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00038"
+  },
+  "ma_kho": "WH038",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 38",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "414",
+    "duong": "Võ Văn Kiệt",
+    "phuong_xa": "Phường Hàng Bạc",
+    "quan_huyen": "Quận Hoàn Kiếm",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "001",
+    "dia_chi_day_du": "414 Đường Võ Văn Kiệt, Phường Hàng Bạc, Quận Hoàn Kiếm, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 19.4748,
+    "lng": 106.1007
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839153045"
+    ],
+    "email": "wh_38@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00039"
+  },
+  "ma_kho": "WH039",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 39",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "475",
+    "duong": "Nguyễn Huệ",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "475 Đường Nguyễn Huệ, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 18.2892,
+    "lng": 105.4728
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839526156"
+    ],
+    "email": "wh_39@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00040"
+  },
+  "ma_kho": "WH040",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 40",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "443",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Thạch Thang",
+    "quan_huyen": "Quận Hải Châu",
+    "tinh_thanh": "Đà Nẵng",
+    "ma_tinh": "48",
+    "ma_quan": "490",
+    "dia_chi_day_du": "443 Đường Điện Biên Phủ, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng"
+  },
+  "toa_do": {
+    "lat": 14.4114,
+    "lng": 105.1173
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839497382"
+    ],
+    "email": "wh_40@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00041"
+  },
+  "ma_kho": "WH041",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 41",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "475",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Tân Phong",
+    "quan_huyen": "Quận 7",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "778",
+    "dia_chi_day_du": "475 Đường Hùng Vương, Phường Tân Phong, Quận 7, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 18.6248,
+    "lng": 105.91
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839543555"
+    ],
+    "email": "wh_41@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00042"
+  },
+  "ma_kho": "WH042",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 42",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "98",
+    "duong": "Cách Mạng Tháng Tám",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "98 Đường Cách Mạng Tháng Tám, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 13.2638,
+    "lng": 106.9374
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839707314"
+    ],
+    "email": "wh_42@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00043"
+  },
+  "ma_kho": "WH043",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 43",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "30",
+    "duong": "Trần Hưng Đạo",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "30 Đường Trần Hưng Đạo, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 10.5516,
+    "lng": 105.9536
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839994141"
+    ],
+    "email": "wh_43@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00044"
+  },
+  "ma_kho": "WH044",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 44",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "492",
+    "duong": "Lê Lợi",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "492 Đường Lê Lợi, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 15.5861,
+    "lng": 106.7027
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839171849"
+    ],
+    "email": "wh_44@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00045"
+  },
+  "ma_kho": "WH045",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 45",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "207",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "207 Đường Điện Biên Phủ, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 11.3188,
+    "lng": 106.7806
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839358175"
+    ],
+    "email": "wh_45@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00046"
+  },
+  "ma_kho": "WH046",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 46",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "42",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "42 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 14.6115,
+    "lng": 106.1673
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839648177"
+    ],
+    "email": "wh_46@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00047"
+  },
+  "ma_kho": "WH047",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 47",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "343",
+    "duong": "Điện Biên Phủ",
+    "phuong_xa": "Phường Cái Khế",
+    "quan_huyen": "Quận Ninh Kiều",
+    "tinh_thanh": "Cần Thơ",
+    "ma_tinh": "92",
+    "ma_quan": "916",
+    "dia_chi_day_du": "343 Đường Điện Biên Phủ, Phường Cái Khế, Quận Ninh Kiều, Cần Thơ"
+  },
+  "toa_do": {
+    "lat": 17.8781,
+    "lng": 105.4774
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839515011"
+    ],
+    "email": "wh_47@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00048"
+  },
+  "ma_kho": "WH048",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 48",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "235",
+    "duong": "Hùng Vương",
+    "phuong_xa": "Phường Bồ Đề",
+    "quan_huyen": "Quận Long Biên",
+    "tinh_thanh": "Hà Nội",
+    "ma_tinh": "01",
+    "ma_quan": "004",
+    "dia_chi_day_du": "235 Đường Hùng Vương, Phường Bồ Đề, Quận Long Biên, Hà Nội"
+  },
+  "toa_do": {
+    "lat": 13.4779,
+    "lng": 106.5037
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839176066"
+    ],
+    "email": "wh_48@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00049"
+  },
+  "ma_kho": "WH049",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 49",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "289",
+    "duong": "Hoàng Diệu",
+    "phuong_xa": "Phường Tân Phong",
+    "quan_huyen": "Quận 7",
+    "tinh_thanh": "Hồ Chí Minh",
+    "ma_tinh": "79",
+    "ma_quan": "778",
+    "dia_chi_day_du": "289 Đường Hoàng Diệu, Phường Tân Phong, Quận 7, Hồ Chí Minh"
+  },
+  "toa_do": {
+    "lat": 20.9571,
+    "lng": 105.1465
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839323508"
+    ],
+    "email": "wh_49@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+},
+{
+  "_id": {
+    "$oid": "69aa123456789abcdef00050"
+  },
+  "ma_kho": "WH050",
+  "ten_kho": "Kho hàng VGreen - Cơ sở 50",
+  "loai_hinh": "Kho hàng",
+  "dia_chi": {
+    "so_nha": "478",
+    "duong": "Cách Mạng Tháng Tám",
+    "phuong_xa": "Phường Dĩ An",
+    "quan_huyen": "Thành phố Dĩ An",
+    "tinh_thanh": "Bình Dương",
+    "ma_tinh": "74",
+    "ma_quan": "719",
+    "dia_chi_day_du": "478 Đường Cách Mạng Tháng Tám, Phường Dĩ An, Thành phố Dĩ An, Bình Dương"
+  },
+  "toa_do": {
+    "lat": 13.8391,
+    "lng": 105.1376
+  },
+  "thong_tin_lien_he": {
+    "so_dien_thoai": [
+      "02839356150"
+    ],
+    "email": "wh_50@vgreen.com",
+    "hotline": "19009991"
+  },
+  "thoi_gian_hoat_dong": {
+    "thu_2_7": {
+      "mo_cua": "08:00",
+      "dong_cua": "18:00"
+    }
+  },
+  "trang_thai": "Đang hoạt động",
+  "isActive": true
+}]

@@ -1,0 +1,1570 @@
+[{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8a"
+  },
+  "OrderID": "ORD77703205161",
+  "shippingInfo": {
+    "fullName": "Hen",
+    "phone": "0815275677",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "an-phu",
+      "ward": "long-binh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3430850",
+      "productName": "Rau ngò rí 50g – GFM",
+      "quantity": 3,
+      "price": 6500,
+      "image": "https://lh3.googleusercontent.com/ruFrUh0d1qpyNOMjOaupzTISCJviCnMivzg3I3MU2bA9mCNC5GkCxH-tKVdkzxdLShMPnsPHucajrfWKyBBcyrP0gjYMEM0d=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6500,
+      "_id": {
+        "$oid": "69197b87768d3a368d6db16a"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.09,
+      "CarbonPointEarned": 1
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.09,
+  "CarbonPointEarned": 1
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8b"
+  },
+  "OrderID": "ORD78304011619",
+  "shippingInfo": {
+    "fullName": "Hen",
+    "phone": "0815275677",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "an-phu",
+      "ward": "long-binh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3414941",
+      "productName": "Giá sống 250g – TKCO",
+      "quantity": 2,
+      "price": 6200,
+      "image": "https://lh3.googleusercontent.com/iib-0wR40P0ZHxkL7d_Fd5jGj-QgykHDlEto2DbtlyMWuRWIr7Cf5uFURf8MAdPPPN3czPAwI8okmgIzlJO6ns2-zJ4FgfwW_g=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6200,
+      "_id": {
+        "$oid": "69197de0768d3a368d6e93fe"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00308",
+      "TotalCarbonEmission": 0.3,
+      "CarbonPointEarned": 3
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.3,
+  "CarbonPointEarned": 3
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8c"
+  },
+  "OrderID": "ORD82278434414",
+  "shippingInfo": {
+    "fullName": "Nguyễn Như Huyền",
+    "phone": "0815275677",
+    "email": "huyennguyennhuhnn@gmail.com",
+    "address": {
+      "city": "ba-ria-vung-tau",
+      "district": "chau-duc",
+      "ward": "binh-gia",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3445088",
+      "productName": "Nước yến sào Thiên Việt có đường 15% hộp 6 hủ x 70ml",
+      "quantity": 1,
+      "price": 252500,
+      "image": "https://lh3.googleusercontent.com/DZKXz1K9UgUShOkesltzYKHxmwDczE62BBM5R_QHkODJYaoAjg12ApYsfScKMKuV4etOFFunPQBOUhuHAD0Arzx2AQOauoeG=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 252500,
+      "_id": {
+        "$oid": "69198d66768d3a368d79d071"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3102435",
+      "productName": "Rong biển Gim Hete xanh dương 8 gói x 2g",
+      "quantity": 1,
+      "price": 26000,
+      "image": "https://lh3.googleusercontent.com/bREsCeoBnQAPnhL00_NXIqWqQ_FSAZBV18ji9z3pzYTqSVkVgjXr297vPvX0YYIOQxzY-PRW3DkiDyhP6k-Mcyk99LoMqIlEbA=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 26000,
+      "_id": {
+        "$oid": "69198d66768d3a368d79d072"
+      },
+      "CategoryID": "CAT004",
+      "SubcategoryID": "SUB00401",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3535772",
+      "productName": "Khoai mì làm sạch 300g – F",
+      "quantity": 1,
+      "price": 21500,
+      "image": "https://lh3.googleusercontent.com/wnQJdUHcv9RUqQJ4BO-FqIheacnns_GqPVgvO0tWWthLgnX9gKkiqaQViS8rIlmOZK0igIlfaVirZBgEKg_uMqvv89-UIa7E=rw",
+      "unit": "Vỉ",
+      "itemType": "purchased",
+      "originalPrice": 21500,
+      "_id": {
+        "$oid": "69198d66768d3a368d79d073"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00301",
+      "TotalCarbonEmission": 0.18,
+      "CarbonPointEarned": 2
+    },
+    {
+      "sku": "3359031",
+      "productName": "Bột gạo lọc Co.op Select 400g",
+      "quantity": 1,
+      "price": 12920,
+      "image": "https://lh3.googleusercontent.com/0OHaQsk_7O1Rm2jLZWpzbmwSCoo0FOgFYBCMTzPRAJvXW08p_AgKaZ2Nqh5rBR5CVKVNU7UuV9SkFLTrapbEUogqiUx4p4hw=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 15200,
+      "_id": {
+        "$oid": "69198d66768d3a368d79d074"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.32,
+      "CarbonPointEarned": 3
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.5,
+  "CarbonPointEarned": 5
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8d"
+  },
+  "OrderID": "ORD82286169351",
+  "shippingInfo": {
+    "fullName": "Nguyễn Như Huyền",
+    "phone": "0815275677",
+    "email": "huyennguyennhuhnn@gmail.com",
+    "address": {
+      "city": "ba-ria-vung-tau",
+      "district": "chau-duc",
+      "ward": "binh-gia",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3263551",
+      "productName": "Bột bánh xèo Co.op Select 1kg",
+      "quantity": 1,
+      "price": 24225,
+      "image": "https://lh3.googleusercontent.com/zvIZxw-u2rE95Qrz9kh_IcyYiWhXMZ6_45yA2R1ChlpT7uVoJTQP0_FyHZ99SjrJGvcoxbVheaPAlh75tB8oyrUBWUQbx4XD=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 28500,
+      "_id": {
+        "$oid": "69198d6e768d3a368d79d8f3"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.8,
+      "CarbonPointEarned": 8
+    },
+    {
+      "sku": "3514277",
+      "productName": "Bột ngũ cốc yến mạch hạt chia Co.op Select 15 gói x 30g",
+      "quantity": 1,
+      "price": 48025,
+      "image": "https://lh3.googleusercontent.com/FyvY__zaxpF3EGPLmlHQABqNUFtQoaKvW-t7mO4gYPgLuqzLUE6YYrztVbMj8XwFUouH_PG-RgRyXiUjJ659zzIrPP4Pi7ZL=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 56500,
+      "_id": {
+        "$oid": "69198d6e768d3a368d79d8f4"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.02,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3359027",
+      "productName": "Bột 5 loại đậu hạt sen Co.op Select 350g",
+      "quantity": 3,
+      "price": 19805,
+      "image": "https://lh3.googleusercontent.com/mWTuW_5mSQwFGPPrlgK8VFEt8rXPgdq5GmZlDRnZ_O_n248YYc2oUUGStCaPZP0Br3ybbD5t-A7o0lJ_1CHafgI2kP4Vw3o=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 23300,
+      "_id": {
+        "$oid": "69198d6e768d3a368d79d8f5"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.84,
+      "CarbonPointEarned": 8
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 1.66,
+  "CarbonPointEarned": 16
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8e"
+  },
+  "OrderID": "ORD82831302525",
+  "shippingInfo": {
+    "fullName": "Nguyễn Như Huyền",
+    "phone": "0815275677",
+    "email": "huyennguyennhuhnn@gmail.com",
+    "address": {
+      "city": "ba-ria-vung-tau",
+      "district": "chau-duc",
+      "ward": "binh-gia",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3504290",
+      "productName": "Nước yến thật không đường Brand’s 6 hủ x70g",
+      "quantity": 2,
+      "price": 524000,
+      "image": "https://lh3.googleusercontent.com/jO6uTJhaiCnvv8gYjcgKj6ExhJPzErVpjO8b8HAbwNvrTYMhztleWQKbmkQeLoN7CUv2xIxCu2k-EPBh3kDDekFq734EAwEmDQ=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 524000,
+      "_id": {
+        "$oid": "69198f8f768d3a368d7acda6"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.07,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3547408",
+      "productName": "Nước yến đường phèn Khánh Đan Ocop 6x70ml",
+      "quantity": 2,
+      "price": 675000,
+      "image": "https://lh3.googleusercontent.com/IElIr1TJQmmaD0122yZXDNYiZ2DLtWjFUanu5-iUh4QmjH85tevsUTLgRIf-blbMbWAJ5yREswLiQeBNo7tJhLy7Aa6q_loM=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 675000,
+      "_id": {
+        "$oid": "69198f8f768d3a368d7acda7"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.42,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": "PROMO_001",
+  "TotalCarbonEmission": 0.49,
+  "CarbonPointEarned": 5
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc8f"
+  },
+  "OrderID": "ORD82959938695",
+  "shippingInfo": {
+    "fullName": "Nguyen Hera",
+    "phone": "0932501459",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "cho-moi",
+      "ward": "hoa-an",
+      "detail": "Số nhà 99"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3418309",
+      "productName": "Bún bò Kiều Trang 500g",
+      "quantity": 2,
+      "price": 9900,
+      "image": "https://lh3.googleusercontent.com/Kd7GXy5yiILPeciiacsSKopkFmY0N-M1SrLqh6eTlmRzJ_c4t2NLd-zRm04Df2olvlFS4jOIcPyWOR1jbGsE9orhHHA45SPR=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 9900,
+      "_id": {
+        "$oid": "6919900f768d3a368d7b6d92"
+      },
+      "CategoryID": "CAT006",
+      "SubcategoryID": "SUB00602",
+      "TotalCarbonEmission": 0.7,
+      "CarbonPointEarned": 7
+    },
+    {
+      "sku": "3572276",
+      "productName": "Su su 300g – F",
+      "quantity": 2,
+      "price": 9500,
+      "image": "https://lh3.googleusercontent.com/CYw-sMwCsWHg5GzWv9vSqsD7yAbhGKtcc__evhwVsGzPADBcoeOplQm6p4hYpVkLSeUNBjpO-3atG-C7szpRsWMw0pXXh1XW=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 9500,
+      "_id": {
+        "$oid": "6919900f768d3a368d7b6d93"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00305",
+      "TotalCarbonEmission": 0.36,
+      "CarbonPointEarned": 4
+    },
+    {
+      "sku": "3516021",
+      "productName": "Rau muống baby Co.op Select 280g – TP",
+      "quantity": 2,
+      "price": 9265,
+      "image": "https://lh3.googleusercontent.com/FsA4NOF18OCgZMJzzbfI0_-RGqBHM-T8CWVVczPsJQSyfrvfS1hIQbM3taS-wCTpQC82hyDzbXur5LLqxs30L2Ue8eo7d74=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 10900,
+      "_id": {
+        "$oid": "6919900f768d3a368d7b6d94"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00307",
+      "TotalCarbonEmission": 0.34,
+      "CarbonPointEarned": 3
+    }
+  ],
+  "promotion_id": "PROMO_003",
+  "TotalCarbonEmission": 1.4,
+  "CarbonPointEarned": 14
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc90"
+  },
+  "OrderID": "ORD82979067086",
+  "shippingInfo": {
+    "fullName": "Nguyen Hera",
+    "phone": "0932501459",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "cho-moi",
+      "ward": "hoa-an",
+      "detail": "Số nhà 99"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3412005",
+      "productName": "Sả cây 100g – Huy Vũ",
+      "quantity": 2,
+      "price": 4200,
+      "image": "https://lh3.googleusercontent.com/RpGjf_gN1pms5DpH6-tBuRzLRtcFRlqNC1yuODGX_SDvlb0uOVCpmUQJXgzly4dnZWKDmUzKU0BDhmq9ry_XqQNiJthpwa0=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 4200,
+      "_id": {
+        "$oid": "69199023768d3a368d7b86e4"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.12,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3568653",
+      "productName": "Ngò tây Co.op Select 50g",
+      "quantity": 2,
+      "price": 5015,
+      "image": "https://lh3.googleusercontent.com/doa90TZ83qjqQDBMY5YZ4ySXUir0MdeOJ-OsmGqjzkols9Z2VOPfljdTRdsDPu1WLP0fzd2MbjrVnv9myakJnGqWkuh1sbH0=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 5900,
+      "_id": {
+        "$oid": "69199023768d3a368d7b86e5"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.06,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3414941",
+      "productName": "Giá sống 250g – TKCO",
+      "quantity": 2,
+      "price": 6200,
+      "image": "https://lh3.googleusercontent.com/iib-0wR40P0ZHxkL7d_Fd5jGj-QgykHDlEto2DbtlyMWuRWIr7Cf5uFURf8MAdPPPN3czPAwI8okmgIzlJO6ns2-zJ4FgfwW_g=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6200,
+      "_id": {
+        "$oid": "69199023768d3a368d7b86e6"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00308",
+      "TotalCarbonEmission": 0.3,
+      "CarbonPointEarned": 3
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.48,
+  "CarbonPointEarned": 5
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc91"
+  },
+  "OrderID": "ORD82990594214",
+  "shippingInfo": {
+    "fullName": "Nguyen Hera",
+    "phone": "0932501459",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "cho-moi",
+      "ward": "hoa-an",
+      "detail": "Số nhà 99"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3430850",
+      "productName": "Rau ngò rí 50g – GFM",
+      "quantity": 2,
+      "price": 6500,
+      "image": "https://lh3.googleusercontent.com/ruFrUh0d1qpyNOMjOaupzTISCJviCnMivzg3I3MU2bA9mCNC5GkCxH-tKVdkzxdLShMPnsPHucajrfWKyBBcyrP0gjYMEM0d=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6500,
+      "_id": {
+        "$oid": "6919902e768d3a368d7ba02e"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.06,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3423714",
+      "productName": "Bột chiên giòn nêm sẵn Meizan 150g",
+      "quantity": 2,
+      "price": 6600,
+      "image": "https://lh3.googleusercontent.com/s6P05gJVBlHZ6Qv7CCH-UdmwtgvhZp7vi5QSugdZtTW7ATcS7dr1cWWuDgPxu4lhv-kN0Vxx0DaR4aI3dzdkgayB0yHW21xFzA=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6600,
+      "_id": {
+        "$oid": "6919902e768d3a368d7ba02f"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.24,
+      "CarbonPointEarned": 2
+    },
+    {
+      "sku": "3455309",
+      "productName": "Bột cà ri Ông Chà Và 20g",
+      "quantity": 2,
+      "price": 6900,
+      "image": "https://lh3.googleusercontent.com/G-2x6FVauiziAJjheQ39mLfLhlnMC1tfHd1QP8mMkeBx0vAmVManQKBqddv8nRr3sFTdBTaOEJcRVqIsYVdx1XQT7wnUUTw=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 6900,
+      "_id": {
+        "$oid": "6919902e768d3a368d7ba030"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.03,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3538472",
+      "productName": "Hành lá Co.op Select 100g – TNX",
+      "quantity": 2,
+      "price": 7565,
+      "image": "https://lh3.googleusercontent.com/q__trwQg5E8pl14Y6-yUSEY8fH-zuJVGCfMVfPoKyNQPawZ6EK70v4bIeNOUTAgSA-pX7Ty6LUtIrEbfI4XTPhxyeCMgJyM=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 8900,
+      "_id": {
+        "$oid": "6919902e768d3a368d7ba031"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.12,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3520580",
+      "productName": "Giá đậu xanh Green Green 300g",
+      "quantity": 2,
+      "price": 7900,
+      "image": "https://lh3.googleusercontent.com/ONvfSKmYeN0jVnpmoQm-CI9ZVRzrXmOiLlYlqFBsGgM5UiaSG2TmMrG438gxyJ-v-iY7uFyXAxxR_4AsQDNMUFhSdWpRylrc=rw",
+      "unit": "Cái",
+      "itemType": "purchased",
+      "originalPrice": 7900,
+      "_id": {
+        "$oid": "6919902e768d3a368d7ba032"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00308",
+      "TotalCarbonEmission": 0.36,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.81,
+  "CarbonPointEarned": 8
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc92"
+  },
+  "OrderID": "ORD83158788571",
+  "shippingInfo": {
+    "fullName": "Ha thu",
+    "phone": "02183773673",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "1",
+      "ward": "ben-thanh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3348588",
+      "productName": "Hạt sen tươi Senta 200g",
+      "quantity": 1,
+      "price": 63000,
+      "image": "https://lh3.googleusercontent.com/AATBs3HLlsvsMGLsYxQG7Wz93eMGMhD2nFWNDlz8R3uMgBNv81CzmKJH1F7MAdN90XoLx5R4xSJa_68evB7nHTXqwtuZE61z=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 63000,
+      "_id": {
+        "$oid": "691990d6768d3a368d7c2fb6"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00204",
+      "TotalCarbonEmission": 0.16,
+      "CarbonPointEarned": 2
+    },
+    {
+      "sku": "3422157",
+      "productName": "Cà phê rang xay In.Blend King gói 500g",
+      "quantity": 1,
+      "price": 167675,
+      "image": "https://lh3.googleusercontent.com/VtsGK0B7ZcczN1UqM3XBySGdo3eoDLfz6MnqliQ-b4nysn9BmfDAYnR4wXscsua39gl1p2SQIzCrTZ0B_wisWm2OpRO6BLFf=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 176500,
+      "_id": {
+        "$oid": "691990d6768d3a368d7c2fb7"
+      },
+      "CategoryID": "CAT001",
+      "SubcategoryID": "SUB00102",
+      "TotalCarbonEmission": 0.6,
+      "CarbonPointEarned": 6
+    },
+    {
+      "sku": "3273246",
+      "productName": "Nước yến Thiên hoàng 70ml",
+      "quantity": 4,
+      "price": 38300,
+      "image": "https://lh3.googleusercontent.com/91mWdXv6vVTCEGyESqJLjsIR1yWqE4yjT6gZfETkleJaetaKYXoimLXgOU7oolK1L-uIxdbJ8X3kwS1wJZGB89nYWUJFP0XG=rw",
+      "unit": "Lon",
+      "itemType": "purchased",
+      "originalPrice": 38300,
+      "_id": {
+        "$oid": "691990d6768d3a368d7c2fb8"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.76,
+  "CarbonPointEarned": 8
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc93"
+  },
+  "OrderID": "ORD83222512513",
+  "shippingInfo": {
+    "fullName": "Ha thu",
+    "phone": "02183773673",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "1",
+      "ward": "ben-thanh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3514277",
+      "productName": "Bột ngũ cốc yến mạch hạt chia Co.op Select 15 gói x 30g",
+      "quantity": 6,
+      "price": 48025,
+      "image": "https://lh3.googleusercontent.com/FyvY__zaxpF3EGPLmlHQABqNUFtQoaKvW-t7mO4gYPgLuqzLUE6YYrztVbMj8XwFUouH_PG-RgRyXiUjJ659zzIrPP4Pi7ZL=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 56500,
+      "_id": {
+        "$oid": "69199116768d3a368d7c59f0"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.14,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3359027",
+      "productName": "Bột 5 loại đậu hạt sen Co.op Select 350g",
+      "quantity": 1,
+      "price": 19805,
+      "image": "https://lh3.googleusercontent.com/mWTuW_5mSQwFGPPrlgK8VFEt8rXPgdq5GmZlDRnZ_O_n248YYc2oUUGStCaPZP0Br3ybbD5t-A7o0lJ_1CHafgI2kP4Vw3o=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 23300,
+      "_id": {
+        "$oid": "69199116768d3a368d7c59f1"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.28,
+      "CarbonPointEarned": 3
+    },
+    {
+      "sku": "3359031",
+      "productName": "Bột gạo lọc Co.op Select 400g",
+      "quantity": 1,
+      "price": 12920,
+      "image": "https://lh3.googleusercontent.com/0OHaQsk_7O1Rm2jLZWpzbmwSCoo0FOgFYBCMTzPRAJvXW08p_AgKaZ2Nqh5rBR5CVKVNU7UuV9SkFLTrapbEUogqiUx4p4hw=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 15200,
+      "_id": {
+        "$oid": "69199116768d3a368d7c59f2"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.32,
+      "CarbonPointEarned": 3
+    }
+  ],
+  "promotion_id": "PROMO_001",
+  "TotalCarbonEmission": 0.74,
+  "CarbonPointEarned": 7
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc94"
+  },
+  "OrderID": "ORD83228910188",
+  "shippingInfo": {
+    "fullName": "Ha thu",
+    "phone": "02183773673",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "1",
+      "ward": "ben-thanh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3587604",
+      "productName": "Bột sắn dây ướp hoa bưởi Xuân Nguyên 500g",
+      "quantity": 1,
+      "price": 90500,
+      "image": "https://lh3.googleusercontent.com/DUgx3-azx9_nCdx3Vk8l6reBf4WvrIaxoyMFNTOQfYks95xY4MoNc9lEv7ix-WcZchHFPo3fLOCV45LoqLbT3oz4T2tm9NfhyA=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 90500,
+      "_id": {
+        "$oid": "6919911c768d3a368d7c83ff"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.4,
+      "CarbonPointEarned": 4
+    },
+    {
+      "sku": "3158047",
+      "productName": "Bột cacao Good Night hộp giấy 150g",
+      "quantity": 1,
+      "price": 82500,
+      "image": "https://lh3.googleusercontent.com/aeezj8iqPQTl9dOC7cMcZ4pQ2gojsU6EldWQAcqH50xQnFLMSbr8AUFDPjHSpuhdAsXbE6v3DhenzzxQ2GTSaXCGo0aZolk=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 82500,
+      "_id": {
+        "$oid": "6919911c768d3a368d7c8400"
+      },
+      "CategoryID": "CAT001",
+      "SubcategoryID": "SUB00101",
+      "TotalCarbonEmission": 0.18,
+      "CarbonPointEarned": 2
+    },
+    {
+      "sku": "3511395",
+      "productName": "Rong nho sốt mè rang Tasami Phúc Thịnh hộp giấy 175g",
+      "quantity": 1,
+      "price": 79800,
+      "image": "https://lh3.googleusercontent.com/E6AJ4VzH0gqOFPPoFwEG9RruwH9VttnaF2zRYtnuao5xE4MN3JBhQw5DAqQpXHAINdeukv0Q7w7iEoAm2o519GBJTS9T9ANA=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 79800,
+      "_id": {
+        "$oid": "6919911c768d3a368d7c8401"
+      },
+      "CategoryID": "CAT004",
+      "SubcategoryID": "SUB00401",
+      "TotalCarbonEmission": 0.05,
+      "CarbonPointEarned": 0
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.63,
+  "CarbonPointEarned": 6
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc95"
+  },
+  "OrderID": "ORD83575384403",
+  "shippingInfo": {
+    "fullName": "Ha thu",
+    "phone": "02183773673",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "1",
+      "ward": "ben-thanh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3504290",
+      "productName": "Nước yến thật không đường Brand’s 6 hủ x70g",
+      "quantity": 4,
+      "price": 524000,
+      "image": "https://lh3.googleusercontent.com/jO6uTJhaiCnvv8gYjcgKj6ExhJPzErVpjO8b8HAbwNvrTYMhztleWQKbmkQeLoN7CUv2xIxCu2k-EPBh3kDDekFq734EAwEmDQ=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 524000,
+      "_id": {
+        "$oid": "69199277768d3a368d7f6460"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.14,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3547408",
+      "productName": "Nước yến đường phèn Khánh Đan Ocop 6x70ml",
+      "quantity": 4,
+      "price": 675000,
+      "image": "https://lh3.googleusercontent.com/IElIr1TJQmmaD0122yZXDNYiZ2DLtWjFUanu5-iUh4QmjH85tevsUTLgRIf-blbMbWAJ5yREswLiQeBNo7tJhLy7Aa6q_loM=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 675000,
+      "_id": {
+        "$oid": "69199277768d3a368d7f6461"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.84,
+      "CarbonPointEarned": 8
+    },
+    {
+      "sku": "3549132",
+      "productName": "Nước yến thật Brand’s hộp 6 x 42g",
+      "quantity": 2,
+      "price": 363000,
+      "image": "https://lh3.googleusercontent.com/KsqmWoAEVlsDyQ-dn9JEY2muuvZj1Gp3OXVWNMbXQU_76CEAKo7kPGxqtmGajj3W1bKSAGVLpd6nfYKoGwbUJvCOZEt8VECy=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 363000,
+      "_id": {
+        "$oid": "69199277768d3a368d7f6462"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.04,
+      "CarbonPointEarned": 0
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 1.02,
+  "CarbonPointEarned": 9
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc96"
+  },
+  "OrderID": "ORD83792899003",
+  "shippingInfo": {
+    "fullName": "Ha thu",
+    "phone": "02183773673",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "1",
+      "ward": "ben-thanh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3291317",
+      "productName": "Nước yến sào Thiên Hoàng không đường lốc 8x70ml",
+      "quantity": 3,
+      "price": 311200,
+      "image": "https://lh3.googleusercontent.com/V9ixWXrS7Cv90qK2sl2LGKswDWynO8KhBGXXtF7w_43VKzwkvwRbTCXastX_5GxhlJY6uzYo5_8QbBk_l3ehfuskDj8KfdpXGQ=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 311200,
+      "_id": {
+        "$oid": "69199350768d3a368d7fcd78"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.84,
+      "CarbonPointEarned": 8
+    },
+    {
+      "sku": "3414907",
+      "productName": "Tinh nghệ nếp vàng Honimore 200g",
+      "quantity": 3,
+      "price": 358200,
+      "image": "https://lh3.googleusercontent.com/gM4KcfjFgS_-NVPtQ1L-hkG2m61_-Z1dmq3lDs7Gwvfte9-wMs7vuEmuuz51x0cBxIzMyZFlvIMW_xO_p8UA1YqueVt2ACbprA=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 358200,
+      "_id": {
+        "$oid": "69199350768d3a368d7fcd79"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00503",
+      "TotalCarbonEmission": 0.3,
+      "CarbonPointEarned": 3
+    },
+    {
+      "sku": "3592433",
+      "productName": "Yến sào 21% Sanest hộp 6 lọ x 70ml",
+      "quantity": 2,
+      "price": 312000,
+      "image": "https://lh3.googleusercontent.com/nzlDBbdR1xS93eTwJRg0GWdEiXarjXGyUQLrif25Wdn_nmT5ZilJDFEWAe5Rx5aox2kKNOiVYW4HCr9SUQ1iY5ag9rGqsOzk=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 312000,
+      "_id": {
+        "$oid": "69199350768d3a368d7fcd7a"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3509709",
+      "productName": "Nước yến Thiên Hoàng Plus 18% lốc 6 hủ x 70ml",
+      "quantity": 2,
+      "price": 325400,
+      "image": "https://lh3.googleusercontent.com/50Wytoy99UL9yoPPPJ-hygrmbxlzsxRUP_dXtdHNUBU7vY6jPNSe5q9ALdpkkOS90FKKEfqoHv3DlYuIYgp7WVKfBmNGtBFkNA=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 325400,
+      "_id": {
+        "$oid": "69199350768d3a368d7fcd7b"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3317973",
+      "productName": "Nước yến thật Brand’s không đường 6 hũ x 42g",
+      "quantity": 3,
+      "price": 352000,
+      "image": "https://lh3.googleusercontent.com/6mD1Jnz_Fy07tm9S1oxlS9vvNwWB23s_a7mkiDygIzrtH3JUVIqILf2FufN_oXsZwoApK4uoaJ3LJhOWaaoKoG3pTSj-yXBo=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 352000,
+      "_id": {
+        "$oid": "69199350768d3a368d7fcd7c"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.06,
+      "CarbonPointEarned": 1
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 1.2,
+  "CarbonPointEarned": 12
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc97"
+  },
+  "OrderID": "ORD83977189055",
+  "shippingInfo": {
+    "fullName": "Nguyen Hera",
+    "phone": "0932501459",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "cho-moi",
+      "ward": "hoa-an",
+      "detail": "Số nhà 99"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3291318",
+      "productName": "Nước yến Thiên Hoàng lốc 8 hũ x70ml",
+      "quantity": 2,
+      "price": 311200,
+      "image": "https://lh3.googleusercontent.com/dQ1veCILUs06FnM-giZNhoDfnKLSSRVgTKbktYo_nZAbtrRrFl_ryl60C8Ay6thvhCegARZxT8njUcBvBR3x64WO97fE9rPnZg=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 311200,
+      "_id": {
+        "$oid": "69199409768d3a368d8099a8"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3592433",
+      "productName": "Yến sào 21% Sanest hộp 6 lọ x 70ml",
+      "quantity": 2,
+      "price": 312000,
+      "image": "https://lh3.googleusercontent.com/nzlDBbdR1xS93eTwJRg0GWdEiXarjXGyUQLrif25Wdn_nmT5ZilJDFEWAe5Rx5aox2kKNOiVYW4HCr9SUQ1iY5ag9rGqsOzk=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 312000,
+      "_id": {
+        "$oid": "69199409768d3a368d8099a9"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3549132",
+      "productName": "Nước yến thật Brand’s hộp 6 x 42g",
+      "quantity": 2,
+      "price": 363000,
+      "image": "https://lh3.googleusercontent.com/KsqmWoAEVlsDyQ-dn9JEY2muuvZj1Gp3OXVWNMbXQU_76CEAKo7kPGxqtmGajj3W1bKSAGVLpd6nfYKoGwbUJvCOZEt8VECy=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 363000,
+      "_id": {
+        "$oid": "69199409768d3a368d8099aa"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.04,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3504290",
+      "productName": "Nước yến thật không đường Brand’s 6 hủ x70g",
+      "quantity": 2,
+      "price": 524000,
+      "image": "https://lh3.googleusercontent.com/jO6uTJhaiCnvv8gYjcgKj6ExhJPzErVpjO8b8HAbwNvrTYMhztleWQKbmkQeLoN7CUv2xIxCu2k-EPBh3kDDekFq734EAwEmDQ=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 524000,
+      "_id": {
+        "$oid": "69199409768d3a368d8099ab"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.07,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3547408",
+      "productName": "Nước yến đường phèn Khánh Đan Ocop 6x70ml",
+      "quantity": 2,
+      "price": 675000,
+      "image": "https://lh3.googleusercontent.com/IElIr1TJQmmaD0122yZXDNYiZ2DLtWjFUanu5-iUh4QmjH85tevsUTLgRIf-blbMbWAJ5yREswLiQeBNo7tJhLy7Aa6q_loM=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 675000,
+      "_id": {
+        "$oid": "69199409768d3a368d8099ac"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.42,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": "PROMO_001",
+  "TotalCarbonEmission": 0.53,
+  "CarbonPointEarned": 5
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc98"
+  },
+  "OrderID": "ORD96905319387",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3407792",
+      "productName": "Nấm đùi gà THT gói 200g",
+      "quantity": 5,
+      "price": 40000,
+      "image": "https://lh3.googleusercontent.com/DealgLPFoigJGq3FQwlCOgaKcZ0hzvyiyRYEbQav8JaC-XaNVVvBMa7Ew9fr_Z8WFHp3yH3kj5-lh3kdqlJYb6lVV2DvNm5Gyg=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 40000,
+      "_id": {
+        "$oid": "6919c68976c0b26dad0c4e4f"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00304",
+      "TotalCarbonEmission": 0.6,
+      "CarbonPointEarned": 6
+    }
+  ],
+  "promotion_id": "PROMO_002",
+  "TotalCarbonEmission": 0.6,
+  "CarbonPointEarned": 6
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc99"
+  },
+  "OrderID": "ORD96954584435",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3514277",
+      "productName": "Bột ngũ cốc yến mạch hạt chia Co.op Select 15 gói x 30g",
+      "quantity": 1,
+      "price": 48025,
+      "image": "https://lh3.googleusercontent.com/FyvY__zaxpF3EGPLmlHQABqNUFtQoaKvW-t7mO4gYPgLuqzLUE6YYrztVbMj8XwFUouH_PG-RgRyXiUjJ659zzIrPP4Pi7ZL=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 56500,
+      "_id": {
+        "$oid": "6919c6ba76c0b26dad0c5f9d"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.02,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3359027",
+      "productName": "Bột 5 loại đậu hạt sen Co.op Select 350g",
+      "quantity": 1,
+      "price": 19805,
+      "image": "https://lh3.googleusercontent.com/mWTuW_5mSQwFGPPrlgK8VFEt8rXPgdq5GmZlDRnZ_O_n248YYc2oUUGStCaPZP0Br3ybbD5t-A7o0lJ_1CHafgI2kP4Vw3o=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 23300,
+      "_id": {
+        "$oid": "6919c6ba76c0b26dad0c5f9e"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.28,
+      "CarbonPointEarned": 3
+    },
+    {
+      "sku": "3359031",
+      "productName": "Bột gạo lọc Co.op Select 400g",
+      "quantity": 4,
+      "price": 12920,
+      "image": "https://lh3.googleusercontent.com/0OHaQsk_7O1Rm2jLZWpzbmwSCoo0FOgFYBCMTzPRAJvXW08p_AgKaZ2Nqh5rBR5CVKVNU7UuV9SkFLTrapbEUogqiUx4p4hw=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 15200,
+      "_id": {
+        "$oid": "6919c6ba76c0b26dad0c5f9f"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 1.28,
+      "CarbonPointEarned": 13
+    }
+  ],
+  "promotion_id": "PROMO_002",
+  "TotalCarbonEmission": 1.58,
+  "CarbonPointEarned": 16
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9a"
+  },
+  "OrderID": "ORD96989370975",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3407792",
+      "productName": "Nấm đùi gà THT gói 200g",
+      "quantity": 1,
+      "price": 40000,
+      "image": "https://lh3.googleusercontent.com/DealgLPFoigJGq3FQwlCOgaKcZ0hzvyiyRYEbQav8JaC-XaNVVvBMa7Ew9fr_Z8WFHp3yH3kj5-lh3kdqlJYb6lVV2DvNm5Gyg=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 40000,
+      "_id": {
+        "$oid": "6919c6dd76c0b26dad0c99a6"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00304",
+      "TotalCarbonEmission": 0.12,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3448118",
+      "productName": "Nấm kim châm VN 150g – THT",
+      "quantity": 1,
+      "price": 18500,
+      "image": "https://lh3.googleusercontent.com/D0TaVVySA5nPEYupj43C2ukhd48lTDKol32A0xXEl1-IVIQYyLqa-BWrFkrwSdBh7iqcJ6mX2mkypteWy0lci70PkzTk7bZ4=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 18500,
+      "_id": {
+        "$oid": "6919c6dd76c0b26dad0c99a7"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00304",
+      "TotalCarbonEmission": 0.09,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3587604",
+      "productName": "Bột sắn dây ướp hoa bưởi Xuân Nguyên 500g",
+      "quantity": 1,
+      "price": 90500,
+      "image": "https://lh3.googleusercontent.com/DUgx3-azx9_nCdx3Vk8l6reBf4WvrIaxoyMFNTOQfYks95xY4MoNc9lEv7ix-WcZchHFPo3fLOCV45LoqLbT3oz4T2tm9NfhyA=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 90500,
+      "_id": {
+        "$oid": "6919c6dd76c0b26dad0c99a8"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.4,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": "PROMO_003",
+  "TotalCarbonEmission": 0.61,
+  "CarbonPointEarned": 6
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9b"
+  },
+  "OrderID": "ORD97241447390",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3430126",
+      "productName": "Chanh không hạt Co.op Select 250g",
+      "quantity": 2,
+      "price": 8415,
+      "image": "https://lh3.googleusercontent.com/Xs-W73qt_EPYCSoXydTpzLvVadSn-7Ntl3mAtMQj2Rd1oXqpqEX5hLhJhl0XBI-IMuF-zAVVQB79H3dFrw-4iDDrc-tMPUX0=rw",
+      "unit": "Vỉ",
+      "itemType": "purchased",
+      "originalPrice": 9900,
+      "_id": {
+        "$oid": "6919c7d976c0b26dad0d8853"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.3,
+      "CarbonPointEarned": 3
+    },
+    {
+      "sku": "3538472",
+      "productName": "Hành lá Co.op Select 100g – TNX",
+      "quantity": 2,
+      "price": 7565,
+      "image": "https://lh3.googleusercontent.com/q__trwQg5E8pl14Y6-yUSEY8fH-zuJVGCfMVfPoKyNQPawZ6EK70v4bIeNOUTAgSA-pX7Ty6LUtIrEbfI4XTPhxyeCMgJyM=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 8900,
+      "_id": {
+        "$oid": "6919c7d976c0b26dad0d8854"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00306",
+      "TotalCarbonEmission": 0.12,
+      "CarbonPointEarned": 1
+    },
+    {
+      "sku": "3455309",
+      "productName": "Bột cà ri Ông Chà Và 20g",
+      "quantity": 2,
+      "price": 6900,
+      "image": "https://lh3.googleusercontent.com/G-2x6FVauiziAJjheQ39mLfLhlnMC1tfHd1QP8mMkeBx0vAmVManQKBqddv8nRr3sFTdBTaOEJcRVqIsYVdx1XQT7wnUUTw=rw",
+      "unit": "Bịch",
+      "itemType": "purchased",
+      "originalPrice": 6900,
+      "_id": {
+        "$oid": "6919c7d976c0b26dad0d8855"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.03,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3423714",
+      "productName": "Bột chiên giòn nêm sẵn Meizan 150g",
+      "quantity": 2,
+      "price": 6600,
+      "image": "https://lh3.googleusercontent.com/s6P05gJVBlHZ6Qv7CCH-UdmwtgvhZp7vi5QSugdZtTW7ATcS7dr1cWWuDgPxu4lhv-kN0Vxx0DaR4aI3dzdkgayB0yHW21xFzA=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6600,
+      "_id": {
+        "$oid": "6919c7d976c0b26dad0d8856"
+      },
+      "CategoryID": "CAT002",
+      "SubcategoryID": "SUB00201",
+      "TotalCarbonEmission": 0.24,
+      "CarbonPointEarned": 2
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.69,
+  "CarbonPointEarned": 6
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9c"
+  },
+  "OrderID": "ORD97295458752",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3317973",
+      "productName": "Nước yến thật Brand’s không đường 6 hũ x 42g",
+      "quantity": 1,
+      "price": 352000,
+      "image": "https://lh3.googleusercontent.com/6mD1Jnz_Fy07tm9S1oxlS9vvNwWB23s_a7mkiDygIzrtH3JUVIqILf2FufN_oXsZwoApK4uoaJ3LJhOWaaoKoG3pTSj-yXBo=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 352000,
+      "_id": {
+        "$oid": "6919c80f76c0b26dad0daa7e"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.02,
+      "CarbonPointEarned": 0
+    },
+    {
+      "sku": "3504290",
+      "productName": "Nước yến thật không đường Brand’s 6 hủ x70g",
+      "quantity": 1,
+      "price": 524000,
+      "image": "https://lh3.googleusercontent.com/jO6uTJhaiCnvv8gYjcgKj6ExhJPzErVpjO8b8HAbwNvrTYMhztleWQKbmkQeLoN7CUv2xIxCu2k-EPBh3kDDekFq734EAwEmDQ=rw",
+      "unit": "Lốc",
+      "itemType": "purchased",
+      "originalPrice": 524000,
+      "_id": {
+        "$oid": "6919c80f76c0b26dad0daa7f"
+      },
+      "CategoryID": "CAT005",
+      "SubcategoryID": "SUB00502",
+      "TotalCarbonEmission": 0.04,
+      "CarbonPointEarned": 0
+    }
+  ],
+  "promotion_id": "PROMO_002",
+  "TotalCarbonEmission": 0.06,
+  "CarbonPointEarned": 0
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9d"
+  },
+  "OrderID": "ORD97800963659",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275678",
+    "email": "",
+    "address": {
+      "city": "ho-chi-minh",
+      "district": "thu-duc",
+      "ward": "linh-xuan",
+      "detail": "234 Lê Lợi"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3414941",
+      "productName": "Giá sống 250g – TKCO",
+      "quantity": 3,
+      "price": 6200,
+      "image": "https://lh3.googleusercontent.com/iib-0wR40P0ZHxkL7d_Fd5jGj-QgykHDlEto2DbtlyMWuRWIr7Cf5uFURf8MAdPPPN3czPAwI8okmgIzlJO6ns2-zJ4FgfwW_g=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6200,
+      "_id": {
+        "$oid": "6919ca0876c0b26dad106780"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": "SUB00308",
+      "TotalCarbonEmission": 0.45,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.45,
+  "CarbonPointEarned": 4
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9e"
+  },
+  "OrderID": "ORD98049400083",
+  "shippingInfo": {
+    "fullName": "Nhuhuyen",
+    "phone": "0815275677",
+    "email": "",
+    "address": {
+      "city": "ba-ria-vung-tau",
+      "district": "chau-duc",
+      "ward": "binh-ba",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3414941",
+      "productName": "Giá sống 250g – TKCO",
+      "quantity": 3,
+      "price": 6200,
+      "image": "https://lh3.googleusercontent.com/iib-0wR40P0ZHxkL7d_Fd5jGj-QgykHDlEto2DbtlyMWuRWIr7Cf5uFURf8MAdPPPN3czPAwI8okmgIzlJO6ns2-zJ4FgfwW_g=rw",
+      "unit": "Gói",
+      "itemType": "purchased",
+      "originalPrice": 6200,
+      "_id": {
+        "$oid": "6919cb0176c0b26dad10a176"
+      },
+      "CategoryID": "CAT003",
+      "SubcategoryID": null,
+      "TotalCarbonEmission": 0.45,
+      "CarbonPointEarned": 4
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.45,
+  "CarbonPointEarned": 4
+},
+{
+  "_id": {
+    "$oid": "6a096b086ea39eac566cfc9f"
+  },
+  "OrderID": "ORD28962629378",
+  "shippingInfo": {
+    "fullName": "Phạm Thái Huỳnh Hương",
+    "phone": "0965813408",
+    "email": "",
+    "address": {
+      "city": "an-giang",
+      "district": "an-phu",
+      "ward": "khanh-binh",
+      "detail": "123 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard",
+    "notes": "",
+    "warehouse_id": "WH001"
+  },
+  "items": [
+    {
+      "sku": "3158047",
+      "productName": "Bột cacao Good Night hộp giấy 150g",
+      "quantity": 1,
+      "price": 82500,
+      "image": "https://lh3.googleusercontent.com/aeezj8iqPQTl9dOC7cMcZ4pQ2gojsU6EldWQAcqH50xQnFLMSbr8AUFDPjHSpuhdAsXbE6v3DhenzzxQ2GTSaXCGo0aZolk=rw",
+      "unit": "Hộp",
+      "itemType": "purchased",
+      "originalPrice": 82500,
+      "_id": {
+        "$oid": "6978de82a4c364bd99aeaab2"
+      },
+      "CategoryID": "CAT001",
+      "SubcategoryID": "SUB00101",
+      "TotalCarbonEmission": 0.18,
+      "CarbonPointEarned": 2
+    }
+  ],
+  "promotion_id": null,
+  "TotalCarbonEmission": 0.18,
+  "CarbonPointEarned": 2
+}]

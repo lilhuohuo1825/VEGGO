@@ -1,0 +1,1149 @@
+[{
+  "_id": {
+    "$oid": "69197b87768d3a368d6db169"
+  },
+  "OrderID": "ORD77703205161",
+  "CustomerID": "CUS000001",
+  "paymentMethod": "cod",
+  "subtotal": 19500,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 1773,
+  "totalAmount": 49500,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "Sản phẩm lỗi",
+  "status": "returned",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T07:21:43.211Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T07:25:29.998Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T07:26:00.019Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T07:26:48.470Z"
+    },
+    "processing_return": {
+      "$date": "2025-11-16T07:28:47.266Z"
+    },
+    "returning": {
+      "$date": "2025-11-16T07:32:29.678Z"
+    },
+    "returned": {
+      "$date": "2025-11-16T07:37:59.863Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T07:21:43.211Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T07:37:59.863Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69197de0768d3a368d6e93fd"
+  },
+  "OrderID": "ORD78304011619",
+  "CustomerID": "CUS000001",
+  "paymentMethod": "cod",
+  "subtotal": 12400,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 1127,
+  "totalAmount": 42400,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "Giao nhầm",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T07:31:44.015Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T07:31:56.099Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T07:32:26.114Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T07:35:02.510Z"
+    },
+    "processing_return": {
+      "$date": "2025-11-16T07:36:25.164Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T07:36:59.356Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T07:31:44.015Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T07:36:59.356Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69198d66768d3a368d79d070"
+  },
+  "OrderID": "ORD82278434414",
+  "CustomerID": "CUS000002",
+  "paymentMethod": "cod",
+  "subtotal": 312920,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 28447,
+  "totalAmount": 312920,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "delivered",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:37:58.439Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:58:23.991Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:58:54.015Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T09:04:36.065Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:56:33.097Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:37:58.439Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T09:04:36.065Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69198d6e768d3a368d79d8f2"
+  },
+  "OrderID": "ORD82286169351",
+  "CustomerID": "CUS000002",
+  "paymentMethod": "cod",
+  "subtotal": 131665,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 11970,
+  "totalAmount": 161665,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:38:06.172Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:47:46.696Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:48:16.718Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:47.911Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:56:13.873Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:56:30.323Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:38:06.172Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:56:30.323Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69198f8f768d3a368d7acda5"
+  },
+  "OrderID": "ORD82831302525",
+  "CustomerID": "CUS000002",
+  "paymentMethod": "cod",
+  "subtotal": 2398000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 50000,
+  "vatRate": 10,
+  "vatAmount": 218000,
+  "totalAmount": 2348000,
+  "code": "WELCOME10",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:47:11.307Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:47:42.568Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:48:12.587Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:43.998Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:56:10.955Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:56:27.653Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:47:11.307Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:56:27.653Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919900f768d3a368d7b6d91"
+  },
+  "OrderID": "ORD82959938695",
+  "CustomerID": "CUS000003",
+  "paymentMethod": "cod",
+  "subtotal": 57330,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 5212,
+  "totalAmount": 57330,
+  "code": "FREESHIP50K",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:49:19.942Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:39.219Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:55:09.228Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:39.975Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:57:10.930Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:57:19.231Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:49:19.942Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:57:19.231Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69199023768d3a368d7b86e3"
+  },
+  "OrderID": "ORD82979067086",
+  "CustomerID": "CUS000003",
+  "paymentMethod": "cod",
+  "subtotal": 30830,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 2803,
+  "totalAmount": 60830,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:49:39.070Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:32.306Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:55:02.318Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:35.143Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:57:04.635Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:57:17.056Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:49:39.070Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:57:17.056Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919902e768d3a368d7ba02d"
+  },
+  "OrderID": "ORD82990594214",
+  "CustomerID": "CUS000003",
+  "paymentMethod": "cod",
+  "subtotal": 70930,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 6448,
+  "totalAmount": 100930,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:49:50.598Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:27.899Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:54:57.914Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:31.238Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:57:02.923Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:57:14.087Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:49:50.598Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:57:14.087Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "691990d6768d3a368d7c2fb5"
+  },
+  "OrderID": "ORD83158788571",
+  "CustomerID": "CUS000004",
+  "paymentMethod": "cod",
+  "subtotal": 383875,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 34898,
+  "totalAmount": 383875,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:52:38.792Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:10.459Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:54:40.471Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:27.398Z"
+    },
+    "received": {
+      "$date": "2026-01-27T15:45:13.344Z"
+    },
+    "completed": {
+      "$date": "2026-02-05T08:58:45.195Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:52:38.792Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-05T08:58:45.195Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69199116768d3a368d7c59ef"
+  },
+  "OrderID": "ORD83222512513",
+  "CustomerID": "CUS000004",
+  "paymentMethod": "cod",
+  "subtotal": 320875,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 32087.5,
+  "vatRate": 10,
+  "vatAmount": 29170,
+  "totalAmount": 288787.5,
+  "code": "WELCOME10",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:53:42.516Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:06.657Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:54:36.666Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:22.990Z"
+    },
+    "received": {
+      "$date": "2025-11-16T08:57:56.662Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T08:57:59.479Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:53:42.515Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T08:57:59.479Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919911c768d3a368d7c83fe"
+  },
+  "OrderID": "ORD83228910188",
+  "CustomerID": "CUS000004",
+  "paymentMethod": "cod",
+  "subtotal": 252800,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 22982,
+  "totalAmount": 252800,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "Không đúng mô tả",
+  "status": "returning",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:53:48.913Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:54:02.370Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T08:54:32.392Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T08:55:18.813Z"
+    },
+    "processing_return": {
+      "$date": "2025-11-16T08:57:47.320Z"
+    },
+    "returning": {
+      "$date": "2025-11-16T12:51:33.877Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:53:48.913Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T12:51:33.877Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69199277768d3a368d7f645f"
+  },
+  "OrderID": "ORD83575384403",
+  "CustomerID": "CUS000004",
+  "paymentMethod": "cod",
+  "subtotal": 5522000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 502000,
+  "totalAmount": 5522000,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T08:59:35.388Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T08:59:44.161Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T09:00:14.185Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T09:00:25.428Z"
+    },
+    "received": {
+      "$date": "2025-11-16T09:00:33.616Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T09:00:35.562Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T08:59:35.388Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T09:00:35.562Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69199350768d3a368d7fcd77"
+  },
+  "OrderID": "ORD83792899003",
+  "CustomerID": "CUS000004",
+  "paymentMethod": "cod",
+  "subtotal": 4339000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 394455,
+  "totalAmount": 4339000,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T09:03:12.904Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T09:03:25.029Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T09:03:55.045Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T09:04:51.576Z"
+    },
+    "received": {
+      "$date": "2025-11-16T09:05:01.595Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T09:05:03.916Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T09:03:12.904Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T09:05:03.916Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69199409768d3a368d8099a7"
+  },
+  "OrderID": "ORD83977189055",
+  "CustomerID": "CUS000003",
+  "paymentMethod": "cod",
+  "subtotal": 4370400,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 50000,
+  "vatRate": 10,
+  "vatAmount": 397309,
+  "totalAmount": 4320400,
+  "code": "WELCOME10",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T09:06:17.194Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T09:06:54.379Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T09:07:24.390Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T09:07:34.601Z"
+    },
+    "received": {
+      "$date": "2025-11-16T09:08:14.853Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T09:08:17.242Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T09:06:17.194Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T09:08:17.242Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919c68976c0b26dad0c4e4e"
+  },
+  "OrderID": "ORD96905319387",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 200000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 20000,
+  "vatRate": 10,
+  "vatAmount": 18182,
+  "totalAmount": 180000,
+  "code": "KMMID11",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:41:45.323Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T12:49:57.065Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T12:50:27.084Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T12:54:46.208Z"
+    },
+    "received": {
+      "$date": "2026-01-27T15:45:13.388Z"
+    },
+    "completed": {
+      "$date": "2026-02-05T08:58:45.246Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:41:45.323Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-05T08:58:45.246Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919c6ba76c0b26dad0c5f9c"
+  },
+  "OrderID": "ORD96954584435",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 119510,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 11951,
+  "vatRate": 10,
+  "vatAmount": 10865,
+  "totalAmount": 137559,
+  "code": "KMMID11",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:42:34.587Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T12:49:50.514Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T12:50:20.522Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T12:54:41.288Z"
+    },
+    "received": {
+      "$date": "2026-01-27T15:45:13.390Z"
+    },
+    "completed": {
+      "$date": "2026-02-05T08:58:45.248Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:42:34.587Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-05T08:58:45.248Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919c6dd76c0b26dad0c99a5"
+  },
+  "OrderID": "ORD96989370975",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 149000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 13545,
+  "totalAmount": 149000,
+  "code": "FREESHIP50K",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "Sản phẩm lỗi",
+  "status": "returned",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:43:09.373Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T12:49:40.962Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T12:50:11.011Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T12:54:36.846Z"
+    },
+    "processing_return": {
+      "$date": "2025-11-16T12:56:21.303Z"
+    },
+    "returning": {
+      "$date": "2025-11-16T12:57:37.674Z"
+    },
+    "returned": {
+      "$date": "2025-11-16T12:58:08.058Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:43:09.373Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T12:58:08.058Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919c7d976c0b26dad0d8852"
+  },
+  "OrderID": "ORD97241447390",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 58960,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 5360,
+  "totalAmount": 88960,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "Không đúng mô tả",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:47:21.450Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T12:49:35.626Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T12:50:05.642Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T12:54:26.936Z"
+    },
+    "processing_return": {
+      "$date": "2025-11-16T12:56:09.736Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T12:57:27.929Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:47:21.450Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T12:57:27.929Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919c80f76c0b26dad0daa7d"
+  },
+  "OrderID": "ORD97295458752",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 876000,
+  "shippingFee": 30000,
+  "shippingDiscount": 30000,
+  "discount": 87600,
+  "vatRate": 10,
+  "vatAmount": 79636,
+  "totalAmount": 788400,
+  "code": "KMMID11",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "completed",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:48:15.460Z"
+    },
+    "confirmed": {
+      "$date": "2025-11-16T12:49:28.457Z"
+    },
+    "shipping": {
+      "$date": "2025-11-16T12:49:58.468Z"
+    },
+    "delivered": {
+      "$date": "2025-11-16T12:54:32.520Z"
+    },
+    "received": {
+      "$date": "2025-11-16T12:55:02.938Z"
+    },
+    "completed": {
+      "$date": "2025-11-16T12:55:35.112Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:48:15.460Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T12:55:35.112Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919ca0876c0b26dad10677f"
+  },
+  "OrderID": "ORD97800963659",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 18600,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 1691,
+  "totalAmount": 48600,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "Tôi muốn đổi địa chỉ giao hàng",
+  "returnReason": "",
+  "status": "cancelled",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T12:56:40.967Z"
+    },
+    "cancelled": {
+      "$date": "2025-11-16T12:56:54.907Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T12:56:40.967Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T12:56:54.907Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6919cb0176c0b26dad10a175"
+  },
+  "OrderID": "ORD98049400083",
+  "CustomerID": "CUS000006",
+  "paymentMethod": "cod",
+  "subtotal": 18600,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 1691,
+  "totalAmount": 48600,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "pending",
+  "routes": {
+    "pending": {
+      "$date": "2025-11-16T13:00:49.402Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-11-16T13:00:49.402Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-16T13:00:49.402Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6978de82a4c364bd99aeaab1"
+  },
+  "OrderID": "ORD28962629378",
+  "CustomerID": "CUS000008",
+  "paymentMethod": "cod",
+  "subtotal": 82500,
+  "shippingFee": 30000,
+  "shippingDiscount": 0,
+  "discount": 0,
+  "vatRate": 10,
+  "vatAmount": 7500,
+  "totalAmount": 112500,
+  "code": "",
+  "wantInvoice": false,
+  "invoiceInfo": {
+    "companyName": "",
+    "taxId": "",
+    "invoiceEmail": "",
+    "invoiceAddress": ""
+  },
+  "consultantCode": "",
+  "cancelReason": "",
+  "returnReason": "",
+  "status": "pending",
+  "routes": {
+    "pending": {
+      "$date": "2026-01-27T15:49:22.635Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2026-01-27T15:49:22.635Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-27T15:49:22.635Z"
+  },
+  "__v": 0
+}]

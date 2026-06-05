@@ -1,0 +1,318 @@
+[{
+  "_id": "6919716e07528c4a74c4e053",
+  "CustomerID": "CUS000001",
+  "Phone": "01208159564",
+  "Password": "$2b$10$xchukkCwuZEHmvjScBSfgurSA4R67PWp6sL0jMmagatsDMa3YSAge",
+  "FullName": "",
+  "Email": "",
+  "Address": null,
+  "RegisterDate": {
+    "$date": "2025-11-16T06:38:38.077Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 42400,
+  "CarbonPoint": 4,
+  "CertificateID": null,
+  "PasswordVersion": 3,
+  "LastPasswordReset": "2025-11-16T09:36:02.042Z",
+  "updated_at": "2025-11-16T09:36:02.042Z"
+},
+{
+  "_id": "69198d3bfe48bde09af28352",
+  "CustomerID": "CUS000002",
+  "Phone": "0815275677",
+  "Password": "$2b$10$GqSyCw89uWIPXRxadSPVPeW8nwHnNrGEVJmWmXCmQLy6XUyfEbRXq",
+  "FullName": "",
+  "Email": "",
+  "Address": "39 Nguyễn Huệ, binh-gia, chau-duc, ba-ria-vung-tau",
+  "RegisterDate": {
+    "$date": "2025-11-16T08:37:15.419Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 2509665,
+  "CarbonPoint": 251,
+  "CertificateID": "CER001",
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "69198fd8fe48bde09af2835c",
+  "CustomerID": "CUS000003",
+  "Phone": "0932501459",
+  "Password": "$2b$10$Md6ZOXsVafRFvhNTZcMDOeYynU/hZHvzgzePx0nvEF82MSvmCtHKe",
+  "FullName": "",
+  "Email": "",
+  "Address": "Số nhà 99, hoa-an, cho-moi, an-giang",
+  "RegisterDate": {
+    "$date": "2025-11-16T08:48:24.537Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 4539490,
+  "CarbonPoint": 454,
+  "CertificateID": "CER002",
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "6919907bfe48bde09af28363",
+  "CustomerID": "CUS000004",
+  "Phone": "02183773673",
+  "Password": "$2b$10$EJDjdyZVbiopcqWF.l7/LeRgs9WYvhSEoxGNEEs36XAfpgxrU7iFy",
+  "FullName": "",
+  "Email": "",
+  "Address": "39 Nguyễn Huệ, ben-thanh, 1, ho-chi-minh",
+  "RegisterDate": {
+    "$date": "2025-11-16T08:51:07.053Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 10149787.5,
+  "CarbonPoint": 1015,
+  "CertificateID": "CER003",
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "69199aa7fe48bde09af28392",
+  "CustomerID": "CUS000005",
+  "Phone": "0879584022",
+  "Password": "$2b$10$8Dy3K94znEvG0J4AkHAGC.jgXF2hhgL3RwIRQSLM0EgMsxJw7Jai.",
+  "FullName": "",
+  "Email": "",
+  "Address": "",
+  "RegisterDate": {
+    "$date": "2025-11-16T09:34:31.178Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "6919c59d9b3936c029e05887",
+  "CustomerID": "CUS000006",
+  "Phone": "0815275678",
+  "Password": "$2b$10$MfJWOS.IwEmaTZXa8o/LsOa.Quu.gziNUmixsZmixNb5/vW9tfyPa",
+  "FullName": "Nhuhuyen",
+  "Email": "",
+  "Address": "234 Lê Lợi, linh-xuan, thu-duc, ho-chi-minh",
+  "RegisterDate": {
+    "$date": "2025-11-16T12:37:49.363Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 877360,
+  "CarbonPoint": 88,
+  "CertificateID": null,
+  "PasswordVersion": 2,
+  "LastPasswordReset": "2025-11-16T12:38:43.250Z",
+  "updated_at": "2025-11-16T12:38:43.250Z",
+  "BirthDay": "2000-06-07",
+  "Gender": "male",
+  "updatedAt": "2025-11-16T12:43:39.334Z"
+},
+{
+  "_id": "6919d15b9b3936c029e058b5",
+  "CustomerID": "CUS000007",
+  "Phone": "0658818000",
+  "Password": "$2b$10$OX0jowoIa8Zi5NSwjwk5Ben.M578NPekv/6LcxGlu6xjj6TuycrUq",
+  "FullName": "HuyenNhu",
+  "Email": "",
+  "Address": "33 Lê Lợi, linh-trung, thu-duc, ho-chi-minh",
+  "RegisterDate": {
+    "$date": "2025-11-16T13:27:55.049Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 424393.5,
+  "CarbonPoint": 42,
+  "CertificateID": null,
+  "PasswordVersion": 2,
+  "LastPasswordReset": "2025-11-16T13:29:20.901Z",
+  "updated_at": "2025-11-16T13:29:20.901Z",
+  "BirthDay": "2000-06-07",
+  "Gender": "female",
+  "updatedAt": "2025-11-16T13:33:02.282Z"
+},
+{
+  "_id": "692300ce643c72434ccf24dc",
+  "CustomerID": "CUS000008",
+  "Phone": "0965813408",
+  "Password": "$2b$10$Yx9xfbfgLKZXPRYPQfDaL.M0fQzQyHkAXYuLRxc5H7H6jbNEFSF6C",
+  "FullName": "",
+  "Email": "",
+  "Address": "123 Nguyễn Huệ, khanh-binh, an-phu, an-giang",
+  "RegisterDate": {
+    "$date": "2025-11-23T12:40:46.142Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 3,
+  "LastPasswordReset": "2026-01-27T15:46:19.085Z",
+  "updated_at": "2026-01-27T15:46:19.085Z"
+},
+{
+  "_id": "690733fcff49b6f0cd507e31",
+  "CustomerID": "CUS740201512",
+  "Phone": "0963420472",
+  "Password": "$2b$10$IspYhzRt7p2FIyOKTLqHvuzQhiI08nz6oGik3BI1enrgs2qICHT8m",
+  "FullName": null,
+  "Email": null,
+  "Address": null,
+  "BirthDay": null,
+  "Gender": null,
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null,
+  "RegisterDate": {
+    "$date": "2025-11-02T10:35:40.204Z"
+  },
+  "__v": 0,
+  "Avatar": null
+},
+{
+  "_id": "69099293fe18b1560249f11b",
+  "CustomerID": "CUS027702823",
+  "Phone": "02183773674",
+  "Password": "$2b$10$fmsWIsa1TskNAzBgLBl2NO6JtfhFEi4VcDOfCivSQ7ZR2IZHvYE3S",
+  "FullName": null,
+  "Email": null,
+  "Address": null,
+  "BirthDay": null,
+  "Gender": null,
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null,
+  "RegisterDate": {
+    "$date": "2025-11-04T05:43:47.706Z"
+  },
+  "__v": 0,
+  "Avatar": null
+},
+{
+  "_id": "69099701683274a316eb8605",
+  "CustomerID": "CUS161556125",
+  "Phone": "2183773673",
+  "Password": "$2b$10$/Fp.2qeYFmRouhicJ2b3iusVsnbFgwCYaoAXNxZR8XAPP4uNJLnOy",
+  "FullName": null,
+  "Email": null,
+  "Address": "Số nhà hehe, phường haha, huyện hichic, tỉnh huhuhu, p1, q2, hcm",
+  "BirthDay": null,
+  "Gender": null,
+  "CustomerType": "",
+  "TotalSpent": 70860,
+  "CarbonPoint": 7,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null,
+  "RegisterDate": {
+    "$date": "2025-11-04T06:02:41.562Z"
+  },
+  "__v": 0,
+  "Avatar": null
+},
+{
+  "_id": "69106c7add39fc233bc7e77d",
+  "CustomerID": "CUS026978084",
+  "Phone": "0218377367",
+  "Password": "$2b$10$DMkMdGc03cdgotCVZ/tD5uzmoMp2aCt27l.n4.AmOyHCg8LJqIl5m",
+  "FullName": null,
+  "Email": null,
+  "Address": "ffxtrdjttttttttttttt, p1, q1, hcm",
+  "BirthDay": null,
+  "Gender": null,
+  "Avatar": null,
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null,
+  "RegisterDate": {
+    "$date": "2025-11-09T10:27:06.980Z"
+  },
+  "__v": 0
+},
+{
+  "_id": "69106cf2dd39fc233bc7fa17",
+  "CustomerID": "CUS146452942",
+  "Phone": "0218377368",
+  "Password": "$2b$10$JVabwyrK8KDx27F0eWRq2u6AcVKUkZ4oe6RoyPclmLVsEUZOMgbO6",
+  "FullName": null,
+  "Email": null,
+  "Address": "39 Nguyễn Huệ, p2, q1, hcm",
+  "BirthDay": null,
+  "Gender": null,
+  "Avatar": null,
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null,
+  "RegisterDate": {
+    "$date": "2025-11-09T10:29:06.454Z"
+  },
+  "__v": 0
+},
+{
+  "_id": "6915b74d09b0a87a6a98da80",
+  "CustomerID": "CUS000011",
+  "Phone": "0905363234",
+  "Password": "$2b$10$0AElgyqpAUHWwtQKTwweNe9T2D02pq7wpq5ZRHZDvgPmPw8tXhnDy",
+  "FullName": "",
+  "Email": "",
+  "Address": "",
+  "RegisterDate": {
+    "$date": "2025-11-13T10:47:41.395Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "6915b9da4bd37bffe27151a1",
+  "CustomerID": "CUS000012",
+  "Phone": "0905363235",
+  "Password": "$2b$10$kFhC2pXL.7RZXyEOs320NewXHoRponpuhYOyNqefvJ4ohaRCCoi8q",
+  "FullName": "",
+  "Email": "",
+  "Address": "",
+  "RegisterDate": {
+    "$date": "2025-11-13T10:58:34.270Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+},
+{
+  "_id": "6915bb7d4bd37bffe27151a2",
+  "CustomerID": "CUS000013",
+  "Phone": "0815275679",
+  "Password": "$2b$10$TzaraVxtCdjWtJ2xnyra/ug5wAnNnkmtDHAzAJXxhe99YYK6Mm1JW",
+  "FullName": "",
+  "Email": "",
+  "Address": "",
+  "RegisterDate": {
+    "$date": "2025-11-13T11:05:33.475Z"
+  },
+  "CustomerType": "",
+  "TotalSpent": 0,
+  "CarbonPoint": 0,
+  "CertificateID": null,
+  "PasswordVersion": 1,
+  "LastPasswordReset": null
+}]

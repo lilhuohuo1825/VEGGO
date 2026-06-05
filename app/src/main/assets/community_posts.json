@@ -1,0 +1,299 @@
+[{
+  "_id": "6a089f4ced2ac4c1892d9d88",
+  "CommunityPostID": "POST001",
+  "CustomerID": "CUS000001",
+  "Title": "Bí quyết tự làm phân bón hữu cơ tại nhà cực đơn giản",
+  "Content": "Chào cả nhà, hôm nay mình xin chia sẻ cách tận dụng rác thải nhà bếp như vỏ chuối, bã cà phê và vỏ trứng để làm phân bón cho rau sạch tại nhà. Cách làm rất đơn giản: Bạn phơi khô vỏ trứng rồi xay nhuyễn, trộn đều với bã cà phê và vỏ chuối cắt nhỏ. Sau đó, đem ủ hỗn hợp này với một ít chế phẩm nấm trichoderma trong khoảng 2 tuần là có thể đem bón cho cây. Loại phân bón tự chế này cực kỳ giàu kali, phốt pho và canxi, giúp rau xanh tốt, cứng cáp mà hoàn toàn an toàn cho sức khỏe gia đình nhé!",
+  "Image": "https://images.pexels.com/photos/4505171/pexels-photo-4505171.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "Video": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  "PublishDate": "2026-05-10T08:00:00.000Z",
+  "UpdateDate": "2026-05-10T08:30:00.000Z",
+  "ViewCount": 150,
+  "Status": "Approved",
+  "LikesDetail": [
+    {
+      "CommunityLikeID": "LIKE001",
+      "CustomerID": "CUS000002",
+      "LikeDate": "2026-05-10T09:15:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE002",
+      "CustomerID": "CUS000003",
+      "LikeDate": "2026-05-10T10:30:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE003",
+      "CustomerID": "CUS000004",
+      "LikeDate": "2026-05-11T02:00:00.000Z"
+    }
+  ],
+  "CommentsDetail": [
+    {
+      "CommunityCommentID": "CMT001",
+      "CustomerID": "CUS000002",
+      "CommentDate": "2026-05-10T09:20:00.000Z",
+      "Content": "Bài viết hữu ích quá ạ! Cho mình hỏi ủ bã cà phê có cần trộn thêm vôi không bạn?"
+    },
+    {
+      "CommunityCommentID": "CMT002",
+      "CustomerID": "CUS000001",
+      "CommentDate": "2026-05-10T09:45:00.000Z",
+      "Content": "@CUS000002 Không cần vôi đâu bạn ơi, trộn trực tiếp với đất tơi xốp hoặc nấm trichoderma là tốt nhất nhé."
+    }
+  ],
+  "SavesDetail": [
+    {
+      "CommunitySaveID": "SAVE001",
+      "CustomerID": "CUS000003",
+      "SaveDate": "2026-05-10T11:00:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE002",
+      "CustomerID": "CUS000007",
+      "SaveDate": "2026-05-11T14:25:00.000Z"
+    }
+  ],
+  "LikeCount": 3,
+  "CommentCount": 2,
+  "SaveCount": 2
+},
+{
+  "_id": "6a089f4ced2ac4c1892d9d89",
+  "CommunityPostID": "POST002",
+  "CustomerID": "CUS000002",
+  "Title": "Review giàn rau thủy canh hồi lưu sau 2 tháng lắp đặt",
+  "Content": "Hệ thống giàn rau thủy canh hồi lưu nhà mình hoạt động rất ổn định nha mọi người. Sau 2 tháng trải nghiệm, mình thấy rau phát triển cực kỳ đồng đều, lớn nhanh gấp đôi so với phương pháp trồng đất truyền thống trước đây mà lại không tốn công tưới nước hay nhổ cỏ hàng ngày. Nguồn nước dinh dưỡng được bơm tuần hoàn liên tục giúp rễ cây hấp thụ tối đa chất dinh dưỡng. Chi phí đầu tư ban đầu hơi cao một chút nhưng đổi lại có rau sạch ăn quanh năm thì hoàn toàn xứng đáng. Ai cần hỏi kinh nghiệm lắp đặt hay pha dung dưỡng cứ comment thoải mái bên dưới nhé!",
+  "Image": "https://images.pexels.com/photos/5692257/pexels-photo-5692257.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "Video": "",
+  "PublishDate": "2026-05-12T14:20:00.000Z",
+  "UpdateDate": "",
+  "ViewCount": 210,
+  "Status": "Approved",
+  "LikesDetail": [
+    {
+      "CommunityLikeID": "LIKE004",
+      "CustomerID": "CUS000001",
+      "LikeDate": "2026-05-12T15:00:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE005",
+      "CustomerID": "CUS000007",
+      "LikeDate": "2026-05-13T07:45:00.000Z"
+    }
+  ],
+  "CommentsDetail": [
+    {
+      "CommunityCommentID": "CMT003",
+      "CustomerID": "CUS000003",
+      "CommentDate": "2026-05-12T16:30:00.000Z",
+      "Content": "Chi phí lắp đặt trọn gói giàn thủy canh này hết khoảng bao nhiêu vậy chủ thớt?"
+    }
+  ],
+  "SavesDetail": [
+    {
+      "CommunitySaveID": "SAVE003",
+      "CustomerID": "CUS000004",
+      "SaveDate": "2026-05-12T18:10:00.000Z"
+    }
+  ],
+  "LikeCount": 2,
+  "CommentCount": 1,
+  "SaveCount": 1
+},
+{
+  "_id": "6a089f4ced2ac4c1892d9d8a",
+  "CommunityPostID": "POST003",
+  "CustomerID": "CUS000003",
+  "Title": "Mẹo diệt trừ bọ trĩ và rệp sáp bằng nước rửa chén và tỏi ớt",
+  "Content": "Mùa này rau cải rất hay bị rệp sáp và bọ trĩ tấn công phá hoại lá. Thay vì dùng thuốc hóa học độc hại, mình thường tự pha dung dịch sinh học để phun. Công thức của mình gồm: 3 củ tỏi, 5 quả ớt giã nát, ngâm với 1 lít nước trong 24 giờ để lấy nước cốt. Khi phun, pha thêm vài giọt nước rửa chén (đóng vai trò chất bám dính) rồi phun trực tiếp lên hai mặt lá vào chiều mát. Phun liên tục 2-3 ngày là rệp sáp chết sạch, lá rau lại xanh mướt như cũ. Mọi người làm thử xem hiệu quả thế nào nhé!",
+  "Image": "https://images.pexels.com/photos/2253916/pexels-photo-2253916.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "Video": "",
+  "PublishDate": "2026-05-13T09:15:00.000Z",
+  "UpdateDate": "2026-05-13T10:00:00.000Z",
+  "ViewCount": 340,
+  "Status": "Approved",
+  "LikesDetail": [
+    {
+      "CommunityLikeID": "LIKE006",
+      "CustomerID": "CUS000001",
+      "LikeDate": "2026-05-13T10:00:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE007",
+      "CustomerID": "CUS000002",
+      "LikeDate": "2026-05-13T11:20:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE008",
+      "CustomerID": "CUS000004",
+      "LikeDate": "2026-05-14T01:10:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE009",
+      "CustomerID": "CUS000006",
+      "LikeDate": "2026-05-14T08:30:00.000Z"
+    }
+  ],
+  "CommentsDetail": [
+    {
+      "CommunityCommentID": "CMT004",
+      "CustomerID": "CUS000007",
+      "CommentDate": "2026-05-13T12:15:00.000Z",
+      "Content": "Dung dịch tỏi ớt này có cần pha loãng thêm với nước trước khi phun không ạ?"
+    },
+    {
+      "CommunityCommentID": "CMT005",
+      "CustomerID": "CUS000002",
+      "CommentDate": "2026-05-13T14:00:00.000Z",
+      "Content": "Công thức này hay quá, để chiều về làm thử liền cho giàn cải bẹ xanh ở nhà."
+    }
+  ],
+  "SavesDetail": [
+    {
+      "CommunitySaveID": "SAVE004",
+      "CustomerID": "CUS000001",
+      "SaveDate": "2026-05-13T10:45:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE005",
+      "CustomerID": "CUS000002",
+      "SaveDate": "2026-05-13T15:30:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE006",
+      "CustomerID": "CUS000007",
+      "SaveDate": "2026-05-14T20:10:00.000Z"
+    }
+  ],
+  "LikeCount": 4,
+  "CommentCount": 2,
+  "SaveCount": 3
+},
+{
+  "_id": "6a089f4ced2ac4c1892d9d8b",
+  "CommunityPostID": "POST004",
+  "CustomerID": "CUS000004",
+  "Title": "Kinh nghiệm trồng cà chua bi trĩu quả trên ban công chung cư",
+  "Content": "Nhiều bạn nghĩ ban công chung cư chật hẹp thì không trồng được cây ăn quả, nhưng thực ra cà chua bi rất dễ sống nếu đủ nắng. Mình trồng 2 chậu cà chua bi ở ban công hướng Đông, mỗi ngày đón khoảng 4 tiếng nắng sáng. Bí quyết của mình là phải bấm ngọn thường xuyên để cây tập trung nuôi quả, và bổ sung thêm phân bón giàu kali (như dịch chuối) khi cây bắt đầu ra hoa. Hiện tại cây nhà mình đang chín đỏ rực, hái ăn ngọt lịm. Tiện thể khoe ảnh cho cả nhà cùng ngắm lấy động lực trồng cây nha!",
+  "Image": "https://images.pexels.com/photos/1327838/pexels-photo-1327838.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "Video": "",
+  "PublishDate": "2026-05-14T16:00:00.000Z",
+  "UpdateDate": "",
+  "ViewCount": 450,
+  "Status": "Approved",
+  "LikesDetail": [
+    {
+      "CommunityLikeID": "LIKE010",
+      "CustomerID": "CUS000001",
+      "LikeDate": "2026-05-14T17:15:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE011",
+      "CustomerID": "CUS000002",
+      "LikeDate": "2026-05-14T19:00:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE012",
+      "CustomerID": "CUS000003",
+      "LikeDate": "2026-05-15T03:40:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE013",
+      "CustomerID": "CUS000006",
+      "LikeDate": "2026-05-15T09:25:00.000Z"
+    },
+    {
+      "CommunityLikeID": "LIKE014",
+      "CustomerID": "CUS000007",
+      "LikeDate": "2026-05-15T14:10:00.000Z"
+    }
+  ],
+  "CommentsDetail": [
+    {
+      "CommunityCommentID": "CMT006",
+      "CustomerID": "CUS000001",
+      "CommentDate": "2026-05-14T18:30:00.000Z",
+      "Content": "Nhìn chùm quả mê ly thực sự! Bạn dùng đất sạch loại nào để trồng vậy?"
+    },
+    {
+      "CommunityCommentID": "CMT007",
+      "CustomerID": "CUS000004",
+      "CommentDate": "2026-05-14T19:15:00.000Z",
+      "Content": "@CUS000001 Mình dùng đất hữu cơ trộn sẵn phân trùn quế và xơ dừa băm nhỏ nha bạn."
+    },
+    {
+      "CommunityCommentID": "CMT008",
+      "CustomerID": "CUS000002",
+      "CommentDate": "2026-05-15T02:00:00.000Z",
+      "Content": "Cây nhà mình ra hoa nhiều mà toàn bị rụng chứ không đậu quả, buồn ghê."
+    }
+  ],
+  "SavesDetail": [
+    {
+      "CommunitySaveID": "SAVE007",
+      "CustomerID": "CUS000001",
+      "SaveDate": "2026-05-14T17:30:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE008",
+      "CustomerID": "CUS000002",
+      "SaveDate": "2026-05-14T22:15:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE009",
+      "CustomerID": "CUS000006",
+      "SaveDate": "2026-05-15T04:50:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE010",
+      "CustomerID": "CUS000007",
+      "SaveDate": "2026-05-15T11:05:00.000Z"
+    }
+  ],
+  "LikeCount": 5,
+  "CommentCount": 3,
+  "SaveCount": 4
+},
+{
+  "_id": "6a089f4ced2ac4c1892d9d8c",
+  "CommunityPostID": "POST005",
+  "CustomerID": "CUS000006",
+  "Title": "Cảnh báo: Đừng vứt bỏ rễ nấm khi sơ chế, mẹo tận dụng cực hay!",
+  "Content": "Mỗi lần mua nấm đùi gà hay nấm bào ngư về nấu ăn, chúng ta thường có thói quen cắt bỏ phần rễ nấm dính đất rồi vứt đi đúng không? Đừng làm vậy nha lãng phí lắm! Phần rễ nấm này sau khi gọt sạch đất bẩn, rửa sạch và phơi khô, bạn có thể đem ninh cùng củ cải, cà rốt để làm nước dùng chay. Nước ngọt lịm tự nhiên (chuẩn vị umami) mà lại không hề bị nồng. Mình toàn làm cách này để nấu nước lẩu hoặc nấu canh, vừa tiết kiệm lại vừa bổ dưỡng cho cả nhà.",
+  "Image": "https://images.pexels.com/photos/2592537/pexels-photo-2592537.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "Video": "",
+  "PublishDate": "2026-05-15T11:20:00.000Z",
+  "UpdateDate": "",
+  "ViewCount": 180,
+  "Status": "Approved",
+  "LikesDetail": [
+    {
+      "CommunityLikeID": "LIKE015",
+      "CustomerID": "CUS000003",
+      "LikeDate": "2026-05-15T13:00:00.000Z"
+    }
+  ],
+  "CommentsDetail": [
+    {
+      "CommunityCommentID": "CMT009",
+      "CustomerID": "CUS000001",
+      "CommentDate": "2026-05-15T15:45:00.000Z",
+      "Content": "Mẹo này đỉnh ghê, trước giờ toàn cắt vứt đi phí thật sự. Cảm ơn b đã chia sẻ nha!"
+    }
+  ],
+  "SavesDetail": [
+    {
+      "CommunitySaveID": "SAVE011",
+      "CustomerID": "CUS000002",
+      "SaveDate": "2026-05-15T12:00:00.000Z"
+    },
+    {
+      "CommunitySaveID": "SAVE012",
+      "CustomerID": "CUS000004",
+      "SaveDate": "2026-05-15T16:20:00.000Z"
+    }
+  ],
+  "LikeCount": 1,
+  "CommentCount": 1,
+  "SaveCount": 2
+}]

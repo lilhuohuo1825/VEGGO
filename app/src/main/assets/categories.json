@@ -1,0 +1,180 @@
+[{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc14"
+  },
+  "CategoryID": "CAT001",
+  "CategoryName": "Cà phê, Cacao",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00101",
+      "SubcategoryName": "Ca cao"
+    },
+    {
+      "SubcategoryID": "SUB00102",
+      "SubcategoryName": "Cà phê"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc15"
+  },
+  "CategoryID": "CAT002",
+  "CategoryName": "Lương thực - ngũ cốc",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00201",
+      "SubcategoryName": "Bột"
+    },
+    {
+      "SubcategoryID": "SUB00202",
+      "SubcategoryName": "Gạo"
+    },
+    {
+      "SubcategoryID": "SUB00203",
+      "SubcategoryName": "Nếp"
+    },
+    {
+      "SubcategoryID": "SUB00204",
+      "SubcategoryName": "Đậu"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc16"
+  },
+  "CategoryID": "CAT003",
+  "CategoryName": "Rau củ",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00301",
+      "SubcategoryName": "Củ"
+    },
+    {
+      "SubcategoryID": "SUB00302",
+      "SubcategoryName": "Hoa ăn được"
+    },
+    {
+      "SubcategoryID": "SUB00303",
+      "SubcategoryName": "Măng"
+    },
+    {
+      "SubcategoryID": "SUB00304",
+      "SubcategoryName": "Nấm"
+    },
+    {
+      "SubcategoryID": "SUB00305",
+      "SubcategoryName": "Quả"
+    },
+    {
+      "SubcategoryID": "SUB00306",
+      "SubcategoryName": "Rau gia vị"
+    },
+    {
+      "SubcategoryID": "SUB00307",
+      "SubcategoryName": "Rau lá"
+    },
+    {
+      "SubcategoryID": "SUB00308",
+      "SubcategoryName": "Rau mầm / Giá đỗ"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc17"
+  },
+  "CategoryID": "CAT004",
+  "CategoryName": "Rong biển",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00401",
+      "SubcategoryName": "Rong, tảo biển"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc18"
+  },
+  "CategoryID": "CAT005",
+  "CategoryName": "Thực phẩm bồi bổ",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00501",
+      "SubcategoryName": "Mật ong"
+    },
+    {
+      "SubcategoryID": "SUB00502",
+      "SubcategoryName": "Nước yến"
+    },
+    {
+      "SubcategoryID": "SUB00503",
+      "SubcategoryName": "Tinh bột nghệ"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc19"
+  },
+  "CategoryID": "CAT006",
+  "CategoryName": "Thực phẩm khô",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00601",
+      "SubcategoryName": "Bánh canh"
+    },
+    {
+      "SubcategoryID": "SUB00602",
+      "SubcategoryName": "Bún tươi"
+    },
+    {
+      "SubcategoryID": "SUB00603",
+      "SubcategoryName": "Hủ tiếu"
+    },
+    {
+      "SubcategoryID": "SUB00604",
+      "SubcategoryName": "Miến"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc1a"
+  },
+  "CategoryID": "CAT007",
+  "CategoryName": "Trà xanh",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00701",
+      "SubcategoryName": "Trà khác"
+    },
+    {
+      "SubcategoryID": "SUB00702",
+      "SubcategoryName": "Trà xanh"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a0960fc6ea39eac566cfc1b"
+  },
+  "CategoryID": "CAT008",
+  "CategoryName": "Trái cây",
+  "Subcategories": [
+    {
+      "SubcategoryID": "SUB00801",
+      "SubcategoryName": "Trái cây khác"
+    },
+    {
+      "SubcategoryID": "SUB00802",
+      "SubcategoryName": "Trái cây nhiệt đới"
+    },
+    {
+      "SubcategoryID": "SUB00803",
+      "SubcategoryName": "Trái cây ôn đới"
+    }
+  ]
+}]

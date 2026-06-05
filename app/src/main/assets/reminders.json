@@ -1,0 +1,221 @@
+[{
+  "_id": {
+    "$oid": "6a123f59ed2ac4c1892d0001"
+  },
+  "CustomerID": "CUS000001",
+  "SubscriptionID": "SUB_REC_001",
+  "config_status": "Active",
+  "start_date": "2026-05-10T00:00:00Z",
+  "end_date": "2026-11-10T00:00:00Z",
+  "frequency": "Weekly",
+  "reminder_time": "08:00",
+  "next_delivery_date": "2026-05-24T00:00:00Z",
+  "shippingInfo": {
+    "fullName": "Hen",
+    "phone": "0815275677",
+    "address": {
+      "city": "an-giang",
+      "district": "an-phu",
+      "ward": "long-binh",
+      "detail": "39 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard"
+  },
+  "items": [
+    {
+      "sku": "3430850",
+      "productName": "Rau ngò rí 50g – GFM",
+      "quantity": 2,
+      "price": 6500,
+      "CategoryID": "CAT003"
+    },
+    {
+      "sku": "3430855",
+      "productName": "Giá sống 250g – TKCO",
+      "quantity": 1,
+      "price": 5000,
+      "CategoryID": "CAT003"
+    }
+  ],
+  "paymentMethod": "cod",
+  "reminder_sound": true,
+  "order_creation_log": [
+    {
+      "date": "2026-05-10",
+      "time": "08:05",
+      "generated_OrderID": "ORD77703205161",
+      "user_confirmed": true
+    },
+    {
+      "date": "2026-05-17",
+      "time": "08:01",
+      "generated_OrderID": "ORD77703205199",
+      "user_confirmed": true
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a123f59ed2ac4c1892d0002"
+  },
+  "CustomerID": "CUS000002",
+  "SubscriptionID": "SUB_REC_002",
+  "config_status": "Paused",
+  "start_date": "2026-04-01T00:00:00Z",
+  "end_date": "2026-10-01T00:00:00Z",
+  "frequency": "Bi-weekly",
+  "reminder_time": "17:00",
+  "next_delivery_date": "2026-05-30T00:00:00Z",
+  "shippingInfo": {
+    "fullName": "Phạm Thái Huỳnh Hương",
+    "phone": "0965813408",
+    "address": {
+      "city": "an-giang",
+      "district": "an-phu",
+      "ward": "khanh-binh",
+      "detail": "123 Nguyễn Huệ"
+    },
+    "deliveryMethod": "standard"
+  },
+  "items": [
+    {
+      "sku": "3158047",
+      "productName": "Bột cacao Good Night hộp giấy 150g",
+      "quantity": 1,
+      "price": 82500,
+      "CategoryID": "CAT001"
+    }
+  ],
+  "paymentMethod": "momo",
+  "reminder_sound": true,
+  "order_creation_log": [
+    {
+      "date": "2026-04-15",
+      "time": "17:02",
+      "generated_OrderID": "ORD28962629378",
+      "user_confirmed": true
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a123f59ed2ac4c1892d0003"
+  },
+  "CustomerID": "CUS000003",
+  "SubscriptionID": "SUB_REC_003",
+  "config_status": "Active",
+  "start_date": "2026-05-15T00:00:00Z",
+  "end_date": "2027-05-15T00:00:00Z",
+  "frequency": "Monthly",
+  "reminder_time": "09:00",
+  "next_delivery_date": "2026-06-15T00:00:00Z",
+  "shippingInfo": {
+    "fullName": "Nguyễn Văn Đô",
+    "phone": "0909123456",
+    "address": {
+      "city": "hcm",
+      "district": "quan-1",
+      "ward": "ben-nghe",
+      "detail": "12 Lê Lợi"
+    },
+    "deliveryMethod": "standard"
+  },
+  "items": [
+    {
+      "sku": "3457993",
+      "productName": "Ca cao hoà tan 6 trong 1 Napo hộp 10x22g",
+      "quantity": 3,
+      "price": 60000,
+      "CategoryID": "CAT001"
+    }
+  ],
+  "paymentMethod": "vnpay",
+  "reminder_sound": true,
+  "order_creation_log": []
+},
+{
+  "_id": {
+    "$oid": "6a123f59ed2ac4c1892d0004"
+  },
+  "CustomerID": "CUS000004",
+  "SubscriptionID": "SUB_REC_004",
+  "config_status": "Cancelled",
+  "start_date": "2026-02-10T00:00:00Z",
+  "end_date": "2026-08-10T00:00:00Z",
+  "frequency": "Weekly",
+  "reminder_time": "07:30",
+  "next_delivery_date": null,
+  "shippingInfo": {
+    "fullName": "Trần Thị Thảo",
+    "phone": "0918765432",
+    "address": {
+      "city": "hcm",
+      "district": "quan-7",
+      "ward": "tan-phong",
+      "detail": "456 Nguyễn Văn Linh"
+    },
+    "deliveryMethod": "standard"
+  },
+  "items": [
+    {
+      "sku": "3430900",
+      "productName": "Rau muống baby Co.op Select 280g",
+      "quantity": 5,
+      "price": 12000,
+      "CategoryID": "CAT003"
+    }
+  ],
+  "paymentMethod": "cod",
+  "reminder_sound": false,
+  "order_creation_log": [
+    {
+      "date": "2026-02-17",
+      "time": "07:32",
+      "generated_OrderID": "ORD111023456",
+      "user_confirmed": true
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a123f59ed2ac4c1892d0005"
+  },
+  "CustomerID": "CUS000005",
+  "SubscriptionID": "SUB_REC_005",
+  "config_status": "Active",
+  "start_date": "2026-05-01T00:00:00Z",
+  "end_date": "2026-11-01T00:00:00Z",
+  "frequency": "Bi-weekly",
+  "reminder_time": "19:00",
+  "next_delivery_date": "2026-05-29T00:00:00Z",
+  "shippingInfo": {
+    "fullName": "Lê Hoàng Long",
+    "phone": "0934555666",
+    "address": {
+      "city": "hcm",
+      "district": "binh-thanh",
+      "ward": "phuong-25",
+      "detail": "789 Điện Biên Phủ"
+    },
+    "deliveryMethod": "standard"
+  },
+  "items": [
+    {
+      "sku": "3210456",
+      "productName": "Bột gạo lọc Co.op Select 400g",
+      "quantity": 2,
+      "price": 18000,
+      "CategoryID": "CAT002"
+    }
+  ],
+  "paymentMethod": "momo",
+  "reminder_sound": true,
+  "order_creation_log": [
+    {
+      "date": "2026-05-15",
+      "time": "19:03",
+      "generated_OrderID": "ORD555032099",
+      "user_confirmed": true
+    }
+  ]
+}]

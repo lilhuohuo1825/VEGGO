@@ -1,0 +1,55 @@
+[{
+  "_id": {
+    "$oid": "6a095d866ea39eac566cfc00"
+  },
+  "CertificateID": "CER001",
+  "CertificateName": "Green Starter",
+  "RequiredCarbonPoint": 100,
+  "CertificateDescription": "Chứng nhận dành cho người dùng bắt đầu hành trình tiêu dùng xanh và lựa chọn các sản phẩm thân thiện với môi trường.",
+  "RewardDescription": "Voucher giảm giá 5% cho đơn hàng tiếp theo",
+  "Status": true
+},
+{
+  "_id": {
+    "$oid": "6a095d866ea39eac566cfc01"
+  },
+  "CertificateID": "CER002",
+  "CertificateName": "Eco Shopper",
+  "RequiredCarbonPoint": 300,
+  "CertificateDescription": "Chứng nhận dành cho người dùng thường xuyên mua sản phẩm xanh và góp phần giảm lượng phát thải carbon.",
+  "RewardDescription": "Miễn phí vận chuyển cho đơn hàng từ mức quy định",
+  "Status": true
+},
+{
+  "_id": {
+    "$oid": "6a095d866ea39eac566cfc02"
+  },
+  "CertificateID": "CER003",
+  "CertificateName": "Carbon Saver",
+  "RequiredCarbonPoint": 700,
+  "CertificateDescription": "Chứng nhận dành cho người dùng có mức đóng góp nổi bật trong việc giảm phát thải carbon thông qua hành vi mua sắm bền vững.",
+  "RewardDescription": "Voucher giảm giá 10%",
+  "Status": true
+},
+{
+  "_id": {
+    "$oid": "6a095d866ea39eac566cfc03"
+  },
+  "CertificateID": "CER004",
+  "CertificateName": "Green Hero",
+  "RequiredCarbonPoint": 1200,
+  "CertificateDescription": "Chứng nhận dành cho người dùng tích cực lan tỏa lối sống xanh và duy trì mức tiêu dùng bền vững lâu dài.",
+  "RewardDescription": "Ưu đãi thành viên xanh đặc biệt",
+  "Status": true
+},
+{
+  "_id": {
+    "$oid": "6a095d866ea39eac566cfc04"
+  },
+  "CertificateID": "CER005",
+  "CertificateName": "Earth Guardian",
+  "RequiredCarbonPoint": 2000,
+  "CertificateDescription": "Chứng nhận cao nhất dành cho người dùng có đóng góp xuất sắc trong việc thúc đẩy tiêu dùng xanh và bảo vệ môi trường.",
+  "RewardDescription": "Quyền lợi VIP và ưu đãi độc quyền",
+  "Status": true
+}]

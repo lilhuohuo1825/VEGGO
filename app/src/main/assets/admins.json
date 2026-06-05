@@ -1,0 +1,36 @@
+[{
+  "_id": "690b1361ca42a26c89d2e84e",
+  "id": "ADM001",
+  "name": "Huỳnh Hương",
+  "email": "huongpth23411@st.uel.edu.vn",
+  "password": "000000000",
+  "updated_at": "2025-11-09T13:15:24.700Z"
+},
+{
+  "_id": "690b1361ca42a26c89d2e84f",
+  "id": "ADM002",
+  "name": "Yến Nhi",
+  "email": "nhinty23411@st.uel.edu.vn",
+  "password": "1234567890"
+},
+{
+  "_id": "690b1361ca42a26c89d2e850",
+  "id": "ADM003",
+  "name": "Thanh Thảo",
+  "email": "thaoltt23411@st.uel.edu.vn",
+  "password": "1234567890"
+},
+{
+  "_id": "690b1361ca42a26c89d2e851",
+  "id": "ADM004",
+  "name": "Thục Quyên",
+  "email": "quyenntt23411@st.uel.edu.vn",
+  "password": "1234567890"
+},
+{
+  "_id": "690b1361ca42a26c89d2e852",
+  "id": "ADM005",
+  "name": "Như Ngọc",
+  "email": "ngocltn23411@st.uel.edu.vn",
+  "password": "1234567890"
+}]
