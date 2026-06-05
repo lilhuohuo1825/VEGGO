@@ -92,4 +92,12 @@ dependencies {
 
     // Thư viện hỗ trợ Đăng nhập bằng tài khoản Google
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    // Thư viện Room Database để chạy SQLite
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+
+// Thư viện Gson để đọc file JSON tự động
+    implementation("com.google.code.gson:gson:2.10.1")
 }
+

@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="TextAppearance">
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textColor">@color/neutral_100</item>
+    </style>
+
+    <style name="TextAppearance.Veggo">
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textColor">@color/neutral_100</item>
+    </style>
+
     <style name="TextAppearance.Veggo.Title">
         <item name="android:fontFamily">@font/encodesans_bold</item>
         <item name="android:textSize">@dimen/text_xl</item>

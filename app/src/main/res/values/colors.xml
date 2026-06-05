@@ -36,5 +36,6 @@
 
     <!-- Background -->
     <color name="background_main">#FFFFFF</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 
 </resources>
