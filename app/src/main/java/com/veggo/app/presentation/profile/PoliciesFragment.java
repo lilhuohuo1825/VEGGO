@@ -2,6 +2,7 @@ package com.veggo.app.presentation.profile;
 
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,11 +16,12 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.veggo.app.R;
+import com.veggo.app.MainActivity;
 import com.veggo.app.core.ui.BaseFragment;
-import com.veggo.app.databinding.FragmentPoliciesBinding;
+import com.veggo.app.databinding.ActivityPoliciesBinding;
 
 public class PoliciesFragment extends BaseFragment {
-    private FragmentPoliciesBinding binding;
+    private ActivityPoliciesBinding binding;
 
     @Nullable
     @Override
@@ -28,10 +30,11 @@ public class PoliciesFragment extends BaseFragment {
             @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState
     ) {
-        binding = FragmentPoliciesBinding.inflate(inflater, container, false);
+        binding = ActivityPoliciesBinding.inflate(inflater, container, false);
         binding.backButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
         );
+        setupBottomNavigation();
         setupReturnPolicy();
         setupPolicyCards();
         return binding.getRoot();
@@ -49,6 +52,20 @@ public class PoliciesFragment extends BaseFragment {
         binding.returnCard.setOnClickListener(v ->
                 toggle(binding.returnContent, binding.returnArrow)
         );
+    }
+
+    private void setupBottomNavigation() {
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_profile) {
+                return true;
+            }
+            Intent intent = new Intent(requireContext(), MainActivity.class);
+            intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, item.getItemId());
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            return true;
+        });
     }
 
     private void setupPolicyCards() {

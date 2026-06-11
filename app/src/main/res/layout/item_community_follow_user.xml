@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="74dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="12dp">
+
+    <ImageView
+        android:id="@+id/followAvatar"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/followName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="10dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/neutral_100"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/followLocation"
+        app:layout_constraintEnd_toStartOf="@id/followAction"
+        app:layout_constraintStart_toEndOf="@id/followAvatar"
+        app:layout_constraintTop_toTopOf="@id/followAvatar"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/followLocation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="10dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/neutral_70"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="@id/followAvatar"
+        app:layout_constraintEnd_toStartOf="@id/followAction"
+        app:layout_constraintStart_toEndOf="@id/followAvatar"
+        app:layout_constraintTop_toBottomOf="@id/followName" />
+
+    <ImageButton
+        android:id="@+id/followAction"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/bg_follow_button_green"
+        android:padding="10dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_usercheck"
+        android:tint="@color/neutral_10"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
