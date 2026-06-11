@@ -17,6 +17,7 @@
     <color name="primary_main">#57AF37</color>
     <color name="primary_hover">#167728</color>
     <color name="primary_light">#7CCF5B</color>
+    <color name="primary_gradient_light">#86DE63</color>
     <color name="primary_bg">#EAF7E8</color>
 
     <!-- Secondary / Warning -->

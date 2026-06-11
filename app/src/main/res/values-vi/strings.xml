@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">VEGGO</string>
     <string name="nav_home">Trang chủ</string>
-    <string name="nav_category">Danh mục</string>
-    <string name="nav_cart">Giỏ hàng</string>
+    <string name="nav_community">Cộng đồng</string>
     <string name="nav_orders">Đơn hàng</string>
-    <string name="nav_profile">Tài khoản</string>
+    <string name="nav_account">Tài khoản</string>
+    <string name="nav_scan">Quét</string>
+    <string name="onboarding_next">Tiếp tục</string>
+    <string name="onboarding_start">Bắt đầu</string>
+    <string name="onboarding_skip">Bỏ qua</string>
 </resources>
