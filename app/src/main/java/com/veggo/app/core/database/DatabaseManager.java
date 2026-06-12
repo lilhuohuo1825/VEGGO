@@ -9,7 +9,7 @@ import com.veggo.app.assets.AssetFiles;
 
 public final class DatabaseManager {
     public static final String DATABASE_NAME = "veggo.db";
-    public static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 23;
 
     private DatabaseManager() {
     }
@@ -35,6 +35,7 @@ public final class DatabaseManager {
             database.execSQL(Sql.DELETE_ALL_CART_ITEMS);
             database.execSQL(Sql.DELETE_ALL_SEARCH_HISTORY);
             database.execSQL(Sql.DELETE_ALL_PRODUCTS);
+            database.execSQL(Sql.DELETE_ALL_BLOGS);
             database.execSQL(Sql.DELETE_ALL_USERS);
             for (String collection : AssetFiles.COLLECTIONS) {
                 database.execSQL(Sql.createAssetCollectionTable(collection));
@@ -48,6 +49,7 @@ public final class DatabaseManager {
 
     public static final class Tables {
         public static final String PRODUCTS = "products";
+        public static final String BLOGS = "blogs";
         public static final String CART_ITEMS = "cart_items";
         public static final String SEARCH_HISTORY = "search_history";
         public static final String USERS = "users";
@@ -64,6 +66,21 @@ public final class DatabaseManager {
         public static final String IMAGE_URL = "imageUrl";
 
         private ProductColumns() {
+        }
+    }
+
+    public static final class BlogColumns {
+        public static final String ID = "id";
+        public static final String IMAGE_URL = "imageUrl";
+        public static final String TITLE = "title";
+        public static final String EXCERPT = "excerpt";
+        public static final String PUBLISHED_AT = "publishedAt";
+        public static final String PUBLISHED_AT_MILLIS = "publishedAtMillis";
+        public static final String AUTHOR = "author";
+        public static final String CATEGORY_TAG = "categoryTag";
+        public static final String CONTENT = "content";
+
+        private BlogColumns() {
         }
     }
 
@@ -122,6 +139,19 @@ public final class DatabaseManager {
                         + ProductColumns.IMAGE_URL + " TEXT"
                         + ")";
 
+        public static final String CREATE_BLOGS_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + Tables.BLOGS + " ("
+                        + BlogColumns.ID + " TEXT NOT NULL PRIMARY KEY, "
+                        + BlogColumns.IMAGE_URL + " TEXT, "
+                        + BlogColumns.TITLE + " TEXT, "
+                        + BlogColumns.EXCERPT + " TEXT, "
+                        + BlogColumns.PUBLISHED_AT + " TEXT, "
+                        + BlogColumns.PUBLISHED_AT_MILLIS + " INTEGER NOT NULL, "
+                        + BlogColumns.AUTHOR + " TEXT, "
+                        + BlogColumns.CATEGORY_TAG + " TEXT, "
+                        + BlogColumns.CONTENT + " TEXT"
+                        + ")";
+
         public static final String CREATE_CART_ITEMS_TABLE =
                 "CREATE TABLE IF NOT EXISTS " + Tables.CART_ITEMS + " ("
                         + CartItemColumns.PRODUCT_ID + " TEXT NOT NULL PRIMARY KEY, "
@@ -142,6 +172,8 @@ public final class DatabaseManager {
 
         public static final String DROP_PRODUCTS_TABLE =
                 "DROP TABLE IF EXISTS " + Tables.PRODUCTS;
+        public static final String DROP_BLOGS_TABLE =
+                "DROP TABLE IF EXISTS " + Tables.BLOGS;
         public static final String DROP_CART_ITEMS_TABLE =
                 "DROP TABLE IF EXISTS " + Tables.CART_ITEMS;
         public static final String DROP_SEARCH_HISTORY_TABLE =
@@ -172,6 +204,8 @@ public final class DatabaseManager {
                 "DELETE FROM " + Tables.ASSET_RECORDS;
         public static final String DELETE_ALL_PRODUCTS =
                 "DELETE FROM " + Tables.PRODUCTS;
+        public static final String DELETE_ALL_BLOGS =
+                "DELETE FROM " + Tables.BLOGS;
         public static final String DELETE_ALL_CART_ITEMS =
                 "DELETE FROM " + Tables.CART_ITEMS;
         public static final String DELETE_CART_ITEM_BY_PRODUCT_ID =

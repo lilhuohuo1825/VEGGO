@@ -1,5 +1,6 @@
 package com.veggo.app;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -7,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.veggo.app.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String EXTRA_SELECTED_NAV_ITEM = "selected_nav_item";
+
     private ActivityMainBinding binding;
 
     @Override
@@ -14,5 +17,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        binding.bottomNavigation.setSelectedItemId(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile));
     }
 }

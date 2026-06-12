@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_cookbook_dialog"
+    android:orientation="vertical"
+    android:paddingStart="18dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="18dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Tạo cookbook mới"
+        android:textColor="@color/neutral_100"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/cookbookTitleInput"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_cookbook_input"
+        android:hint="Tên"
+        android:inputType="textCapSentences"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:textColor="@color/neutral_100"
+        android:textColorHint="@color/neutral_60"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/cookbookDescriptionInput"
+        android:layout_width="match_parent"
+        android:layout_height="104dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_cookbook_input"
+        android:gravity="top"
+        android:hint="Mô tả"
+        android:inputType="textCapSentences|textMultiLine"
+        android:padding="14dp"
+        android:textColor="@color/neutral_100"
+        android:textColorHint="@color/neutral_60"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="18dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/cookbookBackToListButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_community_chip"
+            android:padding="15dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_main" />
+
+        <TextView
+            android:id="@+id/cookbookCreateSaveButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_primary_large"
+            android:gravity="center"
+            android:text="Save"
+            android:textColor="@color/neutral_10"
+            android:textSize="14sp" />
+    </LinearLayout>
+</LinearLayout>

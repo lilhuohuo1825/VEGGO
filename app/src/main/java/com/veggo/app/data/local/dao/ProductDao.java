@@ -18,6 +18,9 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     LiveData<ProductEntity> observeProductById(String productId);
 
+    @Query("SELECT * FROM products WHERE id IN (:productIds)")
+    List<ProductEntity> getProductsByIds(List<String> productIds);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<ProductEntity> products);
 

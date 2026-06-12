@@ -35,6 +35,57 @@
             android:name=".presentation.product.ProductDetailActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.community.CommunityRecipesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityPostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityCookbookActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityRecipeDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityIngredientsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityDiscoveryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityFollowListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityChefsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityCategoriesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogAllPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogNewPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.SupportCustomersActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.PolicyActivity"
+            android:exported="true" />
+        <activity
             android:name=".presentation.auth.RegisterActivity"
             android:exported="false" />
         <activity

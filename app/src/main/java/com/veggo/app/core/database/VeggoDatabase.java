@@ -7,12 +7,25 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
 import com.veggo.app.data.local.dao.AssetRecordDao;
+import com.veggo.app.data.local.dao.BlogDao;
 import com.veggo.app.data.local.dao.CartDao;
+import com.veggo.app.data.local.dao.CommunityDao;
 import com.veggo.app.data.local.dao.ProductDao;
 import com.veggo.app.data.local.dao.SearchHistoryDao;
 import com.veggo.app.data.local.dao.UserDao;
 import com.veggo.app.data.local.entity.AssetRecordEntity;
+import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.data.local.entity.CartItemEntity;
+import com.veggo.app.data.local.entity.CommunityCategoryEntity;
+import com.veggo.app.data.local.entity.CommunityChefEntity;
+import com.veggo.app.data.local.entity.CommunityCookbookEntity;
+import com.veggo.app.data.local.entity.CommunityCookbookRecipeEntity;
+import com.veggo.app.data.local.entity.CommunityFollowEntity;
+import com.veggo.app.data.local.entity.CommunityRecipeCommentEntity;
+import com.veggo.app.data.local.entity.CommunityRecipeDetailEntity;
+import com.veggo.app.data.local.entity.CommunityRecipeEntity;
+import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
+import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.data.local.entity.SearchHistoryEntity;
 import com.veggo.app.data.local.entity.UserEntity;
@@ -20,6 +33,17 @@ import com.veggo.app.data.local.entity.UserEntity;
 @Database(
         entities = {
                 ProductEntity.class,
+                BlogEntity.class,
+                CommunityCategoryEntity.class,
+                CommunityChefEntity.class,
+                CommunityCookbookEntity.class,
+                CommunityCookbookRecipeEntity.class,
+                CommunityRecipeEntity.class,
+                CommunityFollowEntity.class,
+                CommunityRecipeDetailEntity.class,
+                CommunityRecipeIngredientEntity.class,
+                CommunityRecipeGalleryEntity.class,
+                CommunityRecipeCommentEntity.class,
                 CartItemEntity.class,
                 SearchHistoryEntity.class,
                 UserEntity.class,
@@ -32,6 +56,8 @@ public abstract class VeggoDatabase extends RoomDatabase {
     private static volatile VeggoDatabase instance;
 
     public abstract ProductDao productDao();
+    public abstract BlogDao blogDao();
+    public abstract CommunityDao communityDao();
     public abstract CartDao cartDao();
     public abstract SearchHistoryDao searchHistoryDao();
     public abstract UserDao userDao();
