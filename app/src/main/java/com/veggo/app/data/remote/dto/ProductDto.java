@@ -12,6 +12,7 @@ public class ProductDto {
     private String unit;
     private String imageUrl;
     private int stock;
+    private float rating;
     private Boolean isActive;
 
     public String getId() { return id; }
@@ -30,6 +31,8 @@ public class ProductDto {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public int getStock() { return stock; }
     public void setStock(int stock) { this.stock = stock; }
+    public float getRating() { return rating; }
+    public void setRating(float rating) { this.rating = rating; }
     public Boolean getActive() { return isActive; }
     public void setActive(Boolean active) { isActive = active; }
 }

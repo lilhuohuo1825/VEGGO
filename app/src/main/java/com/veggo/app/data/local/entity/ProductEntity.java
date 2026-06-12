@@ -12,12 +12,14 @@ public class ProductEntity {
     private String name;
     private long price;
     private String imageUrl;
+    private float rating;
 
-    public ProductEntity(@NonNull String id, String name, long price, String imageUrl) {
+    public ProductEntity(@NonNull String id, String name, long price, String imageUrl, float rating) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.imageUrl = imageUrl;
+        this.rating = rating;
     }
 
     @NonNull public String getId() { return id; }
@@ -28,4 +30,6 @@ public class ProductEntity {
     public void setPrice(long price) { this.price = price; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public float getRating() { return rating; }
+    public void setRating(float rating) { this.rating = rating; }
 }

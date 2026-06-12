@@ -9,14 +9,18 @@ public final class ProductMapper {
     }
 
     public static Product fromDto(ProductDto dto) {
-        return new Product(dto.getId(), dto.getName(), dto.getPrice(), dto.getImageUrl());
+        Product product = new Product(dto.getId(), dto.getName(), dto.getPrice(), dto.getImageUrl());
+        product.setRating(dto.getRating());
+        return product;
     }
 
     public static Product fromEntity(ProductEntity entity) {
-        return new Product(entity.getId(), entity.getName(), entity.getPrice(), entity.getImageUrl());
+        Product product = new Product(entity.getId(), entity.getName(), entity.getPrice(), entity.getImageUrl());
+        product.setRating(entity.getRating());
+        return product;
     }
 
     public static ProductEntity toEntity(ProductDto dto) {
-        return new ProductEntity(dto.getId(), dto.getName(), dto.getPrice(), dto.getImageUrl());
+        return new ProductEntity(dto.getId(), dto.getName(), dto.getPrice(), dto.getImageUrl(), dto.getRating());
     }
 }

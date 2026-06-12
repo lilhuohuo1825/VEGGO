@@ -1,26 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="TextAppearance">
-        <item name="android:fontFamily">@font/inter_regular</item>
+    <!-- Base -->
+    <style name="TextAppearance.Veggo"
+        parent="TextAppearance.Material3.BodyMedium">
+
         <item name="android:textColor">@color/neutral_100</item>
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+
     </style>
 
-    <style name="TextAppearance.Veggo">
-        <item name="android:fontFamily">@font/inter_regular</item>
-        <item name="android:textColor">@color/neutral_100</item>
+    <!-- DISPLAY -->
+
+    <style name="TextAppearance.Veggo.Display.Bold"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/encodesans_bold</item>
+        <item name="android:fontFamily">@font/encodesans_bold</item>
+        <item name="android:textSize">@dimen/text_display</item>
+
     </style>
 
-    <style name="TextAppearance.Veggo.Title">
+    <style name="TextAppearance.Veggo.Display.ExtraBold"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/encodesans_extrabold</item>
+        <item name="android:fontFamily">@font/encodesans_extrabold</item>
+        <item name="android:textSize">@dimen/text_display</item>
+
+    </style>
+
+    <!-- TITLE -->
+
+    <style name="TextAppearance.Veggo.Title.Bold"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/encodesans_bold</item>
         <item name="android:fontFamily">@font/encodesans_bold</item>
         <item name="android:textSize">@dimen/text_xl</item>
-        <item name="android:textColor">@color/neutral_100</item>
+
     </style>
 
-    <style name="TextAppearance.Veggo.Body">
+    <style name="TextAppearance.Veggo.Title.Medium"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/encodesans_medium</item>
+        <item name="android:fontFamily">@font/encodesans_medium</item>
+        <item name="android:textSize">@dimen/text_xl</item>
+
+    </style>
+
+    <!-- HEADLINE -->
+
+    <style name="TextAppearance.Veggo.Headline.Bold"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_bold</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textSize">@dimen/text_lg</item>
+
+    </style>
+
+    <style name="TextAppearance.Veggo.Headline.SemiBold"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_semibold</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">@dimen/text_lg</item>
+
+    </style>
+
+    <!-- BODY -->
+
+    <style name="TextAppearance.Veggo.Body.Regular"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_regular</item>
         <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:textSize">@dimen/text_md</item>
-        <item name="android:textColor">@color/neutral_100</item>
+
+    </style>
+
+    <style name="TextAppearance.Veggo.Body.Medium"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">@dimen/text_md</item>
+
+    </style>
+
+    <!-- LABEL -->
+
+    <style name="TextAppearance.Veggo.Label.Regular"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textSize">@dimen/text_sm</item>
+        <item name="android:textColor">@color/neutral_80</item>
+
+    </style>
+
+    <style name="TextAppearance.Veggo.Label.Medium"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">@dimen/text_sm</item>
+
+    </style>
+
+    <!-- CAPTION -->
+
+    <style name="TextAppearance.Veggo.Caption.Regular"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textColor">@color/neutral_60</item>
+
+    </style>
+
+    <style name="TextAppearance.Veggo.Caption.Light"
+        parent="TextAppearance.Veggo">
+
+        <item name="fontFamily">@font/inter_light</item>
+        <item name="android:fontFamily">@font/inter_light</item>
+        <item name="android:textSize">@dimen/text_xs</item>
+
     </style>
 
 </resources>

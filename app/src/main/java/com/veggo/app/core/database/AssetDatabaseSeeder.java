@@ -112,7 +112,8 @@ public final class AssetDatabaseSeeder {
                     id,
                     assetProduct.productName,
                     assetProduct.price,
-                    firstImage(assetProduct.image)
+                    firstImage(assetProduct.image),
+                    (float) assetProduct.rating
             ));
         }
         return products;
