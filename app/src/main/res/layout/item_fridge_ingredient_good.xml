@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="92dp"
+    android:layout_marginTop="@dimen/spacing_md"
+    android:background="@drawable/bg_order_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="@dimen/spacing_md">
+
+    <FrameLayout android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/bg_carbon_icon_circle">
+        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:layout_gravity="center" android:src="@drawable/ic_grain_dark" />
+    </FrameLayout>
+
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:orientation="vertical">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/inter_semibold" android:text="Nấm đùi gà" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" android:textStyle="bold" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="300gr · Ngăn mát" android:textColor="@color/neutral_70" android:textSize="@dimen/text_xs" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="92dp" android:layout_height="wrap_content" android:gravity="end" android:orientation="vertical">
+        <TextView android:layout_width="86dp" android:layout_height="30dp" android:background="@drawable/bg_fridge_good_chip" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="Còn 5 ngày" android:textColor="@color/primary_main" android:textSize="@dimen/text_xs" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_xs" android:gravity="end" android:text="@string/fridge_suggestions" android:textColor="@color/primary_main" android:textSize="@dimen/text_xs" />
+    </LinearLayout>
+</LinearLayout>

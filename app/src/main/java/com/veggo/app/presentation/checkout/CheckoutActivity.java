@@ -1,7 +1,7 @@
 package com.veggo.app.presentation.checkout;
 
-import android.content.Intent;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;

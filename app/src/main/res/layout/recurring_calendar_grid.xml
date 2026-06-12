@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/recurringCalendarGrid"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_lg"
+    android:columnCount="7"
+    android:rowCount="6">
+
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_mon" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_tue" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_wed" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_thu" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_fri" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_sat" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+    <TextView android:layout_width="0dp" android:layout_height="34dp" android:layout_columnWeight="1" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/recurring_weekday_sun" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="27" android:textColor="@color/neutral_60" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="28" android:textColor="@color/neutral_60" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="29" android:textColor="@color/neutral_60" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="30" android:textColor="@color/neutral_60" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="1" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="2" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="3" />
+
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="4" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:orientation="vertical" android:padding="5dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+        <TextView android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@drawable/bg_recurring_event_green" android:ellipsize="end" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="1 đơn" android:textColor="@color/primary_hover" android:textSize="9sp" />
+    </LinearLayout>
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="6" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="7" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="8" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="9" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="10" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="11" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="12" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="13" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="14" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="15" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="16" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="17" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="18" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:orientation="vertical" android:padding="5dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="19" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+        <TextView android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@drawable/bg_recurring_event_blue" android:ellipsize="end" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="1 đơn" android:textColor="@color/info_main" android:textSize="9sp" />
+    </LinearLayout>
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="20" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="21" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="22" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="23" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="24" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="25" />
+    <LinearLayout android:id="@+id/recurringSelectedDay" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:orientation="vertical" android:padding="5dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="26" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+        <TextView android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@drawable/bg_recurring_event_yellow" android:ellipsize="end" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="2 đơn" android:textColor="@color/order_pending_text" android:textSize="9sp" />
+    </LinearLayout>
+    <FrameLayout android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="5dp">
+        <TextView android:layout_width="28dp" android:layout_height="28dp" android:layout_gravity="top|center_horizontal" android:background="@drawable/bg_recurring_selected_day" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="27" android:textColor="@color/background_main" android:textSize="@dimen/text_sm" android:textStyle="bold" />
+    </FrameLayout>
+    <TextView android:id="@+id/recurringEmptyDay" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="28" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="29" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="30" />
+    <TextView android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:background="@drawable/bg_recurring_calendar_cell" android:padding="@dimen/spacing_xs" android:text="31" />
+</GridLayout>

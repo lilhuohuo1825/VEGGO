@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <ImageView
+            android:id="@+id/smartFridgeBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/orders_back"
+            android:padding="@dimen/spacing_sm"
+            android:src="@drawable/ic_left" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/encodesans_bold"
+            android:gravity="center"
+            android:text="@string/fridge_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="@dimen/text_xl"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/smartFridgeAddButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/fridge_add_title"
+            android:padding="9dp"
+            android:src="@drawable/ic_plus" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_lg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_post_hero"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/fridge_hero_title"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/fridge_hero_body"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_sm" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/fridgeIngredientsCount"
+                        android:layout_width="112dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/bg_post_chip_light"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/fridge_ingredients_count"
+                        android:textColor="@color/primary_hover"
+                        android:textSize="@dimen/text_xs" />
+
+                    <TextView
+                        android:id="@+id/fridgeExpiringCount"
+                        android:layout_width="112dp"
+                        android:layout_height="30dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:background="@drawable/bg_fridge_soon_chip"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/fridge_expiring_count"
+                        android:textColor="@color/secondary_hover"
+                        android:textSize="@dimen/text_xs" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="86dp"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_card"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:id="@+id/fridgeScanButton"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_order_primary_button"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="@string/fridge_scan_invoice"
+                    android:textAllCaps="true"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_sm" />
+
+                <TextView
+                    android:id="@+id/fridgeManualButton"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="@dimen/spacing_md"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_order_cancel_button"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="@string/fridge_add_manual"
+                    android:textAllCaps="true"
+                    android:textColor="@color/primary_main"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/fridgeSuggestionButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_cancel_button"
+                android:fontFamily="@font/inter_semibold"
+                android:gravity="center"
+                android:text="@string/fridge_suggestions"
+                android:textColor="@color/primary_main"
+                android:textSize="@dimen/text_md" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="@font/encodesans_bold"
+                android:text="@string/fridge_inventory_title"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_lg"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/fridgeInventoryList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

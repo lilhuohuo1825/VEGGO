@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_md"
+    android:background="@drawable/bg_order_card"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_md">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="108dp"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:background="@drawable/bg_post_media">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_post_hero"
+                android:padding="@dimen/spacing_lg"
+                android:src="@drawable/ic_prime_send" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter_semibold"
+                android:lineSpacingExtra="2dp"
+                android:text="Meal prep xanh cho 3 ngày bận rộn"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:lineSpacingExtra="2dp"
+                android:text="Video ngắn chia sẻ cách sơ chế rau củ tiết kiệm."
+                android:textColor="@color/neutral_70"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:layout_width="72dp"
+                android:layout_height="34dp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_post_chip_warning"
+                android:fontFamily="@font/inter_semibold"
+                android:gravity="center"
+                android:text="@string/posts_status_draft"
+                android:textColor="@color/secondary_hover"
+                android:textSize="@dimen/text_sm" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="@dimen/spacing_md"
+        android:background="@color/neutral_30" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 tym"
+            android:textColor="@color/neutral_70"
+            android:textSize="@dimen/text_sm" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:text="0 bình luận"
+            android:textColor="@color/neutral_70"
+            android:textSize="@dimen/text_sm" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:text="0 lưu"
+            android:textColor="@color/neutral_70"
+            android:textSize="@dimen/text_sm" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="Bản nháp"
+            android:textColor="@color/neutral_70"
+            android:textSize="@dimen/text_sm" />
+    </LinearLayout>
+</LinearLayout>

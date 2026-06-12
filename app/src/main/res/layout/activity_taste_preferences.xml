@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <ImageView
+            android:id="@+id/tasteBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/orders_back"
+            android:padding="@dimen/spacing_sm"
+            android:src="@drawable/ic_left" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/encodesans_bold"
+            android:gravity="center"
+            android:text="@string/taste_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="@dimen/text_xl"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/tasteAddButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/taste_add_tag"
+            android:padding="9dp"
+            android:src="@drawable/ic_plus" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_lg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_taste_hero"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/taste_hero_title"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/taste_hero_body"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_sm" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="104dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/bg_post_chip_light"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/taste_active"
+                        android:textColor="@color/primary_hover"
+                        android:textSize="@dimen/text_xs" />
+
+                    <TextView
+                        android:layout_width="126dp"
+                        android:layout_height="30dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:background="@drawable/bg_fridge_soon_chip"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/taste_block_count"
+                        android:textColor="@color/secondary_hover"
+                        android:textSize="@dimen/text_xs" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_taste_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/taste_profile_section"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tasteAddTagChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_taste_chip_green"
+                            android:fontFamily="@font/inter_semibold"
+                            android:gravity="center"
+                            android:text="@string/taste_vegan"
+                            android:textColor="@color/background_main"
+                            android:textSize="@dimen/text_sm" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="@dimen/spacing_sm"
+                            android:background="@drawable/bg_taste_chip_red"
+                            android:fontFamily="@font/inter_semibold"
+                            android:gravity="center"
+                            android:text="@string/taste_peanut_allergy"
+                            android:textColor="@color/danger_main"
+                            android:textSize="@dimen/text_sm" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="@dimen/spacing_sm"
+                            android:background="@drawable/bg_taste_chip_yellow"
+                            android:fontFamily="@font/inter_semibold"
+                            android:gravity="center"
+                            android:text="@string/taste_no_tomato"
+                            android:textColor="@color/secondary_hover"
+                            android:textSize="@dimen/text_sm" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="@dimen/spacing_sm"
+                            android:background="@drawable/bg_taste_chip_green_outline"
+                            android:fontFamily="@font/inter_semibold"
+                            android:gravity="center"
+                            android:text="@string/taste_add_tag"
+                            android:textColor="@color/primary_main"
+                            android:textSize="@dimen/text_sm" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="@font/encodesans_bold"
+                android:text="@string/taste_blocked_title"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_lg"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/tastePeanutCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_taste_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/spacing_md">
+
+                <ImageView
+                    android:layout_width="58dp"
+                    android:layout_height="58dp"
+                    android:background="@drawable/bg_taste_thumb"
+                    android:contentDescription="@string/taste_peanut"
+                    android:padding="13dp"
+                    android:src="@drawable/ic_grain_dark" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_md"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="@string/taste_peanut"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_md" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/taste_peanut_desc"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:layout_width="124dp"
+                        android:layout_height="34dp"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:background="@drawable/bg_taste_chip_red"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/taste_status_block"
+                        android:textColor="@color/danger_main"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tasteTomatoCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_taste_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/spacing_md">
+
+                <ImageView
+                    android:layout_width="58dp"
+                    android:layout_height="58dp"
+                    android:background="@drawable/bg_taste_thumb"
+                    android:contentDescription="@string/taste_tomato"
+                    android:padding="13dp"
+                    android:src="@drawable/ic_fruit" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_md"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="@string/taste_tomato"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_md" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/taste_tomato_desc"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:layout_width="124dp"
+                        android:layout_height="34dp"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:background="@drawable/bg_taste_chip_yellow"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/taste_status_check"
+                        android:textColor="@color/secondary_hover"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_taste_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/taste_behavior_title"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/tasteAlertBehaviorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:background="@drawable/bg_taste_alert_panel"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/spacing_md">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="@string/taste_hide_catalog"
+                            android:textColor="@color/neutral_100"
+                            android:textSize="@dimen/text_md" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:lineSpacingExtra="2dp"
+                            android:text="@string/taste_hide_catalog_desc"
+                            android:textColor="@color/neutral_80"
+                            android:textSize="@dimen/text_sm" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/background_main"
+                        app:trackTint="@color/primary_main" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:background="@drawable/bg_taste_safe_panel"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/spacing_md">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="@string/taste_suggest_menu"
+                            android:textColor="@color/neutral_100"
+                            android:textSize="@dimen/text_md" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:lineSpacingExtra="2dp"
+                            android:text="@string/taste_suggest_menu_desc"
+                            android:textColor="@color/neutral_80"
+                            android:textSize="@dimen/text_sm" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/background_main"
+                        app:trackTint="@color/primary_main" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_taste_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/taste_safe_menu_title"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:lineSpacingExtra="8dp"
+                    android:text="@string/taste_safe_menu_items"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_md" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="76dp"
+        android:background="@drawable/bg_taste_bottom_bar"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <TextView
+            android:id="@+id/tasteEditButton"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_order_cancel_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/taste_edit"
+            android:textColor="@color/primary_main"
+            android:textSize="@dimen/text_md" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_weight="1"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/taste_save"
+            android:textColor="@color/background_main"
+            android:textSize="@dimen/text_md" />
+    </LinearLayout>
+</LinearLayout>

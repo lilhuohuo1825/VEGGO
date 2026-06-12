@@ -39,4 +39,23 @@
     <color name="background_main">#FFFFFF</color>
     <color name="ic_launcher_background">#FFFFFF</color>
 
+    <!-- Legacy aliases used by existing screens while the UI kit migrates to tokens above. -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="veggo_green">@color/primary_hover</color>
+    <color name="veggo_leaf">@color/primary_main</color>
+    <color name="veggo_surface">@color/neutral_20</color>
+    <color name="veggo_text_primary">@color/neutral_100</color>
+    <color name="veggo_text_secondary">@color/neutral_80</color>
+    <color name="veggo_border">@color/neutral_40</color>
+    <color name="veggo_divider">@color/neutral_30</color>
+    <color name="veggo_gold">@color/secondary_main</color>
+    <color name="veggo_warning_soft">@color/secondary_bg</color>
+    <color name="veggo_info_soft">@color/info_bg</color>
+    <color name="veggo_success_soft">@color/primary_bg</color>
+    <color name="veggo_danger_soft">@color/danger_bg</color>
+    <color name="veggo_danger">@color/danger_main</color>
+    <color name="order_pending_text">@color/secondary_hover</color>
+    <color name="order_sheet_scrim">#99FFFFFF</color>
+
 </resources>
