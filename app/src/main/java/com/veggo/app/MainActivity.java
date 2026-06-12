@@ -6,6 +6,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.veggo.app.databinding.ActivityMainBinding;
+import com.veggo.app.presentation.cart.CartFragment;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "selected_nav_item";
@@ -17,6 +18,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_cart) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.mainFragmentContainer, new CartFragment())
+                        .commit();
+                return true;
+            }
+
+            return true;
+        });
+
         binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
     }
 

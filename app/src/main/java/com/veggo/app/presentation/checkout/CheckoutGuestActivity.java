@@ -17,16 +17,15 @@ import com.veggo.app.core.ui.BaseActivity;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class CheckoutActivity extends BaseActivity {
+public class CheckoutGuestActivity extends BaseActivity {
     private TextView tvCheckoutNote;
     private TextView tvScheduleDeliveryTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_checkout);
+        setContentView(R.layout.activity_checkout_guest);
 
-        View layoutAddress = findViewById(R.id.layoutAddress);
         View layoutNote = findViewById(R.id.layoutNote);
         View layoutVoucher = findViewById(R.id.layoutVoucher);
         View layoutScheduleDelivery = findViewById(R.id.layoutScheduleDelivery);
@@ -37,7 +36,6 @@ public class CheckoutActivity extends BaseActivity {
         tvCheckoutNote.setText("");
         tvCheckoutNote.setHint("Nhập ghi chú");
 
-        layoutAddress.setOnClickListener(v -> showPopup(R.layout.dialog_location));
         layoutVoucher.setOnClickListener(v -> showPopup(R.layout.dialog_voucher));
         layoutNote.setOnClickListener(v -> showNoteDialog());
         layoutScheduleDelivery.setOnClickListener(v -> showScheduleTimePicker());
