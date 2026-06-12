@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/orderShippingItemCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_md"
+    android:background="@drawable/bg_order_card"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/spacing_md"
+    android:paddingTop="@dimen/spacing_sm"
+    android:paddingEnd="@dimen/spacing_md"
+    android:paddingBottom="@dimen/spacing_sm">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/orderShippingItemCode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/inter_semibold"
+            android:text="@string/orders_sample_id_shipping"
+            android:textColor="@color/neutral_100"
+            android:textSize="@dimen/text_sm"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/orderShippingItemStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_order_shipping_chip"
+            android:fontFamily="@font/inter_regular"
+            android:gravity="center"
+            android:minWidth="90dp"
+            android:text="@string/orders_status_shipping"
+            android:textColor="@color/info_main"
+            android:textSize="@dimen/text_xs" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/neutral_30" />
+
+    <include layout="@layout/order_item_product_block" />
+</LinearLayout>

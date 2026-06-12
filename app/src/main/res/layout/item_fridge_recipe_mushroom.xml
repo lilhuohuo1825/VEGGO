@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="104dp" android:layout_marginTop="@dimen/spacing_md" android:background="@drawable/bg_order_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="@dimen/spacing_md">
+    <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:background="@drawable/bg_post_media"><ImageView android:layout_width="36dp" android:layout_height="36dp" android:layout_gravity="center" android:src="@drawable/ic_fork_knife" /></FrameLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:orientation="vertical">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/inter_semibold" android:text="Canh nấm rau xanh" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" android:textStyle="bold" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:lineSpacingExtra="2dp" android:text="Tận dụng nấm đùi gà và rau còn lại" android:textColor="@color/neutral_70" android:textSize="@dimen/text_xs" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:fontFamily="@font/inter_semibold" android:text="@string/fridge_view_recipe" android:textColor="@color/primary_main" android:textSize="@dimen/text_xs" />
+    </LinearLayout>
+    <TextView android:layout_width="74dp" android:layout_height="32dp" android:background="@drawable/bg_fridge_recipe_time" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="20 phút" android:textColor="@color/primary_main" android:textSize="@dimen/text_xs" />
+</LinearLayout>

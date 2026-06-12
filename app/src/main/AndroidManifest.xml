@@ -29,7 +29,70 @@
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.FridgeSuggestionsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddFridgeIngredientActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.SmartFridgeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TastePreferencesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TasteSetupActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TasteAlertActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.PostNotificationsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CreatePostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.MyPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonCertificateActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonPointsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddressFormActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddressBookActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReturnsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReviewsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringDayEmptyActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringDayDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.CreateRecurringOrderActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringOrdersActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.order.OrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.OrderHistoryActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.product.ProductDetailActivity"

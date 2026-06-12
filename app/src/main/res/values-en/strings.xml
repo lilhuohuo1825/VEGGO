@@ -5,4 +5,7 @@
     <string name="nav_cart">Cart</string>
     <string name="nav_orders">Orders</string>
     <string name="nav_profile">Profile</string>
+    <string name="orders_empty_title">Chưa có đơn hàng phù hợp</string>
+    <string name="orders_empty_body">Giỏ rau xanh vẫn đang chờ bạn lấp đầy. Khám phá sản phẩm tươi mới và đặt đơn đầu tiên hôm nay.</string>
+    <string name="orders_empty_shop_now">MUA SẮM NGAY</string>
 </resources>
