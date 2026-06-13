@@ -9,7 +9,7 @@ import com.veggo.app.assets.AssetFiles;
 
 public final class DatabaseManager {
     public static final String DATABASE_NAME = "veggo.db";
-    public static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 13;
 
     private DatabaseManager() {
     }
@@ -36,6 +36,8 @@ public final class DatabaseManager {
             database.execSQL(Sql.DELETE_ALL_SEARCH_HISTORY);
             database.execSQL(Sql.DELETE_ALL_PRODUCTS);
             database.execSQL(Sql.DELETE_ALL_USERS);
+            database.execSQL(Sql.DELETE_ALL_RECIPES);
+            database.execSQL(Sql.DELETE_ALL_REVIEWS);
             for (String collection : AssetFiles.COLLECTIONS) {
                 database.execSQL(Sql.createAssetCollectionTable(collection));
                 database.execSQL("DELETE FROM " + Sql.assetCollectionTable(collection));
@@ -52,6 +54,8 @@ public final class DatabaseManager {
         public static final String SEARCH_HISTORY = "search_history";
         public static final String USERS = "users";
         public static final String ASSET_RECORDS = "asset_records";
+        public static final String RECIPES = "recipes";
+        public static final String REVIEWS = "reviews";
 
         private Tables() {
         }
@@ -61,7 +65,17 @@ public final class DatabaseManager {
         public static final String ID = "id";
         public static final String NAME = "name";
         public static final String PRICE = "price";
+        public static final String ORIGINAL_PRICE = "originalPrice";
         public static final String IMAGE_URL = "imageUrl";
+        public static final String WEIGHT = "weight";
+        public static final String RATING = "rating";
+        public static final String REVIEW_COUNT = "reviewCount";
+        public static final String SOLD_COUNT = "soldCount";
+        public static final String DESCRIPTION = "description";
+        public static final String ORIGIN = "origin";
+        public static final String CONDITION = "condition";
+        public static final String FAT_CONTENT = "fatContent";
+        public static final String SKU = "sku";
 
         private ProductColumns() {
         }
@@ -119,7 +133,17 @@ public final class DatabaseManager {
                         + ProductColumns.ID + " TEXT NOT NULL PRIMARY KEY, "
                         + ProductColumns.NAME + " TEXT, "
                         + ProductColumns.PRICE + " INTEGER NOT NULL, "
-                        + ProductColumns.IMAGE_URL + " TEXT"
+                        + ProductColumns.ORIGINAL_PRICE + " INTEGER NOT NULL, "
+                        + ProductColumns.IMAGE_URL + " TEXT, "
+                        + ProductColumns.WEIGHT + " TEXT, "
+                        + ProductColumns.RATING + " REAL NOT NULL, "
+                        + ProductColumns.REVIEW_COUNT + " INTEGER NOT NULL, "
+                        + ProductColumns.SOLD_COUNT + " INTEGER NOT NULL, "
+                        + ProductColumns.DESCRIPTION + " TEXT, "
+                        + ProductColumns.ORIGIN + " TEXT, "
+                        + ProductColumns.CONDITION + " TEXT, "
+                        + ProductColumns.FAT_CONTENT + " TEXT, "
+                        + ProductColumns.SKU + " TEXT"
                         + ")";
 
         public static final String CREATE_CART_ITEMS_TABLE =
@@ -138,6 +162,31 @@ public final class DatabaseManager {
                         + UserColumns.ID + " TEXT NOT NULL PRIMARY KEY, "
                         + UserColumns.NAME + " TEXT, "
                         + UserColumns.EMAIL + " TEXT"
+                        + ")";
+
+        public static final String CREATE_RECIPES_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + Tables.RECIPES + " ("
+                        + "id TEXT NOT NULL PRIMARY KEY, "
+                        + "name TEXT, "
+                        + "imageUrl TEXT, "
+                        + "cookingTime TEXT, "
+                        + "price TEXT, "
+                        + "rating REAL NOT NULL, "
+                        + "reviewCount INTEGER NOT NULL, "
+                        + "isBookmarked INTEGER NOT NULL, "
+                        + "productId TEXT"
+                        + ")";
+
+        public static final String CREATE_REVIEWS_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + Tables.REVIEWS + " ("
+                        + "id TEXT NOT NULL PRIMARY KEY, "
+                        + "productId TEXT, "
+                        + "reviewerName TEXT, "
+                        + "reviewTime TEXT, "
+                        + "rating REAL NOT NULL, "
+                        + "content TEXT, "
+                        + "avatarUrl TEXT, "
+                        + "imageUrls TEXT"
                         + ")";
 
         public static final String DROP_PRODUCTS_TABLE =
@@ -184,6 +233,10 @@ public final class DatabaseManager {
                         + " WHERE " + SearchHistoryColumns.KEYWORD + " = ?";
         public static final String DELETE_ALL_USERS =
                 "DELETE FROM " + Tables.USERS;
+        public static final String DELETE_ALL_RECIPES =
+                "DELETE FROM " + Tables.RECIPES;
+        public static final String DELETE_ALL_REVIEWS =
+                "DELETE FROM " + Tables.REVIEWS;
         public static final String UPSERT_ASSET_RECORD =
                 "INSERT OR REPLACE INTO " + Tables.ASSET_RECORDS + " ("
                         + AssetRecordColumns.COLLECTION + ", "

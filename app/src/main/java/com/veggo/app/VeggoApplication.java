@@ -10,6 +10,7 @@ public class VeggoApplication extends Application {
     public void onCreate() {
         super.onCreate();
         FirebaseApp.initializeApp(this);
-        AssetDatabaseSeeder.seedIfNeeded(this);
+        // Reseed to ensure new review/recipe relations are applied
+        AssetDatabaseSeeder.reseed(this);
     }
 }

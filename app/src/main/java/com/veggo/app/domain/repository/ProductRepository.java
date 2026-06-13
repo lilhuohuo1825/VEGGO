@@ -8,5 +8,10 @@ import java.util.List;
 
 public interface ProductRepository {
     LiveData<List<Product>> observeProducts();
+    LiveData<List<Product>> observeProducts(int limit);
+    LiveData<Product> observeProductById(String productId);
+    LiveData<List<com.veggo.app.domain.model.Recipe>> getRelatedRecipes(String productId);
+    LiveData<List<com.veggo.app.domain.model.Review>> getProductReviews(String productId);
+    LiveData<List<com.veggo.app.assets.AssetModels.Question>> getConsultations(String productId);
     void refreshProducts();
 }
