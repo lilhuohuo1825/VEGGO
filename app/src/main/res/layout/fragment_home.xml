@@ -39,13 +39,16 @@
                     app:tint="@color/neutral_100" />
 
                 <ImageView
+                    android:id="@+id/imgLogo"
                     android:layout_width="0dp"
                     android:layout_height="38dp"
                     android:layout_weight="1"
                     android:adjustViewBounds="true"
                     android:contentDescription="@string/app_name"
                     android:scaleType="centerInside"
-                    android:src="@drawable/logo_full" />
+                    android:src="@drawable/logo_full"
+                    android:clickable="true"
+                    android:focusable="true" />
 
                 <ImageView
                     android:layout_width="24dp"

@@ -18,10 +18,13 @@
         app:tint="@color/neutral_100" />
 
     <ImageView
+        android:id="@+id/imgStickyLogo"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginStart="8dp"
-        android:src="@drawable/logo" />
+        android:src="@drawable/logo"
+        android:clickable="true"
+        android:focusable="true" />
 
     <LinearLayout
         android:layout_width="0dp"

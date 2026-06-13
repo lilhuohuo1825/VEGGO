@@ -1,5 +1,6 @@
 package com.veggo.app.presentation.home;
 
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -20,6 +21,7 @@ import com.veggo.app.adapter.FlashSaleAdapter;
 import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
+import com.veggo.app.presentation.about.AboutUsActivity;
 import com.veggo.app.databinding.FragmentHomeBinding;
 
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ public class HomeFragment extends Fragment {
         
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
+        setupHeader();
         setupRecyclerViews();
         setupBannerIndicators();
         setupProductTabs();
@@ -61,6 +64,16 @@ public class HomeFragment extends Fragment {
 
         // Gọi ViewModel để lấy dữ liệu từ file JSON trong thư mục assets
         homeViewModel.loadHomeData(requireContext());
+    }
+
+    private void setupHeader() {
+        View.OnClickListener aboutUsClick = v -> {
+            Intent intent = new Intent(requireContext(), AboutUsActivity.class);
+            startActivity(intent);
+        };
+
+        binding.imgLogo.setOnClickListener(aboutUsClick);
+        binding.stickyHeader.imgStickyLogo.setOnClickListener(aboutUsClick);
     }
 
     private void setupRecyclerViews() {
