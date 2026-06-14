@@ -7,13 +7,17 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import com.veggo.app.data.local.entity.ProductEntity;
+import com.veggo.app.data.local.projection.ProductItemProjection;
 
 import java.util.List;
 
 @Dao
 public interface ProductDao {
-    @Query("SELECT * FROM products")
-    LiveData<List<ProductEntity>> observeProducts();
+    @Query("SELECT id, name, price, imageUrl FROM products")
+    LiveData<List<ProductItemProjection>> observeProducts();
+
+    @Query("SELECT id, name, price, imageUrl FROM products LIMIT :limit")
+    LiveData<List<ProductItemProjection>> observeProducts(int limit);
 
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     LiveData<ProductEntity> observeProductById(String productId);
@@ -29,4 +33,19 @@ public interface ProductDao {
 
     @Query("DELETE FROM products")
     void clearAll();
+
+    @Query("SELECT * FROM recipes WHERE productId = :productId")
+    LiveData<List<com.veggo.app.data.local.entity.RecipeEntity>> observeRelatedRecipes(String productId);
+
+    @Query("SELECT * FROM reviews WHERE productId = :productId")
+    LiveData<List<com.veggo.app.data.local.entity.ReviewEntity>> observeProductReviews(String productId);
+
+    @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
+    ProductEntity getProductById(String productId);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertRecipes(List<com.veggo.app.data.local.entity.RecipeEntity> recipes);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertReviews(List<com.veggo.app.data.local.entity.ReviewEntity> reviews);
 }

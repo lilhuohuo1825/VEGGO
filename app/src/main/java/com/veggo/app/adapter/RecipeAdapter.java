@@ -4,72 +4,79 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.domain.model.Recipe;
 
-public class RecipeAdapter extends ListAdapter<Recipe, RecipeAdapter.RecipeViewHolder> {
+import java.util.ArrayList;
+import java.util.List;
 
-    public RecipeAdapter() {
-        super(new DiffUtil.ItemCallback<Recipe>() {
-            @Override
-            public boolean areItemsTheSame(@NonNull Recipe oldItem, @NonNull Recipe newItem) {
-                return oldItem.getId().equals(newItem.getId());
-            }
+public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder> {
 
-            @Override
-            public boolean areContentsTheSame(@NonNull Recipe oldItem, @NonNull Recipe newItem) {
-                return oldItem.getName().equals(newItem.getName()) && 
-                       oldItem.getImageRes() == newItem.getImageRes() &&
-                       (oldItem.getImageUrl() == null ? newItem.getImageUrl() == null : oldItem.getImageUrl().equals(newItem.getImageUrl()));
-            }
-        });
+    private List<Recipe> recipes = new ArrayList<>();
+
+    public void setRecipes(List<Recipe> recipes) {
+        this.recipes = recipes;
+        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
-    public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_home_recipe, parent, false);
-        return new RecipeViewHolder(view);
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recipe, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
-        holder.bind(getItem(position));
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Recipe recipe = recipes.get(position);
+        holder.tvRecipeName.setText(recipe.getName());
+        holder.tvRecipePrice.setText(recipe.getPrice());
+        holder.tvCookingTime.setText("Cooking time: " + recipe.getCookingTime());
+        holder.rbRecipeRating.setRating(recipe.getRating());
+        holder.tvRecipeRatingValue.setText(String.valueOf(recipe.getRating()));
+        holder.tvRecipeReviewCount.setText("(" + recipe.getReviewCount() + ")");
+        
+        Glide.with(holder.itemView.getContext())
+                .load(recipe.getImageUrl())
+                .placeholder(R.drawable.logo)
+                .into(holder.ivRecipeImage);
+
+        holder.ivBookmark.setImageResource(recipe.isBookmarked() ? R.drawable.ic_save : R.drawable.ic_save);
+        // Note: For bookmark toggle, you'd need another icon or change tint
     }
 
-    static class RecipeViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView imgRecipe;
-        private final TextView tvRecipeName;
-        private final TextView tvRecipeTime;
+    @Override
+    public int getItemCount() {
+        return recipes.size();
+    }
 
-        RecipeViewHolder(@NonNull View itemView) {
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivRecipeImage;
+        ImageView ivBookmark;
+        TextView tvRecipePrice;
+        TextView tvCookingTime;
+        TextView tvRecipeName;
+        RatingBar rbRecipeRating;
+        TextView tvRecipeRatingValue;
+        TextView tvRecipeReviewCount;
+
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgRecipe = itemView.findViewById(R.id.imgRecipe);
+            ivRecipeImage = itemView.findViewById(R.id.ivRecipeImage);
+            ivBookmark = itemView.findViewById(R.id.ivBookmark);
+            tvRecipePrice = itemView.findViewById(R.id.tvRecipePrice);
+            tvCookingTime = itemView.findViewById(R.id.tvCookingTime);
             tvRecipeName = itemView.findViewById(R.id.tvRecipeName);
-            tvRecipeTime = itemView.findViewById(R.id.tvRecipeTime);
-        }
-
-        void bind(Recipe recipe) {
-            tvRecipeName.setText(recipe.getName());
-            tvRecipeTime.setVisibility(View.GONE);
-            
-            if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
-                Glide.with(imgRecipe.getContext())
-                        .load(recipe.getImageUrl())
-                        .placeholder(R.drawable.onboarding_2)
-                        .error(R.drawable.onboarding_2)
-                        .into(imgRecipe);
-            } else if (recipe.getImageRes() != 0) {
-                imgRecipe.setImageResource(recipe.getImageRes());
-            }
+            rbRecipeRating = itemView.findViewById(R.id.rbRecipeRating);
+            tvRecipeRatingValue = itemView.findViewById(R.id.tvRecipeRatingValue);
+            tvRecipeReviewCount = itemView.findViewById(R.id.tvRecipeReviewCount);
         }
     }
 }
