@@ -168,7 +168,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public void refreshProducts() {
-        // Implementation for remote sync if needed
+        com.veggo.app.core.network.FirebaseSyncManager.getInstance(context).syncProducts();
     }
 
     public void saveProduct(ProductEntity entity) {
