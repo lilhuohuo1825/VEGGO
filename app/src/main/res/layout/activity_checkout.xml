@@ -153,10 +153,10 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <include layout="@layout/item_order" />
-                <include layout="@layout/item_order" />
-                <include layout="@layout/item_order" />
-                <include layout="@layout/item_order" />
+                <include layout="@layout/item_payment" />
+                <include layout="@layout/item_payment" />
+                <include layout="@layout/item_payment" />
+                <include layout="@layout/item_payment" />
 
                 <LinearLayout
                     android:id="@+id/layoutNote"
