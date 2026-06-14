@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -46,6 +45,21 @@ public final class CommunityUi {
 
     private static void applyTopSystemInset(Activity activity) {
         WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
+        View header = findFixedHeader(activity);
+        if (header != null) {
+            int left = header.getPaddingLeft();
+            int top = header.getPaddingTop();
+            int right = header.getPaddingRight();
+            int bottom = header.getPaddingBottom();
+            ViewCompat.setOnApplyWindowInsetsListener(header, (view, insets) -> {
+                int statusTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+                view.setPadding(left, top + statusTop, right, bottom);
+                return insets;
+            });
+            ViewCompat.requestApplyInsets(header);
+            return;
+        }
+
         ViewGroup content = activity.findViewById(android.R.id.content);
         if (content == null || content.getChildCount() == 0) {
             return;
@@ -63,9 +77,25 @@ public final class CommunityUi {
         ViewCompat.requestApplyInsets(root);
     }
 
+    private static View findFixedHeader(Activity activity) {
+        int[] headerIds = {
+                R.id.communityHomeHeader,
+                R.id.communityTopHeader,
+                R.id.discoverySearchBar,
+                R.id.cookbookTopHeader
+        };
+        for (int id : headerIds) {
+            View header = activity.findViewById(id);
+            if (header != null) {
+                return header;
+            }
+        }
+        return null;
+    }
+
     public static void setupTopHeader(Activity activity, String title) {
         TextView titleView = activity.findViewById(R.id.communityTitle);
-        ImageButton backButton = activity.findViewById(R.id.communityBackButton);
+        View backButton = activity.findViewById(R.id.communityBackButton);
         if (titleView != null) {
             titleView.setText(title);
         }
@@ -232,22 +262,20 @@ public final class CommunityUi {
     }
 
     private static View chip(Activity activity, int icon, String label, String emoji, View.OnClickListener listener) {
+        if (icon != 0) {
+            View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip_icon, null, false);
+            ImageView iconView = chip.findViewById(R.id.chipIcon);
+            iconView.setImageResource(icon);
+            chip.setOnClickListener(listener);
+            return chip;
+        }
+
         View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip, null, false);
-        ImageView iconView = chip.findViewById(R.id.chipIcon);
         TextView emojiView = chip.findViewById(R.id.chipEmoji);
         TextView titleView = chip.findViewById(R.id.chipTitle);
+        emojiView.setText(emoji);
+        titleView.setText(label);
         chip.setOnClickListener(listener);
-
-        if (icon != 0) {
-            iconView.setImageResource(icon);
-            iconView.setVisibility(View.VISIBLE);
-            emojiView.setVisibility(View.GONE);
-            titleView.setVisibility(View.GONE);
-        } else {
-            iconView.setVisibility(View.GONE);
-            emojiView.setText(emoji);
-            titleView.setText(label);
-        }
         return chip;
     }
 

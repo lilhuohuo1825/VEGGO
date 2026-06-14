@@ -10,7 +10,7 @@
     android:paddingStart="@dimen/spacing_md"
     android:paddingTop="@dimen/spacing_md"
     android:paddingEnd="@dimen/spacing_md"
-    android:paddingBottom="@dimen/spacing_lg">
+    android:paddingBottom="100dp">
 
     <LinearLayout
         android:layout_width="match_parent"

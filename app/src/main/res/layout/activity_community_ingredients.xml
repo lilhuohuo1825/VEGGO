@@ -97,21 +97,29 @@
         </LinearLayout>
     </ScrollView>
 
-    <ImageButton
-    android:id="@+id/ingredientsBackButton"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:layout_marginStart="18dp"
-    android:layout_marginTop="16dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
+    <FrameLayout
+        android:id="@+id/ingredientsBackButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_community_circle"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            app:tint="@color/primary_hover"
+            android:src="@drawable/ic_left"
+            android:contentDescription="" />
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/ingredientsActionRow"
@@ -123,34 +131,64 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/ingredientsHeartButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="13dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_heart_green" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_heart_green"
+                android:contentDescription="" />
+        </FrameLayout>
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/ingredientsBookmarkButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="10dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_bookmark_green" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_bookmark_green"
+                android:contentDescription="" />
+        </FrameLayout>
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/ingredientsShareButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="13dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_share_green" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_share_green"
+                android:contentDescription="" />
+        </FrameLayout>
     </LinearLayout>
 
     <LinearLayout

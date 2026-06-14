@@ -12,26 +12,36 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
+        android:background="@color/neutral_10"
         android:orientation="horizontal"
         android:paddingStart="18dp"
         android:paddingTop="16dp"
         android:paddingEnd="18dp"
         android:paddingBottom="8dp"
+        android:translationZ="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
-    android:id="@+id/communityBackButton"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+        <FrameLayout
+            android:id="@+id/communityBackButton"
+            android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_community_circle"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            app:tint="@color/primary_hover"
+                android:src="@drawable/ic_left"
+                android:contentDescription="" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/communityTitle"
@@ -44,15 +54,25 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/communitySearchButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="12dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_search"
-            android:tint="@color/primary_main" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_search"
+                app:tint="@color/primary_main"
+                android:contentDescription="" />
+        </FrameLayout>
     </LinearLayout>
 
     <ScrollView

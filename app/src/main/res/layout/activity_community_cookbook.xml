@@ -11,6 +11,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
+        android:background="@color/neutral_10"
         android:orientation="horizontal"
         android:paddingStart="18dp"
         android:paddingTop="16dp"
@@ -20,17 +21,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
-    android:id="@+id/cookbookBackButton"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+        <FrameLayout
+            android:id="@+id/cookbookBackButton"
+            android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_community_circle"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            app:tint="@color/primary_hover"
+                android:src="@drawable/ic_left"
+                android:contentDescription="" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/cookbookTitle"
@@ -53,17 +62,27 @@
             android:paddingEnd="14dp"
             android:text="0 công thức"
             android:textColor="@color/primary_main"
-            android:textSize="12sp" />
+            android:textSize="13sp" />
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/cookbookShareButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="11dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_share_green" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_share_green"
+                android:contentDescription="" />
+        </FrameLayout>
     </LinearLayout>
 
     <ScrollView

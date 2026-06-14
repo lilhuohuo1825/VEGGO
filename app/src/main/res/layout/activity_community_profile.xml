@@ -150,15 +150,46 @@
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <ImageButton
+                <FrameLayout
+
+
                     android:id="@+id/profileFollowButton"
+
+
                     android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:background="@drawable/bg_community_circle"
-                    android:padding="10dp"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/ic_userplus"
-                    android:tint="@color/primary_main" />
+            android:layout_height="42dp"
+            android:background="@drawable/bg_community_circle"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+
+
+                    android:clipChildren="false"
+
+
+                    android:clipToPadding="false">
+
+
+
+                    <androidx.appcompat.widget.AppCompatImageView
+
+
+                        android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+
+
+                        android:src="@drawable/ic_userplus"
+
+
+                        app:tint="@color/primary_main"
+
+
+                        android:contentDescription="" />
+
+
+                </FrameLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -223,35 +254,53 @@
         </LinearLayout>
     </ScrollView>
 
-    <ImageButton
-    android:id="@+id/profileBackButton"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:layout_marginStart="18dp"
-    android:layout_marginTop="16dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
+    <FrameLayout
+        android:id="@+id/profileBackButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_community_circle"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            app:tint="@color/primary_hover"
+            android:src="@drawable/ic_left"
+            android:contentDescription="" />
+    </FrameLayout>
 
-    <ImageButton
+    <FrameLayout
         android:id="@+id/profileShareButton"
         android:layout_width="42dp"
-        android:layout_height="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_community_circle"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="14dp"
-        android:background="@drawable/bg_community_circle"
         android:elevation="8dp"
-        android:padding="11dp"
-        android:scaleType="centerInside"
-        android:src="@drawable/ic_share_green"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+            android:src="@drawable/ic_share_green"
+            android:contentDescription="" />
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/profileAccountActions"
@@ -264,34 +313,65 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/profileAddButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:background="@drawable/ic_plussss"
-            android:padding="12dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_plus" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/bg_community_circle_green"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_plus"
+                app:tint="@color/neutral_10"
+                android:contentDescription="" />
+        </FrameLayout>
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/profileEditButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="12dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_edit"
-            android:tint="@color/primary_main" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_edit"
+                app:tint="@color/primary_main"
+                android:contentDescription="" />
+        </FrameLayout>
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/profileAccountShareButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="11dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_share_green" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_share_green"
+                android:contentDescription="" />
+        </FrameLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

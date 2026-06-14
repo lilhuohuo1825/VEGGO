@@ -10,13 +10,18 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/discoverySearchBar"
         android:layout_width="0dp"
-        android:layout_height="46dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="18dp"
         android:layout_marginTop="28dp"
         android:layout_marginEnd="18dp"
         android:background="@drawable/bg_discovery_search"
+        android:elevation="8dp"
+        android:minHeight="46dp"
         android:paddingStart="12dp"
+        android:paddingTop="0dp"
         android:paddingEnd="6dp"
+        android:paddingBottom="0dp"
+        android:translationZ="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -51,18 +56,28 @@
             app:layout_constraintStart_toEndOf="@id/discoverySearchIcon"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/discoveryVoiceButton"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/bg_community_circle"
-            android:padding="9dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_microphone"
-            android:tint="@color/neutral_60"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_microphone"
+                app:tint="@color/neutral_60"
+                android:contentDescription="" />
+        </FrameLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_cookbook_dialog"
@@ -41,14 +42,26 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/cookbookCreateButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/ic_plussss"
-            android:padding="14dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_plus" />
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_community_circle"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/icon_plus"
+                android:contentDescription="" />
+
+
+        </FrameLayout>
 
         <TextView
             android:id="@+id/cookbookSaveButton"

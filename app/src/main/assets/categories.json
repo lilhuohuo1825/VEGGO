@@ -1,180 +1,209 @@
-[{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc14"
+[
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc14"
+    },
+    "CategoryID": "CAT001",
+    "CategoryName": "Cà phê, Cacao",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00101",
+        "SubcategoryName": "Ca cao",
+        "img": "https://lh3.googleusercontent.com/DgncT05-f5rnX1vTtMQQ8CYwVIO3XYG6SNN8kmddV6Pl1KlECcaUA-Dpj_C-k0RRKwHo9xVkhICYd6UuGhtVHgzT6JXSTCPp=rw"
+      },
+      {
+        "SubcategoryID": "SUB00102",
+        "SubcategoryName": "Cà phê",
+        "img": "https://lh3.googleusercontent.com/eLxDXJEGsxW6xsJqQVKmsnPfN9oMVuV8ei8nLoo1zwTV2G3Ox-91JVvu4USVfMnFNaIBvyCk52MBkGwuS7cWyp8UplCWLVwIig=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT001",
-  "CategoryName": "Cà phê, Cacao",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00101",
-      "SubcategoryName": "Ca cao"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc15"
     },
-    {
-      "SubcategoryID": "SUB00102",
-      "SubcategoryName": "Cà phê"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc15"
+    "CategoryID": "CAT002",
+    "CategoryName": "Lương thực - ngũ cốc",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00201",
+        "SubcategoryName": "Bột",
+        "img": "https://lh3.googleusercontent.com/BJIEJUlxSjIUe64PiAj2rqwjPk-X7vt-oto6Nu9hajembSroWceJzmPTCVK2EG9Wr-IvHVc14M6eVc0eIXIMpK1gdYXVlMi-=rw"
+      },
+      {
+        "SubcategoryID": "SUB00202",
+        "SubcategoryName": "Gạo",
+        "img": "https://lh3.googleusercontent.com/LtAfqS2iTXZfVjF0AehcVkE-FembZvm6hLcijd_EdLPh0Xwzj7xlGUIuUF-1uQWRMoWjCl9oyjhZ0Tt5gSELpnR8udfTtMs=rw"
+      },
+      {
+        "SubcategoryID": "SUB00203",
+        "SubcategoryName": "Nếp",
+        "img": "https://lh3.googleusercontent.com/yGoSysJzVd91Wowf9jWiCb19bORG6Mcx9Df8qMWqH0rD8KNY1PLTvK0WmR9UH3qT7YuHqzwQ_WCRJk2gPD2HYpV4hyuA2NamIw=rw"
+      },
+      {
+        "SubcategoryID": "SUB00204",
+        "SubcategoryName": "Đậu",
+        "img": "https://lh3.googleusercontent.com/DgpTdFq9te3I4cC1aXgXOoXhQ9J0U9OLaZ3dN8qQSF4r4NemYHE8dfoYYDDImpgfn4_vU_XLQnsVpFR4P0-Wmr17BbcclVs=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT002",
-  "CategoryName": "Lương thực - ngũ cốc",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00201",
-      "SubcategoryName": "Bột"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc16"
     },
-    {
-      "SubcategoryID": "SUB00202",
-      "SubcategoryName": "Gạo"
-    },
-    {
-      "SubcategoryID": "SUB00203",
-      "SubcategoryName": "Nếp"
-    },
-    {
-      "SubcategoryID": "SUB00204",
-      "SubcategoryName": "Đậu"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc16"
+    "CategoryID": "CAT003",
+    "CategoryName": "Rau củ",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00301",
+        "SubcategoryName": "Củ",
+        "img": "https://lh3.googleusercontent.com/mOPdvNZSDUKnIEF3d5MYoP5rnIORLjizglPAhCFPg0tAA1iuJm4JblFg-S299SJtgnlQiolvhRsLZUYbbICzPWmipjHOVmHO=rw"
+      },
+      {
+        "SubcategoryID": "SUB00302",
+        "SubcategoryName": "Hoa ăn được",
+        "img": "https://lh3.googleusercontent.com/Vh1ysFOu5XmsqtC8InwogNpXfsuadkVqsptRne5JT-N9icpoX0CM41nVhJEJG36LevivVMVoyStEGmMsdbzKe_CaIUQSSEg=rw"
+      },
+      {
+        "SubcategoryID": "SUB00303",
+        "SubcategoryName": "Măng",
+        "img": "https://lh3.googleusercontent.com/k_oATycGpZeas3HAh9LWwBaRqPiI6qkWtlRvCyraly34WZ41DKPVxT-0D_lftJLDn7RzBwpZ7o_avkpCdVqkjaL3judPos9I=rw"
+      },
+      {
+        "SubcategoryID": "SUB00304",
+        "SubcategoryName": "Nấm",
+        "img": "https://lh3.googleusercontent.com/nXQpv0nKpT_wqAkz5bOYTkG7louEUjq4s3CY8a5fvFAd0L-CQJjIq1GNHf9vAa_KK0fUpxTAyAdQwlivHs88eaydhIzatNEZ=rw"
+      },
+      {
+        "SubcategoryID": "SUB00305",
+        "SubcategoryName": "Quả",
+        "img": "https://lh3.googleusercontent.com/QFYe6Ns3lDwnKKlbZ5KUnrwT71Xzi6hYJ0n9nCNc1R9vOlB9IdN8K-4rlffoLaBAxZlQmednwi3jLizRV6Bmf7CXw27gGTWZLA=rw"
+      },
+      {
+        "SubcategoryID": "SUB00306",
+        "SubcategoryName": "Rau gia vị",
+        "img": "https://lh3.googleusercontent.com/mCrCzojjYOhK6SLYqQoA0Uiksh1ndl-B6N7EJZv0cVZElq4PifTkHKqELDhdiXwIpH6Ct6yLJW9rZf93UmpfedaVnmEGdIAb=rw"
+      },
+      {
+        "SubcategoryID": "SUB00307",
+        "SubcategoryName": "Rau lá",
+        "img": "https://lh3.googleusercontent.com/V9PMfIy5srE-3TNfG9sv4kf8XwQUgC-zQTMVI0jc76cIweUuc0Ge_DwyTRQXdo-jGY9ghriyqEFmUaG7k235ynvPfHSGtMy9=rw"
+      },
+      {
+        "SubcategoryID": "SUB00308",
+        "SubcategoryName": "Rau mầm / Giá đỗ",
+        "img": "https://lh3.googleusercontent.com/iib-0wR40P0ZHxkL7d_Fd5jGj-QgykHDlEto2DbtlyMWuRWIr7Cf5uFURf8MAdPPPN3czPAwI8okmgIzlJO6ns2-zJ4FgfwW_g=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT003",
-  "CategoryName": "Rau củ",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00301",
-      "SubcategoryName": "Củ"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc17"
     },
-    {
-      "SubcategoryID": "SUB00302",
-      "SubcategoryName": "Hoa ăn được"
-    },
-    {
-      "SubcategoryID": "SUB00303",
-      "SubcategoryName": "Măng"
-    },
-    {
-      "SubcategoryID": "SUB00304",
-      "SubcategoryName": "Nấm"
-    },
-    {
-      "SubcategoryID": "SUB00305",
-      "SubcategoryName": "Quả"
-    },
-    {
-      "SubcategoryID": "SUB00306",
-      "SubcategoryName": "Rau gia vị"
-    },
-    {
-      "SubcategoryID": "SUB00307",
-      "SubcategoryName": "Rau lá"
-    },
-    {
-      "SubcategoryID": "SUB00308",
-      "SubcategoryName": "Rau mầm / Giá đỗ"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc17"
+    "CategoryID": "CAT004",
+    "CategoryName": "Rong biển",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00401",
+        "SubcategoryName": "Rong, tảo biển",
+        "img": "https://lh3.googleusercontent.com/BEI3Turs-INRbA8g_9TDn24Uwm_4Su02X95n6uLoTnFy2Qo5EKbLhnClXTYE0Vgp39Ni2OGWURCZ3TXLh7YUWez2u8JUCsUn=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT004",
-  "CategoryName": "Rong biển",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00401",
-      "SubcategoryName": "Rong, tảo biển"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc18"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc18"
+    },
+    "CategoryID": "CAT005",
+    "CategoryName": "Thực phẩm bồi bổ",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00501",
+        "SubcategoryName": "Mật ong",
+        "img": "https://lh3.googleusercontent.com/A_5qLtHqvRNqBOCdulLeGtEXrIjPvV2APVkbknxYhhBvu3QtyA6CyJOwC51rl2HLZA5Nw8jj8Rx0uTbj6OGgfw6yicGk4q0TMg=rw"
+      },
+      {
+        "SubcategoryID": "SUB00502",
+        "SubcategoryName": "Nước yến",
+        "img": "https://lh3.googleusercontent.com/hlqBEbpWbwjbb_mDgz6SMoh3t3gaN6vcnuRClpDJvCEWvPDgbe2W7xlMLgj7_PWlbM_sX63xUHi6Ws-GU6IWC6vKKRYsmgR7OQ=rw"
+      },
+      {
+        "SubcategoryID": "SUB00503",
+        "SubcategoryName": "Tinh bột nghệ",
+        "img": "https://lh3.googleusercontent.com/0jTgwm1SAphIsjR8OD_o0dS7xMU6XFgNC28C3F9kxEkklqXLsFkrdqYO2jSdsd5ESSE48Tmrhnt2vcWaY6GzAn_I63xVc43-=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT005",
-  "CategoryName": "Thực phẩm bồi bổ",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00501",
-      "SubcategoryName": "Mật ong"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc19"
     },
-    {
-      "SubcategoryID": "SUB00502",
-      "SubcategoryName": "Nước yến"
-    },
-    {
-      "SubcategoryID": "SUB00503",
-      "SubcategoryName": "Tinh bột nghệ"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc19"
+    "CategoryID": "CAT006",
+    "CategoryName": "Thực phẩm khô",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00601",
+        "SubcategoryName": "Bánh canh",
+        "img": "https://lh3.googleusercontent.com/Og6YCuHxMJ-UE7eCEwb77MgETgJk5Ohq_YCt4UwjWrY386fId1pb3rxDvBRhyYcNlAi3kpGQaUDbJd0ZuPnr6ki8f-ZBEfc=rw"
+      },
+      {
+        "SubcategoryID": "SUB00602",
+        "SubcategoryName": "Bún tươi",
+        "img": "https://lh3.googleusercontent.com/sx2Oj8X2FI9qv5g5MJnNCybNgisFYv8ySMUvnF3qg0KFr335PEqJYMakMHXdSmnXhS41yiR-07MLkUyuszKyAQXIJcHKWCQ=rw"
+      },
+      {
+        "SubcategoryID": "SUB00603",
+        "SubcategoryName": "Hủ tiếu",
+        "img": "https://lh3.googleusercontent.com/kX49Vz7qk-UwwJ8ENtOEJQK0Mu5Afd5hnlSYBdweWPeWkbruQI99smhcapKH1EaNfde-7EsEbYe3bJqhU6mn49-Xe1Zhvq4=rw"
+      },
+      {
+        "SubcategoryID": "SUB00604",
+        "SubcategoryName": "Miến",
+        "img": "https://lh3.googleusercontent.com/tQR3dk9EQK8pdoG3KR3O3m9HZzl_MQkVDi6p38_SAO0sNTiadorFwW4NmztK31C-pZfgu1p_cqwGdUNVyNuSgge04SwRH-pJ=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT006",
-  "CategoryName": "Thực phẩm khô",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00601",
-      "SubcategoryName": "Bánh canh"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc1a"
     },
-    {
-      "SubcategoryID": "SUB00602",
-      "SubcategoryName": "Bún tươi"
-    },
-    {
-      "SubcategoryID": "SUB00603",
-      "SubcategoryName": "Hủ tiếu"
-    },
-    {
-      "SubcategoryID": "SUB00604",
-      "SubcategoryName": "Miến"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc1a"
+    "CategoryID": "CAT007",
+    "CategoryName": "Trà xanh",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00701",
+        "SubcategoryName": "Trà khác",
+        "img": "https://lh3.googleusercontent.com/vXKTaw3z0a2Q52wHePRpwVe4i88p6nKJiP6DwmqbuPaVB1LgJEY927BZaFrJLcc2sg3wMWgE1oHKPpBn6D4rpfzf0AfX7jKJ=rw"
+      },
+      {
+        "SubcategoryID": "SUB00702",
+        "SubcategoryName": "Trà xanh",
+        "img": "https://lh3.googleusercontent.com/QwvkHNdGer-R_ENJc_mJtIy7CCk8DfCrbzBVuk6azF0VdDV4c1RSdUhh3kWFXIIA2HS2e-SkP-iUaIQN4nDBNM60Nc_4VK8=rw"
+      }
+    ]
   },
-  "CategoryID": "CAT007",
-  "CategoryName": "Trà xanh",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00701",
-      "SubcategoryName": "Trà khác"
+  {
+    "_id": {
+      "$oid": "6a0960fc6ea39eac566cfc1b"
     },
-    {
-      "SubcategoryID": "SUB00702",
-      "SubcategoryName": "Trà xanh"
-    }
-  ]
-},
-{
-  "_id": {
-    "$oid": "6a0960fc6ea39eac566cfc1b"
-  },
-  "CategoryID": "CAT008",
-  "CategoryName": "Trái cây",
-  "Subcategories": [
-    {
-      "SubcategoryID": "SUB00801",
-      "SubcategoryName": "Trái cây khác"
-    },
-    {
-      "SubcategoryID": "SUB00802",
-      "SubcategoryName": "Trái cây nhiệt đới"
-    },
-    {
-      "SubcategoryID": "SUB00803",
-      "SubcategoryName": "Trái cây ôn đới"
-    }
-  ]
-}]
+    "CategoryID": "CAT008",
+    "CategoryName": "Trái cây",
+    "Subcategories": [
+      {
+        "SubcategoryID": "SUB00801",
+        "SubcategoryName": "Trái cây khác",
+        "img": "https://lh3.googleusercontent.com/m6Tx6ywJRoE81q-94YXm1EEKMYZBCpE_jtiM2wVcNEBK104FBjJ0G5YwUCUFfw3wjrx3LF8rDy0T5WaZiY2nM5r9IHXLqtfu=rw"
+      },
+      {
+        "SubcategoryID": "SUB00802",
+        "SubcategoryName": "Trái cây nhiệt đới",
+        "img": "https://lh3.googleusercontent.com/UcXOq_gDNsY1Gr18Ep5IHHuutlVBvEibJHT2GZ5_ID3XORIZfq4vJoCC8AIEER3V-QNSAfSxtCdLfQqdQYXhMCLQEv8QGnwR=rw"
+      },
+      {
+        "SubcategoryID": "SUB00803",
+        "SubcategoryName": "Trái cây ôn đới",
+        "img": "https://lh3.googleusercontent.com/voEE3B_IhofqhrkoWMN05xl_FqpvHnGOc0NoTCvD1A9IeGtCE0E8X_BAeAb4Y136YmxkUOCR0nGJSXW-KtekoNy38c6_sWurnQ=rw"
+      }
+    ]
+  }
+]

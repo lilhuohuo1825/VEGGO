@@ -1,7 +1,6 @@
 package com.veggo.app.presentation.community;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.GridLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -53,11 +51,10 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
 
         recipeId = getIntent().getStringExtra(EXTRA_RECIPE_ID);
         findViewById(R.id.recipeShopButton).setOnClickListener(v -> openIngredients());
-        ToggleUi.bindToggle((ImageButton) findViewById(R.id.recipeHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
-        ImageButton bookmarkButton = findViewById(R.id.recipeBookmarkButton);
+        ToggleUi.bindToggle(findViewById(R.id.recipeHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
+        View bookmarkButton = findViewById(R.id.recipeBookmarkButton);
         bookmarkButton.setOnClickListener(v -> {
-            bookmarkButton.setBackgroundResource(R.drawable.bg_follow_button_green);
-            bookmarkButton.setColorFilter(Color.WHITE);
+            ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true);
             CommunityUi.showAddToCookbook(this, recipeId);
         });
         findViewById(R.id.recipeCommentSend).setOnClickListener(v -> submitComment());

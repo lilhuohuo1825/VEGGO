@@ -3,7 +3,6 @@ package com.veggo.app.presentation.community;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -14,6 +13,7 @@ import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
+import com.bumptech.glide.load.resource.bitmap.GranularRoundedCorners;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
 import com.veggo.app.data.local.entity.CommunityCookbookEntity;
@@ -75,7 +75,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
                 ImageView hero = findViewById(R.id.profileHeroImage);
                 Glide.with(this)
                         .load(recipes.get(0).getImageUrl())
-                        .transform(new CenterCrop(), new RoundedCorners(dp(18)))
+                        .transform(new CenterCrop(), bottomRoundedCorners(18))
                         .into(hero);
             }
             showRecipes();
@@ -95,9 +95,9 @@ public class CommunityProfileActivity extends AppCompatActivity {
     }
 
     private void bindHeader(String chefName, String chefImageUrl, int recipeCount, int likes) {
-        ImageButton back = findViewById(R.id.profileBackButton);
+        View back = findViewById(R.id.profileBackButton);
         back.setOnClickListener(v -> finish());
-        ImageButton followButton = findViewById(R.id.profileFollowButton);
+        View followButton = findViewById(R.id.profileFollowButton);
         if (accountProfile) {
             followButton.setVisibility(View.GONE);
             findViewById(R.id.profileShareButton).setVisibility(View.GONE);
@@ -124,8 +124,13 @@ public class CommunityProfileActivity extends AppCompatActivity {
                 .into(avatar);
         Glide.with(this)
                 .load(accountProfile ? CommunityRepository.ACCOUNT_HERO_URL : chefImageUrl)
-                .transform(new CenterCrop(), new RoundedCorners(dp(18)))
+                .transform(new CenterCrop(), bottomRoundedCorners(18))
                 .into(hero);
+    }
+
+    private GranularRoundedCorners bottomRoundedCorners(int radiusDp) {
+        float radius = dp(radiusDp);
+        return new GranularRoundedCorners(0f, 0f, radius, radius);
     }
 
     private void bindFollowNavigation(String chefId) {

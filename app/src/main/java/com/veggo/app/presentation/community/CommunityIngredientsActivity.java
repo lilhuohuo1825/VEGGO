@@ -34,11 +34,10 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
         repository = new CommunityRepository(this);
         list = findViewById(R.id.ingredientsList);
         findViewById(R.id.ingredientsBackButton).setOnClickListener(v -> finish());
-        ToggleUi.bindToggle((ImageButton) findViewById(R.id.ingredientsHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
-        ImageButton bookmarkButton = findViewById(R.id.ingredientsBookmarkButton);
+        ToggleUi.bindToggle(findViewById(R.id.ingredientsHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
+        View bookmarkButton = findViewById(R.id.ingredientsBookmarkButton);
         bookmarkButton.setOnClickListener(v -> {
-            bookmarkButton.setBackgroundResource(R.drawable.bg_follow_button_green);
-            bookmarkButton.setColorFilter(Color.WHITE);
+            ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true);
             CommunityUi.showAddToCookbook(this, getIntent().getStringExtra(EXTRA_RECIPE_ID));
         });
 
