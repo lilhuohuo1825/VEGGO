@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/profilePolicyRow"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_policy" android:src="@drawable/ic_profile_shield" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_policy" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
+        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_policy" android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/profileSupportRow"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_support" android:src="@drawable/ic_profile_support" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_support" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
+        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_support" android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_about" android:src="@drawable/ic_profile_about" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_about" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
+        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_about" android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+</LinearLayout>

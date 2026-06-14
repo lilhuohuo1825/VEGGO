@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_md"
+    android:background="@drawable/bg_profile_card"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_md">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/inter_semibold" android:text="@string/recurring_order_family" android:textColor="@color/neutral_100" android:textSize="@dimen/text_md" android:textStyle="bold" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:text="@string/recurring_order_id_one" android:textColor="@color/neutral_70" android:textSize="@dimen/text_xs" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="86dp" android:gravity="center_vertical" android:orientation="horizontal">
+        <ImageView android:layout_width="70dp" android:layout_height="70dp" android:background="@drawable/bg_order_product_thumb" android:padding="@dimen/spacing_sm" android:scaleType="centerInside" android:src="@drawable/ic_vegetable" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/recurring_order_items" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:text="@string/recurring_order_time_one" android:textColor="@color/neutral_70" android:textSize="@dimen/text_xs" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/recurring_order_address_one" android:textColor="@color/neutral_70" android:textSize="@dimen/text_xs" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="90dp" android:layout_height="wrap_content" android:gravity="end" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/inter_semibold" android:text="@string/recurring_order_price_one" android:textColor="@color/primary_hover" android:textSize="@dimen/text_sm" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:text="@string/recurring_order_detail" android:textColor="@color/primary_main" android:textSize="@dimen/text_xs" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

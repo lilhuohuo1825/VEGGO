@@ -11,6 +11,8 @@ import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.data.local.entity.AssetRecordEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
+import com.veggo.app.data.local.entity.RecipeEntity;
+import com.veggo.app.data.local.entity.ReviewEntity;
 import com.veggo.app.data.local.entity.UserEntity;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -73,6 +75,8 @@ public final class AssetDatabaseSeeder {
         List<ProductEntity> products = readProducts(loader);
         List<UserEntity> users = readUsers(loader);
         List<AssetRecordEntity> assetRecords = readAssetRecords(loader);
+        List<RecipeEntity> recipes = readRecipes(loader, products);
+        List<ReviewEntity> reviews = generateSampleReviews(products);
 
         database.runInTransaction(() -> {
             database.assetRecordDao().clearAll();
@@ -81,6 +85,12 @@ public final class AssetDatabaseSeeder {
             }
             if (!products.isEmpty()) {
                 database.productDao().insertAll(products);
+            }
+            if (!recipes.isEmpty()) {
+                database.productDao().insertRecipes(recipes);
+            }
+            if (!reviews.isEmpty()) {
+                database.productDao().insertReviews(reviews);
             }
             for (UserEntity user : users) {
                 database.userDao().upsert(user);
@@ -100,14 +110,104 @@ public final class AssetDatabaseSeeder {
             if (id == null) {
                 continue;
             }
+
+            // Xây dựng phần mô tả chi tiết từ nhiều nguồn
+            StringBuilder description = new StringBuilder();
+            if (assetProduct.ingredients != null && !assetProduct.ingredients.isEmpty()) {
+                description.append("Thành phần: ").append(assetProduct.ingredients).append("\n\n");
+            }
+            if (assetProduct.usage != null && !assetProduct.usage.isEmpty()) {
+                description.append("Cách dùng: ").append(assetProduct.usage).append("\n\n");
+            }
+            if (assetProduct.storage != null && !assetProduct.storage.isEmpty()) {
+                description.append("Bảo quản: ").append(assetProduct.storage);
+            }
+            
+            String finalDescription = description.toString().trim();
+            if (finalDescription.isEmpty()) {
+                finalDescription = "Chưa có mô tả chi tiết cho sản phẩm này.";
+            }
+
             products.add(new ProductEntity(
                     id,
-                    assetProduct.productName,
+                    assetProduct.productName != null ? assetProduct.productName : "Sản phẩm Veggo",
                     assetProduct.price,
-                    firstImage(assetProduct.image)
+                    assetProduct.basePrice > 0 ? assetProduct.basePrice : assetProduct.price,
+                    assetProduct.sku,
+                    firstImage(assetProduct.image),
+                    assetProduct.weight != null ? assetProduct.weight : assetProduct.unit,
+                    (float) assetProduct.rating,
+                    assetProduct.liked,
+                    assetProduct.purchaseCount,
+                    finalDescription,
+                    assetProduct.origin != null ? assetProduct.origin : "Việt Nam",
+                    assetProduct.status != null ? assetProduct.status : "Mới",
+                    assetProduct.brand != null ? assetProduct.brand : "Veggo",
+                    assetProduct.categoryId,
+                    assetProduct.subcategoryId
             ));
         }
         return products;
+    }
+
+    private static List<RecipeEntity> readRecipes(AssetJsonLoader loader, List<ProductEntity> products) throws Exception {
+        List<AssetModels.Instruction> assetInstructions = loader.readList(
+                AssetFiles.INSTRUCTIONS,
+                AssetModels.Instruction.class
+        );
+        List<RecipeEntity> recipes = new ArrayList<>();
+        int productCount = products.size();
+        
+        for (int i = 0; i < assetInstructions.size(); i++) {
+            AssetModels.Instruction asset = assetInstructions.get(i);
+            String id = firstNonEmpty(asset.id, asset.dishName);
+            if (id == null) continue;
+            
+            // Phân bổ công thức cho các sản phẩm để có dữ liệu hiển thị
+            String linkedProductId = productCount > 0 ? products.get(i % productCount).getId() : null;
+            
+            recipes.add(new RecipeEntity(
+                    id,
+                    asset.dishName,
+                    asset.image,
+                    asset.cookingTime != null ? asset.cookingTime : "20min",
+                    "6.00đ",
+                    4.5f,
+                    120,
+                    false,
+                    linkedProductId
+            ));
+        }
+        return recipes;
+    }
+
+    private static List<ReviewEntity> generateSampleReviews(List<ProductEntity> products) {
+        List<ReviewEntity> reviews = new ArrayList<>();
+        String[] names = {"Ngọc Hân", "Trần Anh", "Lê Minh", "Hoàng Nam", "Thúy Vi"};
+        String[] comments = {
+            "Sản phẩm rất tươi ngon, giao hàng đúng hẹn.",
+            "Chất lượng tuyệt vời, đóng gói rất kỹ lưỡng.",
+            "Giá cả hợp lý, sẽ tiếp tục ủng hộ shop.",
+            "Rất hài lòng với dịch vụ khách hàng.",
+            "Thực phẩm sạch, nấu ăn rất yên tâm."
+        };
+        
+        for (ProductEntity product : products) {
+            for (int i = 0; i < 3; i++) {
+                int idx = (product.getId().hashCode() + i) & 0x7FFFFFFF;
+                reviews.add(new ReviewEntity(
+                    "rev_" + product.getId() + "_" + i,
+                    product.getId(),
+                    names[idx % names.length],
+                    (i + 1) + " ngày trước",
+                    5.0f - (i * 0.5f),
+                    comments[idx % comments.length],
+                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100",
+                    null
+                ));
+            }
+        }
+        return reviews;
     }
 
     private static List<UserEntity> readUsers(AssetJsonLoader loader) throws Exception {
@@ -221,7 +321,12 @@ public final class AssetDatabaseSeeder {
         if (images == null || images.isEmpty()) {
             return null;
         }
-        return images.get(0);
+        for (String img : images) {
+            if (img != null && !img.startsWith("data:image/") && img.length() <= 1000) {
+                return img;
+            }
+        }
+        return null;
     }
 
     private static String firstNonEmpty(String first, String second) {

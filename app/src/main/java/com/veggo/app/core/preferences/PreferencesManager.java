@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 public class PreferencesManager {
     private static final String PREF_NAME = "veggo_preferences";
     private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_ONBOARDING_COMPLETED = "onboarding_completed";
 
     private final SharedPreferences preferences;
 
@@ -19,5 +20,13 @@ public class PreferencesManager {
 
     public String getAccessToken() {
         return preferences.getString(KEY_ACCESS_TOKEN, null);
+    }
+
+    public void setOnboardingCompleted(boolean completed) {
+        preferences.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply();
+    }
+
+    public boolean isOnboardingCompleted() {
+        return preferences.getBoolean(KEY_ONBOARDING_COMPLETED, false);
     }
 }

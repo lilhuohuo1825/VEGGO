@@ -30,10 +30,6 @@ android {
         }
     }
 
-    buildFeatures {
-        viewBinding = true
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -58,6 +54,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation(libs.core.splashscreen)
 
     // MVVM
     implementation(libs.lifecycle.viewmodel)
@@ -100,4 +97,3 @@ dependencies {
 // Thư viện Gson để đọc file JSON tự động
     implementation("com.google.code.gson:gson:2.10.1")
 }
-

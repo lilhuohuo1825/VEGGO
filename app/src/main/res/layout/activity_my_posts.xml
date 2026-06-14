@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <ImageView
+    android:id="@+id/myPostsBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/encodesans_bold"
+            android:gravity="center"
+            android:text="@string/posts_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="@dimen/text_xl"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/myPostsNotificationButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/posts_notifications"
+            android:padding="9dp"
+            android:src="@drawable/ic_profile_bell" />
+
+        <ImageView
+            android:id="@+id/myPostsAddButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/posts_add"
+            android:padding="9dp"
+            android:src="@drawable/ic_plus" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_lg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_post_hero"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/posts_hero_title"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_xl"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/posts_hero_body"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_md" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/myPostsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_post_chip_light"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:minWidth="124dp"
+                        android:text="@string/posts_author_badge"
+                        android:textColor="@color/primary_hover"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:layout_width="84dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:background="@drawable/bg_post_chip_on_hero"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/posts_count_badge"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="108dp"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_card"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="@dimen/spacing_md">
+
+                    <TextView
+                        android:id="@+id/myPostsTotalPosts"
+                        android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="12\nBài đăng"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+
+                <TextView
+                    android:id="@+id/myPostsTotalLikes"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="486\nTym"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+
+                <TextView
+                    android:id="@+id/myPostsTotalComments"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="94\nBình luận"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+
+                <TextView
+                    android:id="@+id/myPostsTotalSaves"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="76\nLưu"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/posts_recent"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="92dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_post_chip_outline"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="@string/posts_status_published"
+                    android:textColor="@color/primary_main"
+                    android:textSize="@dimen/text_sm" />
+
+                <TextView
+                    android:layout_width="64dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:background="@drawable/bg_post_chip_warning"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="@string/posts_status_draft"
+                    android:textColor="@color/secondary_hover"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/myPostsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

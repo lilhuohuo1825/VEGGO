@@ -29,17 +29,137 @@
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.about.AboutUsActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.QrPaymentActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.checkout.CheckoutGuestActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.FridgeSuggestionsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddFridgeIngredientActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.SmartFridgeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TastePreferencesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TasteSetupActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TasteAlertActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.PostNotificationsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CreatePostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.MyPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonCertificateActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.CarbonPointsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddressFormActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.AddressBookActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.PersonalInfoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReturnsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReviewsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringDayEmptyActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringDayDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.CreateRecurringOrderActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringOrdersActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.order.OrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.OrderHistoryActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.product.ProductDetailActivity"
             android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityRecipesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityPostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityCookbookActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityRecipeDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityIngredientsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityDiscoveryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityFollowListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityChefsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityCategoriesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.CommunityHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogAllPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogNewPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.SupportCustomersActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.PolicyActivity"
+            android:exported="true" />
         <activity
             android:name=".presentation.auth.RegisterActivity"
             android:exported="false" />
@@ -47,13 +167,20 @@
             android:name=".presentation.auth.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.onboarding.OnboardingActivity"
+            android:theme="@style/Theme.App.Starting"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".presentation.search.SearchActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

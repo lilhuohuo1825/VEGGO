@@ -1,0 +1,69 @@
+package com.veggo.app.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.veggo.app.R;
+import com.veggo.app.domain.model.Banner;
+
+public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewHolder> {
+
+    public BannerAdapter() {
+        super(new DiffUtil.ItemCallback<Banner>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull Banner oldItem, @NonNull Banner newItem) {
+                return oldItem.getId().equals(newItem.getId());
+            }
+
+            @Override
+            public boolean areContentsTheSame(@NonNull Banner oldItem, @NonNull Banner newItem) {
+                return oldItem.getImageRes() == newItem.getImageRes() &&
+                       stringEquals(oldItem.getImageUrl(), newItem.getImageUrl());
+            }
+        });
+    }
+
+    @NonNull
+    @Override
+    public BannerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_home_banner, parent, false);
+        return new BannerViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull BannerViewHolder holder, int position) {
+        holder.bind(getItem(position));
+    }
+
+    static class BannerViewHolder extends RecyclerView.ViewHolder {
+        private final ImageView imgBanner;
+
+        BannerViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imgBanner = itemView.findViewById(R.id.imgBanner);
+        }
+
+        void bind(Banner banner) {
+            if (banner.getImageUrl() != null && !banner.getImageUrl().isEmpty()) {
+                Glide.with(imgBanner.getContext())
+                        .load(banner.getImageUrl())
+                        .into(imgBanner);
+            } else if (banner.getImageRes() != 0) {
+                imgBanner.setImageResource(banner.getImageRes());
+            }
+        }
+    }
+
+    private static boolean stringEquals(String first, String second) {
+        if (first == null) return second == null;
+        return first.equals(second);
+    }
+}

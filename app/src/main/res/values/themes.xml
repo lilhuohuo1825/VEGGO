@@ -1,34 +1,42 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.VEGGO" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary -->
-        <item name="colorPrimary">@color/primary_main</item>
-        <item name="colorPrimaryContainer">@color/primary_bg</item>
+    <style name="Base.Theme.VEGGO" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
 
-        <!-- Secondary -->
-        <item name="colorSecondary">@color/secondary_main</item>
-        <item name="colorSecondaryContainer">@color/secondary_bg</item>
-
-        <!-- Background -->
-        <item name="android:windowBackground">@color/background_main</item>
-
-        <!-- Status bar -->
-        <item name="android:statusBarColor">@android:color/black</item>
-<!--        <item name="android:windowLightStatusBar">false</item>-->
-
-        <!-- Navigation bar -->
-        <item name="android:navigationBarColor">@color/background_main</item>
-<!--        <item name="android:windowLightNavigationBar">true</item>-->
-
-        <!-- Text -->
-        <item name="android:textColorPrimary">@color/neutral_100</item>
-        <item name="android:textColorSecondary">@color/neutral_80</item>
-
-        <!-- Font mặc định -->
-        <item name="fontFamily">@font/inter_regular</item>
-
+        <!-- Đặt Font Family mặc định cho toàn bộ ứng dụng -->
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
     </style>
 
     <style name="Theme.VEGGO" parent="Base.Theme.VEGGO" />
-</resources>
 
+    <style name="Theme.VEGGO.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- Splash Screen Theme -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+        <item name="android:windowBackground">@drawable/bg_splashscreen</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.VEGGO.NoActionBar</item>
+    </style>
+
+    <style name="ShapeAppearance.Veggo.BottomNav" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">32dp</item>
+        <item name="cornerSizeTopRight">32dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="CircleImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="CircleAppearance" parent="CircleImage" />
+
+</resources>
