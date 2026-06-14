@@ -76,6 +76,21 @@ public class HomeFragment extends Fragment {
 
         binding.imgLogo.setOnClickListener(aboutUsClick);
         binding.stickyHeader.imgStickyLogo.setOnClickListener(aboutUsClick);
+
+        View.OnClickListener openCategoryClick = v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openCategoryScreen();
+            }
+        };
+        binding.btnMenuCategory.setOnClickListener(openCategoryClick);
+        binding.stickyHeader.btnStickyMenuCategory.setOnClickListener(openCategoryClick);
+
+        View.OnClickListener openSearchClick = v -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
+            startActivity(intent);
+        };
+        binding.layoutSearch.setOnClickListener(openSearchClick);
+        binding.stickyHeader.layoutStickySearch.setOnClickListener(openSearchClick);
     }
 
     private void setupRecyclerViews() {
@@ -98,10 +113,26 @@ public class HomeFragment extends Fragment {
         // Categories
         categoryAdapter = new CategoryAdapter();
         binding.rvCategories.setAdapter(categoryAdapter);
+        categoryAdapter.setOnCategoryClickListener(category -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openCategoryDetail(category.getId(), null);
+            }
+        });
+
+        binding.btnViewMoreCategories.setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openCategoryDetail(null, null);
+            }
+        });
 
         // Flash Sale
         flashSaleAdapter = new FlashSaleAdapter();
         binding.rvFlashSale.setAdapter(flashSaleAdapter);
+        flashSaleAdapter.setOnFlashSaleClickListener(flashSale -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
+            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, flashSale.getId());
+            startActivity(intent);
+        });
 
         // Recipes
         recipeAdapter = new RecipeAdapter();
@@ -110,6 +141,11 @@ public class HomeFragment extends Fragment {
         // Products Grid
         productAdapter = new ProductAdapter();
         binding.rvProducts.setAdapter(productAdapter);
+        productAdapter.setOnProductClickListener(product -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
+            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+            startActivity(intent);
+        });
     }
 
     private void setupBannerIndicators() {

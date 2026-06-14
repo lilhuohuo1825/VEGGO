@@ -94,9 +94,9 @@ public class HomeViewModel extends ViewModel {
 
     private void loadFlashSales() {
         List<FlashSale> flashSaleList = new ArrayList<>();
-        flashSaleList.add(new FlashSale("1", "Táo Envy Mỹ", 120000, "1kg", "-20%", R.drawable.onboarding_1, null, 4.5f));
-        flashSaleList.add(new FlashSale("2", "Bơ Sáp Đắk Lắk", 45000, "1kg", "-15%", R.drawable.onboarding_2, null, 4.2f));
-        flashSaleList.add(new FlashSale("3", "Nho Mẫu Đơn", 350000, "500g", "-10%", R.drawable.onboarding_3, null, 4.8f));
+        flashSaleList.add(new FlashSale("68d1501b1108dd931e9631a6", "Táo Envy Mỹ", 120000, "1.5kg", "-20%", 0, "https://lh3.googleusercontent.com/voEE3B_IhofqhrkoWMN05xl_FqpvHnGOc0NoTCvD1A9IeGtCE0E8X_BAeAb4Y136YmxkUOCR0nGJSXW-KtekoNy38c6_sWurnQ=rw", 4.5f));
+        flashSaleList.add(new FlashSale("68d150221108dd931e9631d4", "Bơ Sáp Đắk Lắk", 45000, "1kg", "-15%", 0, "https://lh3.googleusercontent.com/PKppN4rs6zjbBlbMk_AXcwjTk-40oORwBRW9njwjANV5gFgme2ioKCV4nKuTUNYck_V41-pBPfSeoSTu5rE9KQxSFKICMDWkYg=rw", 4.2f));
+        flashSaleList.add(new FlashSale("68d150401108dd931e963284", "Nho đỏ Candy Mỹ", 350000, "450g", "-10%", 0, "https://lh3.googleusercontent.com/8P3BtXVPs972GoFMXDzALWkU7LnqpsnsLDwTfPgHa_MZQceIWsV9Lkvn10J-vzS9ChlFYiOOu4lyIYmUKzC9tlStOVr6gXVP=rw", 4.8f));
         _flashSales.setValue(flashSaleList);
     }
 

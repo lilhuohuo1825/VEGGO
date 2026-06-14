@@ -51,7 +51,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         if (savedInstanceState == null) {
-            openTab(tabFromNavItem(getIntent().getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+            Intent intent = getIntent();
+            if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
+                openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
+            } else {
+                openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+            }
         }
     }
 
@@ -59,7 +64,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+        if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
+            openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
+        } else {
+            openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+        }
     }
 
     private Tab tabFromNavItem(int itemId) {
@@ -118,6 +127,44 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.mainFragmentContainer, new CartFragment())
                 .addToBackStack("cart")
+                .commit();
+    }
+
+    public static final String EXTRA_CATEGORY_ID = "extra_category_id";
+    public static final String EXTRA_SUBCATEGORY_ID = "extra_subcategory_id";
+
+    public void openCategoryDetail(String categoryId, String subcategoryId) {
+        Fragment fragment = new com.veggo.app.presentation.category.CategoryDetailFragment();
+        Bundle args = new Bundle();
+        if (categoryId != null) {
+            args.putString(com.veggo.app.presentation.category.CategoryDetailFragment.ARG_CATEGORY_ID, categoryId);
+        }
+        if (subcategoryId != null) {
+            args.putString(com.veggo.app.presentation.category.CategoryDetailFragment.ARG_SUBCATEGORY_ID, subcategoryId);
+        }
+        fragment.setArguments(args);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.mainFragmentContainer, fragment)
+                .addToBackStack("category_detail")
+                .commit();
+    }
+
+    public void openCategoryScreen() {
+        openCategoryScreen(null);
+    }
+
+    public void openCategoryScreen(String categoryId) {
+        Fragment fragment = new com.veggo.app.presentation.category.CategoryFragment();
+        if (categoryId != null) {
+            Bundle args = new Bundle();
+            args.putString(com.veggo.app.presentation.category.CategoryFragment.ARG_CATEGORY_ID, categoryId);
+            fragment.setArguments(args);
+        }
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.mainFragmentContainer, fragment)
+                .addToBackStack("category")
                 .commit();
     }
 

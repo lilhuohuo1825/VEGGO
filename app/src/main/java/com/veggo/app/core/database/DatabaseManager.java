@@ -76,6 +76,8 @@ public final class DatabaseManager {
         public static final String CONDITION = "condition";
         public static final String FAT_CONTENT = "fatContent";
         public static final String SKU = "sku";
+        public static final String CATEGORY_ID = "categoryId";
+        public static final String SUBCATEGORY_ID = "subcategoryId";
 
         private ProductColumns() {
         }
@@ -143,7 +145,9 @@ public final class DatabaseManager {
                         + ProductColumns.ORIGIN + " TEXT, "
                         + ProductColumns.CONDITION + " TEXT, "
                         + ProductColumns.FAT_CONTENT + " TEXT, "
-                        + ProductColumns.SKU + " TEXT"
+                        + ProductColumns.SKU + " TEXT, "
+                        + ProductColumns.CATEGORY_ID + " TEXT, "
+                        + ProductColumns.SUBCATEGORY_ID + " TEXT"
                         + ")";
 
         public static final String CREATE_CART_ITEMS_TABLE =

@@ -16,6 +16,16 @@ import com.veggo.app.domain.model.Category;
 
 public class CategoryAdapter extends ListAdapter<Category, CategoryAdapter.CategoryViewHolder> {
 
+    private OnCategoryClickListener listener;
+
+    public interface OnCategoryClickListener {
+        void onCategoryClick(Category category);
+    }
+
+    public void setOnCategoryClickListener(OnCategoryClickListener listener) {
+        this.listener = listener;
+    }
+
     public CategoryAdapter() {
         super(new DiffUtil.ItemCallback<Category>() {
             @Override
@@ -39,7 +49,7 @@ public class CategoryAdapter extends ListAdapter<Category, CategoryAdapter.Categ
 
     @Override
     public void onBindViewHolder(@NonNull CategoryViewHolder holder, int position) {
-        holder.bind(getItem(position));
+        holder.bind(getItem(position), listener);
     }
 
     static class CategoryViewHolder extends RecyclerView.ViewHolder {
@@ -52,11 +62,16 @@ public class CategoryAdapter extends ListAdapter<Category, CategoryAdapter.Categ
             tvCategoryName = itemView.findViewById(R.id.tvCategoryName);
         }
 
-        void bind(Category category) {
+        void bind(Category category, OnCategoryClickListener listener) {
             tvCategoryName.setText(category.getName());
             if (category.getIconRes() != 0) {
                 imgCategory.setImageResource(category.getIconRes());
             }
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCategoryClick(category);
+                }
+            });
         }
     }
 }

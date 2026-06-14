@@ -10,12 +10,15 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.veggo.app.MainActivity;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.databinding.FragmentCategoryBinding;
 import com.veggo.app.di.AppModule;
 
 public class CategoryFragment extends BaseFragment {
+    public static final String ARG_CATEGORY_ID = "arg_category_id";
+
     private FragmentCategoryBinding binding;
     private CategoryViewModel viewModel;
     private CategoryAdapter categoryAdapter;
@@ -52,13 +55,26 @@ public class CategoryFragment extends BaseFragment {
 
         subcategoryAdapter = new SubcategoryAdapter();
         binding.rvSubcategories.setAdapter(subcategoryAdapter);
+        subcategoryAdapter.setOnSubcategoryClickListener(subcategory -> {
+            if (getActivity() instanceof MainActivity) {
+                String parentCategoryId = viewModel.getSelectedCategoryId().getValue();
+                ((MainActivity) getActivity()).openCategoryDetail(parentCategoryId, subcategory.subcategoryId);
+            }
+        });
     }
 
     private void observeViewModel() {
         viewModel.getCategories().observe(getViewLifecycleOwner(), categories -> {
             categoryAdapter.setCategories(categories);
             if (viewModel.getSelectedCategoryId().getValue() == null && !categories.isEmpty()) {
-                viewModel.selectCategory(categories.get(0).categoryId);
+                String initialId = null;
+                if (getArguments() != null) {
+                    initialId = getArguments().getString(ARG_CATEGORY_ID);
+                }
+                if (initialId == null) {
+                    initialId = categories.get(0).categoryId;
+                }
+                viewModel.selectCategory(initialId);
             }
         });
 

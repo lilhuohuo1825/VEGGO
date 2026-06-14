@@ -22,11 +22,13 @@ public class ProductEntity {
     private String origin;
     private String condition;
     private String fatContent;
+    private String categoryId;
+    private String subcategoryId;
 
     public ProductEntity(@NonNull String id, String name, long price, long originalPrice, 
                          String sku, String imageUrl, String weight, float rating, int reviewCount, 
                          int soldCount, String description, String origin, 
-                         String condition, String fatContent) {
+                         String condition, String fatContent, String categoryId, String subcategoryId) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -41,6 +43,8 @@ public class ProductEntity {
         this.origin = origin;
         this.condition = condition;
         this.fatContent = fatContent;
+        this.categoryId = categoryId;
+        this.subcategoryId = subcategoryId;
     }
 
     @NonNull public String getId() { return id; }
@@ -71,4 +75,8 @@ public class ProductEntity {
     public void setCondition(String condition) { this.condition = condition; }
     public String getFatContent() { return fatContent; }
     public void setFatContent(String fatContent) { this.fatContent = fatContent; }
+    public String getCategoryId() { return categoryId; }
+    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+    public String getSubcategoryId() { return subcategoryId; }
+    public void setSubcategoryId(String subcategoryId) { this.subcategoryId = subcategoryId; }
 }

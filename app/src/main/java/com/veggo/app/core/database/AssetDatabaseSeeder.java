@@ -142,7 +142,9 @@ public final class AssetDatabaseSeeder {
                     finalDescription,
                     assetProduct.origin != null ? assetProduct.origin : "Việt Nam",
                     assetProduct.status != null ? assetProduct.status : "Mới",
-                    assetProduct.brand != null ? assetProduct.brand : "Veggo"
+                    assetProduct.brand != null ? assetProduct.brand : "Veggo",
+                    assetProduct.categoryId,
+                    assetProduct.subcategoryId
             ));
         }
         return products;
@@ -319,7 +321,12 @@ public final class AssetDatabaseSeeder {
         if (images == null || images.isEmpty()) {
             return null;
         }
-        return images.get(0);
+        for (String img : images) {
+            if (img != null && !img.startsWith("data:image/") && img.length() <= 1000) {
+                return img;
+            }
+        }
+        return null;
     }
 
     private static String firstNonEmpty(String first, String second) {

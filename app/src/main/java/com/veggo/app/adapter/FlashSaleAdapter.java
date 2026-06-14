@@ -18,6 +18,16 @@ import com.veggo.app.domain.model.FlashSale;
 
 public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.FlashSaleViewHolder> {
 
+    private OnFlashSaleClickListener listener;
+
+    public interface OnFlashSaleClickListener {
+        void onFlashSaleClick(FlashSale flashSale);
+    }
+
+    public void setOnFlashSaleClickListener(OnFlashSaleClickListener listener) {
+        this.listener = listener;
+    }
+
     public FlashSaleAdapter() {
         super(new DiffUtil.ItemCallback<FlashSale>() {
             @Override
@@ -41,7 +51,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
 
     @Override
     public void onBindViewHolder(@NonNull FlashSaleViewHolder holder, int position) {
-        holder.bind(getItem(position));
+        holder.bind(getItem(position), listener);
     }
 
     static class FlashSaleViewHolder extends RecyclerView.ViewHolder {
@@ -60,7 +70,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
         }
 
-        void bind(FlashSale flashSale) {
+        void bind(FlashSale flashSale, OnFlashSaleClickListener listener) {
             tvProductName.setText(flashSale.getName());
             tvProductPrice.setText(CurrencyFormatter.formatVnd(flashSale.getPrice()));
             tvRating.setText(String.valueOf(flashSale.getRating()));
@@ -75,6 +85,12 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
             } else if (flashSale.getImageRes() != 0) {
                 imgProduct.setImageResource(flashSale.getImageRes());
             }
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onFlashSaleClick(flashSale);
+                }
+            });
         }
     }
 }

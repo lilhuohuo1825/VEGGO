@@ -8,6 +8,7 @@ public class ProductDto {
     private String name;
     private String sku;
     private String categoryId;
+    private String subcategoryId;
     private String description;
     private long price;
     private long originalPrice;
@@ -31,6 +32,8 @@ public class ProductDto {
     public void setSku(String sku) { this.sku = sku; }
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+    public String getSubcategoryId() { return subcategoryId; }
+    public void setSubcategoryId(String subcategoryId) { this.subcategoryId = subcategoryId; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public long getPrice() { return price; }

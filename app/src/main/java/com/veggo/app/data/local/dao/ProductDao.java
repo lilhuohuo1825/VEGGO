@@ -22,6 +22,12 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     LiveData<ProductEntity> observeProductById(String productId);
 
+    @Query("SELECT * FROM products WHERE categoryId = :categoryId")
+    LiveData<List<ProductEntity>> observeProductsByCategory(String categoryId);
+
+    @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId")
+    LiveData<List<ProductEntity>> observeProductsBySubcategory(String subcategoryId);
+
     @Query("SELECT * FROM products WHERE id IN (:productIds)")
     List<ProductEntity> getProductsByIds(List<String> productIds);
 

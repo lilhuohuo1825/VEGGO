@@ -19,10 +19,14 @@
             android:layout_height="?attr/actionBarSize">
 
             <ImageView
+                android:id="@+id/btnBack"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_left"
-                app:tint="@color/neutral_100"/>
+                app:tint="@color/neutral_100"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
 
         </androidx.appcompat.widget.Toolbar>
 

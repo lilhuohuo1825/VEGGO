@@ -24,7 +24,9 @@ public final class ProductMapper {
                 dto.getDescription(),
                 dto.getOrigin(),
                 dto.getCondition(),
-                dto.getFatContent()
+                dto.getFatContent(),
+                dto.getCategoryId(),
+                dto.getSubcategoryId()
         );
     }
 
@@ -43,7 +45,9 @@ public final class ProductMapper {
                 entity.getDescription(),
                 entity.getOrigin(),
                 entity.getCondition(),
-                entity.getFatContent()
+                entity.getFatContent(),
+                entity.getCategoryId(),
+                entity.getSubcategoryId()
         );
     }
 
@@ -71,7 +75,9 @@ public final class ProductMapper {
                 dto.getDescription(),
                 dto.getOrigin(),
                 dto.getCondition(),
-                dto.getFatContent()
+                dto.getFatContent(),
+                dto.getCategoryId(),
+                dto.getSubcategoryId()
         );
     }
 
@@ -90,7 +96,9 @@ public final class ProductMapper {
                 product.getDescription(),
                 product.getOrigin(),
                 product.getCondition(),
-                product.getFatContent()
+                product.getFatContent(),
+                product.getCategoryId(),
+                product.getSubcategoryId()
         );
     }
 }

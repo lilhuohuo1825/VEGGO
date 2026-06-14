@@ -141,6 +141,32 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public LiveData<List<Product>> observeProductsByCategory(String categoryId) {
+        return Transformations.map(productDao.observeProductsByCategory(categoryId), entities -> {
+            List<Product> products = new ArrayList<>();
+            if (entities != null) {
+                for (ProductEntity entity : entities) {
+                    products.add(ProductMapper.fromEntity(entity));
+                }
+            }
+            return products;
+        });
+    }
+
+    @Override
+    public LiveData<List<Product>> observeProductsBySubcategory(String subcategoryId) {
+        return Transformations.map(productDao.observeProductsBySubcategory(subcategoryId), entities -> {
+            List<Product> products = new ArrayList<>();
+            if (entities != null) {
+                for (ProductEntity entity : entities) {
+                    products.add(ProductMapper.fromEntity(entity));
+                }
+            }
+            return products;
+        });
+    }
+
+    @Override
     public void refreshProducts() {
         // Implementation for remote sync if needed
     }

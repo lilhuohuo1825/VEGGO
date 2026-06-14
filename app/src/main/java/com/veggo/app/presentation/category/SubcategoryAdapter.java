@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.databinding.ItemSubcategoryBinding;
 
@@ -14,6 +15,15 @@ import java.util.List;
 
 public class SubcategoryAdapter extends RecyclerView.Adapter<SubcategoryAdapter.ViewHolder> {
     private List<AssetModels.Subcategory> subcategories = new ArrayList<>();
+
+    public interface OnSubcategoryClickListener {
+        void onSubcategoryClick(AssetModels.Subcategory subcategory);
+    }
+    private OnSubcategoryClickListener listener;
+
+    public void setOnSubcategoryClickListener(OnSubcategoryClickListener listener) {
+        this.listener = listener;
+    }
 
     public void setSubcategories(List<AssetModels.Subcategory> subcategories) {
         this.subcategories = subcategories != null ? subcategories : new ArrayList<>();
@@ -49,7 +59,28 @@ public class SubcategoryAdapter extends RecyclerView.Adapter<SubcategoryAdapter.
 
         void bind(AssetModels.Subcategory subcategory) {
             binding.tvSubcategoryName.setText(subcategory.subcategoryName);
-            // binding.ivSubcategoryIcon.setImageResource(...);
+            binding.ivSubcategoryIcon.setImageResource(getSubcategoryIcon(subcategory.subcategoryId));
+
+            binding.getRoot().setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onSubcategoryClick(subcategory);
+                }
+            });
+        }
+
+        private int getSubcategoryIcon(String subcategoryId) {
+            if (subcategoryId != null) {
+                if (subcategoryId.contains("SUB003")) {
+                    return R.drawable.ic_vegetable;
+                } else if (subcategoryId.contains("SUB008")) {
+                    return R.drawable.ic_fruit;
+                } else if (subcategoryId.contains("SUB001")) {
+                    return R.drawable.ic_coffee_green;
+                } else if (subcategoryId.contains("SUB007")) {
+                    return R.drawable.ic_leaf;
+                }
+            }
+            return R.drawable.ic_vegetable;
         }
     }
 }
