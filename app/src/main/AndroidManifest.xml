@@ -29,6 +29,9 @@
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.about.AboutUsActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.QrPaymentActivity"
             android:exported="false" />
         <activity
