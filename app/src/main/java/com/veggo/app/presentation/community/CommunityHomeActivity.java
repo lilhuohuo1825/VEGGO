@@ -18,7 +18,7 @@ public class CommunityHomeActivity extends AppCompatActivity {
         binding = ActivityCommunityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new CommunityRepository(this);
-        CommunityUi.setupBottomNav(binding.communityBottomNavigation);
+        CommunityUi.setupBottomNav(this, binding.communityBottomNavHost);
         binding.communityAvatar.setOnClickListener(v -> {
             Intent intent = new Intent(this, CommunityProfileActivity.class);
             intent.putExtra(CommunityProfileActivity.EXTRA_ACCOUNT_PROFILE, true);

@@ -3,14 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F8F7">
+    android:background="#F7F8F7"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:fitsSystemWindows="true">
 
     <ScrollView
         android:id="@+id/policiesScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavHost"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -19,9 +22,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="14dp"
+        android:paddingStart="18dp"
         android:paddingTop="16dp"
-        android:paddingEnd="14dp"
+        android:paddingEnd="18dp"
         android:paddingBottom="16dp">
 
         <LinearLayout
@@ -31,14 +34,16 @@
             android:orientation="horizontal">
 
             <ImageButton
-                android:id="@+id/backButton"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="7dp"
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_left"
-                app:tint="@color/primary_main" />
+    android:id="@+id/backButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
             <TextView
                 android:layout_width="0dp"
@@ -620,13 +625,13 @@
     </LinearLayout>
     </ScrollView>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
+    <include
+        android:id="@+id/bottomNavHost"
+        layout="@layout/component_bottom_nav"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="80dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:menu="@menu/menu_bottom_navigation" />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

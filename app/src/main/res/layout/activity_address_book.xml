@@ -25,12 +25,17 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:id="@+id/addressBookBackButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:contentDescription="@string/orders_back"
-                    android:padding="@dimen/spacing_sm"
-                    android:src="@drawable/ic_left" />
+    android:id="@+id/addressBookBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -48,9 +53,16 @@
                     android:layout_height="40dp" />
             </LinearLayout>
 
-            <include layout="@layout/item_address" />
+            <FrameLayout
+                android:id="@+id/addressSecondaryContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <include layout="@layout/item_address" />
+            </FrameLayout>
 
             <FrameLayout
+                android:id="@+id/addressDefaultContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_lg">

@@ -165,32 +165,58 @@ public class PostNotificationsActivity extends BaseActivity {
     private void updateSelectedTab(String category) {
         setTabSelected(
                 R.id.postNotificationTabOrdersText,
+                R.id.postNotificationTabOrdersBadge,
                 R.id.postNotificationTabOrdersIndicator,
-                CATEGORY_ORDERS.equals(category)
+                CATEGORY_ORDERS.equals(category),
+                countNotifications(CATEGORY_ORDERS)
         );
         setTabSelected(
                 R.id.postNotificationTabCommunityText,
+                R.id.postNotificationTabCommunityBadge,
                 R.id.postNotificationTabCommunityIndicator,
-                CATEGORY_COMMUNITY.equals(category)
+                CATEGORY_COMMUNITY.equals(category),
+                countNotifications(CATEGORY_COMMUNITY)
         );
         setTabSelected(
                 R.id.postNotificationTabQaText,
+                R.id.postNotificationTabQaBadge,
                 R.id.postNotificationTabQaIndicator,
-                CATEGORY_QA.equals(category)
+                CATEGORY_QA.equals(category),
+                countNotifications(CATEGORY_QA)
         );
         setTabSelected(
                 R.id.postNotificationTabOtherText,
+                R.id.postNotificationTabOtherBadge,
                 R.id.postNotificationTabOtherIndicator,
-                CATEGORY_OTHER.equals(category)
+                CATEGORY_OTHER.equals(category),
+                countNotifications(CATEGORY_OTHER)
         );
     }
 
-    private void setTabSelected(int textId, int indicatorId, boolean selected) {
+    private int countNotifications(String category) {
+        int count = 0;
+        for (PostNotificationItem item : notificationItems) {
+            if (item.category.equals(category)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count) {
         TextView text = findViewById(textId);
+        TextView badge = findViewById(badgeId);
         View indicator = findViewById(indicatorId);
         if (text != null) {
             text.setTextColor(getColor(selected ? R.color.primary_main : R.color.neutral_60));
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        }
+        if (badge != null) {
+            badge.setText(String.valueOf(count));
+            badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+            badge.setBackgroundResource(selected
+                    ? R.drawable.bg_notification_badge_alert
+                    : R.drawable.bg_notification_badge_dark);
         }
         if (indicator != null) {
             indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);

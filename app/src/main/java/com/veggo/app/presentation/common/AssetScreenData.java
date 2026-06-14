@@ -28,6 +28,7 @@ import java.util.TimeZone;
 public final class AssetScreenData {
     public static final String EXTRA_ORDER_ID = "extra_order_id";
     private static final String FALLBACK_CUSTOMER_ID = "CUS000006";
+    private static final String CURRENT_USER_NAME_KEYWORD = "Hương";
     private static final NumberFormat VND_FORMAT = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private static final SimpleDateFormat ISO_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd/MM/yyyy, HH:mm", new Locale("vi", "VN"));
@@ -51,7 +52,8 @@ public final class AssetScreenData {
         List<AssetModels.Inventory> inventories = repository.getInventories();
         List<AssetModels.Instruction> instructions = repository.getInstructions();
 
-        AssetModels.User user = findUser(users, orders);
+        AssetModels.User user = findUser(users, orders, details);
+        enrichUserFromOrderDetails(user, orders, details);
         String customerId = user == null ? FALLBACK_CUSTOMER_ID : user.customerId;
         List<AssetModels.Order> customerOrders = new ArrayList<>();
         for (AssetModels.Order order : orders) {
@@ -89,8 +91,24 @@ public final class AssetScreenData {
     @Nullable
     private static AssetModels.User findUser(
             @NonNull List<AssetModels.User> users,
-            @NonNull List<AssetModels.Order> orders
+            @NonNull List<AssetModels.Order> orders,
+            @NonNull List<AssetModels.OrderDetail> details
     ) {
+        String customerIdFromShippingName = findCustomerIdByShippingName(orders, details, CURRENT_USER_NAME_KEYWORD);
+        if (hasText(customerIdFromShippingName)) {
+            for (AssetModels.User user : users) {
+                if (equals(user.customerId, customerIdFromShippingName)) {
+                    return user;
+                }
+            }
+        }
+
+        for (AssetModels.User user : users) {
+            if (containsIgnoreCase(user.fullName, CURRENT_USER_NAME_KEYWORD)) {
+                return user;
+            }
+        }
+
         for (AssetModels.User user : users) {
             if (equals(user.customerId, FALLBACK_CUSTOMER_ID)) {
                 return user;
@@ -104,6 +122,71 @@ public final class AssetScreenData {
             }
         }
         return users.isEmpty() ? null : users.get(0);
+    }
+
+    @Nullable
+    private static String findCustomerIdByShippingName(
+            @NonNull List<AssetModels.Order> orders,
+            @NonNull List<AssetModels.OrderDetail> details,
+            @NonNull String nameKeyword
+    ) {
+        Map<String, AssetModels.Order> orderById = new HashMap<>();
+        for (AssetModels.Order order : orders) {
+            orderById.put(order.orderId, order);
+        }
+
+        for (AssetModels.OrderDetail detail : details) {
+            AssetModels.ShippingInfo shippingInfo = detail.shippingInfo;
+            if (shippingInfo == null || !containsIgnoreCase(shippingInfo.fullName, nameKeyword)) {
+                continue;
+            }
+            AssetModels.Order order = orderById.get(detail.orderId);
+            if (order != null && hasText(order.customerId)) {
+                return order.customerId;
+            }
+        }
+        return null;
+    }
+
+    private static void enrichUserFromOrderDetails(
+            @Nullable AssetModels.User user,
+            @NonNull List<AssetModels.Order> orders,
+            @NonNull List<AssetModels.OrderDetail> details
+    ) {
+        if (user == null) {
+            return;
+        }
+
+        Map<String, AssetModels.OrderDetail> detailByOrderId = new HashMap<>();
+        for (AssetModels.OrderDetail detail : details) {
+            detailByOrderId.put(detail.orderId, detail);
+        }
+
+        for (AssetModels.Order order : orders) {
+            if (!equals(order.customerId, user.customerId)) {
+                continue;
+            }
+            AssetModels.OrderDetail detail = detailByOrderId.get(order.orderId);
+            if (detail == null || detail.shippingInfo == null) {
+                continue;
+            }
+            AssetModels.ShippingInfo shippingInfo = detail.shippingInfo;
+            if (!hasText(user.fullName) && hasText(shippingInfo.fullName)) {
+                user.fullName = shippingInfo.fullName;
+            }
+            if (!hasText(user.phone) && hasText(shippingInfo.phone)) {
+                user.phone = shippingInfo.phone;
+            }
+            if (!hasText(user.email) && hasText(shippingInfo.email)) {
+                user.email = shippingInfo.email;
+            }
+            if (!hasText(user.address) && shippingInfo.address != null) {
+                user.address = fullAddress(shippingInfo);
+            }
+            if (hasText(user.fullName) && hasText(user.phone) && hasText(user.address)) {
+                return;
+            }
+        }
     }
 
     public static List<AssetModels.Order> filterOrders(
@@ -344,6 +427,10 @@ public final class AssetScreenData {
 
     public static boolean hasText(@Nullable String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private static boolean containsIgnoreCase(@Nullable String value, @NonNull String keyword) {
+        return hasText(value) && value.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT));
     }
 
     private static int compareDates(@Nullable AssetModels.MongoDate left, @Nullable AssetModels.MongoDate right) {

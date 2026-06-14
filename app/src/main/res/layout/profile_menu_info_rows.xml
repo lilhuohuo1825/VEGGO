@@ -5,6 +5,7 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/profilePolicyRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:gravity="center_vertical"
@@ -15,6 +16,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/profileSupportRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:gravity="center_vertical"

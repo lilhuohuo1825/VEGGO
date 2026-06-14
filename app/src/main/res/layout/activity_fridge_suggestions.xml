@@ -14,12 +14,17 @@
         android:paddingEnd="@dimen/spacing_md">
 
         <ImageView
-            android:id="@+id/fridgeSuggestionsBackButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:contentDescription="@string/orders_back"
-            android:padding="@dimen/spacing_sm"
-            android:src="@drawable/ic_left" />
+    android:id="@+id/fridgeSuggestionsBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
         <TextView
             android:layout_width="0dp"

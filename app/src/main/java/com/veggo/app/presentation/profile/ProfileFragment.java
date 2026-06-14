@@ -29,6 +29,9 @@ public class ProfileFragment extends BaseFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        view.findViewById(R.id.profileAccountHeaderCard).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PersonalInfoActivity.class))
+        );
         view.findViewById(R.id.profileAddressRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), AddressBookActivity.class))
         );
@@ -43,6 +46,15 @@ public class ProfileFragment extends BaseFragment {
         );
         view.findViewById(R.id.profileTasteRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), TastePreferencesActivity.class))
+        );
+        view.findViewById(R.id.profileNotificationsRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PostNotificationsActivity.class))
+        );
+        view.findViewById(R.id.profilePolicyRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PolicyActivity.class))
+        );
+        view.findViewById(R.id.profileSupportRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), SupportCustomersActivity.class))
         );
         view.findViewById(R.id.profileOrdersCard).setOnClickListener(v -> openOrders(null));
         view.findViewById(R.id.profileOrderHistoryRow).setOnClickListener(v -> openOrders(null));

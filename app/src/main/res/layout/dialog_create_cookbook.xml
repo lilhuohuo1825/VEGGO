@@ -54,14 +54,16 @@
         android:orientation="horizontal">
 
         <ImageButton
-            android:id="@+id/cookbookBackToListButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_community_chip"
-            android:padding="15dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_left"
-            android:tint="@color/primary_main" />
+    android:id="@+id/cookbookBackToListButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
         <TextView
             android:id="@+id/cookbookCreateSaveButton"

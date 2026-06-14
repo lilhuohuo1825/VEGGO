@@ -13,10 +13,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.veggo.app.R;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeEntity;
+import com.veggo.app.databinding.ComponentBottomNavBinding;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +49,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         chefsText = findViewById(R.id.discoveryChefsText);
         recipesIndicator = findViewById(R.id.discoveryRecipesIndicator);
         chefsIndicator = findViewById(R.id.discoveryChefsIndicator);
-        BottomNavigationView bottomNavigationView = findViewById(R.id.communityBottomNavigation);
-        CommunityUi.setupBottomNav(bottomNavigationView);
+        CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
 
         findViewById(R.id.discoveryRecipesTab).setOnClickListener(v -> showRecipes());
         findViewById(R.id.discoveryChefsTab).setOnClickListener(v -> showChefs());

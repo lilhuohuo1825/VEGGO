@@ -1,6 +1,7 @@
 package com.veggo.app.presentation.order;
 
 import android.os.Bundle;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -20,6 +21,10 @@ public class ReturnsActivity extends BaseActivity {
     private TextView processingTab;
     private TextView completedTab;
     private TextView rejectedTab;
+    private TextView pendingBadge;
+    private TextView processingBadge;
+    private TextView completedBadge;
+    private TextView rejectedBadge;
     private View pendingIndicator;
     private View processingIndicator;
     private View completedIndicator;
@@ -39,6 +44,10 @@ public class ReturnsActivity extends BaseActivity {
         processingTab = findViewById(R.id.returnProcessingTabText);
         completedTab = findViewById(R.id.returnCompletedTabText);
         rejectedTab = findViewById(R.id.returnRejectedTabText);
+        pendingBadge = findViewById(R.id.returnPendingTabBadge);
+        processingBadge = findViewById(R.id.returnProcessingTabBadge);
+        completedBadge = findViewById(R.id.returnCompletedTabBadge);
+        rejectedBadge = findViewById(R.id.returnRejectedTabBadge);
         pendingIndicator = findViewById(R.id.returnPendingIndicator);
         processingIndicator = findViewById(R.id.returnProcessingIndicator);
         completedIndicator = findViewById(R.id.returnCompletedIndicator);
@@ -56,10 +65,10 @@ public class ReturnsActivity extends BaseActivity {
     }
 
     private void showReturnState(TextView activeTab, View activeList) {
-        setActive(pendingTab, pendingTab == activeTab);
-        setActive(processingTab, processingTab == activeTab);
-        setActive(completedTab, completedTab == activeTab);
-        setActive(rejectedTab, rejectedTab == activeTab);
+        setActive(pendingTab, pendingBadge, pendingTab == activeTab);
+        setActive(processingTab, processingBadge, processingTab == activeTab);
+        setActive(completedTab, completedBadge, completedTab == activeTab);
+        setActive(rejectedTab, rejectedBadge, rejectedTab == activeTab);
         pendingIndicator.setVisibility(pendingTab == activeTab ? View.VISIBLE : View.INVISIBLE);
         processingIndicator.setVisibility(processingTab == activeTab ? View.VISIBLE : View.INVISIBLE);
         completedIndicator.setVisibility(completedTab == activeTab ? View.VISIBLE : View.INVISIBLE);
@@ -71,9 +80,15 @@ public class ReturnsActivity extends BaseActivity {
         rejectedList.setVisibility(rejectedList == activeList ? View.VISIBLE : View.GONE);
     }
 
-    private void setActive(TextView textView, boolean active) {
+    private void setActive(TextView textView, TextView badge, boolean active) {
         int colorRes = active ? R.color.primary_main : R.color.neutral_60;
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
+        textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
+        if (badge != null) {
+            badge.setBackgroundResource(active
+                    ? R.drawable.bg_notification_badge_alert
+                    : R.drawable.bg_notification_badge_dark);
+        }
     }
 
     private void loadReturns() {
@@ -84,10 +99,27 @@ public class ReturnsActivity extends BaseActivity {
     }
 
     private void bindReturnLists(AssetScreenData.Snapshot snapshot) {
-        bindList((LinearLayout) pendingList, AssetScreenData.filterReturnOrders(snapshot, "pending"), R.layout.item_return_pending, snapshot);
-        bindList((LinearLayout) processingList, AssetScreenData.filterReturnOrders(snapshot, "processing"), R.layout.item_return_processing, snapshot);
-        bindList((LinearLayout) completedList, AssetScreenData.filterReturnOrders(snapshot, "completed"), R.layout.item_return_completed, snapshot);
-        bindList((LinearLayout) rejectedList, AssetScreenData.filterReturnOrders(snapshot, "rejected"), R.layout.item_return_rejected, snapshot);
+        List<AssetModels.Order> pendingOrders = AssetScreenData.filterReturnOrders(snapshot, "pending");
+        List<AssetModels.Order> processingOrders = AssetScreenData.filterReturnOrders(snapshot, "processing");
+        List<AssetModels.Order> completedOrders = AssetScreenData.filterReturnOrders(snapshot, "completed");
+        List<AssetModels.Order> rejectedOrders = AssetScreenData.filterReturnOrders(snapshot, "rejected");
+        setBadgeCount(pendingBadge, pendingOrders.size());
+        setBadgeCount(processingBadge, processingOrders.size());
+        setBadgeCount(completedBadge, completedOrders.size());
+        setBadgeCount(rejectedBadge, rejectedOrders.size());
+        bindList((LinearLayout) pendingList, pendingOrders, R.layout.item_return_pending, snapshot);
+        bindList((LinearLayout) processingList, processingOrders, R.layout.item_return_processing, snapshot);
+        bindList((LinearLayout) completedList, completedOrders, R.layout.item_return_completed, snapshot);
+        bindList((LinearLayout) rejectedList, rejectedOrders, R.layout.item_return_rejected, snapshot);
+        showReturnState(pendingTab, pendingList);
+    }
+
+    private void setBadgeCount(TextView badge, int count) {
+        if (badge == null) {
+            return;
+        }
+        badge.setText(String.valueOf(count));
+        badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void bindList(

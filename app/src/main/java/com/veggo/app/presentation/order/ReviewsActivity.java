@@ -1,6 +1,7 @@
 package com.veggo.app.presentation.order;
 
 import android.os.Bundle;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -18,6 +19,8 @@ import java.util.List;
 public class ReviewsActivity extends BaseActivity {
     private TextView waitingTabText;
     private TextView doneTabText;
+    private TextView waitingTabBadge;
+    private TextView doneTabBadge;
     private View waitingIndicator;
     private View doneIndicator;
     private View waitingList;
@@ -31,6 +34,8 @@ public class ReviewsActivity extends BaseActivity {
         findViewById(R.id.reviewsBackButton).setOnClickListener(v -> finish());
         waitingTabText = findViewById(R.id.reviewWaitingTabText);
         doneTabText = findViewById(R.id.reviewDoneTabText);
+        waitingTabBadge = findViewById(R.id.reviewWaitingTabBadge);
+        doneTabBadge = findViewById(R.id.reviewDoneTabBadge);
         waitingIndicator = findViewById(R.id.reviewWaitingIndicator);
         doneIndicator = findViewById(R.id.reviewDoneIndicator);
         waitingList = findViewById(R.id.reviewWaitingList);
@@ -42,8 +47,8 @@ public class ReviewsActivity extends BaseActivity {
     }
 
     private void showWaitingReviews() {
-        setActive(waitingTabText, true);
-        setActive(doneTabText, false);
+        setActive(waitingTabText, waitingTabBadge, true);
+        setActive(doneTabText, doneTabBadge, false);
         waitingIndicator.setVisibility(View.VISIBLE);
         doneIndicator.setVisibility(View.INVISIBLE);
         waitingList.setVisibility(View.VISIBLE);
@@ -51,27 +56,46 @@ public class ReviewsActivity extends BaseActivity {
     }
 
     private void showDoneReviews() {
-        setActive(waitingTabText, false);
-        setActive(doneTabText, true);
+        setActive(waitingTabText, waitingTabBadge, false);
+        setActive(doneTabText, doneTabBadge, true);
         waitingIndicator.setVisibility(View.INVISIBLE);
         doneIndicator.setVisibility(View.VISIBLE);
         waitingList.setVisibility(View.GONE);
         doneList.setVisibility(View.VISIBLE);
     }
 
-    private void setActive(TextView textView, boolean active) {
+    private void setActive(TextView textView, TextView badge, boolean active) {
         int colorRes = active ? R.color.primary_main : R.color.neutral_60;
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
+        textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
+        if (badge != null) {
+            badge.setBackgroundResource(active
+                    ? R.drawable.bg_notification_badge_alert
+                    : R.drawable.bg_notification_badge_dark);
+        }
     }
 
     private void loadReviews() {
         new Thread(() -> {
             AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
             runOnUiThread(() -> {
-                bindList((LinearLayout) waitingList, AssetScreenData.filterReviewOrders(snapshot, false), R.layout.item_review_waiting, snapshot);
-                bindList((LinearLayout) doneList, AssetScreenData.filterReviewOrders(snapshot, true), R.layout.item_review_done, snapshot);
+                List<AssetModels.Order> waitingOrders = AssetScreenData.filterReviewOrders(snapshot, false);
+                List<AssetModels.Order> doneOrders = AssetScreenData.filterReviewOrders(snapshot, true);
+                setBadgeCount(waitingTabBadge, waitingOrders.size());
+                setBadgeCount(doneTabBadge, doneOrders.size());
+                bindList((LinearLayout) waitingList, waitingOrders, R.layout.item_review_waiting, snapshot);
+                bindList((LinearLayout) doneList, doneOrders, R.layout.item_review_done, snapshot);
+                showWaitingReviews();
             });
         }).start();
+    }
+
+    private void setBadgeCount(TextView badge, int count) {
+        if (badge == null) {
+            return;
+        }
+        badge.setText(String.valueOf(count));
+        badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void bindList(

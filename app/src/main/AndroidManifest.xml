@@ -80,6 +80,9 @@
             android:name=".presentation.profile.AddressBookActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.PersonalInfoActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.order.ReturnsActivity"
             android:exported="false" />
         <activity

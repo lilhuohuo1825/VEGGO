@@ -21,13 +21,17 @@
             android:orientation="horizontal">
 
             <ImageButton
-                android:id="@+id/recurringDayEmptyBackButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/orders_back"
-                android:src="@drawable/ic_left"
-                android:tint="@color/primary_main" />
+    android:id="@+id/recurringDayEmptyBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
             <TextView
                 android:layout_width="0dp"

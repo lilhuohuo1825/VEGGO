@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 import com.veggo.app.R;
+import com.veggo.app.MainActivity;
 import com.veggo.app.adapter.BannerAdapter;
 import com.veggo.app.adapter.CategoryAdapter;
 import com.veggo.app.adapter.FlashSaleAdapter;
@@ -60,6 +61,7 @@ public class HomeFragment extends Fragment {
         setupBannerIndicators();
         setupProductTabs();
         setupStickyHeader();
+        setupHeaderActions();
         observeViewModel();
 
         // Gọi ViewModel để lấy dữ liệu từ file JSON trong thư mục assets
@@ -168,6 +170,32 @@ public class HomeFragment extends Fragment {
                 binding.stickyHeader.getRoot().setVisibility(View.GONE);
             }
         });
+    }
+
+    private void setupHeaderActions() {
+        View header = binding.getRoot();
+        View stickyHeader = binding.stickyHeader.getRoot();
+
+        View.OnClickListener openCart = v -> ((MainActivity) requireActivity()).openCartScreen();
+        View.OnClickListener openNotifications = v -> ((MainActivity) requireActivity()).openNotificationsScreen();
+
+        View cartButton = header.findViewById(R.id.homeCartButton);
+        View notifyButton = header.findViewById(R.id.homeNotifyButton);
+        if (cartButton != null) {
+            cartButton.setOnClickListener(openCart);
+        }
+        if (notifyButton != null) {
+            notifyButton.setOnClickListener(openNotifications);
+        }
+
+        View stickyCartButton = stickyHeader.findViewById(R.id.homeStickyCartButton);
+        View stickyNotifyButton = stickyHeader.findViewById(R.id.homeStickyNotifyButton);
+        if (stickyCartButton != null) {
+            stickyCartButton.setOnClickListener(openCart);
+        }
+        if (stickyNotifyButton != null) {
+            stickyNotifyButton.setOnClickListener(openNotifications);
+        }
     }
 
     private void onProductTabClicked(int index) {

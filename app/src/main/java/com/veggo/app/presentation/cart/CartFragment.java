@@ -46,6 +46,9 @@ public class CartFragment extends BaseFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_cart, container, false);
+        rootView.findViewById(R.id.cartBackButton).setOnClickListener(v ->
+                requireActivity().getOnBackPressedDispatcher().onBackPressed()
+        );
         scrimView = rootView.findViewById(R.id.viewScrim);
         layoutCartItemsContainer = rootView.findViewById(R.id.layoutCartItemsContainer);
 

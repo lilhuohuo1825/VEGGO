@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/neutral_10">
+    android:background="@color/neutral_10"
+    android:fitsSystemWindows="true">
 
     <ScrollView
         android:id="@+id/profileScroll"
@@ -223,19 +224,20 @@
     </ScrollView>
 
     <ImageButton
-        android:id="@+id/profileBackButton"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_community_circle"
-        android:elevation="8dp"
-        android:padding="12dp"
-        android:scaleType="centerInside"
-        android:src="@drawable/ic_left"
-        android:tint="@color/primary_main"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    android:id="@+id/profileBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:layout_marginStart="18dp"
+    android:layout_marginTop="16dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
         android:id="@+id/profileShareButton"

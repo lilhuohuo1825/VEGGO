@@ -17,7 +17,6 @@ public class ProductDto {
     private float rating;
     private Boolean isActive;
     private String weight;
-    private float rating;
     private int reviewCount;
     private int soldCount;
     private String origin;
@@ -50,8 +49,6 @@ public class ProductDto {
     public void setActive(Boolean active) { isActive = active; }
     public String getWeight() { return weight; }
     public void setWeight(String weight) { this.weight = weight; }
-    public float getRating() { return rating; }
-    public void setRating(float rating) { this.rating = rating; }
     public int getReviewCount() { return reviewCount; }
     public void setReviewCount(int reviewCount) { this.reviewCount = reviewCount; }
     public int getSoldCount() { return soldCount; }

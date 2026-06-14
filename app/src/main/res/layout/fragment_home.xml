@@ -51,16 +51,24 @@
                     android:focusable="true" />
 
                 <ImageView
+                    android:id="@+id/homeCartButton"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="16dp"
                     android:contentDescription="@string/nav_cart"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_shopping_cart" />
 
                 <ImageView
+                    android:id="@+id/homeNotifyButton"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:contentDescription="Notifications"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_notify" />
             </LinearLayout>
 

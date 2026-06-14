@@ -18,15 +18,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.veggo.app.R;
+import com.veggo.app.core.ui.BottomNavController;
 import com.veggo.app.data.local.entity.CommunityCategoryEntity;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityCookbookEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeEntity;
+import com.veggo.app.databinding.ComponentBottomNavBinding;
 
 import java.util.List;
 
@@ -34,8 +39,28 @@ public final class CommunityUi {
     private CommunityUi() {
     }
 
-    public static void setupBottomNav(BottomNavigationView bottomNavigationView) {
-        bottomNavigationView.setSelectedItemId(R.id.nav_category);
+    public static void setupBottomNav(Activity activity, ComponentBottomNavBinding bottomNavigationBinding) {
+        applyTopSystemInset(activity);
+        BottomNavController.setup(activity, bottomNavigationBinding, R.id.nav_category);
+    }
+
+    private static void applyTopSystemInset(Activity activity) {
+        WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        if (content == null || content.getChildCount() == 0) {
+            return;
+        }
+        View root = content.getChildAt(0);
+        int left = root.getPaddingLeft();
+        int top = root.getPaddingTop();
+        int right = root.getPaddingRight();
+        int bottom = root.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            int statusTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            view.setPadding(left, top + statusTop, right, bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     public static void setupTopHeader(Activity activity, String title) {

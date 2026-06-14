@@ -6,8 +6,8 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.veggo.app.R;
+import com.veggo.app.databinding.ComponentBottomNavBinding;
 
 public class CommunityRecipesActivity extends AppCompatActivity {
     public static final String EXTRA_CATEGORY_ID = "community_category_id";
@@ -16,7 +16,6 @@ public class CommunityRecipesActivity extends AppCompatActivity {
     public static final String EXTRA_CHEF_NAME = "community_chef_name";
 
     private LinearLayout container;
-    private BottomNavigationView bottomNavigationView;
     private CommunityRepository repository;
 
     @Override
@@ -24,9 +23,8 @@ public class CommunityRecipesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_community_recipes);
         container = findViewById(R.id.communityHomeContainer);
-        bottomNavigationView = findViewById(R.id.communityBottomNavigation);
         repository = new CommunityRepository(this);
-        CommunityUi.setupBottomNav(bottomNavigationView);
+        CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
         String categoryId = getIntent().getStringExtra(EXTRA_CATEGORY_ID);
         String categoryName = getIntent().getStringExtra(EXTRA_CATEGORY_NAME);
         String chefId = getIntent().getStringExtra(EXTRA_CHEF_ID);

@@ -112,41 +112,59 @@ public class OrderHistoryFragment extends BaseFragment {
     private void updateSelectedTab(@Nullable String status) {
         setTabSelected(
                 R.id.orderTabAllText,
+                R.id.orderTabAllBadge,
                 R.id.orderTabAllIndicator,
-                status == null
+                status == null,
+                AssetScreenData.filterOrders(snapshot, null).size()
         );
         setTabSelected(
                 R.id.orderTabPendingText,
+                R.id.orderTabPendingBadge,
                 R.id.orderTabPendingIndicator,
-                "pending".equals(status)
+                "pending".equals(status),
+                AssetScreenData.filterOrders(snapshot, "pending").size()
         );
         setTabSelected(
                 R.id.orderTabShippingText,
+                R.id.orderTabShippingBadge,
                 R.id.orderTabShippingIndicator,
-                "shipping".equals(status)
+                "shipping".equals(status),
+                AssetScreenData.filterOrders(snapshot, "shipping").size()
         );
         setTabSelected(
                 R.id.orderTabDeliveredText,
+                R.id.orderTabDeliveredBadge,
                 R.id.orderTabDeliveredIndicator,
-                "delivered".equals(status)
+                "delivered".equals(status),
+                AssetScreenData.filterOrders(snapshot, "delivered").size()
         );
         setTabSelected(
                 R.id.orderTabCancelledText,
+                R.id.orderTabCancelledBadge,
                 R.id.orderTabCancelledIndicator,
-                "cancelled".equals(status)
+                "cancelled".equals(status),
+                AssetScreenData.filterOrders(snapshot, "cancelled").size()
         );
     }
 
-    private void setTabSelected(int textId, int indicatorId, boolean selected) {
+    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count) {
         View root = getView();
         if (root == null) {
             return;
         }
         TextView text = root.findViewById(textId);
+        TextView badge = root.findViewById(badgeId);
         View indicator = root.findViewById(indicatorId);
         if (text != null) {
             text.setTextColor(requireContext().getColor(selected ? R.color.primary_main : R.color.neutral_60));
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        }
+        if (badge != null) {
+            badge.setText(String.valueOf(count));
+            badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+            badge.setBackgroundResource(selected
+                    ? R.drawable.bg_notification_badge_alert
+                    : R.drawable.bg_notification_badge_dark);
         }
         if (indicator != null) {
             indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);

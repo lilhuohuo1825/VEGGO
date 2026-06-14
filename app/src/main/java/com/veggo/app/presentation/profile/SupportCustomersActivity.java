@@ -1,6 +1,5 @@
 package com.veggo.app.presentation.profile;
 
-import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -16,8 +15,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.card.MaterialCardView;
-import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.ui.BottomNavController;
 import com.veggo.app.databinding.ActivitySupportCustomersBinding;
 
 public class SupportCustomersActivity extends AppCompatActivity {
@@ -91,17 +90,7 @@ public class SupportCustomersActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-        binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
-        binding.bottomNavigation.setOnItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.nav_profile) {
-                return true;
-            }
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, item.getItemId());
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            return true;
-        });
+        BottomNavController.setup(this, binding.bottomNavHost, R.id.nav_profile);
     }
 
     private void setupFaqDropdown() {

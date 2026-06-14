@@ -21,6 +21,10 @@ public class Recipe {
         this.isBookmarked = false;
     }
 
+    public Recipe(String id, String name, String cookingTime, int imageResId, String imageUrl) {
+        this(id, name, imageUrl, cookingTime, "", 0f, 0);
+    }
+
     public String getId() { return id; }
     public String getName() { return name; }
     public String getImageUrl() { return imageUrl; }

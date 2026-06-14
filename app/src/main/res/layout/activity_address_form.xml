@@ -25,12 +25,17 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:id="@+id/addressFormBackButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:contentDescription="@string/orders_back"
-                    android:padding="@dimen/spacing_sm"
-                    android:src="@drawable/ic_left" />
+    android:id="@+id/addressFormBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -77,6 +82,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/addressNameLabel"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/address_full_name"
@@ -104,6 +110,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/addressPhoneLabel"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/address_phone"
@@ -175,6 +182,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/addressCityLabel"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/address_city"
@@ -203,6 +211,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/addressDistrictLabel"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/address_district"
@@ -225,6 +234,7 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/addressWardLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -246,6 +256,7 @@
                     android:textSize="@dimen/text_sm" />
 
                 <TextView
+                    android:id="@+id/addressDetailLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"

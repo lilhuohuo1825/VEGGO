@@ -37,4 +37,6 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <style name="CircleAppearance" parent="CircleImage" />
+
 </resources>

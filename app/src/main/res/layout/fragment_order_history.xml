@@ -16,12 +16,17 @@
         android:paddingEnd="@dimen/spacing_md">
 
         <ImageView
-            android:id="@+id/orderHistoryBackButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:contentDescription="@string/orders_back"
-            android:padding="@dimen/spacing_sm"
-            android:src="@drawable/ic_left" />
+    android:id="@+id/orderHistoryBackButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:contentDescription="@string/orders_back"
+    android:focusable="true"
+    android:padding="6dp"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_left"
+    android:tint="@color/primary_hover" />
 
         <TextView
             android:id="@+id/orderHistoryTitle"
@@ -60,51 +65,89 @@
 
             <LinearLayout
                 android:id="@+id/orderTabAll"
-                android:layout_width="96dp"
+                android:layout_width="112dp"
                 android:layout_height="match_parent"
                 android:gravity="bottom|center_horizontal"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/orderTabAllText"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="@string/orders_tab_all"
-                    android:textColor="@color/primary_main"
-                    android:textSize="@dimen/text_sm"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/orderTabAllText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/orders_tab_all"
+                        android:textColor="@color/primary_main"
+                        android:textSize="@dimen/text_sm"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/orderTabAllBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_notification_badge_alert"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/orderTabAllIndicator"
-                    android:layout_width="96dp"
+                    android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:background="@drawable/bg_order_tab_indicator" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/orderTabPending"
-                android:layout_width="112dp"
+                android:layout_width="152dp"
                 android:layout_height="match_parent"
                 android:gravity="bottom|center_horizontal"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/orderTabPendingText"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="@string/orders_tab_pending"
-                    android:textColor="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/orderTabPendingText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/orders_tab_pending"
+                        android:textColor="@color/neutral_60"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderTabPendingBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_notification_badge_dark"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/orderTabPendingIndicator"
-                    android:layout_width="112dp"
+                    android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:background="@drawable/bg_order_tab_indicator"
                     android:visibility="invisible" />
@@ -112,25 +155,44 @@
 
             <LinearLayout
                 android:id="@+id/orderTabShipping"
-                android:layout_width="96dp"
+                android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:gravity="bottom|center_horizontal"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/orderTabShippingText"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="@string/orders_tab_shipping"
-                    android:textColor="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/orderTabShippingText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/orders_tab_shipping"
+                        android:textColor="@color/neutral_60"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderTabShippingBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_notification_badge_dark"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/orderTabShippingIndicator"
-                    android:layout_width="96dp"
+                    android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:background="@drawable/bg_order_tab_indicator"
                     android:visibility="invisible" />
@@ -138,25 +200,44 @@
 
             <LinearLayout
                 android:id="@+id/orderTabDelivered"
-                android:layout_width="96dp"
+                android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:gravity="bottom|center_horizontal"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/orderTabDeliveredText"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="@string/orders_tab_delivered"
-                    android:textColor="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/orderTabDeliveredText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/orders_tab_delivered"
+                        android:textColor="@color/neutral_60"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderTabDeliveredBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_notification_badge_dark"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/orderTabDeliveredIndicator"
-                    android:layout_width="96dp"
+                    android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:background="@drawable/bg_order_tab_indicator"
                     android:visibility="invisible" />
@@ -164,25 +245,44 @@
 
             <LinearLayout
                 android:id="@+id/orderTabCancelled"
-                android:layout_width="96dp"
+                android:layout_width="112dp"
                 android:layout_height="match_parent"
                 android:gravity="bottom|center_horizontal"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/orderTabCancelledText"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="@string/orders_tab_cancelled"
-                    android:textColor="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/orderTabCancelledText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="@string/orders_tab_cancelled"
+                        android:textColor="@color/neutral_60"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderTabCancelledBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_notification_badge_dark"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:textColor="@color/background_main"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/orderTabCancelledIndicator"
-                    android:layout_width="96dp"
+                    android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:background="@drawable/bg_order_tab_indicator"
                     android:visibility="invisible" />

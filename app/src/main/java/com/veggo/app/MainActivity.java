@@ -7,18 +7,20 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.veggo.app.databinding.ActivityMainBinding;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
-import com.veggo.app.presentation.community.CommunityFragment;
+import com.veggo.app.core.ui.BottomNavController;
+import com.veggo.app.presentation.cart.CartFragment;
+import com.veggo.app.presentation.community.CommunityHomeActivity;
 import com.veggo.app.presentation.home.HomeFragment;
 import com.veggo.app.presentation.order.OrderHistoryFragment;
 import com.veggo.app.presentation.profile.ProfileFragment;
+import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
+import com.veggo.app.presentation.profile.PostNotificationsActivity;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
@@ -31,30 +33,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main, (v, windowInsets) -> {
-            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(0, 0, 0, insets.bottom);
-            return windowInsets;
-        });
-
         bottomNavBinding = binding.bottomNavHost;
+        BottomNavController.applySystemBarColors(this);
 
         bottomNavBinding.navHomeButton.setOnClickListener(view -> openTab(Tab.HOME));
-        bottomNavBinding.navCommunityButton.setOnClickListener(view -> openTab(Tab.COMMUNITY));
+        bottomNavBinding.navCommunityButton.setOnClickListener(view -> openCommunityScreen());
         bottomNavBinding.navOrdersButton.setOnClickListener(view -> openTab(Tab.ORDERS));
         bottomNavBinding.navAccountButton.setOnClickListener(view -> openTab(Tab.ACCOUNT));
         bottomNavBinding.bottomNavCard.setOnClickListener(view -> {
         });
         bottomNavBinding.navScanButton.setOnClickListener(view -> {
+            openScanScreen();
         });
 
         if (savedInstanceState == null) {
-            openTab(tabFromNavItem(getIntent().getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile)));
+            openTab(tabFromNavItem(getIntent().getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
         }
     }
 
@@ -62,15 +59,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile)));
+        openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
     }
 
     private Tab tabFromNavItem(int itemId) {
+        if (itemId == R.id.nav_home) {
+            return Tab.HOME;
+        }
         if (itemId == R.id.nav_profile) {
             return Tab.ACCOUNT;
         }
         if (itemId == R.id.nav_orders) {
             return Tab.ORDERS;
+        }
+        if (itemId == R.id.nav_cart) {
+            return Tab.CART;
         }
         if (itemId == R.id.nav_category) {
             return Tab.COMMUNITY;
@@ -84,8 +87,11 @@ public class MainActivity extends AppCompatActivity {
         Fragment fragment;
         switch (tab) {
             case COMMUNITY:
-                fragment = new CommunityFragment();
-                break;
+                openCommunityScreen();
+                return;
+            case CART:
+                openCartScreen();
+                return;
             case ORDERS:
                 fragment = new OrderHistoryFragment();
                 break;
@@ -99,9 +105,35 @@ public class MainActivity extends AppCompatActivity {
         }
 
         getSupportFragmentManager()
+                .popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.mainFragmentContainer, fragment)
                 .commit();
+    }
+
+    public void openCartScreen() {
+        setSelectedTab(Tab.HOME);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.mainFragmentContainer, new CartFragment())
+                .addToBackStack("cart")
+                .commit();
+    }
+
+    public void openNotificationsScreen() {
+        startActivity(new Intent(this, PostNotificationsActivity.class));
+    }
+
+    public void openScanScreen() {
+        startActivity(new Intent(this, AddFridgeIngredientActivity.class));
+    }
+
+    public void openCommunityScreen() {
+        getSupportFragmentManager()
+                .popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        setSelectedTab(Tab.COMMUNITY);
+        startActivity(new Intent(this, CommunityHomeActivity.class));
     }
 
     private void setSelectedTab(Tab tab) {
@@ -123,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
     private enum Tab {
         HOME,
+        CART,
         COMMUNITY,
         ORDERS,
         ACCOUNT

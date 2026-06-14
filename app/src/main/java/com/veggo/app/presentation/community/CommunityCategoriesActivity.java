@@ -6,12 +6,11 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.veggo.app.R;
+import com.veggo.app.databinding.ComponentBottomNavBinding;
 
 public class CommunityCategoriesActivity extends AppCompatActivity {
     private LinearLayout container;
-    private BottomNavigationView bottomNavigationView;
     private CommunityRepository repository;
 
     @Override
@@ -19,9 +18,8 @@ public class CommunityCategoriesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_community_categories);
         container = findViewById(R.id.communityHomeContainer);
-        bottomNavigationView = findViewById(R.id.communityBottomNavigation);
         repository = new CommunityRepository(this);
-        CommunityUi.setupBottomNav(bottomNavigationView);
+        CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
         CommunityUi.setupTopHeader(this, "Danh m\u1ee5c");
         repository.loadCategories(categories -> runOnUiThread(() -> CommunityUi.addCategoryGrid(this, container, categories)));
     }

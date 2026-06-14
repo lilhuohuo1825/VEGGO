@@ -48,7 +48,7 @@ public final class BlogUi {
                 dp(activity, 48)
         ));
 
-        row.addView(circleButton(activity, R.drawable.ic_left, v -> activity.finish()));
+        row.addView(backButton(activity));
         if (title == null) {
             View spacer = new View(activity);
             row.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
@@ -61,7 +61,7 @@ public final class BlogUi {
     }
 
     public static ImageButton createBackButton(Activity activity) {
-        return circleButton(activity, R.drawable.ic_left, v -> activity.finish());
+        return backButton(activity);
     }
 
     public static void addSectionHeader(
@@ -408,6 +408,19 @@ public final class BlogUi {
         if (listener != null) {
             button.setOnClickListener(listener);
         }
+        return button;
+    }
+
+    private static ImageButton backButton(Activity activity) {
+        ImageButton button = new ImageButton(activity);
+        button.setImageResource(R.drawable.ic_left);
+        button.setBackgroundColor(ContextCompat.getColor(activity, android.R.color.transparent));
+        button.setColorFilter(ContextCompat.getColor(activity, R.color.primary_hover));
+        button.setPadding(dp(activity, 6), dp(activity, 6), dp(activity, 6), dp(activity, 6));
+        button.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        button.setAdjustViewBounds(false);
+        button.setLayoutParams(new LinearLayout.LayoutParams(dp(activity, 40), dp(activity, 40)));
+        button.setOnClickListener(v -> activity.finish());
         return button;
     }
 

@@ -53,12 +53,11 @@
                     android:id="@+id/profileUserName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:text="@string/profile_sample_name"
                     android:textColor="@color/veggo_text_primary"
-                    android:textSize="20sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -153,10 +152,18 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical">
 
-                    <View
+                    <FrameLayout
                         android:layout_width="46dp"
                         android:layout_height="46dp"
-                        android:background="@drawable/bg_order_pending" />
+                        android:background="@drawable/bg_order_pending">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/profile_order_pending"
+                            android:src="@drawable/ic_order_pending_box" />
+                    </FrameLayout>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -176,10 +183,18 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical">
 
-                    <View
+                    <FrameLayout
                         android:layout_width="46dp"
                         android:layout_height="46dp"
-                        android:background="@drawable/bg_order_shipping" />
+                        android:background="@drawable/bg_order_shipping">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/profile_order_shipping"
+                            android:src="@drawable/ic_order_shipping_truck" />
+                    </FrameLayout>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -199,10 +214,18 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical">
 
-                    <View
+                    <FrameLayout
                         android:layout_width="46dp"
                         android:layout_height="46dp"
-                        android:background="@drawable/bg_order_delivered" />
+                        android:background="@drawable/bg_order_delivered">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/profile_order_delivered"
+                            android:src="@drawable/ic_order_delivered_box" />
+                    </FrameLayout>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -222,10 +245,19 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical">
 
-                    <View
+                    <FrameLayout
                         android:layout_width="46dp"
                         android:layout_height="46dp"
-                        android:background="@drawable/bg_order_cancelled" />
+                        android:background="@drawable/bg_order_cancelled">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/profile_order_cancelled"
+                            android:src="@drawable/ic_order_return_option"
+                            android:tint="@color/danger_main" />
+                    </FrameLayout>
 
                     <TextView
                         android:layout_width="match_parent"
