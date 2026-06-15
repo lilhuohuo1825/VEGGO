@@ -102,17 +102,22 @@ public final class CommunityUi {
         if (backButton != null) {
             backButton.setOnClickListener(v -> activity.finish());
         }
+        View searchButton = activity.findViewById(R.id.communitySearchButton);
+        if (searchButton != null) {
+            searchButton.setOnClickListener(v ->
+                    activity.startActivity(new Intent(activity, CommunityDiscoveryActivity.class)));
+        }
     }
 
     public static void addCategoryChips(Activity activity, LinearLayout row, List<CommunityCategoryEntity> categories) {
         row.removeAllViews();
-        row.addView(chip(activity, R.drawable.ic_category2, "", null, v ->
+        row.addView(chip(activity, row, R.drawable.ic_category2, "", null, v ->
                 activity.startActivity(new Intent(activity, CommunityCategoriesActivity.class))
         ));
         int limit = Math.min(categories.size(), 10);
         for (int index = 0; index < limit; index++) {
             CommunityCategoryEntity category = categories.get(index);
-            row.addView(chip(activity, 0, category.getName().toLowerCase(), categoryEmoji(category.getId()), v ->
+            row.addView(chip(activity, row, 0, category.getName().toLowerCase(), categoryEmoji(category.getId()), v ->
                     openCategoryRecipes(activity, category)
             ));
         }
@@ -261,16 +266,16 @@ public final class CommunityUi {
         }
     }
 
-    private static View chip(Activity activity, int icon, String label, String emoji, View.OnClickListener listener) {
+    private static View chip(Activity activity, LinearLayout parent, int icon, String label, String emoji, View.OnClickListener listener) {
         if (icon != 0) {
-            View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip_icon, null, false);
+            View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip_icon, parent, false);
             ImageView iconView = chip.findViewById(R.id.chipIcon);
             iconView.setImageResource(icon);
             chip.setOnClickListener(listener);
             return chip;
         }
 
-        View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip, null, false);
+        View chip = LayoutInflater.from(activity).inflate(R.layout.item_community_chip, parent, false);
         TextView emojiView = chip.findViewById(R.id.chipEmoji);
         TextView titleView = chip.findViewById(R.id.chipTitle);
         emojiView.setText(emoji);

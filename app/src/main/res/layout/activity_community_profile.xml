@@ -273,7 +273,7 @@
             android:layout_height="20dp"
             android:layout_gravity="center"
             android:scaleType="centerInside"
-            app:tint="@color/primary_hover"
+            app:tint="#57AF37"
             android:src="@drawable/ic_left"
             android:contentDescription="" />
     </FrameLayout>
@@ -297,6 +297,7 @@
             android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
+            app:tint="#57AF37"
                 android:scaleType="centerInside"
             android:src="@drawable/ic_share_green"
             android:contentDescription="" />

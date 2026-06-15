@@ -11,16 +11,18 @@ public class CommunityRecipeIngredientEntity {
     private String id;
     private String recipeId;
     private String productId;
+    private String productSku;
     private String displayName;
     private String iconUrl;
     private String iconEmoji;
     private String quantity;
     private int sortOrder;
 
-    public CommunityRecipeIngredientEntity(@NonNull String id, String recipeId, String productId, String displayName, String iconUrl, String iconEmoji, String quantity, int sortOrder) {
+    public CommunityRecipeIngredientEntity(@NonNull String id, String recipeId, String productId, String productSku, String displayName, String iconUrl, String iconEmoji, String quantity, int sortOrder) {
         this.id = id;
         this.recipeId = recipeId;
         this.productId = productId;
+        this.productSku = productSku;
         this.displayName = displayName;
         this.iconUrl = iconUrl;
         this.iconEmoji = iconEmoji;
@@ -34,6 +36,8 @@ public class CommunityRecipeIngredientEntity {
     public void setRecipeId(String recipeId) { this.recipeId = recipeId; }
     public String getProductId() { return productId; }
     public void setProductId(String productId) { this.productId = productId; }
+    public String getProductSku() { return productSku; }
+    public void setProductSku(String productSku) { this.productSku = productSku; }
     public String getDisplayName() { return displayName; }
     public void setDisplayName(String displayName) { this.displayName = displayName; }
     public String getIconUrl() { return iconUrl; }

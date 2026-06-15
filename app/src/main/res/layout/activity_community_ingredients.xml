@@ -116,7 +116,7 @@
             android:layout_height="20dp"
             android:layout_gravity="center"
             android:scaleType="centerInside"
-            app:tint="@color/primary_hover"
+            app:tint="#57AF37"
             android:src="@drawable/ic_left"
             android:contentDescription="" />
     </FrameLayout>
@@ -146,6 +146,7 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
+                app:tint="#57AF37"
                 android:src="@drawable/ic_heart_green"
                 android:contentDescription="" />
         </FrameLayout>
@@ -166,6 +167,7 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
+                app:tint="#57AF37"
                 android:src="@drawable/ic_bookmark_green"
                 android:contentDescription="" />
         </FrameLayout>
@@ -187,6 +189,7 @@
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_share_green"
+                app:tint="#57AF37"
                 android:contentDescription="" />
         </FrameLayout>
     </LinearLayout>

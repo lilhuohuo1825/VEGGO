@@ -63,7 +63,7 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
             CommunityRecipeIngredientEntity ingredient = data.ingredients.get(index);
             ProductEntity product = data.productsById.get(ingredient.getProductId());
             View row = inflater.inflate(R.layout.item_community_ingredient_check, list, false);
-            bindIngredient(row, ingredient, product, index);
+            bindIngredient(row, ingredient, product);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     dp(54)
@@ -75,7 +75,7 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
         }
     }
 
-    private void bindIngredient(View row, CommunityRecipeIngredientEntity ingredient, ProductEntity product, int index) {
+    private void bindIngredient(View row, CommunityRecipeIngredientEntity ingredient, ProductEntity product) {
         String name = isBlank(ingredient.getDisplayName())
                 ? (product == null ? "Sản phẩm" : product.getName())
                 : ingredient.getDisplayName();
@@ -99,7 +99,7 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
         }
 
         ImageButton checkbox = row.findViewById(R.id.ingredientCheckButton);
-        bindCheckbox(checkbox, index % 3 != 1);
+        bindCheckbox(checkbox, false);
     }
 
     private void bindCheckbox(ImageButton checkbox, boolean checked) {
