@@ -1,0 +1,99 @@
+package com.veggo.app.adapter;
+
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.veggo.app.R;
+import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.databinding.ItemRelatedProductBinding;
+import com.veggo.app.domain.model.Product;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAdapter.ViewHolder> {
+
+    private List<Product> products = new ArrayList<>();
+    private OnAddClickListener addListener;
+    private OnProductClickListener productClickListener;
+
+    public interface OnAddClickListener {
+        void onAdd(Product product);
+    }
+
+    public interface OnProductClickListener {
+        void onProductClick(Product product);
+    }
+
+    public void setOnAddClickListener(OnAddClickListener l) {
+        this.addListener = l;
+    }
+
+    public void setOnProductClickListener(OnProductClickListener l) {
+        this.productClickListener = l;
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products == null ? new ArrayList<>() : products;
+        notifyDataSetChanged();
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        ItemRelatedProductBinding binding = ItemRelatedProductBinding.inflate(
+                LayoutInflater.from(parent.getContext()), parent, false);
+        return new ViewHolder(binding);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        holder.bind(products.get(position));
+    }
+
+    @Override
+    public int getItemCount() {
+        return products.size();
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder {
+        private final ItemRelatedProductBinding binding;
+
+        public ViewHolder(@NonNull ItemRelatedProductBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+
+        public void bind(final Product product) {
+            binding.tvRelatedTitle.setText(product.getName());
+            binding.tvRelatedWeight.setText(product.getWeight() == null ? "" : product.getWeight());
+            binding.tvRelatedPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
+
+            if (product.getOriginalPrice() > 0) {
+                binding.tvRelatedOriginalPrice.setVisibility(android.view.View.VISIBLE);
+                binding.tvRelatedOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
+                binding.tvRelatedOriginalPrice.setPaintFlags(binding.tvRelatedOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                binding.tvRelatedOriginalPrice.setVisibility(android.view.View.GONE);
+            }
+
+            Glide.with(binding.getRoot().getContext())
+                    .load(product.getImageUrl())
+                    .placeholder(R.drawable.ic_leaf)
+                    .error(R.drawable.ic_leaf)
+                    .into(binding.ivRelatedProduct);
+
+            binding.getRoot().setOnClickListener(v -> {
+                if (productClickListener != null) productClickListener.onProductClick(product);
+            });
+
+            binding.btnAddRelated.setOnClickListener(v -> {
+                if (addListener != null) addListener.onAdd(product);
+            });
+        }
+    }
+}

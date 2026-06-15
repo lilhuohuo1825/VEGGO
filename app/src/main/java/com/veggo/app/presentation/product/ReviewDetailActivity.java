@@ -111,8 +111,13 @@ public class ReviewDetailActivity extends BaseActivity {
         updateFilterUI(view);
         List<Review> filtered = new ArrayList<>();
         for (Review r : allReviews) {
-            if (r.getImageUrls() != null && !r.getImageUrls().isEmpty()) {
-                filtered.add(r);
+            if (r.getImageUrls() != null) {
+                for (String url : r.getImageUrls()) {
+                    if (url != null && !url.trim().isEmpty()) {
+                        filtered.add(r);
+                        break;
+                    }
+                }
             }
         }
         adapter.setReviews(filtered);
@@ -153,7 +158,16 @@ public class ReviewDetailActivity extends BaseActivity {
             int star = Math.round(r.getRating());
             if (star >= 5) count5++;
             if (star == 4) count4++;
-            if (r.getImageUrls() != null && !r.getImageUrls().isEmpty()) countWithImages++;
+            
+            // Check for valid images
+            if (r.getImageUrls() != null) {
+                for (String url : r.getImageUrls()) {
+                    if (url != null && !url.trim().isEmpty()) {
+                        countWithImages++;
+                        break; 
+                    }
+                }
+            }
         }
 
         ((TextView) findViewById(R.id.filterAll)).setText(getString(R.string.filter_all_format, reviews.size()));
@@ -167,15 +181,22 @@ public class ReviewDetailActivity extends BaseActivity {
         for (Review r : reviews) {
             if (r.getImageUrls() != null) {
                 for (String url : r.getImageUrls()) {
-                    if (url != null && !url.isEmpty()) {
+                    if (url != null && !url.trim().isEmpty()) {
                         allPhotos.add(url);
                     }
                 }
             }
         }
-        photoAdapter.setPhotos(allPhotos);
-        if (tvPhotoCount != null) {
-            tvPhotoCount.setText(getString(R.string.customer_photos_format, allPhotos.size()));
+        
+        View galleryContainer = findViewById(R.id.llPhotoGalleryContainer);
+        if (allPhotos.isEmpty()) {
+            if (galleryContainer != null) galleryContainer.setVisibility(View.GONE);
+        } else {
+            if (galleryContainer != null) galleryContainer.setVisibility(View.VISIBLE);
+            photoAdapter.setPhotos(allPhotos);
+            if (tvPhotoCount != null) {
+                tvPhotoCount.setText(getString(R.string.customer_photos_format, allPhotos.size()));
+            }
         }
     }
 

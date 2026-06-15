@@ -17,7 +17,7 @@
             android:orientation="vertical"
             android:paddingBottom="100dp">
 
-            <!-- Product Image Header -->
+            <!-- Ảnh sản phẩm -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="350dp">
@@ -29,7 +29,7 @@
                     android:scaleType="centerCrop"
                     tools:src="@drawable/logo" />
 
-                <!-- Navigation Icons -->
+                <!-- Biểu tượng điều hướng -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -44,7 +44,8 @@
                         android:src="@drawable/ic_left"
                         android:padding="8dp"
                         android:scaleType="centerInside"
-                        android:elevation="4dp"
+                        android:elevation="0dp"
+                        android:stateListAnimator="@null"
                         app:tint="@color/primary_main" />
 
                     <LinearLayout
@@ -61,7 +62,8 @@
                             android:src="@drawable/ic_search"
                             android:padding="8dp"
                             android:scaleType="centerInside"
-                            android:elevation="4dp"
+                            android:elevation="0dp"
+                            android:stateListAnimator="@null"
                             android:layout_marginEnd="12dp"
                             app:tint="@color/neutral_60" />
 
@@ -73,7 +75,8 @@
                             android:src="@drawable/ic_shopping_cart"
                             android:padding="8dp"
                             android:scaleType="centerInside"
-                            android:elevation="4dp"
+                            android:elevation="0dp"
+                            android:stateListAnimator="@null"
                             app:tint="@color/primary_main" />
                     </LinearLayout>
                 </RelativeLayout>
@@ -98,7 +101,7 @@
                         android:fontFamily="@font/inter_extrabold"
                         android:textColor="@color/neutral_100"
                         android:textSize="22sp"
-                        tools:text="Australia beef tenderloin" />
+                        tools:text="Thăn nội bò Úc" />
 
                     <ImageView
                         android:id="@+id/ivFavorite"
@@ -119,9 +122,10 @@
                         android:id="@+id/tvWeight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
                         android:textColor="@color/neutral_40"
                         android:textSize="14sp"
-                        tools:text="450-500gr /pack" />
+                        tools:text="450-500g /gói" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -140,6 +144,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
+                            android:fontFamily="@font/inter"
                             android:textColor="@color/neutral_100"
                             android:textSize="14sp"
                             android:textStyle="bold"
@@ -156,6 +161,7 @@
                             android:id="@+id/tvSold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter"
                             android:textColor="@color/neutral_40"
                             android:textSize="14sp"
                             tools:text="1000 lượt mua" />
@@ -185,6 +191,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_marginBottom="6dp"
+                        android:fontFamily="@font/inter"
                         android:textColor="@color/neutral_40"
                         android:textSize="16sp"
                         tools:text="50.00đ" />
@@ -198,19 +205,20 @@
                         android:background="@drawable/bg_discount_badge"
                         android:paddingHorizontal="6dp"
                         android:paddingVertical="2dp"
+                        android:fontFamily="@font/inter"
                         android:text="20%"
                         android:textColor="@color/white"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Description -->
+                <!-- Mô tả -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="@font/inter_extrabold"
-                    android:text="Description"
+                    android:text="Mô tả"
                     android:textColor="@color/neutral_100"
                     android:textSize="18sp" />
 
@@ -221,21 +229,23 @@
                     android:layout_marginTop="8dp"
                     android:ellipsize="end"
                     android:maxLines="3"
+                    android:fontFamily="@font/inter"
                     android:textColor="@color/neutral_60"
                     android:textSize="14sp"
-                    tools:text="In terms of quality look for well-marbled tenderloin..." />
+                    tools:text="Về chất lượng, hãy chọn phần thăn nội có vân mỡ đều..." />
 
                 <TextView
                     android:id="@+id/tvShowMoreDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter"
                     android:text="@string/show_more"
                     android:textColor="@color/primary_main"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <!-- Related Recipes -->
+                <!-- Công thức liên quan -->
                 <LinearLayout
                     android:id="@+id/llRelatedRecipes"
                     android:layout_width="match_parent"
@@ -262,7 +272,7 @@
                         tools:listitem="@layout/item_recipe" />
                 </LinearLayout>
 
-                <!-- Reviews & Ratings Section -->
+                <!-- Phần đánh giá & nhận xét -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -282,6 +292,7 @@
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
+                        android:fontFamily="@font/inter"
                         android:text="@string/show_more"
                         android:textColor="@color/primary_main"
                         android:textSize="14sp"
@@ -294,7 +305,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_search_bar"
+                    android:background="@drawable/bg_card_outline"
                     android:padding="16dp"
                     android:orientation="horizontal">
 
@@ -320,14 +331,18 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:numStars="5"
-                            android:rating="4.5" />
+                            android:rating="4.5"
+                            android:progressTint="@color/secondary_main"
+                            android:secondaryProgressTint="@color/secondary_main"
+                            android:progressBackgroundTint="@color/neutral_30" />
 
                         <TextView
                             android:id="@+id/tvTotalRatingsSummary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="82 ratings"
+                            android:fontFamily="@font/inter"
+                            android:text="82 lượt đánh giá"
                             android:textColor="@color/neutral_60"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -338,7 +353,7 @@
                         android:layout_marginStart="24dp"
                         android:orientation="vertical">
 
-                        <!-- Rating Bars (Mocked for now) -->
+                        <!-- Thanh đánh giá (tạm thời mô phỏng) -->
                         <include layout="@layout/view_rating_distribution_row" />
                     </LinearLayout>
                 </LinearLayout>
@@ -352,7 +367,7 @@
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     tools:listitem="@layout/item_review" />
 
-                <!-- Consultation (Tư vấn) Section -->
+                <!-- Phần tư vấn -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -372,36 +387,39 @@
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
+                        android:fontFamily="@font/inter"
                         android:text="@string/show_more"
                         android:textColor="@color/primary_main"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </RelativeLayout>
 
-                <!-- Ask Question Input -->
+                <!-- Ô nhập câu hỏi -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="52dp"
                     android:layout_marginTop="16dp"
                     android:background="@drawable/bg_search_bar"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="12dp">
+                    android:paddingHorizontal="16dp">
 
                     <EditText
+                        android:id="@+id/edtQuestion"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
-                        android:hint="Have a question about this product?"
+                        android:fontFamily="@font/inter"
+                        android:hint="Bạn có câu hỏi với sản phẩm"
                         android:textColorHint="@color/neutral_40"
                         android:textSize="14sp" />
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_search"
+                        android:id="@+id/btnSendQuestion"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_send"
                         app:tint="@color/primary_main" />
                 </LinearLayout>
 
@@ -414,11 +432,31 @@
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     tools:listitem="@layout/item_consultation" />
 
+                <!-- Related products -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_extrabold"
+                    android:text="Sản phẩm liên quan"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="18sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRelatedProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:nestedScrollingEnabled="false"
+                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                    app:spanCount="2"
+                    tools:listitem="@layout/item_related_product" />
+
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Action Bar -->
+    <!-- Thanh thao tác bên dưới -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -426,7 +464,7 @@
         android:background="@color/white"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:elevation="8dp">
+        android:elevation="0dp">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnAddToCart"
@@ -435,6 +473,8 @@
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_search_bar"
+            android:elevation="0dp"
+            android:stateListAnimator="@null"
             android:text="@string/add_to_cart"
             android:textAllCaps="false"
             android:textColor="@color/primary_main"
@@ -448,6 +488,8 @@
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_button_primary"
+            android:elevation="0dp"
+            android:stateListAnimator="@null"
             android:text="@string/buy_now"
             android:textAllCaps="false"
             android:textColor="@color/white"

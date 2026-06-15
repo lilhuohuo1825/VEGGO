@@ -6,6 +6,11 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+<<<<<<< Updated upstream
+=======
+import com.bumptech.glide.Glide;
+import com.veggo.app.R;
+>>>>>>> Stashed changes
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.databinding.ItemSubcategoryBinding;
 
@@ -49,7 +54,41 @@ public class SubcategoryAdapter extends RecyclerView.Adapter<SubcategoryAdapter.
 
         void bind(AssetModels.Subcategory subcategory) {
             binding.tvSubcategoryName.setText(subcategory.subcategoryName);
+<<<<<<< Updated upstream
             // binding.ivSubcategoryIcon.setImageResource(...);
+=======
+            
+            if (subcategory.img != null && !subcategory.img.isEmpty()) {
+                Glide.with(binding.ivSubcategoryIcon.getContext())
+                        .load(subcategory.img)
+                        .placeholder(R.drawable.ic_vegetable)
+                        .error(getSubcategoryIcon(subcategory.subcategoryId))
+                        .into(binding.ivSubcategoryIcon);
+            } else {
+                binding.ivSubcategoryIcon.setImageResource(getSubcategoryIcon(subcategory.subcategoryId));
+            }
+
+            binding.getRoot().setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onSubcategoryClick(subcategory);
+                }
+            });
+        }
+
+        private int getSubcategoryIcon(String subcategoryId) {
+            if (subcategoryId != null) {
+                if (subcategoryId.contains("SUB003")) {
+                    return R.drawable.ic_vegetable;
+                } else if (subcategoryId.contains("SUB008")) {
+                    return R.drawable.ic_fruit;
+                } else if (subcategoryId.contains("SUB001")) {
+                    return R.drawable.ic_coffee_green;
+                } else if (subcategoryId.contains("SUB007")) {
+                    return R.drawable.ic_leaf;
+                }
+            }
+            return R.drawable.ic_vegetable;
+>>>>>>> Stashed changes
         }
     }
 }

@@ -52,6 +52,8 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         private final TextView tvReviewContent;
         private final ImageView ivReviewImage1;
         private final ImageView ivReviewImage2;
+        private final View cvReviewImage1;
+        private final View cvReviewImage2;
         private final View llReviewImages;
 
         public ReviewViewHolder(@NonNull View itemView) {
@@ -63,6 +65,8 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             tvReviewContent = itemView.findViewById(R.id.tvReviewContent);
             ivReviewImage1 = itemView.findViewById(R.id.ivReviewImage1);
             ivReviewImage2 = itemView.findViewById(R.id.ivReviewImage2);
+            cvReviewImage1 = itemView.findViewById(R.id.cvReviewImage1);
+            cvReviewImage2 = itemView.findViewById(R.id.cvReviewImage2);
             llReviewImages = itemView.findViewById(R.id.llReviewImages);
         }
 
@@ -74,28 +78,35 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
 
             if (review.getAvatarUrl() != null && !review.getAvatarUrl().isEmpty()) {
                 Glide.with(itemView.getContext()).load(review.getAvatarUrl()).into(ivAvatar);
+            } else {
+                ivAvatar.setImageResource(R.color.neutral_40);
             }
 
             List<String> images = review.getImageUrls();
             if (images != null && !images.isEmpty()) {
-                boolean hasValidImage = false;
-                if (images.size() > 0 && images.get(0) != null && !images.get(0).isEmpty()) {
-                    ivReviewImage1.setVisibility(View.VISIBLE);
-                    Glide.with(itemView.getContext()).load(images.get(0)).into(ivReviewImage1);
-                    hasValidImage = true;
+                // Clean up empty strings or nulls
+                List<String> validImages = new ArrayList<>();
+                for (String url : images) {
+                    if (url != null && !url.trim().isEmpty()) {
+                        validImages.add(url);
+                    }
+                }
+
+                if (validImages.size() > 0) {
+                    cvReviewImage1.setVisibility(View.VISIBLE);
+                    Glide.with(itemView.getContext()).load(validImages.get(0)).into(ivReviewImage1);
                 } else {
-                    ivReviewImage1.setVisibility(View.GONE);
+                    cvReviewImage1.setVisibility(View.GONE);
                 }
                 
-                if (images.size() > 1 && images.get(1) != null && !images.get(1).isEmpty()) {
-                    ivReviewImage2.setVisibility(View.VISIBLE);
-                    Glide.with(itemView.getContext()).load(images.get(1)).into(ivReviewImage2);
-                    hasValidImage = true;
+                if (validImages.size() > 1) {
+                    cvReviewImage2.setVisibility(View.VISIBLE);
+                    Glide.with(itemView.getContext()).load(validImages.get(1)).into(ivReviewImage2);
                 } else {
-                    ivReviewImage2.setVisibility(View.GONE);
+                    cvReviewImage2.setVisibility(View.GONE);
                 }
                 
-                llReviewImages.setVisibility(hasValidImage ? View.VISIBLE : View.GONE);
+                llReviewImages.setVisibility(validImages.size() > 0 ? View.VISIBLE : View.GONE);
             } else {
                 llReviewImages.setVisibility(View.GONE);
             }

@@ -56,7 +56,9 @@
             android:layout_centerVertical="true"
             android:numStars="5"
             android:rating="4.0"
-            android:progressTint="@color/neutral_40" />
+            android:progressTint="@color/secondary_main"
+            android:secondaryProgressTint="@color/secondary_main"
+            android:progressBackgroundTint="@color/neutral_40" />
     </RelativeLayout>
 
     <!-- Content -->
@@ -76,9 +78,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvReviewImage1"
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:layout_marginEnd="8dp"
@@ -90,11 +94,11 @@
                 android:id="@+id/ivReviewImage1"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                tools:src="@drawable/logo" />
+                android:scaleType="centerCrop" />
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvReviewImage2"
             android:layout_width="100dp"
             android:layout_height="100dp"
             app:cardCornerRadius="12dp"
@@ -105,8 +109,7 @@
                 android:id="@+id/ivReviewImage2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                tools:src="@drawable/logo" />
+                android:scaleType="centerCrop" />
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
@@ -114,18 +117,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_helpful"
+            app:tint="@color/neutral_60" />
 
         <TextView
             android:id="@+id/tvHelpfulReview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:drawablePadding="4dp"
+            android:layout_marginStart="6dp"
             android:text="Helpful (24)"
             android:textColor="@color/neutral_60"
-            android:textSize="12sp"
-            app:drawableStartCompat="@drawable/ic_search"
-            app:drawableTint="@color/neutral_60" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <View

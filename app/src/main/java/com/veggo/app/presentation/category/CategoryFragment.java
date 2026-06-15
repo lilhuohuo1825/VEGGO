@@ -43,7 +43,7 @@ public class CategoryFragment extends BaseFragment {
     }
 
     private void setupRecyclerViews() {
-        categoryAdapter = new CategoryAdapter();
+        categoryAdapter = new CategoryAdapter(CategoryAdapter.TYPE_SIDEBAR);
         binding.rvSidebar.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvSidebar.setAdapter(categoryAdapter);
         categoryAdapter.setOnCategoryClickListener(category -> {

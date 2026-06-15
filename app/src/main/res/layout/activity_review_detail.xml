@@ -96,7 +96,10 @@
                             android:layout_height="wrap_content"
                             style="?android:attr/ratingBarStyleSmall"
                             android:numStars="5"
-                            android:rating="4.8" />
+                            android:rating="4.8"
+                            android:progressTint="@color/secondary_main"
+                            android:secondaryProgressTint="@color/secondary_main"
+                            android:progressBackgroundTint="@color/neutral_30" />
 
                         <TextView
                             android:id="@+id/tvTotalRatings"
@@ -187,23 +190,30 @@
 
             </HorizontalScrollView>
 
-            <TextView
-                android:id="@+id/tvPhotoCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/customer_photos_format"
-                android:textColor="@color/neutral_100"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:text="Hình ảnh khách hàng (320)"/>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPhotos"
+            <LinearLayout
+                android:id="@+id/llPhotoGalleryContainer"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="12dp"
-                tools:listitem="@layout/item_review_photo"/>
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvPhotoCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/customer_photos_format"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="Hình ảnh khách hàng (320)"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPhotos"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="12dp"
+                    tools:listitem="@layout/item_review_photo"/>
+            </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
