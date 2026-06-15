@@ -40,7 +40,19 @@ public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewH
 
     @Override
     public void onBindViewHolder(@NonNull BannerViewHolder holder, int position) {
-        holder.bind(getItem(position));
+        if (getItemCount() > 0) {
+            holder.bind(getItem(position % getCurrentList().size()));
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        if (getCurrentList().isEmpty()) return 0;
+        return Integer.MAX_VALUE;
+    }
+
+    public int getRealCount() {
+        return getCurrentList().size();
     }
 
     static class BannerViewHolder extends RecyclerView.ViewHolder {

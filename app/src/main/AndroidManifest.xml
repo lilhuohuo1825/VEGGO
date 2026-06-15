@@ -26,6 +26,9 @@
         </service>
 
         <activity
+            android:name=".presentation.chatbot.ChatbotActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity

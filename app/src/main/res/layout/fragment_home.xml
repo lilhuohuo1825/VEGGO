@@ -133,7 +133,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="18dp"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
+                android:fontFamily="@font/encodesans_bold"
                 android:textStyle="bold"
                 android:text="Tiện ích"
                 android:textColor="@color/neutral_100"

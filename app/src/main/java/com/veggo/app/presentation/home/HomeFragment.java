@@ -3,6 +3,8 @@ package com.veggo.app.presentation.home;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +44,17 @@ public class HomeFragment extends Fragment {
 
     private List<TextView> productTabs = new ArrayList<>();
     private View[] bannerIndicators;
+
+    private final Handler bannerHandler = new Handler(Looper.getMainLooper());
+    private final Runnable bannerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (binding != null && binding.vpBanners != null && bannerAdapter != null && bannerAdapter.getRealCount() > 0) {
+                int nextItem = binding.vpBanners.getCurrentItem() + 1;
+                binding.vpBanners.setCurrentItem(nextItem, true);
+            }
+        }
+    };
 
     @Nullable
     @Override
@@ -91,6 +104,11 @@ public class HomeFragment extends Fragment {
         };
         binding.layoutSearch.setOnClickListener(openSearchClick);
         binding.stickyHeader.layoutStickySearch.setOnClickListener(openSearchClick);
+
+        binding.btnChatbot.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void setupRecyclerViews() {
@@ -102,13 +120,41 @@ public class HomeFragment extends Fragment {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-                updateBannerIndicators(position);
+                if (bannerAdapter.getRealCount() > 0) {
+                    updateBannerIndicators(position % bannerAdapter.getRealCount());
+                }
+                // Reset timer khi người dùng chuyển trang thủ công hoặc tự động
+                bannerHandler.removeCallbacks(bannerRunnable);
+                bannerHandler.postDelayed(bannerRunnable, 10000);
             }
         });
 
         // Utilities
         utilityAdapter = new UtilityAdapter();
         binding.rvUtilities.setAdapter(utilityAdapter);
+        utilityAdapter.setOnUtilityClickListener(utility -> {
+            Intent intent = null;
+            switch (utility.getId()) {
+                case "1": // Tủ lạnh
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.SmartFridgeActivity.class);
+                    break;
+                case "2": // Trợ lý AI
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class);
+                    break;
+                case "3": // Khẩu vị
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.TastePreferencesActivity.class);
+                    break;
+                case "4": // Điểm xanh
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.CarbonPointsActivity.class);
+                    break;
+                case "5": // Blog
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.blog.BlogHomeActivity.class);
+                    break;
+            }
+            if (intent != null) {
+                startActivity(intent);
+            }
+        });
 
         // Categories
         categoryAdapter = new CategoryAdapter();
@@ -251,8 +297,13 @@ public class HomeFragment extends Fragment {
 
     private void observeViewModel() {
         homeViewModel.getBanners().observe(getViewLifecycleOwner(), banners -> {
-            if (banners != null) {
-                bannerAdapter.submitList(banners);
+            if (banners != null && !banners.isEmpty()) {
+                bannerAdapter.submitList(banners, () -> {
+                    // Thiết lập vị trí ban đầu ở giữa để có thể cuộn vô tận 2 chiều
+                    int initialPos = (Integer.MAX_VALUE / 2) - ((Integer.MAX_VALUE / 2) % banners.size());
+                    binding.vpBanners.setCurrentItem(initialPos, false);
+                    updateBannerIndicators(0);
+                });
             }
         });
 
@@ -285,6 +336,20 @@ public class HomeFragment extends Fragment {
                 productAdapter.submitList(products);
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (bannerAdapter != null && bannerAdapter.getRealCount() > 0) {
+            bannerHandler.postDelayed(bannerRunnable, 10000);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        bannerHandler.removeCallbacks(bannerRunnable);
     }
 
     @Override
