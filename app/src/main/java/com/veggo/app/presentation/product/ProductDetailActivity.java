@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
@@ -42,6 +43,9 @@ public class ProductDetailActivity extends BaseActivity {
     // Consultation
     private com.veggo.app.adapter.ConsultationAdapter consultationAdapter;
     private androidx.recyclerview.widget.RecyclerView rvConsultations;
+    // Related products
+    private com.veggo.app.adapter.RelatedProductAdapter relatedAdapter;
+    private androidx.recyclerview.widget.RecyclerView rvRelatedProducts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +74,16 @@ public class ProductDetailActivity extends BaseActivity {
         viewModel.getProduct().observe(this, product -> {
             if (product != null) {
                 bindProductData(product);
+            }
+        });
+
+        viewModel.getRelatedProducts().observe(this, products -> {
+            androidx.recyclerview.widget.RecyclerView rv = findViewById(R.id.rvRelatedProducts);
+            if (products != null && !products.isEmpty()) {
+                if (rv != null) rv.setVisibility(android.view.View.VISIBLE);
+                if (relatedAdapter != null) relatedAdapter.setProducts(products);
+            } else {
+                if (rv != null) rv.setVisibility(android.view.View.GONE);
             }
         });
 
@@ -116,10 +130,16 @@ public class ProductDetailActivity extends BaseActivity {
             else if (star <= 1) count1++;
         }
         float avg = total / reviews.size();
+        Locale vnLocale = new Locale("vi", "VN");
         
-        tvAverageRatingSummary.setText(String.format(Locale.getDefault(), "%.1f", avg));
+        tvAverageRatingSummary.setText(String.format(vnLocale, "%.1f", avg));
         rbAverageRatingSummary.setRating(avg);
         tvTotalRatingsSummary.setText(getString(R.string.reviews_count_format, reviews.size()));
+        
+        // Cập nhật cả phần rating ở phía trên tiêu đề sản phẩm để đồng bộ với số lượng đánh giá thực tế
+        if (tvRating != null) {
+            tvRating.setText(String.format(vnLocale, "%.1f (%d)", avg, reviews.size()));
+        }
 
         // Update ProgressBars and Counts
         int totalReviews = reviews.size();
@@ -216,6 +236,21 @@ public class ProductDetailActivity extends BaseActivity {
         rvConsultations = findViewById(R.id.rvConsultations);
         consultationAdapter = new com.veggo.app.adapter.ConsultationAdapter();
         rvConsultations.setAdapter(consultationAdapter);
+
+        // Related products
+        rvRelatedProducts = findViewById(R.id.rvRelatedProducts);
+        relatedAdapter = new com.veggo.app.adapter.RelatedProductAdapter();
+        rvRelatedProducts.setAdapter(relatedAdapter);
+        // default add action
+        relatedAdapter.setOnAddClickListener(product -> {
+            android.widget.Toast.makeText(this, "Đã thêm " + product.getName() + " vào giỏ hàng", android.widget.Toast.LENGTH_SHORT).show();
+        });
+
+        relatedAdapter.setOnProductClickListener(product -> {
+            android.content.Intent intent = new android.content.Intent(this, ProductDetailActivity.class);
+            intent.putExtra(EXTRA_PRODUCT_ID, product.getId());
+            startActivity(intent);
+        });
         
         // Navigation buttons on Image
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
@@ -239,13 +274,20 @@ public class ProductDetailActivity extends BaseActivity {
 
         // "Show more" for reviews
         View tvShowMoreReviews = findViewById(R.id.tvShowMoreReviews);
+        View llRatingSummary = findViewById(R.id.llRatingSummary);
+        
+        View.OnClickListener goToReviews = v -> {
+            android.content.Intent intent = new android.content.Intent(this, ReviewDetailActivity.class);
+            String pId = viewModel.getProductId();
+            intent.putExtra(ReviewDetailActivity.EXTRA_PRODUCT_ID, pId);
+            startActivity(intent);
+        };
+
         if (tvShowMoreReviews != null) {
-            tvShowMoreReviews.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(this, ReviewDetailActivity.class);
-                String pId = viewModel.getProductId();
-                intent.putExtra(ReviewDetailActivity.EXTRA_PRODUCT_ID, pId);
-                startActivity(intent);
-            });
+            tvShowMoreReviews.setOnClickListener(goToReviews);
+        }
+        if (llRatingSummary != null) {
+            llRatingSummary.setOnClickListener(goToReviews);
         }
 
         // "Show more" for consultations
@@ -259,8 +301,7 @@ public class ProductDetailActivity extends BaseActivity {
         findViewById(R.id.btnAddToCart).setOnClickListener(v -> {
             Product currentProduct = viewModel.getProduct().getValue();
             if (currentProduct != null) {
-                // Add to cart logic here
-                android.widget.Toast.makeText(this, "Đã thêm " + currentProduct.getName() + " vào giỏ hàng", android.widget.Toast.LENGTH_SHORT).show();
+                showAddToCartPopup(currentProduct);
             }
         });
 
@@ -268,6 +309,55 @@ public class ProductDetailActivity extends BaseActivity {
         findViewById(R.id.btnBuyNow).setOnClickListener(v -> {
             android.widget.Toast.makeText(this, "Chuyển đến màn hình thanh toán", android.widget.Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void showAddToCartPopup(Product product) {
+        com.google.android.material.bottomsheet.BottomSheetDialog bottomSheetDialog = 
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
+        View view = getLayoutInflater().inflate(R.layout.layout_add_to_cart_bottom_sheet, null);
+        bottomSheetDialog.setContentView(view);
+
+        ImageView ivThumb = view.findViewById(R.id.ivProductThumb);
+        TextView tvName = view.findViewById(R.id.tvProductNamePopup);
+        TextView tvPrice = view.findViewById(R.id.tvPricePopup);
+        TextView tvQuantity = view.findViewById(R.id.tvQuantityPopup);
+        TextView tvTotal = view.findViewById(R.id.tvTotalPopup);
+        View btnDecrease = view.findViewById(R.id.tvDecrease);
+        View btnIncrease = view.findViewById(R.id.tvIncrease);
+        View btnConfirm = view.findViewById(R.id.btnConfirmAddToCart);
+        View btnClose = view.findViewById(R.id.btnClose);
+
+        // Bind data
+        Glide.with(this).load(product.getImageUrl()).into(ivThumb);
+        tvName.setText(product.getName());
+        tvPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
+        tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice()));
+
+        final int[] quantity = {1};
+        
+        btnDecrease.setOnClickListener(v -> {
+            if (quantity[0] > 1) {
+                quantity[0]--;
+                tvQuantity.setText(String.valueOf(quantity[0]));
+                tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice() * quantity[0]));
+            }
+        });
+
+        btnIncrease.setOnClickListener(v -> {
+            quantity[0]++;
+            tvQuantity.setText(String.valueOf(quantity[0]));
+            tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice() * quantity[0]));
+        });
+
+        btnClose.setOnClickListener(v -> bottomSheetDialog.dismiss());
+
+        btnConfirm.setOnClickListener(v -> {
+            // Logic thêm vào giỏ hàng thực tế
+            android.widget.Toast.makeText(this, "Đã thêm " + quantity[0] + " " + product.getName() + " vào giỏ hàng", android.widget.Toast.LENGTH_SHORT).show();
+            bottomSheetDialog.dismiss();
+        });
+
+        bottomSheetDialog.show();
     }
 
     private void setupViewModel() {
@@ -280,15 +370,16 @@ public class ProductDetailActivity extends BaseActivity {
         tvProductName.setText(product.getName());
         tvWeight.setText(product.getWeight());
         
-        // Rating format: 4,5 (875)
-        tvRating.setText(String.format(Locale.getDefault(), "%.1f (%d)", product.getRating(), product.getReviewCount()));
+        // Rating format: 4,5 (875) - Sử dụng Locale VN để hiển thị dấu phẩy thập phân
+        Locale vnLocale = new Locale("vi", "VN");
+        tvRating.setText(String.format(vnLocale, "%.1f (%d)", product.getRating(), product.getReviewCount()));
         
         tvSold.setText(getString(R.string.sold_count_format, product.getSoldCount()));
-        tvPrice.setText(getString(R.string.price_format, (double) product.getPrice()));
+        tvPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
         
         if (product.getOriginalPrice() > 0) {
             tvOriginalPrice.setVisibility(View.VISIBLE);
-            tvOriginalPrice.setText(getString(R.string.price_format, (double) product.getOriginalPrice()));
+            tvOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
             tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
         } else {
             tvOriginalPrice.setVisibility(View.GONE);

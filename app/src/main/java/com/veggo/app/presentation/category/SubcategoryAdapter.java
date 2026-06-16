@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.databinding.ItemSubcategoryBinding;
@@ -59,7 +60,15 @@ public class SubcategoryAdapter extends RecyclerView.Adapter<SubcategoryAdapter.
 
         void bind(AssetModels.Subcategory subcategory) {
             binding.tvSubcategoryName.setText(subcategory.subcategoryName);
-            binding.ivSubcategoryIcon.setImageResource(getSubcategoryIcon(subcategory.subcategoryId));
+            if (subcategory.img != null && !subcategory.img.isEmpty()) {
+                Glide.with(binding.ivSubcategoryIcon.getContext())
+                        .load(subcategory.img)
+                        .placeholder(R.drawable.ic_vegetable)
+                        .error(getSubcategoryIcon(subcategory.subcategoryId))
+                        .into(binding.ivSubcategoryIcon);
+            } else {
+                binding.ivSubcategoryIcon.setImageResource(getSubcategoryIcon(subcategory.subcategoryId));
+            }
 
             binding.getRoot().setOnClickListener(v -> {
                 if (listener != null) {
@@ -81,6 +90,7 @@ public class SubcategoryAdapter extends RecyclerView.Adapter<SubcategoryAdapter.
                 }
             }
             return R.drawable.ic_vegetable;
+
         }
     }
 }

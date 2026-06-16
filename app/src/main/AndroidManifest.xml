@@ -110,6 +110,12 @@
             android:name=".presentation.product.ProductDetailActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.product.ReviewDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.product.ConsultationDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.community.CommunityRecipesActivity"
             android:exported="false" />
         <activity

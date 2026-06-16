@@ -60,6 +60,8 @@ public final class AssetModels {
         public String subcategoryId;
         @SerializedName("SubcategoryName")
         public String subcategoryName;
+        @SerializedName("img")
+        public String img;
     }
 
     public static class Certificate {
