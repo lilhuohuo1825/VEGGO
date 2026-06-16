@@ -70,8 +70,15 @@ public class AuthViewModel extends ViewModel {
                         String errorMsg = "Đăng ký thất bại";
                         if (response.errorBody() != null) {
                             String errorJson = response.errorBody().string();
-                            if (errorJson.contains("already exists")) {
-                                errorMsg = "Số điện thoại đã được đăng ký";
+                            try {
+                                org.json.JSONObject jsonObj = new org.json.JSONObject(errorJson);
+                                if (jsonObj.has("message")) {
+                                    errorMsg = jsonObj.getString("message");
+                                }
+                            } catch (Exception e) {
+                                if (errorJson.contains("already exists") || errorJson.contains("đăng ký")) {
+                                    errorMsg = "Số điện thoại đã được đăng ký";
+                                }
                             }
                         }
                         _error.setValue(errorMsg);

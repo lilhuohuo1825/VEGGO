@@ -153,7 +153,7 @@ public class RegisterActivity extends BaseActivity {
 
         authViewModel.getError().observe(this, errorMessage -> {
             Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
-            if ("Số điện thoại đã được đăng ký".equals(errorMessage)) {
+            if (errorMessage != null && (errorMessage.contains("đăng ký") || errorMessage.contains("already exists"))) {
                 showRegisterForm();
                 tvPhoneError.setText(errorMessage);
                 tvPhoneError.setVisibility(View.VISIBLE);
