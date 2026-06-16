@@ -74,11 +74,11 @@ public class HomeViewModel extends ViewModel {
 
     private void loadUtilities() {
         List<Utility> utilityList = new ArrayList<>();
-        utilityList.add(new Utility("1", "Tủ lạnh\nthôgmin", R.drawable.ic_refrigerator));
-        utilityList.add(new Utility("2", "AI cá\nnhân hóa", R.drawable.ic_ai));
-        utilityList.add(new Utility("3", "Thiết lập\nkhẩu vị", R.drawable.ic_taste));
-        utilityList.add(new Utility("4", "Điểm\ncarbon", R.drawable.ic_yellow_cert));
-        utilityList.add(new Utility("5", "Blog\n ", R.drawable.ic_blog));
+        utilityList.add(new Utility("1", "Tủ lạnh", R.drawable.ic_refrigerator));
+        utilityList.add(new Utility("2", "Trợ lý AI", R.drawable.ic_ai));
+        utilityList.add(new Utility("3", "Khẩu vị", R.drawable.ic_taste));
+        utilityList.add(new Utility("4", "Điểm xanh", R.drawable.ic_yellow_cert));
+        utilityList.add(new Utility("5", "Bài viết", R.drawable.ic_blog));
         _utilities.setValue(utilityList);
     }
 
@@ -173,20 +173,36 @@ public class HomeViewModel extends ViewModel {
             
             List<Category> categoryList = new ArrayList<>();
             for (CategoryDto dto : dtos) {
-                // Map từ DTO sang Model (tạm thời gán icon mặc định vì JSON không có icon)
+                int iconRes = getIconForCategory(dto.getCategoryID());
                 categoryList.add(new Category(
                     dto.getCategoryID(),
                     dto.getCategoryName(),
-                    R.drawable.ic_vegetable 
+                    iconRes
                 ));
             }
             _categories.setValue(categoryList);
         } else {
             // Fallback nếu không đọc được file
             List<Category> fallbackList = new ArrayList<>();
-            fallbackList.add(new Category("1", "Trái cây", R.drawable.ic_fruit));
-            fallbackList.add(new Category("2", "Rau củ", R.drawable.ic_vegetable));
+            fallbackList.add(new Category("CAT008", "Trái cây", R.drawable.ic_fruit));
+            fallbackList.add(new Category("CAT003", "Rau củ", R.drawable.ic_vegetable));
             _categories.setValue(fallbackList);
+        }
+    }
+
+    private int getIconForCategory(String categoryId) {
+        if (categoryId == null) return R.drawable.ic_vegetable;
+        
+        switch (categoryId) {
+            case "CAT001": return R.drawable.ic_coffee_green;
+            case "CAT002": return R.drawable.ic_grain_dark;
+            case "CAT003": return R.drawable.ic_vegetable;
+            case "CAT004": return R.drawable.ic_seaweed;
+            case "CAT005": return R.drawable.ic_nutritous;
+            case "CAT006": return R.drawable.ic_dryfood;
+            case "CAT007": return R.drawable.ic_leaf;
+            case "CAT008": return R.drawable.ic_fruit;
+            default: return R.drawable.ic_vegetable;
         }
     }
 }

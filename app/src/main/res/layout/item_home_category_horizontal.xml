@@ -30,7 +30,8 @@
         android:gravity="center"
         android:text="Danh mục"
         android:textColor="@color/neutral_100"
-        android:textSize="12sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:textSize="13sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:lineSpacingExtra="2dp" />
 </LinearLayout>
