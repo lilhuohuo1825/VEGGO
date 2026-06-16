@@ -104,6 +104,7 @@
             android:paddingBottom="@dimen/spacing_md">
 
             <LinearLayout
+                android:id="@+id/profileOrderHistoryRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
@@ -142,6 +143,7 @@
                 android:orientation="horizontal">
 
                 <LinearLayout
+                    android:id="@+id/profileOrderPendingShortcut"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -164,6 +166,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/profileOrderShippingShortcut"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -186,6 +189,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/profileOrderDeliveredShortcut"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -208,6 +212,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/profileOrderCancelledShortcut"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
