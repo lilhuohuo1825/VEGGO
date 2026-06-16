@@ -49,6 +49,9 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     ProductEntity getProductById(String productId);
 
+    @Query("SELECT id FROM products WHERE sku = :sku LIMIT 1")
+    String getProductIdBySku(String sku);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertRecipes(List<com.veggo.app.data.local.entity.RecipeEntity> recipes);
 

@@ -102,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                 openCartScreen();
                 return;
             case ORDERS:
-                fragment = new OrderHistoryFragment();
+                fragment = OrderHistoryFragment.newInstance(false);
                 break;
             case ACCOUNT:
                 fragment = new ProfileFragment();

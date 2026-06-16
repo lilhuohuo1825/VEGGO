@@ -33,6 +33,12 @@ public class ReturnsActivity extends BaseActivity {
     private View processingList;
     private View completedList;
     private View rejectedList;
+    private View returnsEmptyState;
+    private List<AssetModels.Order> pendingOrders;
+    private List<AssetModels.Order> processingOrders;
+    private List<AssetModels.Order> completedOrders;
+    private List<AssetModels.Order> rejectedOrders;
+    private android.widget.HorizontalScrollView returnsStatusScroll;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +46,7 @@ public class ReturnsActivity extends BaseActivity {
         setContentView(R.layout.activity_returns);
 
         findViewById(R.id.returnsBackButton).setOnClickListener(v -> finish());
+        findViewById(R.id.returnsMenuButton).setOnClickListener(v -> AssetScreenData.showOrderOptions(this));
         pendingTab = findViewById(R.id.returnPendingTabText);
         processingTab = findViewById(R.id.returnProcessingTabText);
         completedTab = findViewById(R.id.returnCompletedTabText);
@@ -56,6 +63,8 @@ public class ReturnsActivity extends BaseActivity {
         processingList = findViewById(R.id.returnProcessingList);
         completedList = findViewById(R.id.returnCompletedList);
         rejectedList = findViewById(R.id.returnRejectedList);
+        returnsEmptyState = findViewById(R.id.returnsEmptyState);
+        returnsStatusScroll = findViewById(R.id.returnsStatusScroll);
 
         findViewById(R.id.returnPendingTab).setOnClickListener(v -> showReturnState(pendingTab, pendingList));
         findViewById(R.id.returnProcessingTab).setOnClickListener(v -> showReturnState(processingTab, processingList));
@@ -74,11 +83,41 @@ public class ReturnsActivity extends BaseActivity {
         completedIndicator.setVisibility(completedTab == activeTab ? View.VISIBLE : View.INVISIBLE);
         rejectedIndicator.setVisibility(rejectedTab == activeTab ? View.VISIBLE : View.INVISIBLE);
 
-        pendingList.setVisibility(pendingList == activeList ? View.VISIBLE : View.GONE);
-        processingList.setVisibility(processingList == activeList ? View.VISIBLE : View.GONE);
-        completedList.setVisibility(completedList == activeList ? View.VISIBLE : View.GONE);
-        rejectedList.setVisibility(rejectedList == activeList ? View.VISIBLE : View.GONE);
+        boolean isEmpty = false;
+        if (activeList == pendingList) {
+            isEmpty = pendingOrders == null || pendingOrders.isEmpty();
+        } else if (activeList == processingList) {
+            isEmpty = processingOrders == null || processingOrders.isEmpty();
+        } else if (activeList == completedList) {
+            isEmpty = completedOrders == null || completedOrders.isEmpty();
+        } else if (activeList == rejectedList) {
+            isEmpty = rejectedOrders == null || rejectedOrders.isEmpty();
+        }
+
+        pendingList.setVisibility(pendingList == activeList && !isEmpty ? View.VISIBLE : View.GONE);
+        processingList.setVisibility(processingList == activeList && !isEmpty ? View.VISIBLE : View.GONE);
+        completedList.setVisibility(completedList == activeList && !isEmpty ? View.VISIBLE : View.GONE);
+        rejectedList.setVisibility(rejectedList == activeList && !isEmpty ? View.VISIBLE : View.GONE);
+
+        if (returnsEmptyState != null) {
+            returnsEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        }
+
+        if (returnsStatusScroll != null) {
+            int tabId = R.id.returnPendingTab;
+            if (activeTab == processingTab) tabId = R.id.returnProcessingTab;
+            else if (activeTab == completedTab) tabId = R.id.returnCompletedTab;
+            else if (activeTab == rejectedTab) tabId = R.id.returnRejectedTab;
+            View tab = findViewById(tabId);
+            if (tab != null) {
+                returnsStatusScroll.post(() -> {
+                    int scrollX = tab.getLeft() - (returnsStatusScroll.getWidth() - tab.getWidth()) / 2;
+                    returnsStatusScroll.smoothScrollTo(scrollX, 0);
+                });
+            }
+        }
     }
+
 
     private void setActive(TextView textView, TextView badge, boolean active) {
         int colorRes = active ? R.color.primary_main : R.color.neutral_60;
@@ -99,10 +138,10 @@ public class ReturnsActivity extends BaseActivity {
     }
 
     private void bindReturnLists(AssetScreenData.Snapshot snapshot) {
-        List<AssetModels.Order> pendingOrders = AssetScreenData.filterReturnOrders(snapshot, "pending");
-        List<AssetModels.Order> processingOrders = AssetScreenData.filterReturnOrders(snapshot, "processing");
-        List<AssetModels.Order> completedOrders = AssetScreenData.filterReturnOrders(snapshot, "completed");
-        List<AssetModels.Order> rejectedOrders = AssetScreenData.filterReturnOrders(snapshot, "rejected");
+        pendingOrders = AssetScreenData.filterReturnOrders(snapshot, "pending");
+        processingOrders = AssetScreenData.filterReturnOrders(snapshot, "processing");
+        completedOrders = AssetScreenData.filterReturnOrders(snapshot, "completed");
+        rejectedOrders = AssetScreenData.filterReturnOrders(snapshot, "rejected");
         setBadgeCount(pendingBadge, pendingOrders.size());
         setBadgeCount(processingBadge, processingOrders.size());
         setBadgeCount(completedBadge, completedOrders.size());

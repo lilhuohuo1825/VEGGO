@@ -44,8 +44,12 @@
             android:id="@+id/orderHistoryMenuButton"
             android:layout_width="40dp"
             android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
             android:contentDescription="@string/orders_menu"
+            android:focusable="false"
             android:padding="@dimen/spacing_sm"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_order_list_menu" />
     </LinearLayout>
 
@@ -336,8 +340,8 @@
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
                 android:contentDescription="@string/orders_empty_title"
                 android:src="@drawable/ic_order_empty_mascot" />
 

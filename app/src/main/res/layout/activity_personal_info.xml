@@ -208,6 +208,7 @@
                                 android:textSize="14sp" />
 
                             <ImageView
+                                android:id="@+id/personalInfoBirthdayIcon"
                                 android:layout_width="22dp"
                                 android:layout_height="22dp"
                                 android:layout_gravity="end|center_vertical"

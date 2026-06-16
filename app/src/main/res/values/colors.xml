@@ -56,7 +56,11 @@
     <color name="veggo_success_soft">@color/primary_bg</color>
     <color name="veggo_danger_soft">@color/danger_bg</color>
     <color name="veggo_danger">@color/danger_main</color>
-    <color name="order_pending_text">@color/secondary_hover</color>
+    <color name="order_status_pending">@color/secondary_hover</color>
+    <color name="order_status_shipping">@color/info_main</color>
+    <color name="order_status_delivered">@color/primary_main</color>
+    <color name="order_status_cancelled">@color/danger_main</color>
+    <color name="order_pending_text">@color/order_status_pending</color>
     <color name="order_sheet_scrim">#99FFFFFF</color>
 
 </resources>

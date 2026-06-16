@@ -65,6 +65,9 @@
             android:name=".presentation.profile.MyPostsActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.FavoritesActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.profile.CarbonHistoryActivity"
             android:exported="false" />
         <activity

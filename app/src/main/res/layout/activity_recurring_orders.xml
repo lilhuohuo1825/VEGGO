@@ -46,8 +46,12 @@
                 android:textStyle="bold" />
 
             <ImageView
+                android:id="@+id/recurringOrdersMenuButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
                 android:contentDescription="@string/orders_menu"
                 android:padding="@dimen/spacing_sm"
                 android:src="@drawable/ic_order_list_menu" />

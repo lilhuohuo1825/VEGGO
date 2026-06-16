@@ -7,6 +7,9 @@
     <dimen name="spacing_md">16dp</dimen>
     <dimen name="spacing_lg">24dp</dimen>
     <dimen name="spacing_xl">32dp</dimen>
+    <dimen name="profile_menu_icon_size">24dp</dimen>
+    <dimen name="profile_menu_icon_size_large">25dp</dimen>
+    <dimen name="profile_menu_chevron_size">22dp</dimen>
 
     <!-- Radius -->
     <dimen name="radius_sm">8dp</dimen>

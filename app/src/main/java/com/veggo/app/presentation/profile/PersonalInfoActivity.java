@@ -18,6 +18,13 @@ public class PersonalInfoActivity extends BaseActivity {
         findViewById(R.id.personalInfoBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.personalInfoLogoutButton).setOnClickListener(v -> finish());
         findViewById(R.id.personalInfoSaveButton).setOnClickListener(v -> finish());
+        
+        com.veggo.app.core.utils.DatePickerHelper.setupDatePicker(
+                this, 
+                findViewById(R.id.personalInfoBirthdayInput), 
+                findViewById(R.id.personalInfoBirthdayIcon)
+        );
+        
         loadProfile();
     }
 

@@ -1,11 +1,13 @@
 export const environment = {
-  production: false, apiUrl: "http://localhost:3000/api",
+  production: false,
+  apiUrl: 'https://vgreen.onrender.com/api',
   firebase: {
-    apiKey: 'AIzaSyBeHvvkoZ38RqjjHIcv7Hwf5GhfknB4FFA',
-    authDomain: 'veggo-123.firebaseapp.com',
-    projectId: 'veggo-123',
-    storageBucket: 'veggo-123.firebasestorage.app',
-    messagingSenderId: '435688023132',
-    appId: '1:435688023132:web:70fc8cbd13ad6044b9b299'
+    apiKey: "AIzaSyDRdUiBHRPiGA3D4bS4tQE1bEn0QcBnPRU",
+    authDomain: "veggo-123.firebaseapp.com",
+    projectId: "veggo-123",
+    storageBucket: "veggo-123.firebasestorage.app",
+    messagingSenderId: "435688023132",
+    appId: "1:435688023132:web:2344a78dd51f391db9b299",
+    measurementId: "G-G4R28D77L0"
   }
 };

@@ -13,7 +13,7 @@ public class OrderHistoryActivity extends BaseActivity {
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.orderHistoryActivityContainer, new OrderHistoryFragment())
+                    .replace(R.id.orderHistoryActivityContainer, OrderHistoryFragment.newInstance(true))
                     .commit();
         }
     }

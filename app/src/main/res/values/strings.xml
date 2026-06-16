@@ -94,6 +94,7 @@
     <string name="carbon_tab_received">Đã nhận</string>
     <string name="carbon_tab_redeemed">Đã đổi</string>
     <string name="profile_posts">Bài viết của tôi</string>
+    <string name="profile_favorites">Yêu thích</string>
     <string name="profile_smart_fridge">Tủ lạnh thông minh</string>
     <string name="profile_taste">Khẩu vị của tôi</string>
     <string name="taste_title">Khẩu vị của tôi</string>
@@ -318,6 +319,17 @@
     <string name="posts_field_steps">Các bước nấu</string>
     <string name="posts_field_steps_hint">Bước 1: Sơ chế rau. Bước 2: Nấu nước dùng...</string>
     <string name="posts_save_draft">Lưu nháp</string>
+    <string name="favorites_title">Yêu thích</string>
+    <string name="favorites_hero_title">Kho yêu thích của bạn</string>
+    <string name="favorites_hero_body">Lưu nhanh sản phẩm, bài viết và món ăn từ trang chi tiết sản phẩm để xem lại khi cần.</string>
+    <string name="favorites_products">Sản phẩm yêu thích</string>
+    <string name="favorites_blogs">Bài viết yêu thích</string>
+    <string name="favorites_dishes">Dishes yêu thích</string>
+    <string name="favorites_products_count">Sản phẩm</string>
+    <string name="favorites_blogs_count">Bài viết</string>
+    <string name="favorites_dishes_count">Dishes</string>
+    <string name="favorites_open">Mở chi tiết</string>
+    <string name="favorites_saved">Đã lưu</string>
     <string name="posts_publish">Đăng bài</string>
     <string name="posts_notification_title">Thông báo bài viết</string>
     <string name="posts_filter_all">Tất cả</string>
@@ -358,4 +370,8 @@
     <string name="fridge_use_first">Nên dùng trước</string>
     <string name="fridge_matching_dishes">Món phù hợp</string>
     <string name="fridge_view_recipe">Xem công thức</string>
+    <string name="reviews_empty_title">Chưa có đánh giá nào</string>
+    <string name="reviews_empty_body">Bạn chưa có sản phẩm nào cần đánh giá hoặc đã hoàn thành tất cả đánh giá.</string>
+    <string name="returns_empty_title">Không có yêu cầu đổi trả nào</string>
+    <string name="returns_empty_body">Bạn chưa tạo yêu cầu đổi/trả sản phẩm nào.</string>
 </resources>

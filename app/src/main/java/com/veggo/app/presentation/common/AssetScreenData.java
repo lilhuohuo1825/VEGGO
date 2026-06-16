@@ -493,4 +493,45 @@ public final class AssetScreenData {
             this.instructions = Collections.unmodifiableList(instructions);
         }
     }
+
+    public static void showOrderOptions(Context context) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(context);
+        android.view.View sheet = android.view.LayoutInflater.from(context)
+                .inflate(R.layout.layout_order_history_options, null, false);
+        
+        sheet.findViewById(R.id.orderOptionHistory).setOnClickListener(v -> {
+            dialog.dismiss();
+            if (!(context instanceof com.veggo.app.presentation.order.OrderHistoryActivity)) {
+                android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.OrderHistoryActivity.class);
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                context.startActivity(intent);
+            }
+        });
+        sheet.findViewById(R.id.orderOptionRecurring).setOnClickListener(v -> {
+            dialog.dismiss();
+            if (!(context instanceof com.veggo.app.presentation.order.RecurringOrdersActivity)) {
+                android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.RecurringOrdersActivity.class);
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                context.startActivity(intent);
+            }
+        });
+        sheet.findViewById(R.id.orderOptionReviews).setOnClickListener(v -> {
+            dialog.dismiss();
+            if (!(context instanceof com.veggo.app.presentation.order.ReviewsActivity)) {
+                android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.ReviewsActivity.class);
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                context.startActivity(intent);
+            }
+        });
+        sheet.findViewById(R.id.orderOptionReturns).setOnClickListener(v -> {
+            dialog.dismiss();
+            if (!(context instanceof com.veggo.app.presentation.order.ReturnsActivity)) {
+                android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.ReturnsActivity.class);
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                context.startActivity(intent);
+            }
+        });
+        dialog.setContentView(sheet);
+        dialog.show();
+    }
 }

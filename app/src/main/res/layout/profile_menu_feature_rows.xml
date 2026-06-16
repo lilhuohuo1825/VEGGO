@@ -10,9 +10,9 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_address" android:src="@drawable/ic_profile_location" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size_large" android:layout_height="@dimen/profile_menu_icon_size_large" android:contentDescription="@string/profile_address" android:scaleType="fitCenter" android:src="@drawable/ic_profile_menu_addresses" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_address" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_address" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_address" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
@@ -21,20 +21,20 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_carbon" android:src="@drawable/ic_profile_leaf" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size_large" android:layout_height="@dimen/profile_menu_icon_size_large" android:contentDescription="@string/profile_carbon" android:scaleType="fitCenter" android:src="@drawable/ic_profile_menu_tree" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_carbon" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_carbon" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_carbon" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/profilePostsRow"
+        android:id="@+id/profileFavoritesRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_posts" android:src="@drawable/ic_profile_article" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_posts" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_posts" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_favorites" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_heart_filled" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_favorites" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_favorites" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
@@ -43,9 +43,9 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_smart_fridge" android:src="@drawable/ic_profile_fridge" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_smart_fridge" android:scaleType="centerInside" android:src="@drawable/ic_profile_fridge" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_smart_fridge" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_smart_fridge" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_smart_fridge" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
@@ -54,9 +54,9 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_taste" android:src="@drawable/ic_profile_taste" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_taste" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_taste" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_taste" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_taste" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_taste" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
@@ -65,8 +65,8 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_notifications" android:src="@drawable/ic_profile_bell" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_notifications" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_notifications" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_notifications" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_notifications" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_notifications" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 </LinearLayout>

@@ -18,6 +18,7 @@
         android:paddingBottom="@dimen/spacing_xl">
 
         <LinearLayout
+            android:id="@+id/orderOptionHistory"
             android:layout_width="match_parent"
             android:layout_height="54dp"
             android:background="@drawable/bg_orders_option_row"

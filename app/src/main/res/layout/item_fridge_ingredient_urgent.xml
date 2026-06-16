@@ -14,9 +14,10 @@
         android:background="@drawable/bg_carbon_icon_circle">
 
         <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
+            android:id="@+id/fridgeIngredientImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="10dp"
             android:src="@drawable/ic_vegetable" />
     </FrameLayout>
 

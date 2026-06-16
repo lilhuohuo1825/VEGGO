@@ -73,9 +73,14 @@ public final class AssetDataStore {
         createTable(context, collection);
         List<AssetRecordEntity> records = new ArrayList<>();
         SupportSQLiteDatabase database = DatabaseManager.getWritableDatabase(context);
-        try (Cursor cursor = database.query("SELECT documentId, json, importedAt FROM "
+        Cursor cursor = database.query("SELECT documentId, json, importedAt FROM "
                 + tableName(collection)
-                + " ORDER BY documentId ASC")) {
+                + " ORDER BY documentId ASC");
+        try {
+            if (cursor instanceof android.database.AbstractWindowedCursor) {
+                android.database.CursorWindow window = new android.database.CursorWindow("large_window", 32 * 1024 * 1024); // 32MB window size
+                ((android.database.AbstractWindowedCursor) cursor).setWindow(window);
+            }
             while (cursor.moveToNext()) {
                 records.add(new AssetRecordEntity(
                         collection,
@@ -83,6 +88,10 @@ public final class AssetDataStore {
                         cursor.getString(1),
                         cursor.getLong(2)
                 ));
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
             }
         }
         return records;
