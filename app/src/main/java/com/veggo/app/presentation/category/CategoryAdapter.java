@@ -86,16 +86,28 @@ public class CategoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private int getCategoryIcon(String categoryId) {
-        switch (categoryId != null ? categoryId : "") {
-            case "CAT001": return R.drawable.ic_coffee_green;
-            case "CAT002": return R.drawable.ic_grain_dark;
-            case "CAT003": return R.drawable.ic_vegetable;
-            case "CAT004": return R.drawable.ic_seaweed;
-            case "CAT005": return R.drawable.ic_nutritous;
-            case "CAT006": return R.drawable.ic_dryfood;
-            case "CAT007": return R.drawable.ic_leaf;
-            case "CAT008": return R.drawable.ic_fruit;
-            default: return R.drawable.ic_category;
+        if (categoryId == null) return R.drawable.ic_category;
+        
+        // Handle both CategoryID (CATxxx) and Mongo _id ($oid)
+        switch (categoryId) {
+            case "CAT001": case "6a0960fc6ea39eac566cfc14": 
+                return R.drawable.ic_coffee_green;
+            case "CAT002": case "6a0960fc6ea39eac566cfc15": 
+                return R.drawable.ic_grain_dark;
+            case "CAT003": case "6a0960fc6ea39eac566cfc16": 
+                return R.drawable.ic_vegetable;
+            case "CAT004": case "6a0960fc6ea39eac566cfc17": 
+                return R.drawable.ic_seaweed;
+            case "CAT005": case "6a0960fc6ea39eac566cfc18": 
+                return R.drawable.ic_nutritous;
+            case "CAT006": case "6a0960fc6ea39eac566cfc19": 
+                return R.drawable.ic_dryfood;
+            case "CAT007": case "6a0960fc6ea39eac566cfc1a": 
+                return R.drawable.ic_leaf;
+            case "CAT008": case "6a0960fc6ea39eac566cfc1b": 
+                return R.drawable.ic_fruit;
+            default: 
+                return R.drawable.ic_category;
         }
     }
 

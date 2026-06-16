@@ -339,10 +339,11 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private void loadProducts() {
-        if (selectedCategoryId.isEmpty()) return;
+        if (selectedCategoryId == null || selectedCategoryId.isEmpty()) return;
 
-        if (selectedSubcategoryId.isEmpty()) {
+        if (selectedSubcategoryId == null || selectedSubcategoryId.isEmpty()) {
             // Observe products by Category
+            productRepository.observeProductsByCategory(selectedCategoryId).removeObservers(getViewLifecycleOwner());
             productRepository.observeProductsByCategory(selectedCategoryId).observe(getViewLifecycleOwner(), products -> {
                 if (products != null) {
                     currentProducts = products;
@@ -351,6 +352,7 @@ public class CategoryDetailFragment extends Fragment {
             });
         } else {
             // Observe products by Subcategory
+            productRepository.observeProductsBySubcategory(selectedSubcategoryId).removeObservers(getViewLifecycleOwner());
             productRepository.observeProductsBySubcategory(selectedSubcategoryId).observe(getViewLifecycleOwner(), products -> {
                 if (products != null) {
                     currentProducts = products;

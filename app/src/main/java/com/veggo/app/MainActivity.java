@@ -53,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
             openScanScreen();
         });
 
+        // Seed database from JSON assets if needed
+        com.veggo.app.core.database.AssetDatabaseSeeder.seedIfNeeded(this);
+
         if (savedInstanceState == null) {
             Intent intent = getIntent();
             if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
