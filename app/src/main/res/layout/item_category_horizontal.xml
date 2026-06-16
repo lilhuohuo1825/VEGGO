@@ -2,21 +2,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
+    android:layout_width="70dp"
     android:layout_height="wrap_content"
-    android:layout_marginEnd="12dp"
+    android:layout_marginEnd="4dp"
     android:gravity="center"
     android:clickable="true"
     android:focusable="true"
     android:background="?attr/selectableItemBackground"
-    android:padding="4dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
     android:orientation="vertical">
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cvCategoryIcon"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        app:cardCornerRadius="20dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        app:cardCornerRadius="12dp"
         app:cardElevation="0dp"
         app:cardBackgroundColor="@color/primary_bg"
         app:strokeColor="@color/primary_main"
@@ -24,26 +25,26 @@
 
         <ImageView
             android:id="@+id/ivCategoryIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:layout_gravity="center"
             android:contentDescription="@null"
-            app:tint="@color/primary_main"
             tools:src="@drawable/ic_vegetable" />
     </com.google.android.material.card.MaterialCardView>
 
     <TextView
         android:id="@+id/tvCategoryName"
-        android:layout_width="80dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:fontFamily="@font/inter_medium"
+        android:fontFamily="@font/inter"
         android:gravity="center"
         android:maxLines="2"
-        android:minLines="2"
+        android:ellipsize="end"
         android:textColor="@color/neutral_100"
         android:textSize="13sp"
         android:lineSpacingExtra="2dp"
         tools:text="Rau củ" />
 
 </LinearLayout>
+

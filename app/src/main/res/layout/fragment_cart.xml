@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="#FFFFFF">
 
     <LinearLayout
@@ -12,8 +13,8 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="88dp"
-            android:gravity="bottom"
+            android:layout_height="?android:attr/actionBarSize"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
@@ -22,7 +23,7 @@
                 android:id="@+id/cartBackButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_gravity="start|center_vertical"
+                android:layout_gravity="center_vertical"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
@@ -34,20 +35,20 @@
             <TextView
                 android:id="@+id/tvCartTitle"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_gravity="start|center_vertical"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
                 android:layout_weight="1"
-                android:fontFamily="@font/encodesans_bold"
+                android:fontFamily="@font/inter_bold"
                 android:gravity="center"
                 android:text="Giỏ hàng (0)"
                 android:textColor="#1E1E1E"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:layout_gravity="start|center_vertical"
+                android:layout_gravity="center_vertical"
                 android:src="@drawable/ic_notify_xanh" />
         </LinearLayout>
 

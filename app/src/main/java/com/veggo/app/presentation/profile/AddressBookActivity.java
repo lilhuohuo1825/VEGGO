@@ -69,16 +69,21 @@ public class AddressBookActivity extends BaseActivity {
     }
 
     private void bindAddresses(AssetScreenData.Snapshot snapshot) {
+        View root = findViewById(android.R.id.content);
+        View secondaryContainer = findViewById(R.id.addressSecondaryContainer);
+        View defaultContainer = findViewById(R.id.addressDefaultContainer);
+
         if (snapshot.user == null) {
+            secondaryContainer.setVisibility(View.GONE);
+            defaultContainer.setVisibility(View.GONE);
+            boundAddresses.clear();
             return;
         }
-        View root = findViewById(android.R.id.content);
+
         List<AddressDisplay> addresses = collectAddresses(snapshot);
         boundAddresses.clear();
         boundAddresses.addAll(addresses);
 
-        View secondaryContainer = findViewById(R.id.addressSecondaryContainer);
-        View defaultContainer = findViewById(R.id.addressDefaultContainer);
         secondaryContainer.setVisibility(addresses.size() > 1 ? View.VISIBLE : View.GONE);
         defaultContainer.setVisibility(addresses.isEmpty() ? View.GONE : View.VISIBLE);
 

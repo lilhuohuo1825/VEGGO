@@ -122,6 +122,20 @@ router.post('/reset-password', asyncHandler(async (req, res) => {
   res.json({ message: 'Đặt lại mật khẩu thành công' });
 }));
 
+/**
+ * 5. Lấy thông tin user theo số điện thoại
+ * GET /api/users/phone/:phone
+ */
+router.get('/phone/:phone', asyncHandler(async (req, res) => {
+  const user = await User.findOne({ Phone: req.params.phone });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+  const userResponse = user.toObject();
+  delete userResponse.Password;
+  res.json(userResponse);
+}));
+
 // --- Firebase Auth (Giữ nguyên cho các chức năng khác) ---
 
 router.get('/firebase/:firebaseUid', asyncHandler(async (req, res) => {

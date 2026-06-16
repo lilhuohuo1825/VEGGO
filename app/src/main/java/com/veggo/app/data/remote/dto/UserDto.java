@@ -46,6 +46,9 @@ public class UserDto {
     @SerializedName("avatarUrl")
     private String avatarUrl;
 
+    @SerializedName("addresses")
+    private List<AddressDto> addresses;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -87,4 +90,39 @@ public class UserDto {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public List<AddressDto> getAddresses() { return addresses; }
+    public void setAddresses(List<AddressDto> addresses) { this.addresses = addresses; }
+
+    public static class AddressDto {
+        @SerializedName("receiverName")
+        private String receiverName;
+        @SerializedName("phone")
+        private String phone;
+        @SerializedName("line1")
+        private String line1;
+        @SerializedName("ward")
+        private String ward;
+        @SerializedName("district")
+        private String district;
+        @SerializedName("city")
+        private String city;
+        @SerializedName("isDefault")
+        private boolean isDefault;
+
+        public String getReceiverName() { return receiverName; }
+        public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getLine1() { return line1; }
+        public void setLine1(String line1) { this.line1 = line1; }
+        public String getWard() { return ward; }
+        public void setWard(String ward) { this.ward = ward; }
+        public String getDistrict() { return district; }
+        public void setDistrict(String district) { this.district = district; }
+        public String getCity() { return city; }
+        public void setCity(String city) { this.city = city; }
+        public boolean isDefault() { return isDefault; }
+        public void setDefault(boolean isDefault) { this.isDefault = isDefault; }
+    }
 }

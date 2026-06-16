@@ -33,7 +33,7 @@ public class PoliciesFragment extends BaseFragment {
         binding.backButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
         );
-        setupBottomNavigation();
+        // setupBottomNavigation();
         setupReturnPolicy();
         setupPolicyCards();
         return binding.getRoot();
@@ -54,7 +54,7 @@ public class PoliciesFragment extends BaseFragment {
     }
 
     private void setupBottomNavigation() {
-        BottomNavController.setup(requireActivity(), binding.bottomNavHost, R.id.nav_profile);
+        // BottomNavController.setup(requireActivity(), binding.bottomNavHost, R.id.nav_profile);
     }
 
     private void setupPolicyCards() {

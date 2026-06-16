@@ -101,19 +101,13 @@ public class CategoryDetailFragment extends Fragment {
             startActivity(intent);
         });
 
-        // Search text filter
-        binding.etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterProductsByName(s.toString());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+        // Navigate to SearchActivity when search bar is clicked
+        View.OnClickListener openSearchClick = v -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
+            startActivity(intent);
+        };
+        binding.layoutSearch.setOnClickListener(openSearchClick);
+        binding.etSearch.setOnClickListener(openSearchClick);
 
         binding.tabSubcategories.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override

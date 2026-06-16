@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/profileGuestScroll"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/veggo_surface"
-    android:clipToPadding="false"
-    android:fillViewport="true"
-    android:overScrollMode="never"
-    android:paddingStart="@dimen/spacing_md"
-    android:paddingTop="@dimen/spacing_md"
-    android:paddingEnd="@dimen/spacing_md"
-    android:paddingBottom="100dp">
+    android:fitsSystemWindows="true"
+    android:background="@color/veggo_surface">
+
+    <ScrollView
+        android:id="@+id/profileGuestScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/veggo_surface"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingTop="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="100dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -280,8 +286,8 @@
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:contentDescription="@string/profile_login_register"
-                android:src="@drawable/ic_profile_login" />
+                android:contentDescription="@string/profile_logout"
+                android:src="@drawable/ic_profile_logout" />
 
             <TextView
                 android:layout_width="0dp"
@@ -289,15 +295,16 @@
                 android:layout_marginStart="@dimen/spacing_md"
                 android:layout_weight="1"
                 android:fontFamily="sans-serif-medium"
-                android:text="@string/profile_login_register"
-                android:textColor="@color/veggo_green"
+                android:text="@string/profile_logout"
+                android:textColor="@color/veggo_danger"
                 android:textSize="16sp" />
 
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:contentDescription="@string/profile_login_register"
+                android:contentDescription="@string/profile_logout"
                 android:src="@drawable/ic_chevron_right" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
+</FrameLayout>

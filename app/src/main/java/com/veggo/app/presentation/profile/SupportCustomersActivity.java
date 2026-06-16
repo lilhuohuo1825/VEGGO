@@ -35,7 +35,7 @@ public class SupportCustomersActivity extends AppCompatActivity {
                 Toast.LENGTH_LONG
         ).show());
 
-        setupBottomNavigation();
+        // setupBottomNavigation();
         setupFaqDropdown();
         setupGuideDropdown(
                 binding.orderGuideCard,
@@ -90,7 +90,7 @@ public class SupportCustomersActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-        BottomNavController.setup(this, binding.bottomNavHost, R.id.nav_profile);
+        // BottomNavController.setup(this, binding.bottomNavHost, R.id.nav_profile);
     }
 
     private void setupFaqDropdown() {

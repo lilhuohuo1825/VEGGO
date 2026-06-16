@@ -133,7 +133,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="18dp"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/encodesans_bold"
+                android:fontFamily="@font/inter"
                 android:textStyle="bold"
                 android:text="Tiện ích"
                 android:textColor="@color/neutral_100"
@@ -378,60 +378,125 @@
                     android:paddingStart="18dp"
                     android:paddingEnd="18dp">
 
-                    <TextView
-                        android:id="@+id/tabToday"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:fontFamily="@font/inter"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:text="Today’s choices"
-                        android:textColor="@color/primary_main"
-                        android:textSize="14sp" />
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabToday"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:text="Today’s choices"
+                            android:textColor="@color/primary_main"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabTodayIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="visible" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tabDiscount"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_marginStart="24dp"
-                        android:fontFamily="@font/inter"
-                        android:gravity="center"
-                        android:text="Limited discount!"
-                        android:textColor="@color/neutral_60"
-                        android:textSize="14sp" />
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabDiscount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:gravity="center"
+                            android:text="Limited discount!"
+                            android:textColor="@color/neutral_60"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabDiscountIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tabCheapest"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_marginStart="24dp"
-                        android:fontFamily="@font/inter"
-                        android:gravity="center"
-                        android:text="Cheapest!"
-                        android:textColor="@color/neutral_60"
-                        android:textSize="14sp" />
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabCheapest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:gravity="center"
+                            android:text="Cheapest!"
+                            android:textColor="@color/neutral_60"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabCheapestIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tabNewest"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_marginStart="24dp"
-                        android:fontFamily="@font/inter"
-                        android:gravity="center"
-                        android:text="Newest"
-                        android:textColor="@color/neutral_60"
-                        android:textSize="14sp" />
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabNewest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:gravity="center"
+                            android:text="Newest"
+                            android:textColor="@color/neutral_60"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabNewestIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tabPopular"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_marginStart="24dp"
-                        android:fontFamily="@font/inter"
-                        android:gravity="center"
-                        android:text="Popular"
-                        android:textColor="@color/neutral_60"
-                        android:textSize="14sp" />
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabPopular"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:gravity="center"
+                            android:text="Popular"
+                            android:textColor="@color/neutral_60"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabPopularIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
                 </LinearLayout>
             </HorizontalScrollView>
 

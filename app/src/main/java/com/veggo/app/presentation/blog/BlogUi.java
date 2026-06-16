@@ -53,7 +53,7 @@ public final class BlogUi {
             View spacer = new View(activity);
             row.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
         } else {
-            TextView titleView = text(activity, title, 20, R.color.neutral_100, true);
+            TextView titleView = text(activity, title, 22, R.color.neutral_100, true);
             titleView.setGravity(Gravity.CENTER);
             row.addView(titleView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         }
@@ -382,7 +382,19 @@ public final class BlogUi {
         view.setTextSize(sp);
         view.setIncludeFontPadding(true);
         view.setFontFeatureSettings("kern");
-        view.setTypeface(Typeface.create("sans", bold ? Typeface.BOLD : Typeface.NORMAL));
+        if (bold) {
+            try {
+                view.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(activity, R.font.inter_bold));
+            } catch (Exception e) {
+                view.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+            }
+        } else {
+            try {
+                view.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(activity, R.font.inter));
+            } catch (Exception e) {
+                view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            }
+        }
         return view;
     }
 

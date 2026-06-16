@@ -105,11 +105,10 @@ public class FavoritesActivity extends BaseActivity {
 
     private void loadFavorites() {
         new Thread(() -> {
-            AssetRepository repository = new AssetRepository(this);
             FavoriteSnapshot snapshot = new FavoriteSnapshot(
-                    favoriteProducts(repository.getProducts()),
-                    favoriteBlogs(repository.getBlogs()),
-                    favoriteDishes(repository.getDishes(), repository.getInstructions())
+                    new ArrayList<>(),
+                    new ArrayList<>(),
+                    new ArrayList<>()
             );
             runOnUiThread(() -> bindFavorites(snapshot));
         }).start();
@@ -150,9 +149,26 @@ public class FavoritesActivity extends BaseActivity {
         tabBlogsText.setText("Bài viết");
         tabDishesText.setText("Công thức");
 
-        tabProductsBadge.setText(String.valueOf(snapshot.products.size()));
-        tabBlogsBadge.setText(String.valueOf(snapshot.blogs.size()));
-        tabDishesBadge.setText(String.valueOf(snapshot.dishes.size()));
+        if (snapshot.products.size() > 0) {
+            tabProductsBadge.setVisibility(View.VISIBLE);
+            tabProductsBadge.setText(String.valueOf(snapshot.products.size()));
+        } else {
+            tabProductsBadge.setVisibility(View.GONE);
+        }
+
+        if (snapshot.blogs.size() > 0) {
+            tabBlogsBadge.setVisibility(View.VISIBLE);
+            tabBlogsBadge.setText(String.valueOf(snapshot.blogs.size()));
+        } else {
+            tabBlogsBadge.setVisibility(View.GONE);
+        }
+
+        if (snapshot.dishes.size() > 0) {
+            tabDishesBadge.setVisibility(View.VISIBLE);
+            tabDishesBadge.setText(String.valueOf(snapshot.dishes.size()));
+        } else {
+            tabDishesBadge.setVisibility(View.GONE);
+        }
 
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.favoritesProductTotal,
                 snapshot.products.size() + "\n" + getString(R.string.favorites_products_count));

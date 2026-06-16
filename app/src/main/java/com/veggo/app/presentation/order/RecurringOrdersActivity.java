@@ -24,5 +24,9 @@ public class RecurringOrdersActivity extends BaseActivity {
         findViewById(R.id.recurringEmptyDay).setOnClickListener(v ->
                 startActivity(new Intent(this, RecurringDayEmptyActivity.class))
         );
+
+        if (!new com.veggo.app.core.preferences.AppPreferences(this).isLoggedIn()) {
+            findViewById(R.id.recurringCalendarCard).setVisibility(android.view.View.GONE);
+        }
     }
 }

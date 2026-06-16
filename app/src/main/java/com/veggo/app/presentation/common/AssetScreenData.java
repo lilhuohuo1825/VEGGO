@@ -43,10 +43,13 @@ public final class AssetScreenData {
     }
 
     public static Snapshot load(@NonNull Context context) {
+        AppPreferences appPreferences = new AppPreferences(context);
+        
+        AssetModels.User user = null;
+        List<AssetModels.Order> customerOrders = new ArrayList<>();
+        Map<String, AssetModels.OrderDetail> detailByOrderId = new HashMap<>();
+
         AssetRepository repository = new AssetRepository(context);
-        List<AssetModels.User> users = mapUsers(new UserAssetRepository(context).getUsers());
-        List<AssetModels.Order> orders = repository.getOrders();
-        List<AssetModels.OrderDetail> details = repository.getOrderDetails();
         List<AssetModels.Certificate> certificates = repository.getCertificates();
         List<AssetModels.Warehouse> warehouses = repository.getWarehouses();
         List<AssetModels.CommunityPost> communityPosts = repository.getCommunityPosts();
@@ -54,36 +57,116 @@ public final class AssetScreenData {
         List<AssetModels.Inventory> inventories = repository.getInventories();
         List<AssetModels.Instruction> instructions = repository.getInstructions();
 
-        AppPreferences appPreferences = new AppPreferences(context);
-        AssetModels.User user = findUser(users, orders, appPreferences.getCurrentPhone());
+        String customerId = "";
 
-        // Ưu tiên thông tin từ Session nếu đã đăng nhập nhưng không có trong SQLite local
         if (appPreferences.isLoggedIn()) {
-            String sessionPhone = appPreferences.getCurrentPhone();
-            if (user == null || !safe(user.phone).equals(sessionPhone)) {
+            String phone = appPreferences.getCurrentPhone();
+            customerId = appPreferences.getCustomerId();
+
+            // 1. Fetch user profile from MongoDB via UserApi
+            try {
+                com.veggo.app.data.remote.api.UserApi userApi = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.UserApi.class);
+                retrofit2.Response<com.veggo.app.data.remote.dto.UserDto> userResponse = userApi.getUserByPhone(phone).execute();
+                if (userResponse.isSuccessful() && userResponse.body() != null) {
+                    com.veggo.app.data.remote.dto.UserDto userDto = userResponse.body();
+                    user = new AssetModels.User();
+                    user.phone = userDto.getPhone();
+                    user.customerId = userDto.getCustomerId();
+                    user.fullName = userDto.getFullName();
+                    user.email = userDto.getEmail();
+                    user.carbonPoint = userDto.getCarbonPoint();
+                    user.address = userDto.getAddress();
+                    // Add addresses from addresses list in UserDto
+                    if (userDto.getAddresses() != null && !userDto.getAddresses().isEmpty()) {
+                        for (com.veggo.app.data.remote.dto.UserDto.AddressDto addrDto : userDto.getAddresses()) {
+                            if (addrDto.isDefault() || user.address == null || user.address.isEmpty()) {
+                                List<String> parts = new ArrayList<>();
+                                addIfPresent(parts, addrDto.getLine1());
+                                addIfPresent(parts, addrDto.getWard());
+                                addIfPresent(parts, addrDto.getDistrict());
+                                addIfPresent(parts, addrDto.getCity());
+                                user.address = String.join(", ", parts);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // Fallback user mapping from preferences if network call failed or User not found in MongoDB
+            if (user == null) {
                 user = new AssetModels.User();
-                user.phone = sessionPhone;
-                user.customerId = appPreferences.getCustomerId();
+                user.phone = phone;
+                user.customerId = customerId;
                 user.fullName = appPreferences.getFullName();
                 user.email = appPreferences.getEmail();
-                user.carbonPoint = 0; // Khởi tạo mặc định cho user mới
+                user.carbonPoint = 0;
             }
-        }
 
-        enrichUserFromOrderDetails(user, orders, details);
+            // 2. Fetch orders from MongoDB via OrderApi
+            try {
+                com.veggo.app.data.remote.api.OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.OrderApi.class);
+                retrofit2.Response<List<com.veggo.app.data.remote.dto.OrderDto>> ordersResponse = orderApi.getOrders(customerId).execute();
+                if (ordersResponse.isSuccessful() && ordersResponse.body() != null) {
+                    for (com.veggo.app.data.remote.dto.OrderDto orderDto : ordersResponse.body()) {
+                        AssetModels.Order order = new AssetModels.Order();
+                        order.orderId = orderDto.getId();
+                        order.customerId = orderDto.getUserId();
+                        order.subtotal = orderDto.getSubtotal();
+                        order.shippingFee = orderDto.getShippingFee();
+                        order.totalAmount = orderDto.getTotal();
+                        order.status = orderDto.getStatus();
+                        
+                        order.createdAt = new AssetModels.MongoDate();
+                        order.createdAt.date = orderDto.getCreatedAt();
 
-        String customerId = user == null ? FALLBACK_CUSTOMER_ID : user.customerId;
-        List<AssetModels.Order> customerOrders = new ArrayList<>();
-        for (AssetModels.Order order : orders) {
-            if (equals(order.customerId, customerId)) {
-                customerOrders.add(order);
+                        customerOrders.add(order);
+
+                        // Detail
+                        AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
+                        detail.orderId = orderDto.getId();
+                        detail.items = new ArrayList<>();
+                        for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
+                            AssetModels.OrderDetailItem item = new AssetModels.OrderDetailItem();
+                            item.productName = itemDto.getName();
+                            item.price = itemDto.getPrice();
+                            item.quantity = itemDto.getQuantity();
+                            item.image = itemDto.getImageUrl();
+                            item.unit = "kg";
+                            detail.items.add(item);
+                        }
+
+                        Map<String, Object> addrMap = orderDto.getShippingAddress();
+                        if (addrMap != null) {
+                            AssetModels.ShippingInfo info = new AssetModels.ShippingInfo();
+                            info.fullName = getMapString(addrMap, "receiverName");
+                            if (info.fullName == null || info.fullName.isEmpty()) {
+                                info.fullName = getMapString(addrMap, "fullName");
+                            }
+                            info.phone = getMapString(addrMap, "phone");
+                            info.email = getMapString(addrMap, "email");
+                            
+                            AssetModels.ShippingAddress addr = new AssetModels.ShippingAddress();
+                            addr.detail = getMapString(addrMap, "line1");
+                            if (addr.detail == null || addr.detail.isEmpty()) {
+                                addr.detail = getMapString(addrMap, "detail");
+                            }
+                            addr.ward = getMapString(addrMap, "ward");
+                            addr.district = getMapString(addrMap, "district");
+                            addr.city = getMapString(addrMap, "city");
+                            
+                            info.address = addr;
+                            detail.shippingInfo = info;
+                        }
+                        detailByOrderId.put(order.orderId, detail);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }
-        customerOrders.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
 
-        Map<String, AssetModels.OrderDetail> detailByOrderId = new HashMap<>();
-        for (AssetModels.OrderDetail detail : details) {
-            detailByOrderId.put(detail.orderId, detail);
+            customerOrders.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
         }
 
         Map<String, AssetModels.Warehouse> warehouseById = new HashMap<>();
@@ -450,6 +533,11 @@ public final class AssetScreenData {
         if (hasText(value)) {
             parts.add(value);
         }
+    }
+
+    private static String getMapString(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        return val == null ? "" : String.valueOf(val);
     }
 
     public static final class Snapshot {

@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background_main"
     android:orientation="vertical">
 
@@ -30,11 +31,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/encodesans_bold"
+            android:fontFamily="@font/inter_bold"
             android:gravity="center"
             android:text="@string/fridge_title"
             android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_xl"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <FrameLayout

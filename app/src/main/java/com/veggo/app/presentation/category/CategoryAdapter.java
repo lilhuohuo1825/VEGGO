@@ -90,9 +90,9 @@ public class CategoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             case "CAT001": return R.drawable.ic_coffee_green;
             case "CAT002": return R.drawable.ic_grain_dark;
             case "CAT003": return R.drawable.ic_vegetable;
-            case "CAT004": return R.drawable.ic_leaf;
-            case "CAT005": return R.drawable.ic_safe;
-            case "CAT006": return R.drawable.ic_refrigerator;
+            case "CAT004": return R.drawable.ic_seaweed;
+            case "CAT005": return R.drawable.ic_nutritous;
+            case "CAT006": return R.drawable.ic_dryfood;
             case "CAT007": return R.drawable.ic_leaf;
             case "CAT008": return R.drawable.ic_fruit;
             default: return R.drawable.ic_category;

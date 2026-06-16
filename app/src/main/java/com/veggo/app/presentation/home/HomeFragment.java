@@ -279,18 +279,28 @@ public class HomeFragment extends Fragment {
             stickyNotifyButton.setOnClickListener(openNotifications);
         }
     }
-
     private void onProductTabClicked(int index) {
+        View[] indicators = {
+            binding.tabTodayIndicator,
+            binding.tabDiscountIndicator,
+            binding.tabCheapestIndicator,
+            binding.tabNewestIndicator,
+            binding.tabPopularIndicator
+        };
         for (int i = 0; i < productTabs.size(); i++) {
             TextView tab = productTabs.get(i);
             if (i == index) {
                 tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_main));
-                tab.setTypeface(null, Typeface.BOLD);
-                // TODO: Gọi ViewModel load dữ liệu theo tab i
-                // homeViewModel.loadProductsByTab(i);
+                tab.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.inter_semibold));
+                if (i < indicators.length && indicators[i] != null) {
+                    indicators[i].setVisibility(View.VISIBLE);
+                }
             } else {
                 tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.neutral_60));
-                tab.setTypeface(null, Typeface.NORMAL);
+                tab.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.inter_regular));
+                if (i < indicators.length && indicators[i] != null) {
+                    indicators[i].setVisibility(View.INVISIBLE);
+                }
             }
         }
     }

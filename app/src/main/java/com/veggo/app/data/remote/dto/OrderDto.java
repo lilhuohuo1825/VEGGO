@@ -16,6 +16,7 @@ public class OrderDto {
     private long total;
     private String status;
     private Map<String, Object> shippingAddress;
+    private String createdAt;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -33,6 +34,9 @@ public class OrderDto {
     public void setStatus(String status) { this.status = status; }
     public Map<String, Object> getShippingAddress() { return shippingAddress; }
     public void setShippingAddress(Map<String, Object> shippingAddress) { this.shippingAddress = shippingAddress; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
     public static class OrderItemDto {
         private String productId;

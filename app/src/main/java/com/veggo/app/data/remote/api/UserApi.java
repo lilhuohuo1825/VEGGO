@@ -12,6 +12,9 @@ public interface UserApi {
     @GET("users/firebase/{firebaseUid}")
     Call<UserDto> getUserByFirebaseUid(@Path("firebaseUid") String firebaseUid);
 
+    @GET("users/phone/{phone}")
+    Call<UserDto> getUserByPhone(@Path("phone") String phone);
+
     @POST("users/sync")
     Call<UserDto> syncUser(@Body UserDto user);
 }

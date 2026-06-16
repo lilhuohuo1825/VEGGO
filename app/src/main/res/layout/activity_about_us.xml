@@ -34,16 +34,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageView
-            android:id="@+id/btnMenu"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:padding="14dp"
-            android:src="@drawable/ic_menu"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/neutral_100" />
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

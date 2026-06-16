@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -74,10 +75,13 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
                 android:layout_marginTop="20dp"
                 android:text="Danh mục"
                 android:textColor="@color/neutral_100"
+                android:fontFamily="@font/inter"
+                android:textStyle="bold"
                 android:textSize="18sp" />
 
             <!-- Horizontal Categories -->
@@ -105,10 +109,10 @@
                     android:layout_toStartOf="@+id/ivFilter"
                     android:background="@android:color/transparent"
                     app:tabBackground="@android:color/transparent"
-                    app:tabIndicator="@drawable/bg_tab_indicator"
+                    app:tabIndicator="@drawable/bg_order_tab_indicator"
                     app:tabIndicatorColor="@color/primary_main"
                     app:tabIndicatorFullWidth="false"
-                    app:tabIndicatorHeight="4dp"
+                    app:tabIndicatorHeight="8dp"
                     app:tabMode="scrollable"
                     app:tabRippleColor="@android:color/transparent"
                     app:tabSelectedTextColor="@color/primary_main"

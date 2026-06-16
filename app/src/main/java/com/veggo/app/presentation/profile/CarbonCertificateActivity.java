@@ -1,6 +1,7 @@
 package com.veggo.app.presentation.profile;
 
 import android.os.Bundle;
+import android.view.View;
 
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
@@ -24,23 +25,29 @@ public class CarbonCertificateActivity extends BaseActivity {
     }
 
     private void bindCertificate(AssetScreenData.Snapshot snapshot) {
-        if (snapshot.user == null) {
-            return;
-        }
         AssetModels.Certificate current = null;
-        for (AssetModels.Certificate certificate : snapshot.certificates) {
-            if (snapshot.user.carbonPoint >= certificate.requiredCarbonPoint) {
-                current = certificate;
+        if (snapshot.user != null) {
+            for (AssetModels.Certificate certificate : snapshot.certificates) {
+                if (snapshot.user.carbonPoint >= certificate.requiredCarbonPoint) {
+                    current = certificate;
+                }
             }
         }
-        if (current == null && !snapshot.certificates.isEmpty()) {
-            current = snapshot.certificates.get(0);
+        if (current != null) {
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, current.certificateName);
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
+                    current.certificateDescription + "\n" + current.rewardDescription);
+            View shareBtn = findViewById(R.id.carbonShareButton);
+            if (shareBtn != null) {
+                shareBtn.setVisibility(View.VISIBLE);
+            }
+        } else {
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, "Chưa có chứng nhận");
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription, "Bạn chưa đạt chứng nhận carbon tương ứng.");
+            View shareBtn = findViewById(R.id.carbonShareButton);
+            if (shareBtn != null) {
+                shareBtn.setVisibility(View.GONE);
+            }
         }
-        if (current == null) {
-            return;
-        }
-        AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, current.certificateName);
-        AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
-                current.certificateDescription + "\n" + current.rewardDescription);
     }
 }

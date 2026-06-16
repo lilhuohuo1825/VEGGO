@@ -32,6 +32,11 @@ public class CarbonPointsActivity extends BaseActivity {
 
     private void bindCarbonData(AssetScreenData.Snapshot snapshot) {
         if (snapshot.user == null) {
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCurrentValue, "0 C");
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCurrentLevel, "Chưa đạt chứng nhận");
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonNextLevel, "");
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonProgressValue, "0 / 0 C");
+            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonProgressLeft, "");
             return;
         }
         int points = snapshot.user.carbonPoint;
