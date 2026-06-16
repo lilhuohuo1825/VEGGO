@@ -12,6 +12,9 @@ public class RecurringOrdersActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recurring_orders);
         findViewById(R.id.recurringOrdersBackButton).setOnClickListener(v -> finish());
+        findViewById(R.id.recurringOrdersMenuButton).setOnClickListener(v ->
+                com.veggo.app.presentation.common.AssetScreenData.showOrderOptions(this)
+        );
         findViewById(R.id.recurringCreateButton).setOnClickListener(v ->
                 startActivity(new Intent(this, CreateRecurringOrderActivity.class))
         );

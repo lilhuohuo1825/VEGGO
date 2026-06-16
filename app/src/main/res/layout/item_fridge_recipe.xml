@@ -14,9 +14,11 @@
         android:background="@drawable/bg_post_media">
 
         <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="center"
+            android:id="@+id/fridgeRecipeImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="18dp"
+            android:scaleType="centerCrop"
             android:src="@drawable/ic_fork_knife" />
     </FrameLayout>
 

@@ -10,9 +10,9 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_policy" android:src="@drawable/ic_profile_shield" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_policy" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_policy" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_policy" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_policy" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_policy" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
@@ -21,18 +21,19 @@
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_support" android:src="@drawable/ic_profile_support" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_support" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_support" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_support" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_support" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_support" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/profileAboutRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:contentDescription="@string/profile_about" android:src="@drawable/ic_profile_about" />
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_about" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_about" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_about" android:textColor="@color/veggo_text_secondary" android:textSize="16sp" />
-        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@string/profile_about" android:src="@drawable/ic_chevron_right" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_about" android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
 </LinearLayout>

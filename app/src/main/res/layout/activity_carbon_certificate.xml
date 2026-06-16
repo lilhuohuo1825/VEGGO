@@ -35,16 +35,39 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_lg" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_lg">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/carbon_certificate_path" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="@dimen/spacing_md" android:gravity="center_vertical" android:orientation="horizontal">
-                    <TextView android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_address_icon_edit" />
+                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
+                    </FrameLayout>
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:fontFamily="@font/inter_semibold" android:text="@string/carbon_level_seed" android:textColor="@color/primary_hover" android:textSize="@dimen/text_md" />
-                    <TextView android:layout_width="90dp" android:layout_height="wrap_content" android:gravity="end" android:text="1.000 C" android:textColor="@color/primary_hover" android:textSize="@dimen/text_md" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="1.000 C" android:textColor="@color/primary_hover" android:textSize="@dimen/text_md" />
                 </LinearLayout>
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                <TextView android:layout_width="match_parent" android:layout_height="58dp" android:drawableStart="@drawable/bg_carbon_icon_circle" android:drawablePadding="@dimen/spacing_md" android:gravity="center_vertical" android:text="Lá bạc                                           2.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
+                    </FrameLayout>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Lá bạc" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="2.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                </LinearLayout>
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                <TextView android:layout_width="match_parent" android:layout_height="58dp" android:drawableStart="@drawable/bg_carbon_icon_circle" android:drawablePadding="@dimen/spacing_md" android:gravity="center_vertical" android:text="Vườn vàng                                      5.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
+                    </FrameLayout>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Vườn vàng" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="5.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                </LinearLayout>
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                <TextView android:layout_width="match_parent" android:layout_height="58dp" android:drawableStart="@drawable/bg_carbon_icon_circle" android:drawablePadding="@dimen/spacing_md" android:gravity="center_vertical" android:text="Rừng xanh                                    10.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
+                    </FrameLayout>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Rừng xanh" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="10.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

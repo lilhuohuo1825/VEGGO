@@ -41,8 +41,8 @@ public class VeggoDialog {
         ImageView imgIcon = dialog.findViewById(R.id.imgIcon);
         TextView tvTitle = dialog.findViewById(R.id.tvTitle);
         TextView tvMessage = dialog.findViewById(R.id.tvMessage);
-        Button btnConfirm = dialog.findViewById(R.id.btnConfirm);
-        Button btnCancel = dialog.findViewById(R.id.btnCancel);
+        TextView btnConfirm = dialog.findViewById(R.id.btnConfirm);
+        TextView btnCancel = dialog.findViewById(R.id.btnCancel);
 
         // Hiển thị và cài đặt Icon
         if (iconResId != null) {

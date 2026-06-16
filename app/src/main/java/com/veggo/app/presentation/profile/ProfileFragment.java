@@ -13,6 +13,7 @@ import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.presentation.order.OrderHistoryActivity;
+import com.veggo.app.presentation.about.AboutUsActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
 
 public class ProfileFragment extends BaseFragment {
@@ -38,8 +39,8 @@ public class ProfileFragment extends BaseFragment {
         view.findViewById(R.id.profileCarbonRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CarbonPointsActivity.class))
         );
-        view.findViewById(R.id.profilePostsRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), MyPostsActivity.class))
+        view.findViewById(R.id.profileFavoritesRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), FavoritesActivity.class))
         );
         view.findViewById(R.id.profileSmartFridgeRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), SmartFridgeActivity.class))
@@ -55,6 +56,9 @@ public class ProfileFragment extends BaseFragment {
         );
         view.findViewById(R.id.profileSupportRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), SupportCustomersActivity.class))
+        );
+        view.findViewById(R.id.profileAboutRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), AboutUsActivity.class))
         );
         view.findViewById(R.id.profileOrdersCard).setOnClickListener(v -> openOrders(null));
         view.findViewById(R.id.profileOrderHistoryRow).setOnClickListener(v -> openOrders(null));

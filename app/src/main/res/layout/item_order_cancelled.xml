@@ -37,7 +37,7 @@
             android:gravity="center"
             android:minWidth="90dp"
             android:text="@string/orders_status_cancelled"
-            android:textColor="@color/danger_main"
+            android:textColor="@color/order_status_cancelled"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
 

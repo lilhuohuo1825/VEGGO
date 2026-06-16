@@ -37,7 +37,7 @@
             android:gravity="center"
             android:minWidth="90dp"
             android:text="@string/orders_status_shipping"
-            android:textColor="@color/info_main"
+            android:textColor="@color/order_status_shipping"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
 

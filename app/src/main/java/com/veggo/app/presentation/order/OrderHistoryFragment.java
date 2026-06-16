@@ -2,10 +2,13 @@ package com.veggo.app.presentation.order;
 
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.DisplayCutout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -24,11 +27,23 @@ import com.veggo.app.presentation.profile.OrderHistoryFragmentExtras;
 import java.util.List;
 
 public class OrderHistoryFragment extends BaseFragment {
+    private static final String ARG_SHOW_BACK_BUTTON = "arg_show_back_button";
+
     private AssetScreenData.Snapshot snapshot;
     private LinearLayout orderListContainer;
     private ScrollView orderListScroll;
+    private HorizontalScrollView orderStatusScroll;
     private View orderEmptyState;
     private String initialStatus;
+    private String currentStatus;
+
+    public static OrderHistoryFragment newInstance(boolean showBackButton) {
+        OrderHistoryFragment fragment = new OrderHistoryFragment();
+        Bundle args = new Bundle();
+        args.putBoolean(ARG_SHOW_BACK_BUTTON, showBackButton);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Nullable
     @Override
@@ -44,12 +59,19 @@ public class OrderHistoryFragment extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        view.findViewById(R.id.orderHistoryBackButton).setOnClickListener(v ->
+        View backButton = view.findViewById(R.id.orderHistoryBackButton);
+        boolean showBackButton = getArguments() == null
+                || getArguments().getBoolean(ARG_SHOW_BACK_BUTTON, true);
+        applyNavbarTopInsetIfNeeded(view, showBackButton);
+        backButton.setVisibility(showBackButton ? View.VISIBLE : View.INVISIBLE);
+        backButton.setEnabled(showBackButton);
+        backButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
         );
-        view.findViewById(R.id.orderHistoryMenuButton).setOnClickListener(v -> showOrderOptions());
+        view.findViewById(R.id.orderHistoryMenuButton).setOnClickListener(v -> AssetScreenData.showOrderOptions(requireContext()));
         orderListContainer = view.findViewById(R.id.orderListContainer);
         orderListScroll = view.findViewById(R.id.orderListScroll);
+        orderStatusScroll = view.findViewById(R.id.orderStatusScroll);
         orderEmptyState = view.findViewById(R.id.orderEmptyState);
         view.findViewById(R.id.orderEmptyShopButton).setOnClickListener(v -> openShopping());
         view.findViewById(R.id.orderTabAll).setOnClickListener(v -> showOrders(null));
@@ -59,6 +81,34 @@ public class OrderHistoryFragment extends BaseFragment {
         view.findViewById(R.id.orderTabCancelled).setOnClickListener(v -> showOrders("cancelled"));
         initialStatus = requireActivity().getIntent()
                 .getStringExtra(OrderHistoryFragmentExtras.EXTRA_INITIAL_STATUS);
+        currentStatus = initialStatus;
+    }
+
+    private void applyNavbarTopInsetIfNeeded(@NonNull View root, boolean showBackButton) {
+        if (showBackButton) {
+            return;
+        }
+        int initialLeft = root.getPaddingLeft();
+        int initialTop = root.getPaddingTop();
+        int initialRight = root.getPaddingRight();
+        int initialBottom = root.getPaddingBottom();
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int topInset = insets.getSystemWindowInsetTop();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                DisplayCutout cutout = insets.getDisplayCutout();
+                if (cutout != null) {
+                    topInset = Math.max(topInset, cutout.getSafeInsetTop());
+                }
+            }
+            view.setPadding(initialLeft, initialTop + topInset, initialRight, initialBottom);
+            return insets;
+        });
+        root.requestApplyInsets();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
         loadOrders();
     }
 
@@ -70,12 +120,13 @@ public class OrderHistoryFragment extends BaseFragment {
             }
             requireActivity().runOnUiThread(() -> {
                 snapshot = loaded;
-                showOrders(initialStatus);
+                showOrders(currentStatus);
             });
         }).start();
     }
 
     private void showOrders(String status) {
+        currentStatus = status;
         if (snapshot == null || orderListContainer == null) {
             return;
         }
@@ -115,39 +166,44 @@ public class OrderHistoryFragment extends BaseFragment {
                 R.id.orderTabAllBadge,
                 R.id.orderTabAllIndicator,
                 status == null,
-                AssetScreenData.filterOrders(snapshot, null).size()
+                AssetScreenData.filterOrders(snapshot, null).size(),
+                R.id.orderTabAll
         );
         setTabSelected(
                 R.id.orderTabPendingText,
                 R.id.orderTabPendingBadge,
                 R.id.orderTabPendingIndicator,
                 "pending".equals(status),
-                AssetScreenData.filterOrders(snapshot, "pending").size()
+                AssetScreenData.filterOrders(snapshot, "pending").size(),
+                R.id.orderTabPending
         );
         setTabSelected(
                 R.id.orderTabShippingText,
                 R.id.orderTabShippingBadge,
                 R.id.orderTabShippingIndicator,
                 "shipping".equals(status),
-                AssetScreenData.filterOrders(snapshot, "shipping").size()
+                AssetScreenData.filterOrders(snapshot, "shipping").size(),
+                R.id.orderTabShipping
         );
         setTabSelected(
                 R.id.orderTabDeliveredText,
                 R.id.orderTabDeliveredBadge,
                 R.id.orderTabDeliveredIndicator,
                 "delivered".equals(status),
-                AssetScreenData.filterOrders(snapshot, "delivered").size()
+                AssetScreenData.filterOrders(snapshot, "delivered").size(),
+                R.id.orderTabDelivered
         );
         setTabSelected(
                 R.id.orderTabCancelledText,
                 R.id.orderTabCancelledBadge,
                 R.id.orderTabCancelledIndicator,
                 "cancelled".equals(status),
-                AssetScreenData.filterOrders(snapshot, "cancelled").size()
+                AssetScreenData.filterOrders(snapshot, "cancelled").size(),
+                R.id.orderTabCancelled
         );
     }
 
-    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count) {
+    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count, int tabId) {
         View root = getView();
         if (root == null) {
             return;
@@ -155,6 +211,8 @@ public class OrderHistoryFragment extends BaseFragment {
         TextView text = root.findViewById(textId);
         TextView badge = root.findViewById(badgeId);
         View indicator = root.findViewById(indicatorId);
+        View tab = root.findViewById(tabId);
+
         if (text != null) {
             text.setTextColor(requireContext().getColor(selected ? R.color.primary_main : R.color.neutral_60));
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
@@ -168,6 +226,13 @@ public class OrderHistoryFragment extends BaseFragment {
         }
         if (indicator != null) {
             indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
+        }
+
+        if (selected && tab != null && orderStatusScroll != null) {
+            orderStatusScroll.post(() -> {
+                int scrollX = tab.getLeft() - (orderStatusScroll.getWidth() - tab.getWidth()) / 2;
+                orderStatusScroll.smoothScrollTo(scrollX, 0);
+            });
         }
     }
 
@@ -191,23 +256,5 @@ public class OrderHistoryFragment extends BaseFragment {
         return R.layout.item_order_cancelled;
     }
 
-    private void showOrderOptions() {
-        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
-        View sheet = LayoutInflater.from(requireContext())
-                .inflate(R.layout.layout_order_history_options, null, false);
-        sheet.findViewById(R.id.orderOptionRecurring).setOnClickListener(v -> {
-            dialog.dismiss();
-            startActivity(new Intent(requireContext(), RecurringOrdersActivity.class));
-        });
-        sheet.findViewById(R.id.orderOptionReviews).setOnClickListener(v -> {
-            dialog.dismiss();
-            startActivity(new Intent(requireContext(), ReviewsActivity.class));
-        });
-        sheet.findViewById(R.id.orderOptionReturns).setOnClickListener(v -> {
-            dialog.dismiss();
-            startActivity(new Intent(requireContext(), ReturnsActivity.class));
-        });
-        dialog.setContentView(sheet);
-        dialog.show();
-    }
+
 }
