@@ -51,6 +51,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         chefsIndicator = findViewById(R.id.discoveryChefsIndicator);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
 
+        findViewById(R.id.discoveryBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.discoveryRecipesTab).setOnClickListener(v -> showRecipes());
         findViewById(R.id.discoveryChefsTab).setOnClickListener(v -> showChefs());
         searchInput.addTextChangedListener(new TextWatcher() {
