@@ -164,6 +164,9 @@
             android:name=".presentation.auth.RegisterActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.auth.ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.auth.LoginActivity"
             android:exported="false" />
         <activity

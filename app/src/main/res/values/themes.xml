@@ -1,17 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.VEGGO" parent="Theme.Material3.Light.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-
-        <!-- Đặt Font Family mặc định cho toàn bộ ứng dụng -->
+        <item name="colorPrimary">@color/primary_main</item>
+        <item name="colorSecondary">@color/primary_main</item>
+        <item name="colorTertiary">@color/primary_main</item>
+        <item name="colorControlActivated">@color/primary_main</item>
+        <item name="colorAccent">@color/primary_main</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="fontFamily">@font/inter</item>
     </style>
 
     <style name="Theme.VEGGO" parent="Base.Theme.VEGGO" />
 
-    <style name="Theme.VEGGO.NoActionBar">
+    <style name="Theme.VEGGO.NoActionBar" parent="Theme.VEGGO">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

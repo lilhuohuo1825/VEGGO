@@ -12,6 +12,9 @@ import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.database.AssetRepository;
+import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.presentation.auth.UserAssetRepository;
+import com.veggo.app.presentation.auth.model.User;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -28,7 +31,6 @@ import java.util.TimeZone;
 public final class AssetScreenData {
     public static final String EXTRA_ORDER_ID = "extra_order_id";
     private static final String FALLBACK_CUSTOMER_ID = "CUS000006";
-    private static final String CURRENT_USER_NAME_KEYWORD = "Hương";
     private static final NumberFormat VND_FORMAT = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private static final SimpleDateFormat ISO_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd/MM/yyyy, HH:mm", new Locale("vi", "VN"));
@@ -42,7 +44,7 @@ public final class AssetScreenData {
 
     public static Snapshot load(@NonNull Context context) {
         AssetRepository repository = new AssetRepository(context);
-        List<AssetModels.User> users = repository.getUsers();
+        List<AssetModels.User> users = mapUsers(new UserAssetRepository(context).getUsers());
         List<AssetModels.Order> orders = repository.getOrders();
         List<AssetModels.OrderDetail> details = repository.getOrderDetails();
         List<AssetModels.Certificate> certificates = repository.getCertificates();
@@ -52,8 +54,24 @@ public final class AssetScreenData {
         List<AssetModels.Inventory> inventories = repository.getInventories();
         List<AssetModels.Instruction> instructions = repository.getInstructions();
 
-        AssetModels.User user = findUser(users, orders, details);
+        AppPreferences appPreferences = new AppPreferences(context);
+        AssetModels.User user = findUser(users, orders, appPreferences.getCurrentPhone());
+
+        // Ưu tiên thông tin từ Session nếu đã đăng nhập nhưng không có trong SQLite local
+        if (appPreferences.isLoggedIn()) {
+            String sessionPhone = appPreferences.getCurrentPhone();
+            if (user == null || !safe(user.phone).equals(sessionPhone)) {
+                user = new AssetModels.User();
+                user.phone = sessionPhone;
+                user.customerId = appPreferences.getCustomerId();
+                user.fullName = appPreferences.getFullName();
+                user.email = appPreferences.getEmail();
+                user.carbonPoint = 0; // Khởi tạo mặc định cho user mới
+            }
+        }
+
         enrichUserFromOrderDetails(user, orders, details);
+
         String customerId = user == null ? FALLBACK_CUSTOMER_ID : user.customerId;
         List<AssetModels.Order> customerOrders = new ArrayList<>();
         for (AssetModels.Order order : orders) {
@@ -88,27 +106,42 @@ public final class AssetScreenData {
         );
     }
 
+    @NonNull
+    private static List<AssetModels.User> mapUsers(@NonNull List<User> sourceUsers) {
+        List<AssetModels.User> mappedUsers = new ArrayList<>();
+        for (User sourceUser : sourceUsers) {
+            AssetModels.User mappedUser = new AssetModels.User();
+            mappedUser.objectId = sourceUser.getObjectId();
+            mappedUser.customerId = sourceUser.getCustomerId();
+            mappedUser.phone = sourceUser.getPhone();
+            mappedUser.password = sourceUser.getPassword();
+            mappedUser.fullName = sourceUser.getFullName();
+            mappedUser.email = sourceUser.getEmail();
+            mappedUser.address = sourceUser.getAddress();
+            mappedUser.carbonPoint = sourceUser.getCarbonPoint();
+            mappedUsers.add(mappedUser);
+        }
+        return mappedUsers;
+    }
+
     @Nullable
     private static AssetModels.User findUser(
             @NonNull List<AssetModels.User> users,
             @NonNull List<AssetModels.Order> orders,
-            @NonNull List<AssetModels.OrderDetail> details
+            @Nullable String currentPhone
     ) {
-        String customerIdFromShippingName = findCustomerIdByShippingName(orders, details, CURRENT_USER_NAME_KEYWORD);
-        if (hasText(customerIdFromShippingName)) {
+        if (hasText(currentPhone)) {
             for (AssetModels.User user : users) {
-                if (equals(user.customerId, customerIdFromShippingName)) {
+                if (equals(user.phone, currentPhone)) {
                     return user;
                 }
             }
+            // Nếu đã truyền phone nhưng không tìm thấy trong list, 
+            // trả về null để hàm load() xử lý tạo user từ session
+            return null; 
         }
 
-        for (AssetModels.User user : users) {
-            if (containsIgnoreCase(user.fullName, CURRENT_USER_NAME_KEYWORD)) {
-                return user;
-            }
-        }
-
+        // Chỉ fallback cho Guest Mode (Chưa đăng nhập)
         for (AssetModels.User user : users) {
             if (equals(user.customerId, FALLBACK_CUSTOMER_ID)) {
                 return user;
@@ -122,30 +155,6 @@ public final class AssetScreenData {
             }
         }
         return users.isEmpty() ? null : users.get(0);
-    }
-
-    @Nullable
-    private static String findCustomerIdByShippingName(
-            @NonNull List<AssetModels.Order> orders,
-            @NonNull List<AssetModels.OrderDetail> details,
-            @NonNull String nameKeyword
-    ) {
-        Map<String, AssetModels.Order> orderById = new HashMap<>();
-        for (AssetModels.Order order : orders) {
-            orderById.put(order.orderId, order);
-        }
-
-        for (AssetModels.OrderDetail detail : details) {
-            AssetModels.ShippingInfo shippingInfo = detail.shippingInfo;
-            if (shippingInfo == null || !containsIgnoreCase(shippingInfo.fullName, nameKeyword)) {
-                continue;
-            }
-            AssetModels.Order order = orderById.get(detail.orderId);
-            if (order != null && hasText(order.customerId)) {
-                return order.customerId;
-            }
-        }
-        return null;
     }
 
     private static void enrichUserFromOrderDetails(
@@ -261,14 +270,14 @@ public final class AssetScreenData {
     }
 
     public static List<AssetModels.Inventory> availableInventories(@NonNull Snapshot snapshot) {
-        List<AssetModels.Inventory> inventories = new ArrayList<>();
+        List<AssetModels.Inventory> result = new ArrayList<>();
         for (AssetModels.Inventory inventory : snapshot.inventories) {
-            inventories.add(inventory);
-            if (inventories.size() >= 8) {
+            result.add(inventory);
+            if (result.size() >= 8) {
                 break;
             }
         }
-        return inventories;
+        return result;
     }
 
     public static List<AssetModels.Instruction> recipeSuggestions(@NonNull Snapshot snapshot) {
@@ -427,10 +436,6 @@ public final class AssetScreenData {
 
     public static boolean hasText(@Nullable String value) {
         return value != null && !value.trim().isEmpty();
-    }
-
-    private static boolean containsIgnoreCase(@Nullable String value, @NonNull String keyword) {
-        return hasText(value) && value.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT));
     }
 
     private static int compareDates(@Nullable AssetModels.MongoDate left, @Nullable AssetModels.MongoDate right) {

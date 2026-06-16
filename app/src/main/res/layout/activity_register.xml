@@ -26,31 +26,32 @@
             android:orientation="vertical">
 
             <LinearLayout
+                android:id="@+id/layoutRegisterForm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingStart="26dp"
-                android:paddingEnd="26dp"
                 android:paddingTop="95dp"
+                android:paddingEnd="26dp"
                 android:paddingBottom="40dp"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="70dp">
 
                     <ImageView
-    android:id="@+id/imgBack"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:layout_gravity="start|center_vertical"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+                        android:id="@+id/imgBack"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="start|center_vertical"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_left"
+                        android:tint="@color/primary_hover" />
 
                     <ImageView
                         android:id="@+id/imgLogo"
@@ -71,7 +72,6 @@
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
-                <!-- Số điện thoại -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -112,7 +112,6 @@
                     android:textColor="#E5484D"
                     android:textSize="12sp" />
 
-                <!-- Mật khẩu -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -167,7 +166,6 @@
                     android:textColor="#E5484D"
                     android:textSize="12sp" />
 
-                <!-- Nhập lại mật khẩu -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -222,7 +220,6 @@
                     android:textColor="#E5484D"
                     android:textSize="12sp" />
 
-                <!-- Checkbox điều khoản -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -230,37 +227,35 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <CheckBox
+                    <ImageView
                         android:id="@+id/cbPolicy"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:buttonTint="#57AF37"
-                        android:checked="true" />
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_checkbox_checked" />
 
                     <TextView
                         android:id="@+id/tvPolicy"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter_regular"
                         android:text="Tôi đã đọc và đồng ý với Chính sách &amp; Quy định."
                         android:textColor="#1E1E1E"
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <Button
+                <TextView
                     android:id="@+id/btnRegister"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:layout_marginTop="14dp"
                     android:background="@drawable/bg_button_primary"
                     android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
                     android:text="Đăng ký"
-                    android:textAllCaps="false"
                     android:textColor="#FFFFFF"
                     android:textSize="15sp" />
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:id="@+id/layoutVerifyForm"
@@ -268,27 +263,27 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingStart="26dp"
-                android:paddingEnd="26dp"
                 android:paddingTop="95dp"
+                android:paddingEnd="26dp"
                 android:paddingBottom="40dp"
-                android:visibility="visible">
+                android:visibility="gone">
 
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="70dp">
 
                     <ImageView
-    android:id="@+id/imgBackVerify"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:layout_gravity="start|center_vertical"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+                        android:id="@+id/imgBackVerify"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="start|center_vertical"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_left"
+                        android:tint="@color/primary_hover" />
 
                     <ImageView
                         android:layout_width="78dp"
@@ -309,12 +304,13 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvVerifyPhoneDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:fontFamily="@font/inter_regular"
                     android:gravity="center"
-                    android:text="Chúng tôi đã gửi mã xác thực đến số điện thoại 0915****03"
+                    android:text="Chúng tôi đã gửi mã xác thực đến số điện thoại"
                     android:textColor="#1E1E1E"
                     android:textSize="12sp" />
 
@@ -336,18 +332,46 @@
                     android:orientation="horizontal">
 
                     <EditText
+                        android:id="@+id/edtRegisterOtp1"
                         style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
                         tools:ignore="SpeakableTextPresentCheck" />
-                    <EditText style="@style/OtpBoxStyle"
-                        tools:ignore="SpeakableTextPresentCheck"/>
-                    <EditText style="@style/OtpBoxStyle"
-                        tools:ignore="SpeakableTextPresentCheck"/>
-                    <EditText style="@style/OtpBoxStyle"
-                        tools:ignore="SpeakableTextPresentCheck"/>
-                    <EditText style="@style/OtpBoxStyle"
-                        tools:ignore="SpeakableTextPresentCheck"/>
-                    <EditText style="@style/OtpBoxStyle"
-                        tools:ignore="SpeakableTextPresentCheck"/>
+
+                    <EditText
+                        android:id="@+id/edtRegisterOtp2"
+                        style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
+                        tools:ignore="SpeakableTextPresentCheck" />
+
+                    <EditText
+                        android:id="@+id/edtRegisterOtp3"
+                        style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
+                        tools:ignore="SpeakableTextPresentCheck" />
+
+                    <EditText
+                        android:id="@+id/edtRegisterOtp4"
+                        style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
+                        tools:ignore="SpeakableTextPresentCheck" />
+
+                    <EditText
+                        android:id="@+id/edtRegisterOtp5"
+                        style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
+                        tools:ignore="SpeakableTextPresentCheck" />
+
+                    <EditText
+                        android:id="@+id/edtRegisterOtp6"
+                        style="@style/OtpBoxStyle"
+                        android:inputType="number"
+                        android:maxLength="1"
+                        tools:ignore="SpeakableTextPresentCheck" />
                 </LinearLayout>
 
                 <TextView
@@ -358,7 +382,6 @@
                     android:background="@drawable/bg_button_primary"
                     android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:includeFontPadding="false"
                     android:text="Xác thực"
                     android:textColor="#FFFFFF"
                     android:textSize="15sp" />
@@ -388,7 +411,6 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

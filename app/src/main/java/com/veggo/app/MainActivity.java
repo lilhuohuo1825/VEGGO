@@ -3,6 +3,7 @@ package com.veggo.app;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
@@ -11,9 +12,10 @@ import androidx.core.view.WindowCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.veggo.app.core.ui.BottomNavController;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.databinding.ActivityMainBinding;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
-import com.veggo.app.core.ui.BottomNavController;
 import com.veggo.app.presentation.cart.CartFragment;
 import com.veggo.app.presentation.community.CommunityHomeActivity;
 import com.veggo.app.presentation.home.HomeFragment;
@@ -21,6 +23,7 @@ import com.veggo.app.presentation.order.OrderHistoryFragment;
 import com.veggo.app.presentation.profile.ProfileFragment;
 import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
 import com.veggo.app.presentation.profile.PostNotificationsActivity;
+import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
@@ -91,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openTab(Tab tab) {
+        setBottomNavVisible(true);
         setSelectedTab(tab);
 
         Fragment fragment;
@@ -105,7 +109,9 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new OrderHistoryFragment();
                 break;
             case ACCOUNT:
-                fragment = new ProfileFragment();
+                fragment = new AppPreferences(this).isLoggedIn()
+                        ? new ProfileLoggedInFragment()
+                        : new ProfileFragment();
                 break;
             case HOME:
             default:
@@ -123,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void openCartScreen() {
         setSelectedTab(Tab.HOME);
+        setBottomNavVisible(false);
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.mainFragmentContainer, new CartFragment())
@@ -198,6 +205,13 @@ public class MainActivity extends AppCompatActivity {
         icon.setImageResource(selected ? selectedIconRes : unselectedIconRes);
         icon.setImageTintList(ColorStateList.valueOf(color));
         container.setSelected(selected);
+    }
+
+    public void setBottomNavVisible(boolean isVisible) {
+        if (bottomNavBinding == null) {
+            return;
+        }
+        bottomNavBinding.getRoot().setVisibility(isVisible ? View.VISIBLE : View.GONE);
     }
 
     private enum Tab {

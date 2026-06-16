@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
@@ -44,6 +45,10 @@
             android:layout_gravity="center_vertical"
             android:src="@drawable/ic_notify_xanh" />
     </LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.3dp"
+        android:background="#616161" />
 
     <!-- Body -->
     <ScrollView
@@ -65,7 +70,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_white_radius_10"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="10dp">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -215,6 +220,63 @@
                     android:textColorHint="#777777"
                     android:textSize="14sp" />
 
+                <LinearLayout
+                    android:id="@+id/layoutDeliveryOrigin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:gravity="top"
+                    android:layout_marginTop="14dp"
+                    >
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_delivery_map" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Giao từ"
+                            android:textStyle="bold"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:lineSpacingExtra="2dp"
+                            android:text="123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh"
+                            android:textColor="#616161"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="20 km ~ 45 phút"
+                            android:textColor="#57AF37"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Products -->
@@ -235,10 +297,40 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <include layout="@layout/item_payment" />
-                <include layout="@layout/item_payment" />
-                <include layout="@layout/item_payment" />
-                <include layout="@layout/item_payment" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCheckoutProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:nestedScrollingEnabled="false" />
+
+                <LinearLayout
+                    android:id="@+id/layoutToggleProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvToggleProducts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Xem thêm"
+                        android:textColor="#616161"
+                        android:textSize="13sp" />
+
+                    <ImageView
+                        android:id="@+id/imgToggleProducts"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginStart="4dp"
+                        android:src="@drawable/ic_chevron_down" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/layoutNote"
@@ -293,10 +385,13 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/layoutFastDelivery"
                     android:layout_width="match_parent"
                     android:layout_height="58dp"
                     android:layout_marginTop="15dp"
                     android:background="@drawable/bg_selected"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="10dp"
@@ -333,6 +428,7 @@
                         android:text="18.000 đ"
                         android:textColor="#167728"
                         android:textSize="14sp" />
+
                 </LinearLayout>
 
                 <LinearLayout
@@ -341,6 +437,8 @@
                     android:layout_height="58dp"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/bg_normal"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="10dp"
@@ -399,7 +497,8 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <RadioButton
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/radioPaymentMomo"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:buttonTint="#57AF37"
@@ -409,7 +508,8 @@
                     android:textColor="#1E1E1E"
                     android:textSize="14sp" />
 
-                <RadioButton
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/radioPaymentCard"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:buttonTint="#57AF37"
@@ -418,7 +518,8 @@
                     android:textColor="#1E1E1E"
                     android:textSize="14sp" />
 
-                <RadioButton
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/radioPaymentCod"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:buttonTint="#57AF37"
@@ -662,6 +763,10 @@
         </LinearLayout>
     </ScrollView>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.3dp"
+        android:background="#616161" />
     <!-- Bottom checkout -->
     <LinearLayout
         android:layout_width="match_parent"
