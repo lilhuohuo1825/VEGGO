@@ -1,44 +1,50 @@
 package com.veggo.app.presentation.cart;
 
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import android.graphics.drawable.ColorDrawable;
-import android.widget.FrameLayout;
-import android.view.Gravity;
-import android.view.View.MeasureSpec;
-
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.adapter.CartAdapter;
+import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.presentation.checkout.CheckoutActivity;
 import com.veggo.app.presentation.checkout.CheckoutGuestActivity;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-public class CartFragment extends BaseFragment {
+public class CartFragment extends BaseFragment implements CartAdapter.CartItemActionListener {
     private static final int MIN_QUANTITY = 1;
 
-    private final List<CartItemHolder> cartItems = new ArrayList<>();
+    private final List<CartAdapter.CartItemUiModel> cartItems = new ArrayList<>();
     private View rootView;
     private PopupWindow activePopup;
     private View scrimView;
     private ImageView imgPaymentChevron;
     private ImageView imgCbAll;
-    private LinearLayout layoutCartItemsContainer;
+    private RecyclerView layoutCartItemsContainer;
+    private CartAdapter cartAdapter;
+    private TextView tvCartTitle;
+    private TextView tvCartTotal;
+    private TextView btnCheckout;
     private boolean isAllChecked = true;
 
     @Nullable
@@ -55,14 +61,14 @@ public class CartFragment extends BaseFragment {
         View layoutVoucher = rootView.findViewById(R.id.layoutVoucher);
         View layoutPaymentDetail = rootView.findViewById(R.id.layoutPaymentDetail);
         View layoutBottomSummaryRow = rootView.findViewById(R.id.layoutBottomSummaryRow);
-        View btnCheckout = rootView.findViewById(R.id.btnCheckout);
+        tvCartTitle = rootView.findViewById(R.id.tvCartTitle);
+        tvCartTotal = rootView.findViewById(R.id.tvCartTotal);
+        btnCheckout = rootView.findViewById(R.id.btnCheckout);
         imgCbAll = rootView.findViewById(R.id.imgCbAll);
         imgPaymentChevron = rootView.findViewById(R.id.imgPaymentChevron);
 
-        bindCartItem(rootView.findViewById(R.id.itemCart1));
-        bindCartItem(rootView.findViewById(R.id.itemCart2));
-        bindCartItem(rootView.findViewById(R.id.itemCart3));
-        bindCartItem(rootView.findViewById(R.id.itemCart4));
+        setupCartList();
+        seedCartItems();
 
         layoutVoucher.setOnClickListener(v -> showPopupAboveAnchor(R.layout.dialog_voucher, layoutVoucher));
         layoutPaymentDetail.setOnClickListener(v -> showPopupAboveAnchor(R.layout.dialog_payment_detail, layoutBottomSummaryRow));
@@ -73,11 +79,63 @@ public class CartFragment extends BaseFragment {
         return rootView;
     }
 
+    private void setupCartList() {
+        layoutCartItemsContainer.setLayoutManager(new LinearLayoutManager(requireContext()));
+        cartAdapter = new CartAdapter(cartItems, this);
+        layoutCartItemsContainer.setAdapter(cartAdapter);
+    }
+
+    private void seedCartItems() {
+        if (!cartItems.isEmpty()) {
+            return;
+        }
+
+        cartItems.add(new CartAdapter.CartItemUiModel(
+                getString(R.string.orders_sample_product_name),
+                "200gr",
+                45000,
+                59000,
+                R.drawable.ic_vegetable,
+                1
+        ));
+        cartItems.add(new CartAdapter.CartItemUiModel(
+                "Ca chua bi huu co",
+                "500gr",
+                32000,
+                39000,
+                R.drawable.ic_fruit,
+                2
+        ));
+        cartItems.add(new CartAdapter.CartItemUiModel(
+                "Ca chua bi huu co",
+                "500gr",
+                32000,
+                39000,
+                R.drawable.ic_fruit,
+                2
+        ));
+        cartItems.add(new CartAdapter.CartItemUiModel(
+                getString(R.string.orders_sample_product_name),
+                "200gr",
+                45000,
+                59000,
+                R.drawable.ic_vegetable,
+                1
+        ));
+
+        cartAdapter.notifyDataSetChanged();
+        syncAllCheckboxState();
+        updateCartSummary();
+    }
+
     private void showPopupAboveAnchor(int layoutResId, View anchorView) {
         dismissActivePopup();
 
         LayoutInflater inflater = LayoutInflater.from(requireContext());
         View dialogView = inflater.inflate(layoutResId, null, false);
+        if (layoutResId == R.layout.dialog_voucher) {
+            setupVoucherPopup(dialogView);
+        }
 
         int popupWidth = rootView.getWidth();
         dialogView.measure(
@@ -127,64 +185,67 @@ public class CartFragment extends BaseFragment {
         activePopup.showAtLocation(rootView, Gravity.TOP | Gravity.START, x, y);
     }
 
+    private void setupVoucherPopup(View dialogView) {
+        RecyclerView recyclerView = dialogView.findViewById(R.id.rvVoucherOptions);
+        TextView tvSelectedCount = dialogView.findViewById(R.id.tvVoucherSelectedCount);
+        TextView tvSelectedTitle = dialogView.findViewById(R.id.tvVoucherSelectedTitle);
+        TextView btnApplyVoucher = dialogView.findViewById(R.id.btnApplyVoucher);
+
+        List<VoucherOptionAdapter.VoucherItemUiModel> vouchers = buildVoucherItems();
+        VoucherOptionAdapter.VoucherItemUiModel initialVoucher = vouchers.get(0);
+        tvSelectedCount.setText("1 ma da duoc chon");
+        tvSelectedTitle.setText(initialVoucher.title);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerView.setAdapter(new VoucherOptionAdapter(vouchers, 0, item -> {
+            tvSelectedCount.setText("1 ma da duoc chon");
+            tvSelectedTitle.setText(item.title);
+        }));
+
+        btnApplyVoucher.setOnClickListener(v -> dismissActivePopup());
+    }
+
     private void toggleAllCheckbox(ImageView imageView) {
         isAllChecked = !isAllChecked;
         updateCheckboxIcon(imageView, isAllChecked);
 
-        for (CartItemHolder item : cartItems) {
+        for (CartAdapter.CartItemUiModel item : cartItems) {
             item.isChecked = isAllChecked;
-            updateCheckboxIcon(item.checkboxView, item.isChecked);
         }
+        cartAdapter.notifyItemRangeChanged(0, cartItems.size());
+        updateCartSummary();
     }
 
-    private void bindCartItem(View itemView) {
-        if (itemView == null) {
+    private void changeQuantity(int position, int delta) {
+        if (position < 0 || position >= cartItems.size()) {
             return;
         }
-
-        CartItemHolder holder = new CartItemHolder(itemView);
-        cartItems.add(holder);
-
-        holder.checkboxView.setOnClickListener(v -> {
-            holder.isChecked = !holder.isChecked;
-            updateCheckboxIcon(holder.checkboxView, holder.isChecked);
-            syncAllCheckboxState();
-        });
-
-        holder.deleteView.setOnClickListener(v -> removeCartItem(holder));
-        holder.decreaseView.setOnClickListener(v -> changeQuantity(holder, -1));
-        holder.increaseView.setOnClickListener(v -> changeQuantity(holder, 1));
-
-        updateCheckboxIcon(holder.checkboxView, holder.isChecked);
-        holder.quantityView.setText(String.valueOf(holder.quantity));
-    }
-
-    private void removeCartItem(CartItemHolder holder) {
-        if (layoutCartItemsContainer != null) {
-            layoutCartItemsContainer.removeView(holder.rootView);
-        }
-        Iterator<CartItemHolder> iterator = cartItems.iterator();
-        while (iterator.hasNext()) {
-            if (iterator.next() == holder) {
-                iterator.remove();
-                break;
-            }
-        }
-        syncAllCheckboxState();
-    }
-
-    private void changeQuantity(CartItemHolder holder, int delta) {
-        int updatedQuantity = holder.quantity + delta;
+        CartAdapter.CartItemUiModel item = cartItems.get(position);
+        int updatedQuantity = item.quantity + delta;
         if (updatedQuantity < MIN_QUANTITY) {
             updatedQuantity = MIN_QUANTITY;
         }
-        holder.quantity = updatedQuantity;
-        holder.quantityView.setText(String.valueOf(holder.quantity));
+        if (updatedQuantity == item.quantity) {
+            return;
+        }
+        item.quantity = updatedQuantity;
+        cartAdapter.notifyItemChanged(position);
+        updateCartSummary();
+    }
+
+    private void removeCartItem(int position) {
+        if (position < 0 || position >= cartItems.size()) {
+            return;
+        }
+        cartItems.remove(position);
+        cartAdapter.notifyItemRemoved(position);
+        syncAllCheckboxState();
+        updateCartSummary();
     }
 
     private void syncAllCheckboxState() {
         boolean areAllChecked = !cartItems.isEmpty();
-        for (CartItemHolder item : cartItems) {
+        for (CartAdapter.CartItemUiModel item : cartItems) {
             if (!item.isChecked) {
                 areAllChecked = false;
                 break;
@@ -193,6 +254,27 @@ public class CartFragment extends BaseFragment {
         isAllChecked = areAllChecked;
         if (imgCbAll != null) {
             updateCheckboxIcon(imgCbAll, isAllChecked);
+        }
+    }
+
+    private void updateCartSummary() {
+        int selectedCount = 0;
+        int total = 0;
+        for (CartAdapter.CartItemUiModel item : cartItems) {
+            if (item.isChecked) {
+                selectedCount++;
+                total += item.getLineTotal();
+            }
+        }
+
+        if (tvCartTitle != null) {
+            tvCartTitle.setText(getString(R.string.cart_title_format, cartItems.size()));
+        }
+        if (tvCartTotal != null) {
+            tvCartTotal.setText(formatCurrency(total));
+        }
+        if (btnCheckout != null) {
+            btnCheckout.setText(getString(R.string.cart_checkout_format, selectedCount));
         }
     }
 
@@ -257,35 +339,83 @@ public class CartFragment extends BaseFragment {
         }
     }
 
+    private String formatCurrency(int amount) {
+        return String.format(java.util.Locale.US, "%,d", amount).replace(',', '.') + "\u0111";
+    }
+
+    private List<VoucherOptionAdapter.VoucherItemUiModel> buildVoucherItems() {
+        List<VoucherOptionAdapter.VoucherItemUiModel> items = new ArrayList<>();
+        items.add(new VoucherOptionAdapter.VoucherItemUiModel(
+                "Giam 50k cho lan dau tien mua hang",
+                "Don toi thieu: 2.000.000 VND",
+                "Het han trong: 2 ngay",
+                R.drawable.ic_voucher
+        ));
+        items.add(new VoucherOptionAdapter.VoucherItemUiModel(
+                "Giam 20k cho don rau cu",
+                "Don toi thieu: 300.000 VND",
+                "Het han trong: 5 ngay",
+                R.drawable.ic_voucher
+        ));
+        items.add(new VoucherOptionAdapter.VoucherItemUiModel(
+                "Mien phi van chuyen",
+                "Ap dung cho don tu 199.000 VND",
+                "Het han trong: 1 ngay",
+                R.drawable.ic_voucher
+        ));
+        return items;
+    }
+
+    @Override
+    public void onItemCheckedChanged(int position) {
+        if (position < 0 || position >= cartItems.size()) {
+            return;
+        }
+        CartAdapter.CartItemUiModel item = cartItems.get(position);
+        item.isChecked = !item.isChecked;
+        cartAdapter.notifyItemChanged(position);
+        syncAllCheckboxState();
+        updateCartSummary();
+    }
+
+    @Override
+    public void onItemRemoved(int position) {
+        removeCartItem(position);
+    }
+
+    @Override
+    public void onItemQuantityChanged(int position, int delta) {
+        changeQuantity(position, delta);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).setBottomNavVisible(false);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).setBottomNavVisible(true);
+        }
+        super.onPause();
+    }
+
     @Override
     public void onDestroyView() {
         dismissActivePopup();
         imgPaymentChevron = null;
         imgCbAll = null;
         layoutCartItemsContainer = null;
-        cartItems.clear();
+        cartAdapter = null;
         scrimView = null;
+        tvCartTitle = null;
+        tvCartTotal = null;
+        btnCheckout = null;
         rootView = null;
         super.onDestroyView();
-    }
-
-    private static final class CartItemHolder {
-        private final View rootView;
-        private final ImageView checkboxView;
-        private final ImageView deleteView;
-        private final TextView decreaseView;
-        private final TextView quantityView;
-        private final TextView increaseView;
-        private boolean isChecked = true;
-        private int quantity = 1;
-
-        private CartItemHolder(View rootView) {
-            this.rootView = rootView;
-            checkboxView = rootView.findViewById(R.id.imgItemCheckbox);
-            deleteView = rootView.findViewById(R.id.imgDeleteCartItem);
-            decreaseView = rootView.findViewById(R.id.tvDecreaseQuantity);
-            quantityView = rootView.findViewById(R.id.tvQuantity);
-            increaseView = rootView.findViewById(R.id.tvIncreaseQuantity);
-        }
     }
 }

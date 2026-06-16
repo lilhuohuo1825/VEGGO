@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
 public final class AssetDatabaseSeeder {
     private static final String TAG = "AssetDatabaseSeeder";
     private static final String PREFS_NAME = "veggo_asset_database_seed";
-    private static final String KEY_SEEDED_DATABASE_VERSION = "seeded_database_version";
+    private static final String KEY_SEEDED_ASSET_VERSION = "seeded_asset_version";
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
 
     private AssetDatabaseSeeder() {
@@ -35,8 +35,8 @@ public final class AssetDatabaseSeeder {
     public static void seedIfNeeded(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
         SharedPreferences preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        int seededVersion = preferences.getInt(KEY_SEEDED_DATABASE_VERSION, 0);
-        if (seededVersion >= DatabaseManager.DATABASE_VERSION) {
+        int seededVersion = preferences.getInt(KEY_SEEDED_ASSET_VERSION, 0);
+        if (seededVersion >= DatabaseManager.ASSET_SEED_VERSION) {
             return;
         }
 
@@ -44,12 +44,29 @@ public final class AssetDatabaseSeeder {
             try {
                 seed(appContext);
                 preferences.edit()
-                        .putInt(KEY_SEEDED_DATABASE_VERSION, DatabaseManager.DATABASE_VERSION)
+                        .putInt(KEY_SEEDED_ASSET_VERSION, DatabaseManager.ASSET_SEED_VERSION)
                         .apply();
             } catch (Exception exception) {
                 Log.e(TAG, "Cannot seed SQLite database from JSON assets", exception);
             }
         });
+    }
+
+    public static void seedIfNeededBlocking(@NonNull Context context) {
+        Context appContext = context.getApplicationContext();
+        SharedPreferences preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        int seededVersion = preferences.getInt(KEY_SEEDED_ASSET_VERSION, 0);
+        if (seededVersion >= DatabaseManager.ASSET_SEED_VERSION) {
+            return;
+        }
+        try {
+            seed(appContext);
+            preferences.edit()
+                    .putInt(KEY_SEEDED_ASSET_VERSION, DatabaseManager.ASSET_SEED_VERSION)
+                    .apply();
+        } catch (Exception exception) {
+            Log.e(TAG, "Cannot seed SQLite database from JSON assets", exception);
+        }
     }
 
     public static void reseed(@NonNull Context context) {
@@ -60,7 +77,7 @@ public final class AssetDatabaseSeeder {
                 seed(appContext);
                 appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         .edit()
-                        .putInt(KEY_SEEDED_DATABASE_VERSION, DatabaseManager.DATABASE_VERSION)
+                        .putInt(KEY_SEEDED_ASSET_VERSION, DatabaseManager.ASSET_SEED_VERSION)
                         .apply();
             } catch (Exception exception) {
                 Log.e(TAG, "Cannot reseed SQLite database from JSON assets", exception);

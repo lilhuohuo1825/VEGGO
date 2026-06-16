@@ -1,8 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.VEGGO" parent="Theme.Material3.Dark.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/primary_main</item>
+        <item name="colorSecondary">@color/primary_main</item>
+        <item name="colorTertiary">@color/primary_main</item>
+        <item name="colorControlActivated">@color/primary_main</item>
+        <item name="colorAccent">@color/primary_main</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
+    </style>
+
+    <style name="Theme.VEGGO.NoActionBar" parent="Theme.VEGGO">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 
     <!-- Splash Screen Theme for Dark Mode -->

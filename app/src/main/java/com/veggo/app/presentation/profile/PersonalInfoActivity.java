@@ -39,7 +39,13 @@ public class PersonalInfoActivity extends BaseActivity {
         if (user == null) {
             return;
         }
-        String name = AssetScreenData.hasText(user.fullName) ? user.fullName : "Khách hàng " + user.customerId;
+        
+        // Ưu tiên FullName từ session/DB. Chỉ fallback khi cả fullName và customerId đều không có (không xảy ra).
+        String name = user.fullName;
+        if (!AssetScreenData.hasText(name)) {
+            name = "Khách hàng " + user.customerId;
+        }
+
         setText(R.id.personalInfoNameInput, name);
         setText(R.id.personalInfoPhoneInput, user.phone);
         setText(R.id.personalInfoEmailInput, user.email);

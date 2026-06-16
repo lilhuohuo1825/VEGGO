@@ -1,5 +1,6 @@
 package com.veggo.app.presentation.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -27,7 +28,7 @@ public class AddressFormActivity extends BaseActivity {
 
         findViewById(R.id.addressFormBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.addressCancelButton).setOnClickListener(v -> finish());
-        findViewById(R.id.addressDoneButton).setOnClickListener(v -> finish());
+        findViewById(R.id.addressDoneButton).setOnClickListener(v -> finishWithResult());
         tintRequiredMarkers();
 
         if (getIntent().getBooleanExtra(EXTRA_PREFILL, false)) {
@@ -90,5 +91,23 @@ public class AddressFormActivity extends BaseActivity {
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         );
         label.setText(spannable);
+    }
+
+    private void finishWithResult() {
+        Intent data = new Intent();
+        data.putExtra(EXTRA_NAME, textOf(R.id.addressNameInput));
+        data.putExtra(EXTRA_PHONE, textOf(R.id.addressPhoneInput));
+        data.putExtra(EXTRA_EMAIL, textOf(R.id.addressEmailInput));
+        data.putExtra(EXTRA_DETAIL, textOf(R.id.addressDetailInput));
+        data.putExtra(EXTRA_WARD, textOf(R.id.addressWardInput));
+        data.putExtra(EXTRA_DISTRICT, textOf(R.id.addressDistrictInput));
+        data.putExtra(EXTRA_CITY, textOf(R.id.addressCityInput));
+        setResult(RESULT_OK, data);
+        finish();
+    }
+
+    private String textOf(int viewId) {
+        TextView view = findViewById(viewId);
+        return view == null ? "" : view.getText().toString().trim();
     }
 }

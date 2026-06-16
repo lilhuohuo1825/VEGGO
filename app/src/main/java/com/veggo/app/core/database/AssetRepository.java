@@ -9,6 +9,7 @@ import com.veggo.app.assets.AssetFiles;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.data.local.entity.AssetRecordEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class AssetRepository {
@@ -91,6 +92,23 @@ public final class AssetRepository {
         return getAll(AssetFiles.COLLECTION_USERS, AssetModels.User.class);
     }
 
+    @NonNull
+    public List<UserRawRecord> getAllUsersRaw() {
+        List<AssetRecordEntity> records = getRawCollection(AssetFiles.COLLECTION_USERS);
+        List<UserRawRecord> rawUsers = new ArrayList<>();
+        for (AssetRecordEntity record : records) {
+            AssetModels.User user = gson.fromJson(record.getJson(), AssetModels.User.class);
+            rawUsers.add(new UserRawRecord(
+                    record.getDocumentId(),
+                    user != null ? user.phone : null,
+                    user != null ? user.password : null,
+                    record.getJson(),
+                    record.getImportedAt()
+            ));
+        }
+        return rawUsers;
+    }
+
     public List<AssetModels.Warehouse> getWarehouses() {
         return getAll(AssetFiles.COLLECTION_WAREHOUSES, AssetModels.Warehouse.class);
     }
@@ -133,5 +151,41 @@ public final class AssetRepository {
 
     public String toJson(@NonNull Object model) {
         return gson.toJson(model);
+    }
+
+    public static final class UserRawRecord {
+        private final String documentId;
+        private final String phone;
+        private final String password;
+        private final String json;
+        private final long importedAt;
+
+        public UserRawRecord(String documentId, String phone, String password, String json, long importedAt) {
+            this.documentId = documentId;
+            this.phone = phone;
+            this.password = password;
+            this.json = json;
+            this.importedAt = importedAt;
+        }
+
+        public String getDocumentId() {
+            return documentId;
+        }
+
+        public String getPhone() {
+            return phone;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getJson() {
+            return json;
+        }
+
+        public long getImportedAt() {
+            return importedAt;
+        }
     }
 }

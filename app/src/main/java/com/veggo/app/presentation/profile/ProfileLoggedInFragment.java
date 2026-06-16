@@ -8,14 +8,17 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.veggo.app.R;
+import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseFragment;
-import com.veggo.app.presentation.auth.LoginActivity;
+import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.presentation.order.OrderHistoryActivity;
 import com.veggo.app.presentation.about.AboutUsActivity;
 
-public class ProfileFragment extends BaseFragment {
+public class ProfileLoggedInFragment extends BaseFragment {
     @Nullable
     @Override
     public View onCreateView(
@@ -23,20 +26,23 @@ public class ProfileFragment extends BaseFragment {
             @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState
     ) {
-        return inflater.inflate(R.layout.fragment_profile, container, false);
+        return inflater.inflate(R.layout.fragment_profile_logged_in, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Các mục cá nhân (khi click vào sẽ mở các Activity tương ứng nhưng không có data do chưa đăng nhập)
+        view.findViewById(R.id.profileAccountHeaderCard).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PersonalInfoActivity.class))
+        );
         view.findViewById(R.id.profileAddressRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), AddressBookActivity.class))
         );
         view.findViewById(R.id.profileCarbonRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CarbonPointsActivity.class))
         );
+
         view.findViewById(R.id.profileFavoritesRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), FavoritesActivity.class))
         );
@@ -49,8 +55,6 @@ public class ProfileFragment extends BaseFragment {
         view.findViewById(R.id.profileNotificationsRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PostNotificationsActivity.class))
         );
-
-        // Các mục tĩnh không thay đổi dù đăng nhập hay chưa (Chính sách, Hỗ trợ, Về VEGGO)
         view.findViewById(R.id.profilePolicyRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PolicyActivity.class))
         );
@@ -60,21 +64,15 @@ public class ProfileFragment extends BaseFragment {
         view.findViewById(R.id.profileAboutRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), AboutUsActivity.class))
         );
-
-        // Đơn hàng (mở order history nhưng không có data do chưa đăng nhập)
         view.findViewById(R.id.profileOrdersCard).setOnClickListener(v -> openOrders(null));
         view.findViewById(R.id.profileOrderHistoryRow).setOnClickListener(v -> openOrders(null));
         view.findViewById(R.id.profileOrderPendingShortcut).setOnClickListener(v -> openOrders("pending"));
         view.findViewById(R.id.profileOrderShippingShortcut).setOnClickListener(v -> openOrders("shipping"));
         view.findViewById(R.id.profileOrderDeliveredShortcut).setOnClickListener(v -> openOrders("delivered"));
         view.findViewById(R.id.profileOrderCancelledShortcut).setOnClickListener(v -> openOrders("cancelled"));
+        view.findViewById(R.id.profileLogoutRow).setOnClickListener(v -> logout());
 
-        // Nút Đăng nhập / Đăng ký
-        View.OnClickListener openLoginListener = v ->
-                startActivity(new Intent(requireContext(), LoginActivity.class));
-
-        view.findViewById(R.id.profileLoginButton).setOnClickListener(openLoginListener);
-        view.findViewById(R.id.profileLoginRegisterRow).setOnClickListener(openLoginListener);
+        loadProfile(view);
     }
 
     private void openOrders(@Nullable String status) {
@@ -83,5 +81,39 @@ public class ProfileFragment extends BaseFragment {
             intent.putExtra(OrderHistoryFragmentExtras.EXTRA_INITIAL_STATUS, status);
         }
         startActivity(intent);
+    }
+
+    private void loadProfile(View view) {
+        new Thread(() -> {
+            AssetScreenData.Snapshot snapshot = AssetScreenData.load(requireContext());
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> bindProfile(view, snapshot.user));
+        }).start();
+    }
+
+    private void bindProfile(View view, @Nullable AssetModels.User user) {
+        if (user == null) {
+            return;
+        }
+
+        String name = AssetScreenData.hasText(user.fullName)
+                ? user.fullName
+                : "Khách hàng " + user.customerId;
+
+        AssetScreenData.setText(view, R.id.profileUserName, name);
+        AssetScreenData.setText(view, R.id.profileUserPhone, user.phone);
+        AssetScreenData.setText(view, R.id.profileCarbonBadge, user.carbonPoint + " điểm carbon");
+    }
+
+    private void logout() {
+        new AppPreferences(requireContext()).logout();
+
+        Fragment guestFragment = new ProfileFragment();
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.mainFragmentContainer, guestFragment)
+                .commit();
     }
 }
