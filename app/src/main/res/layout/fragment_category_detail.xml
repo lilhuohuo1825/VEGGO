@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -18,49 +19,69 @@
             android:orientation="vertical"
             android:paddingTop="12dp">
 
+           
             <!-- Search Bar -->
             <LinearLayout
+                android:id="@+id/layoutSearch"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginHorizontal="16dp"
-                android:background="@drawable/bg_search_bar"
+                android:layout_height="44dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
+                android:background="@drawable/bg_home_search"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="6dp"
+                android:clickable="true"
+                android:focusable="true">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/ic_search"
-                    app:tint="@color/primary_main"
-                    android:contentDescription="@null" />
+                    app:tint="@color/primary_hover" />
 
                 <EditText
                     android:id="@+id/etSearch"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    android:layout_marginHorizontal="12dp"
-                    android:background="@null"
+                    android:fontFamily="@font/inter"
                     android:hint="Tìm kiếm"
-                    android:textSize="15sp"
-                    android:inputType="text"
-                    android:importantForAutofill="no" />
+                    android:textColorHint="#66167728"
+                    android:backgroundTint="@color/primary_bg"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="16sp"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:longClickable="false"
+                    android:cursorVisible="false" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_microphone"
-                    app:tint="@color/neutral_40"
-                    android:contentDescription="@null" />
+                <FrameLayout
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_home_mic">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_microphone"
+                        app:tint="@color/neutral_80" />
+                </FrameLayout>
             </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
                 android:layout_marginTop="20dp"
                 android:text="Danh mục"
                 android:textColor="@color/neutral_100"
+                android:fontFamily="@font/inter"
+                android:textStyle="bold"
                 android:textSize="18sp" />
 
             <!-- Horizontal Categories -->
@@ -86,10 +107,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_toStartOf="@+id/ivFilter"
-                    app:tabIndicator="@drawable/bg_tab_indicator"
+                    android:background="@android:color/transparent"
+                    app:tabBackground="@android:color/transparent"
+                    app:tabIndicator="@drawable/bg_order_tab_indicator"
                     app:tabIndicatorColor="@color/primary_main"
                     app:tabIndicatorFullWidth="false"
-                    app:tabIndicatorHeight="4dp"
+                    app:tabIndicatorHeight="8dp"
                     app:tabMode="scrollable"
                     app:tabRippleColor="@android:color/transparent"
                     app:tabSelectedTextColor="@color/primary_main"
@@ -105,9 +128,12 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="16dp"
-                    android:src="@drawable/ic_category2"
+                    android:src="@drawable/ic_filter"
                     app:tint="@color/neutral_80"
-                    android:contentDescription="@null" />
+                    android:contentDescription="@null"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless" />
 
                 <View
                     android:layout_width="match_parent"

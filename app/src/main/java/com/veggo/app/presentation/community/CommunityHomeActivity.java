@@ -6,7 +6,10 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.veggo.app.databinding.ActivityCommunityHomeBinding;
+import com.veggo.app.R;
 
 public class CommunityHomeActivity extends AppCompatActivity {
     private ActivityCommunityHomeBinding binding;
@@ -18,6 +21,7 @@ public class CommunityHomeActivity extends AppCompatActivity {
         binding = ActivityCommunityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new CommunityRepository(this);
+        bindAccountAvatar();
         CommunityUi.setupBottomNav(this, binding.communityBottomNavHost);
         binding.communityAvatar.setOnClickListener(v -> {
             Intent intent = new Intent(this, CommunityProfileActivity.class);
@@ -33,5 +37,28 @@ public class CommunityHomeActivity extends AppCompatActivity {
             CommunityUi.addChefPreview(this, binding.chefPreviewRow, data.chefs);
             CommunityUi.addRecipePreview(this, binding.recipeLeftColumn, binding.recipeRightColumn, data.recipes);
         }));
+    }
+
+    private void bindAccountAvatar() {
+        binding.communityAvatar.setImageResource(R.drawable.ic_user_full);
+        repository.loadUser(repository.currentCustomerId(), user -> runOnUiThread(() -> {
+            if (user == null) {
+                return;
+            }
+            bindAvatarUrl(user.getImageUrl());
+        }));
+    }
+
+    private void bindAvatarUrl(String avatarUrl) {
+        if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
+            binding.communityAvatar.setImageResource(R.drawable.ic_user_full);
+            return;
+        }
+        Glide.with(this)
+                .load(avatarUrl)
+                .placeholder(R.drawable.ic_user_full)
+                .error(R.drawable.ic_user_full)
+                .transform(new CircleCrop())
+                .into(binding.communityAvatar);
     }
 }

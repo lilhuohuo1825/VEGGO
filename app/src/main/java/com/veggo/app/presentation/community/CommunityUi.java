@@ -35,6 +35,10 @@ import com.veggo.app.databinding.ComponentBottomNavBinding;
 import java.util.List;
 
 public final class CommunityUi {
+    public interface SaveCallback {
+        void onSaved();
+    }
+
     private CommunityUi() {
     }
 
@@ -117,7 +121,8 @@ public final class CommunityUi {
         int limit = Math.min(categories.size(), 10);
         for (int index = 0; index < limit; index++) {
             CommunityCategoryEntity category = categories.get(index);
-            row.addView(chip(activity, row, 0, category.getName().toLowerCase(), categoryEmoji(category.getId()), v ->
+            String iconEmoji = isBlank(category.getIconEmoji()) ? categoryEmoji(category.getName()) : category.getIconEmoji();
+            row.addView(chip(activity, row, 0, category.getName().toLowerCase(), iconEmoji, v ->
                     openCategoryRecipes(activity, category)
             ));
         }
@@ -254,7 +259,7 @@ public final class CommunityUi {
         rightColumn.removeAllViews();
         for (int index = 0; index < cookbooks.size(); index++) {
             CommunityCookbookEntity cookbook = cookbooks.get(index);
-            View card = imageCard(activity, cookbook.getImageUrl(), true);
+            View card = imageCard(activity, cookbook.getImageUrl(), false);
             ((TextView) card.findViewById(R.id.cardMeta)).setText("");
             ((TextView) card.findViewById(R.id.cardTitle)).setText(cookbook.getTitle());
             TextView subtitle = card.findViewById(R.id.cardSubtitle);
@@ -298,14 +303,20 @@ public final class CommunityUi {
         ((TextView) card.findViewById(R.id.cardMeta)).setText("\u25CF  " + recipe.getTimeMinutes() + " min");
         ((TextView) card.findViewById(R.id.cardTitle)).setText(recipe.getTitle());
         ImageView save = card.findViewById(R.id.cardSave);
+        CommunityRepository repository = new CommunityRepository(activity);
+        repository.isRecipeSaved(recipe.getId(), saved ->
+                activity.runOnUiThread(() -> renderSaveState(save, saved)));
         save.setOnClickListener(v -> {
-            v.setTag(true);
-            save.setBackgroundResource(R.drawable.bg_follow_button_green);
-            save.setColorFilter(Color.WHITE);
-            showAddToCookbook(activity, recipe.getId());
+            showAddToCookbook(activity, recipe.getId(), () -> renderSaveState(save, true));
         });
         card.setOnClickListener(v -> openRecipeDetail(activity, recipe));
         return card;
+    }
+
+    private static void renderSaveState(ImageView save, boolean saved) {
+        save.setTag(saved);
+        save.setBackgroundResource(saved ? R.drawable.bg_follow_button_green : R.drawable.bg_community_save);
+        save.setColorFilter(Color.WHITE);
     }
 
     private static View imageCard(Activity activity, String imageUrl, boolean showSave) {
@@ -321,11 +332,15 @@ public final class CommunityUi {
     }
 
     public static void showAddToCookbook(Activity activity, String recipeId) {
+        showAddToCookbook(activity, recipeId, null);
+    }
+
+    public static void showAddToCookbook(Activity activity, String recipeId, SaveCallback callback) {
         Dialog dialog = createDialog(activity, R.layout.dialog_add_to_cookbook);
         LinearLayout optionList = dialog.findViewById(R.id.cookbookOptionList);
         final String[] selectedCookbookId = {null};
         CommunityRepository repository = new CommunityRepository(activity);
-        repository.loadCookbooks(CommunityRepository.ACCOUNT_ID, cookbooks -> activity.runOnUiThread(() -> {
+        repository.loadCookbooks(null, cookbooks -> activity.runOnUiThread(() -> {
             optionList.removeAllViews();
             int limit = Math.min(cookbooks.size(), 4);
             for (int index = 0; index < limit; index++) {
@@ -353,16 +368,19 @@ public final class CommunityUi {
         }));
         dialog.findViewById(R.id.cookbookCreateButton).setOnClickListener(v -> {
             dialog.dismiss();
-            showCreateCookbook(activity, recipeId);
+            showCreateCookbook(activity, recipeId, callback);
         });
         dialog.findViewById(R.id.cookbookSaveButton).setOnClickListener(v -> {
             if (selectedCookbookId[0] == null) {
-                showCreateCookbook(activity, recipeId);
+                showCreateCookbook(activity, recipeId, callback);
                 dialog.dismiss();
                 return;
             }
             repository.addRecipeToCookbook(selectedCookbookId[0], recipeId, done -> activity.runOnUiThread(() -> {
                 Toast.makeText(activity, "\u0110\u00e3 l\u01b0u v\u00e0o cookbook", Toast.LENGTH_SHORT).show();
+                if (done && callback != null) {
+                    callback.onSaved();
+                }
                 dialog.dismiss();
             }));
         });
@@ -370,12 +388,12 @@ public final class CommunityUi {
         sizeDialog(activity, dialog);
     }
 
-    private static void showCreateCookbook(Activity activity, String recipeId) {
+    private static void showCreateCookbook(Activity activity, String recipeId, SaveCallback callback) {
         Dialog dialog = createDialog(activity, R.layout.dialog_create_cookbook);
         CommunityRepository repository = new CommunityRepository(activity);
         dialog.findViewById(R.id.cookbookBackToListButton).setOnClickListener(v -> {
             dialog.dismiss();
-            showAddToCookbook(activity, recipeId);
+            showAddToCookbook(activity, recipeId, callback);
         });
         dialog.findViewById(R.id.cookbookCreateSaveButton).setOnClickListener(v -> {
             EditText titleInput = dialog.findViewById(R.id.cookbookTitleInput);
@@ -387,6 +405,9 @@ public final class CommunityUi {
             }
             repository.createCookbook(title, descriptionInput.getText().toString().trim(), recipeId, done -> activity.runOnUiThread(() -> {
                 Toast.makeText(activity, "\u0110\u00e3 t\u1ea1o cookbook", Toast.LENGTH_SHORT).show();
+                if (done && callback != null) {
+                    callback.onSaved();
+                }
                 dialog.dismiss();
             }));
         });
@@ -479,16 +500,20 @@ public final class CommunityUi {
 
     private static String categoryEmoji(String label) {
         String lower = label.toLowerCase();
-        if (lower.contains("soup")) return "\uD83C\uDF72";
-        if (lower.contains("seafood")) return "\uD83E\uDD90";
+        if (lower.contains("soup") || lower.contains("súp")) return "\uD83C\uDF72";
+        if (lower.contains("seafood") || lower.contains("hải sản")) return "\uD83E\uDD90";
         if (lower.contains("sushi")) return "\uD83C\uDF63";
-        if (lower.contains("cake") || lower.contains("dessert")) return "\uD83C\uDF70";
-        if (lower.contains("breakfast")) return "\uD83C\uDF73";
-        if (lower.contains("healthy") || lower.contains("vegan")) return "\uD83E\uDD57";
-        if (lower.contains("noodles")) return "\uD83C\uDF5C";
-        if (lower.contains("drinks")) return "\uD83E\uDD64";
-        if (lower.contains("grill")) return "\uD83C\uDF56";
+        if (lower.contains("cake") || lower.contains("dessert") || lower.contains("bánh") || lower.contains("tráng miệng")) return "\uD83C\uDF70";
+        if (lower.contains("breakfast") || lower.contains("bữa sáng")) return "\uD83C\uDF73";
+        if (lower.contains("healthy") || lower.contains("lành mạnh") || lower.contains("vegan") || lower.contains("món chay")) return "\uD83E\uDD57";
+        if (lower.contains("noodles") || lower.contains("món mì")) return "\uD83C\uDF5C";
+        if (lower.contains("drinks") || lower.contains("đồ uống")) return "\uD83E\uDD64";
+        if (lower.contains("grill") || lower.contains("món nướng")) return "\uD83C\uDF56";
         return "\uD83C\uDF7D";
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private static void openCategoryRecipes(Activity activity, CommunityCategoryEntity category) {
@@ -500,6 +525,12 @@ public final class CommunityUi {
 
     private static void openChefProfile(Activity activity, CommunityChefEntity chef) {
         Intent intent = new Intent(activity, CommunityProfileActivity.class);
+        CommunityRepository repository = new CommunityRepository(activity);
+        if (chef.getId().equals(repository.currentCustomerId())) {
+            intent.putExtra(CommunityProfileActivity.EXTRA_ACCOUNT_PROFILE, true);
+            activity.startActivity(intent);
+            return;
+        }
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_ID, chef.getId());
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_NAME, chef.getName());
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_IMAGE_URL, chef.getImageUrl());

@@ -23,16 +23,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
+        <ImageView
             android:id="@+id/communityAvatar"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
-            android:background="@drawable/bg_community_avatar"
-            android:gravity="center"
-            android:text="T"
-            android:textColor="@color/neutral_10"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:contentDescription="@string/nav_account"
+            android:padding="5dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_user_full" />
 
         <ImageView
             android:id="@+id/communityLogo"
@@ -60,8 +58,8 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
-                app:tint="#57AF37"
                 android:src="@drawable/icon_plus"
+                app:tint="#57AF37"
                 android:contentDescription="Add" />
         </FrameLayout>
         <FrameLayout

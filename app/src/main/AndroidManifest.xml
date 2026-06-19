@@ -26,6 +26,9 @@
         </service>
 
         <activity
+            android:name=".presentation.chatbot.ChatbotActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
@@ -50,6 +53,9 @@
             android:name=".presentation.profile.TastePreferencesActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.TasteMenuSuggestionsActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.profile.TasteSetupActivity"
             android:exported="false" />
         <activity
@@ -63,6 +69,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.profile.MyPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.FavoritesActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.profile.CarbonHistoryActivity"
@@ -108,6 +117,12 @@
             android:exported="false" />
         <activity
             android:name=".presentation.product.ProductDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.product.ReviewDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.product.ConsultationDetailActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.community.CommunityRecipesActivity"
@@ -164,6 +179,9 @@
             android:name=".presentation.auth.RegisterActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.auth.ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.auth.LoginActivity"
             android:exported="false" />
         <activity
@@ -177,10 +195,20 @@
         </activity>
         <activity
             android:name=".presentation.search.SearchActivity"
-            android:exported="false" />
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/community_file_paths" />
+        </provider>
     </application>
 
 </manifest>

@@ -13,12 +13,16 @@ final class ToggleUi {
 
     static void bindToggle(View button, int inactiveIcon, int activeIcon, boolean active) {
         button.setTag(active);
-        render(button, inactiveIcon, activeIcon, active);
+        renderToggle(button, inactiveIcon, activeIcon, active);
         button.setOnClickListener(v -> {
             boolean next = !(Boolean) v.getTag();
             v.setTag(next);
-            render(v, inactiveIcon, activeIcon, next);
+            renderToggle(v, inactiveIcon, activeIcon, next);
         });
+    }
+
+    static void renderToggle(View button, int inactiveIcon, int activeIcon, boolean active) {
+        render(button, inactiveIcon, activeIcon, active);
     }
 
     static void renderSelected(View button, int iconRes, boolean selected) {
@@ -28,7 +32,11 @@ final class ToggleUi {
             return;
         }
         icon.setImageResource(iconRes);
-        icon.setColorFilter(selected ? Color.WHITE : Color.TRANSPARENT);
+        if (selected) {
+            icon.setColorFilter(Color.WHITE);
+        } else {
+            icon.clearColorFilter();
+        }
     }
 
     private static void render(View button, int inactiveIcon, int activeIcon, boolean active) {

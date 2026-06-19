@@ -11,6 +11,7 @@ import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,6 +26,7 @@ import com.veggo.app.data.local.entity.CommunityRecipeDetailEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 
 public class CommunityRecipeDetailActivity extends AppCompatActivity {
     public static final String EXTRA_RECIPE_ID = "community_recipe_detail_recipe_id";
@@ -36,6 +38,9 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
     private LinearLayout instructionsContainer;
     private LinearLayout galleryRow;
     private LinearLayout commentsContainer;
+    private View editButton;
+    private View deleteButton;
+    private View bookmarkButton;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -51,14 +56,26 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
 
         recipeId = getIntent().getStringExtra(EXTRA_RECIPE_ID);
         findViewById(R.id.recipeShopButton).setOnClickListener(v -> openIngredients());
-        ToggleUi.bindToggle(findViewById(R.id.recipeHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
-        View bookmarkButton = findViewById(R.id.recipeBookmarkButton);
+        editButton = findViewById(R.id.recipeEditButton);
+        editButton.setVisibility(View.GONE);
+        deleteButton = findViewById(R.id.recipeDeleteButton);
+        deleteButton.setVisibility(View.GONE);
+        deleteButton.setOnClickListener(v -> showDeleteRecipeDialog());
+        bookmarkButton = findViewById(R.id.recipeBookmarkButton);
+        ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, false);
         bookmarkButton.setOnClickListener(v -> {
             ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true);
-            CommunityUi.showAddToCookbook(this, recipeId);
+            CommunityUi.showAddToCookbook(this, recipeId, () ->
+                    ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true));
         });
         findViewById(R.id.recipeCommentSend).setOnClickListener(v -> submitComment());
         repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> bindDetail(data)));
+        loadBookmarkState();
+    }
+
+    private void loadBookmarkState() {
+        repository.isRecipeSaved(recipeId, saved -> runOnUiThread(() ->
+                ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, saved)));
     }
 
     private void bindDetail(CommunityRepository.RecipeDetailData data) {
@@ -80,6 +97,7 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
             Glide.with(this).load(data.chef.getImageUrl()).transform(new CenterCrop(), new RoundedCorners(dp(20))).into((ImageView) findViewById(R.id.recipeChefAvatar));
             findViewById(R.id.recipeAuthorRow).setOnClickListener(v -> openChefProfile(data.chef));
         }
+        bindOwnerAction(data);
         Glide.with(this).load(data.recipe.getImageUrl()).transform(new CenterCrop(), new RoundedCorners(dp(10))).into((ImageView) findViewById(R.id.recipeHeroImage));
         findViewById(R.id.recipePlay).setOnClickListener(v -> openVideo());
 
@@ -159,14 +177,60 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
         LayoutInflater inflater = LayoutInflater.from(this);
         int limit = Math.min(5, data.comments.size());
         for (int i = 0; i < limit; i++) {
-            CommunityRecipeCommentEntity comment = data.comments.get(i);
-            View item = inflater.inflate(R.layout.item_community_recipe_comment, commentsContainer, false);
-            ((TextView) item.findViewById(R.id.commentName)).setText(comment.getUserName());
-            ((TextView) item.findViewById(R.id.commentContent)).setText(comment.getContent());
-            ((TextView) item.findViewById(R.id.commentMeta)).setText("\u2665  " + comment.getLikeCount() + "     Reply");
-            Glide.with(this).load(comment.getUserImageUrl()).transform(new CenterCrop(), new RoundedCorners(dp(18))).into((ImageView) item.findViewById(R.id.commentAvatar));
-            commentsContainer.addView(item);
+            commentsContainer.addView(commentView(inflater, data.comments.get(i)));
         }
+    }
+
+    private void bindOwnerAction(CommunityRepository.RecipeDetailData data) {
+        if (data.recipe == null) {
+            editButton.setVisibility(View.GONE);
+            deleteButton.setVisibility(View.GONE);
+            return;
+        }
+        boolean isOwner = data.recipe.getChefId() != null
+                && data.recipe.getChefId().equals(repository.currentCustomerId());
+        editButton.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+        deleteButton.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+        if (isOwner) {
+            editButton.setOnClickListener(v -> openEditRecipe(data.recipe.getId()));
+        }
+    }
+
+    private void openEditRecipe(String editRecipeId) {
+        Intent intent = new Intent(this, CommunityPostActivity.class);
+        intent.putExtra(CommunityPostActivity.EXTRA_EDIT_RECIPE_ID, editRecipeId);
+        startActivity(intent);
+    }
+
+    private void showDeleteRecipeDialog() {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_trash,
+                "X\u00f3a c\u00f4ng th\u1ee9c?",
+                "C\u00f4ng th\u1ee9c n\u00e0y s\u1ebd b\u1ecb x\u00f3a v\u0129nh vi\u1ec5n kh\u1ecfi c\u1ed9ng \u0111\u1ed3ng.",
+                "X\u00f3a",
+                "H\u1ee7y",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        deleteRecipe();
+                    }
+                }
+        );
+    }
+
+    private void deleteRecipe() {
+        deleteButton.setEnabled(false);
+        repository.deleteRecipe(recipeId, deleted -> runOnUiThread(() -> {
+            deleteButton.setEnabled(true);
+            if (deleted) {
+                Toast.makeText(this, "\u0110\u00e3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+                return;
+            }
+            Toast.makeText(this, "Kh\u00f4ng th\u1ec3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+        }));
     }
 
     private void submitComment() {
@@ -175,16 +239,43 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
         if (content.isEmpty()) {
             return;
         }
-        View item = LayoutInflater.from(this).inflate(R.layout.item_community_recipe_comment, commentsContainer, false);
-        ((TextView) item.findViewById(R.id.commentName)).setText(CommunityRepository.ACCOUNT_NAME);
-        ((TextView) item.findViewById(R.id.commentContent)).setText(content);
-        ((TextView) item.findViewById(R.id.commentMeta)).setText("\u2665  0     Reply");
+        repository.createComment(recipeId, content, comment -> runOnUiThread(() -> {
+            if (comment != null) {
+                commentsContainer.addView(commentView(LayoutInflater.from(this), comment), 0);
+            }
+            input.setText("");
+        }));
+    }
+
+    private View commentView(LayoutInflater inflater, CommunityRecipeCommentEntity comment) {
+        View item = inflater.inflate(R.layout.item_community_recipe_comment, commentsContainer, false);
+        ((TextView) item.findViewById(R.id.commentName)).setText(comment.getUserName());
+        ((TextView) item.findViewById(R.id.commentContent)).setText(comment.getContent());
+        TextView meta = item.findViewById(R.id.commentMeta);
+        bindCommentLike(meta, comment);
         Glide.with(this)
-                .load(CommunityRepository.ACCOUNT_AVATAR_URL)
+                .load(comment.getUserImageUrl())
                 .transform(new CenterCrop(), new RoundedCorners(dp(18)))
                 .into((ImageView) item.findViewById(R.id.commentAvatar));
-        commentsContainer.addView(item, 0);
-        input.setText("");
+        return item;
+    }
+
+    private void bindCommentLike(TextView meta, CommunityRecipeCommentEntity comment) {
+        meta.setText("\u2665  " + comment.getLikeCount());
+        meta.setTextColor(getColor(comment.isLikedByCurrentUser() ? R.color.danger_main : R.color.neutral_60));
+        meta.setOnClickListener(v -> {
+            meta.setEnabled(false);
+            repository.toggleCommentLike(comment.getId(), updated -> runOnUiThread(() -> {
+                meta.setEnabled(true);
+                if (updated == null) {
+                    Toast.makeText(this, "Chưa thả tim được bình luận", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                comment.setLikeCount(updated.getLikeCount());
+                comment.setLikedByCurrentUser(updated.isLikedByCurrentUser());
+                bindCommentLike(meta, comment);
+            }));
+        });
     }
 
     private int dp(int value) {
@@ -211,6 +302,11 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
 
     private void openChefProfile(CommunityChefEntity chef) {
         Intent intent = new Intent(this, CommunityProfileActivity.class);
+        if (chef.getId().equals(repository.currentCustomerId())) {
+            intent.putExtra(CommunityProfileActivity.EXTRA_ACCOUNT_PROFILE, true);
+            startActivity(intent);
+            return;
+        }
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_ID, chef.getId());
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_NAME, chef.getName());
         intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_IMAGE_URL, chef.getImageUrl());

@@ -11,6 +11,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
+        android:paddingTop="70dp"
         android:paddingBottom="18dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -24,10 +25,6 @@
             android:paddingStart="18dp"
             android:paddingEnd="18dp"
             android:paddingBottom="18dp">
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="80dp" />
 
             <LinearLayout
                 android:id="@+id/recipeAuthorRow"
@@ -340,25 +337,46 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <FrameLayout
-            android:id="@+id/recipeHeartButton"
+            android:id="@+id/recipeEditButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:background="@drawable/bg_community_circle"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
             android:clipChildren="false"
             android:clipToPadding="false">
             <androidx.appcompat.widget.AppCompatImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
-                app:tint="#57AF37"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_heart_green"
+                app:tint="#57AF37"
+                android:src="@drawable/ic_edit"
                 android:contentDescription="" />
         </FrameLayout>
 
+        <FrameLayout
+            android:id="@+id/recipeDeleteButton"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_community_circle"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                app:tint="#57AF37"
+                android:src="@drawable/ic_trash"
+                android:contentDescription="" />
+        </FrameLayout>
         <FrameLayout
             android:id="@+id/recipeBookmarkButton"
             android:layout_width="42dp"

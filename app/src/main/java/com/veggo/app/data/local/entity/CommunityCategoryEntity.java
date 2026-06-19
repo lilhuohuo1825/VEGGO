@@ -2,6 +2,7 @@ package com.veggo.app.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "community_categories")
@@ -12,6 +13,8 @@ public class CommunityCategoryEntity {
     private String name;
     private int recipeCount;
     private String imageUrl;
+    @Ignore
+    private String iconEmoji;
 
     public CommunityCategoryEntity(@NonNull String id, String name, int recipeCount, String imageUrl) {
         this.id = id;
@@ -28,4 +31,6 @@ public class CommunityCategoryEntity {
     public void setRecipeCount(int recipeCount) { this.recipeCount = recipeCount; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getIconEmoji() { return iconEmoji; }
+    public void setIconEmoji(String iconEmoji) { this.iconEmoji = iconEmoji; }
 }
