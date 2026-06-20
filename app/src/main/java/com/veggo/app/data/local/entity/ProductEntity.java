@@ -2,6 +2,7 @@ package com.veggo.app.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "products")
@@ -14,6 +15,7 @@ public class ProductEntity {
     private long originalPrice;
     private String sku;
     private String imageUrl;
+    private String weightOptionsJson;
     private String weight;
     private float rating;
     private int reviewCount;
@@ -24,17 +26,27 @@ public class ProductEntity {
     private String fatContent;
     private String categoryId;
     private String subcategoryId;
+    private double carbonSavingPoint;
 
-    public ProductEntity(@NonNull String id, String name, long price, long originalPrice, 
+    @Ignore
+    public ProductEntity(@NonNull String id, String name, long price, long originalPrice,
                          String sku, String imageUrl, String weight, float rating, int reviewCount, 
                          int soldCount, String description, String origin, 
                          String condition, String fatContent, String categoryId, String subcategoryId) {
+        this(id, name, price, originalPrice, sku, imageUrl, null, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+    }
+
+    public ProductEntity(@NonNull String id, String name, long price, long originalPrice,
+                         String sku, String imageUrl, String weightOptionsJson, String weight, float rating, int reviewCount,
+                         int soldCount, String description, String origin,
+                         String condition, String fatContent, String categoryId, String subcategoryId, double carbonSavingPoint) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.originalPrice = originalPrice;
         this.sku = sku;
         this.imageUrl = imageUrl;
+        this.weightOptionsJson = weightOptionsJson;
         this.weight = weight;
         this.rating = rating;
         this.reviewCount = reviewCount;
@@ -45,6 +57,7 @@ public class ProductEntity {
         this.fatContent = fatContent;
         this.categoryId = categoryId;
         this.subcategoryId = subcategoryId;
+        this.carbonSavingPoint = carbonSavingPoint;
     }
 
     @NonNull public String getId() { return id; }
@@ -59,6 +72,8 @@ public class ProductEntity {
     public void setSku(String sku) { this.sku = sku; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getWeightOptionsJson() { return weightOptionsJson; }
+    public void setWeightOptionsJson(String weightOptionsJson) { this.weightOptionsJson = weightOptionsJson; }
     public String getWeight() { return weight; }
     public void setWeight(String weight) { this.weight = weight; }
     public float getRating() { return rating; }
@@ -79,4 +94,6 @@ public class ProductEntity {
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
     public String getSubcategoryId() { return subcategoryId; }
     public void setSubcategoryId(String subcategoryId) { this.subcategoryId = subcategoryId; }
+    public double getCarbonSavingPoint() { return carbonSavingPoint; }
+    public void setCarbonSavingPoint(double carbonSavingPoint) { this.carbonSavingPoint = carbonSavingPoint; }
 }

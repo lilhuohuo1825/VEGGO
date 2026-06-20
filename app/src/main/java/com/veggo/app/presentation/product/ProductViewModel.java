@@ -5,30 +5,70 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
+import com.veggo.app.data.remote.dto.CartDto;
+import com.veggo.app.data.remote.dto.CartItemRequestDto;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.model.Recipe;
 import com.veggo.app.domain.model.Review;
+import com.veggo.app.domain.repository.CartRepository;
 import com.veggo.app.domain.repository.ProductRepository;
 
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ProductViewModel extends ViewModel {
     private final ProductRepository productRepository;
+    private final CartRepository cartRepository;
     private final MutableLiveData<String> productId = new MutableLiveData<>();
     private final LiveData<Product> product;
     private final LiveData<List<Recipe>> relatedRecipes;
     private final LiveData<List<Review>> productReviews;
     private final LiveData<List<com.veggo.app.assets.AssetModels.Question>> consultations;
     private final LiveData<List<Product>> relatedProducts;
+    
+    private final MutableLiveData<Boolean> isAddingToCart = new MutableLiveData<>(false);
+    private final MutableLiveData<String> cartError = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> addToCartSuccess = new MutableLiveData<>(false);
 
-    public ProductViewModel(ProductRepository productRepository) {
+    public ProductViewModel(ProductRepository productRepository, CartRepository cartRepository) {
         this.productRepository = productRepository;
+        this.cartRepository = cartRepository;
         this.product = Transformations.switchMap(productId, productRepository::observeProductById);
         this.relatedRecipes = Transformations.switchMap(productId, productRepository::getRelatedRecipes);
         this.productReviews = Transformations.switchMap(productId, productRepository::getProductReviews);
         this.consultations = Transformations.switchMap(productId, productRepository::getConsultations);
         this.relatedProducts = productRepository.observeProducts(10); // Limit to 10 products to avoid SQLiteBlobTooBigException
     }
+
+    public void addToCart(String customerId, String sku, int quantity, double selectedWeight) {
+        isAddingToCart.setValue(true);
+        double normalizedWeight = selectedWeight > 0 ? selectedWeight : 1.0;
+        cartRepository.addItem(customerId, new CartItemRequestDto(sku, quantity, normalizedWeight)).enqueue(new Callback<CartDto>() {
+            @Override
+            public void onResponse(Call<CartDto> call, Response<CartDto> response) {
+                isAddingToCart.setValue(false);
+                if (response.isSuccessful()) {
+                    addToCartSuccess.setValue(true);
+                } else {
+                    cartError.setValue("Failed to add to cart");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CartDto> call, Throwable t) {
+                isAddingToCart.setValue(false);
+                cartError.setValue(t.getMessage());
+            }
+        });
+    }
+
+    public LiveData<Boolean> getIsAddingToCart() { return isAddingToCart; }
+    public LiveData<String> getCartError() { return cartError; }
+    public LiveData<Boolean> getAddToCartSuccess() { return addToCartSuccess; }
+    public void resetAddToCartStatus() { addToCartSuccess.setValue(false); cartError.setValue(null); }
 
     public void setProductId(String id) {
         productId.postValue(id);

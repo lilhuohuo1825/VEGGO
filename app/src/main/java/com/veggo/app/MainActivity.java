@@ -131,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void openCartScreen() {
-        setSelectedTab(Tab.HOME);
+        // Không set về Tab.HOME ở đây nếu muốn hiển thị Giỏ hàng chuyên biệt
         setBottomNavVisible(false);
         getSupportFragmentManager()
                 .beginTransaction()

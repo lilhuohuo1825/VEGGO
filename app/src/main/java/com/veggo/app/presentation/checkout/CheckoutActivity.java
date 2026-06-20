@@ -69,6 +69,11 @@ public class CheckoutActivity extends BaseActivity {
         View layoutVoucher = findViewById(R.id.layoutVoucher);
         View btnPlaceOrder = findViewById(R.id.btnPlaceOrder);
         RecyclerView rvCheckoutProducts = findViewById(R.id.rvCheckoutProducts);
+        View btnBack = findViewById(R.id.checkoutBackButton);
+
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         tvCheckoutNote = findViewById(R.id.tvCheckoutNote);
         tvScheduleDeliveryTime = findViewById(R.id.tvScheduleDeliveryTime);

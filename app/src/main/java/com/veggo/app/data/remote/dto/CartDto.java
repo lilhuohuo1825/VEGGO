@@ -1,30 +1,46 @@
 package com.veggo.app.data.remote.dto;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class CartDto {
     @SerializedName("_id")
     private String id;
-    private String userId;
+
+    @SerializedName("customerId")
+    private String customerId;
+
+    @SerializedName("items")
     private List<CartItemDto> items = new ArrayList<>();
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
     public List<CartItemDto> getItems() { return items; }
     public void setItems(List<CartItemDto> items) { this.items = items; }
 
     public static class CartItemDto {
-        private ProductDto productId;
+        @SerializedName("sku")
+        private String sku;
+
+        @SerializedName("product")
+        private ProductDto product;
+        
+        @SerializedName("quantity")
         private int quantity;
 
-        public ProductDto getProduct() { return productId; }
-        public void setProduct(ProductDto product) { this.productId = product; }
+        @SerializedName("selectedWeight")
+        private double selectedWeight;
+
+        public String getSku() { return sku; }
+        public void setSku(String sku) { this.sku = sku; }
+        public ProductDto getProduct() { return product; }
+        public void setProduct(ProductDto product) { this.product = product; }
         public int getQuantity() { return quantity; }
         public void setQuantity(int quantity) { this.quantity = quantity; }
+        public double getSelectedWeight() { return selectedWeight; }
+        public void setSelectedWeight(double selectedWeight) { this.selectedWeight = selectedWeight; }
     }
 }

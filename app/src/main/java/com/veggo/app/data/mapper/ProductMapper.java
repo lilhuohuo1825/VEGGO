@@ -5,8 +5,45 @@ import com.veggo.app.data.local.projection.ProductItemProjection;
 import com.veggo.app.data.remote.dto.ProductDto;
 import com.veggo.app.domain.model.Product;
 
+import com.google.gson.Gson;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public final class ProductMapper {
+    private static final Gson GSON = new Gson();
+
     private ProductMapper() {
+    }
+
+    private static List<Double> parseWeightOptions(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            Double[] values = GSON.fromJson(json, Double[].class);
+            if (values == null) {
+                return null;
+            }
+            List<Double> list = new ArrayList<>();
+            for (Double value : values) {
+                if (value != null) {
+                    list.add(value);
+                }
+            }
+            return list;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String serializeWeightOptions(List<Double> weightOptions) {
+        if (weightOptions == null || weightOptions.isEmpty()) {
+            return null;
+        }
+
+        return GSON.toJson(weightOptions);
     }
 
     public static Product fromDto(ProductDto dto) {
@@ -17,6 +54,7 @@ public final class ProductMapper {
                 dto.getPrice(),
                 dto.getOriginalPrice(),
                 dto.getImageUrl(),
+                dto.getWeightOptions(),
                 dto.getWeight(),
                 dto.getRating(),
                 dto.getReviewCount(),
@@ -26,7 +64,8 @@ public final class ProductMapper {
                 dto.getCondition(),
                 dto.getFatContent(),
                 dto.getCategoryId(),
-                dto.getSubcategoryId()
+                dto.getSubcategoryId(),
+                dto.getCarbonSavingPoint()
         );
     }
 
@@ -38,6 +77,7 @@ public final class ProductMapper {
                 entity.getPrice(),
                 entity.getOriginalPrice(),
                 entity.getImageUrl(),
+            parseWeightOptions(entity.getWeightOptionsJson()),
                 entity.getWeight(),
                 entity.getRating(),
                 entity.getReviewCount(),
@@ -47,7 +87,8 @@ public final class ProductMapper {
                 entity.getCondition(),
                 entity.getFatContent(),
                 entity.getCategoryId(),
-                entity.getSubcategoryId()
+                entity.getSubcategoryId(),
+                entity.getCarbonSavingPoint()
         );
     }
 
@@ -68,6 +109,7 @@ public final class ProductMapper {
                 dto.getOriginalPrice(),
                 dto.getSku(),
                 dto.getImageUrl(),
+                serializeWeightOptions(dto.getWeightOptions()),
                 dto.getWeight(),
                 dto.getRating(),
                 dto.getReviewCount(),
@@ -77,7 +119,8 @@ public final class ProductMapper {
                 dto.getCondition(),
                 dto.getFatContent(),
                 dto.getCategoryId(),
-                dto.getSubcategoryId()
+                dto.getSubcategoryId(),
+                dto.getCarbonSavingPoint()
         );
     }
 
@@ -89,6 +132,7 @@ public final class ProductMapper {
                 product.getOriginalPrice(),
                 product.getSku(),
                 product.getImageUrl(),
+                serializeWeightOptions(product.getWeightOptions()),
                 product.getWeight(),
                 product.getRating(),
                 product.getReviewCount(),
@@ -98,7 +142,8 @@ public final class ProductMapper {
                 product.getCondition(),
                 product.getFatContent(),
                 product.getCategoryId(),
-                product.getSubcategoryId()
+                product.getSubcategoryId(),
+                product.getCarbonSavingPoint()
         );
     }
 }

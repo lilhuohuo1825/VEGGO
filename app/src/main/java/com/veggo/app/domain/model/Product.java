@@ -22,6 +22,9 @@ public class Product {
     @SerializedName(value = "image")
     private final List<String> image;
 
+    @SerializedName(value = "WeightOptions", alternate = {"weightOptions"})
+    private final List<Double> weightOptions;
+
     private final String weight;
     private final float rating;
     private final int reviewCount;
@@ -35,21 +38,31 @@ public class Product {
     private final String fatContent;
     private final String categoryId;
     private final String subcategoryId;
+    private final double carbonSavingPoint;
 
     public Product(String id, String name, long price, String imageUrl) {
-        this(id, name, null, price, 0, imageUrl, null, 0, 0, 0, null, null, null, null, null, null);
+        this(id, name, null, price, 0, imageUrl, null, null, 0, 0, 0, null, null, null, null, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
-                   String weight, float rating, int reviewCount, int soldCount, 
+                   String weight, float rating, int reviewCount, int soldCount,
                    String description, String origin, String condition, String fatContent) {
-        this(id, name, sku, price, originalPrice, imageUrl, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, null, null);
+        this(id, name, sku, price, originalPrice, imageUrl, null, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
-                   String weight, float rating, int reviewCount, int soldCount, 
+                   List<Double> weightOptions,
+                   String weight, float rating, int reviewCount, int soldCount,
                    String description, String origin, String condition, String fatContent,
                    String categoryId, String subcategoryId) {
+        this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+    }
+
+    public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl,
+                   List<Double> weightOptions,
+                   String weight, float rating, int reviewCount, int soldCount,
+                   String description, String origin, String condition, String fatContent,
+                   String categoryId, String subcategoryId, double carbonSavingPoint) {
         this.id = id;
         this.name = name;
         this.sku = sku;
@@ -57,6 +70,7 @@ public class Product {
         this.originalPrice = originalPrice;
         this.imageUrl = imageUrl;
         this.image = null;
+        this.weightOptions = weightOptions;
         this.weight = weight;
         this.rating = rating;
         this.reviewCount = reviewCount;
@@ -67,6 +81,7 @@ public class Product {
         this.fatContent = fatContent;
         this.categoryId = categoryId;
         this.subcategoryId = subcategoryId;
+        this.carbonSavingPoint = carbonSavingPoint;
     }
 
     public String getId() { return id; }
@@ -81,6 +96,7 @@ public class Product {
         return null;
     }
 
+    public List<Double> getWeightOptions() { return weightOptions; }
     public String getWeight() { return weight; }
     public float getRating() { return rating; }
     public int getReviewCount() { return reviewCount; }
@@ -91,4 +107,5 @@ public class Product {
     public String getFatContent() { return fatContent; }
     public String getCategoryId() { return categoryId; }
     public String getSubcategoryId() { return subcategoryId; }
+    public double getCarbonSavingPoint() { return carbonSavingPoint; }
 }

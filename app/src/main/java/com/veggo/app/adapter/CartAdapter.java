@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 
 import java.util.List;
@@ -22,6 +23,12 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public CartAdapter(List<CartItemUiModel> items, CartItemActionListener listener) {
         this.items = items;
         this.listener = listener;
+    }
+
+    public void setItems(List<CartItemUiModel> newItems) {
+        this.items.clear();
+        this.items.addAll(newItems);
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -47,6 +54,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         private final ImageView productView;
         private final TextView nameView;
         private final TextView unitView;
+        private final TextView carbonPointView;
         private final TextView priceView;
         private final TextView oldPriceView;
         private final TextView decreaseView;
@@ -61,6 +69,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             productView = itemView.findViewById(R.id.imgProduct);
             nameView = itemView.findViewById(R.id.tvItemName);
             unitView = itemView.findViewById(R.id.tvItemUnit);
+            carbonPointView = itemView.findViewById(R.id.tvCarbonPoint);
             priceView = itemView.findViewById(R.id.tvItemPrice);
             oldPriceView = itemView.findViewById(R.id.tvItemOldPrice);
             decreaseView = itemView.findViewById(R.id.tvDecreaseQuantity);
@@ -72,12 +81,27 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         private void bind(CartItemUiModel item, CartItemActionListener listener, boolean isLastItem) {
             checkboxView.setImageResource(item.isChecked ? R.drawable.ic_checkbox_checked : R.drawable.ic_checkbox_uncheck);
-            productView.setImageResource(item.imageResId);
+            
+            Glide.with(itemView.getContext())
+                    .load(item.imageUrl)
+                    .placeholder(R.drawable.ic_vegetable)
+                    .into(productView);
+
             nameView.setText(item.name);
-            unitView.setText(item.unit);
+            unitView.setText(item.selectedWeight);
+            if (carbonPointView != null) {
+                carbonPointView.setText(String.format(Locale.US, "Carbon: %.1f", item.carbonSavingPoint));
+            }
             priceView.setText(item.priceText);
-            oldPriceView.setText(item.oldPriceText);
-            oldPriceView.setPaintFlags(oldPriceView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            
+            if (item.price >= item.oldPrice) {
+                oldPriceView.setVisibility(View.GONE);
+            } else {
+                oldPriceView.setVisibility(View.VISIBLE);
+                oldPriceView.setText(item.oldPriceText);
+                oldPriceView.setPaintFlags(oldPriceView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            }
+
             quantityView.setText(String.valueOf(item.quantity));
             dividerView.setVisibility(isLastItem ? View.GONE : View.VISIBLE);
 
@@ -118,34 +142,38 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     }
 
     public static final class CartItemUiModel {
+        public final String sku;
         public final String name;
-        public final String unit;
-        public final int price;
-        public final int oldPrice;
+        public final String selectedWeight;
+        public final double carbonSavingPoint;
+        public final long price;
+        public final long oldPrice;
         public final String priceText;
         public final String oldPriceText;
-        public final int imageResId;
+        public final String imageUrl;
         public boolean isChecked;
         public int quantity;
 
-        public CartItemUiModel(String name, String unit, int price, int oldPrice, int imageResId, int quantity) {
+        public CartItemUiModel(String sku, String name, String selectedWeight, double carbonSavingPoint, long price, long oldPrice, String imageUrl, int quantity) {
+            this.sku = sku;
             this.name = name;
-            this.unit = unit;
+            this.selectedWeight = selectedWeight;
+            this.carbonSavingPoint = carbonSavingPoint;
             this.price = price;
             this.oldPrice = oldPrice;
             this.priceText = formatCurrency(price);
             this.oldPriceText = formatCurrency(oldPrice);
-            this.imageResId = imageResId;
+            this.imageUrl = imageUrl;
             this.quantity = quantity;
             this.isChecked = true;
         }
 
-        public int getLineTotal() {
+        public long getLineTotal() {
             return price * quantity;
         }
 
-        private static String formatCurrency(int amount) {
-            return String.format(Locale.US, "%,d", amount).replace(',', '.') + "\u0111";
+        private static String formatCurrency(long amount) {
+            return String.format(Locale.US, "%,d", amount).replace(',', '.') + "đ";
         }
     }
 }

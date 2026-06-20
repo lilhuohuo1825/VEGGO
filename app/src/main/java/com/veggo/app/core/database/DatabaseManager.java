@@ -9,8 +9,8 @@ import com.veggo.app.assets.AssetFiles;
 
 public final class DatabaseManager {
     public static final String DATABASE_NAME = "veggo.db";
-    public static final int DATABASE_VERSION = 33;
-    public static final int ASSET_SEED_VERSION = 34;
+    public static final int DATABASE_VERSION = 36;
+    public static final int ASSET_SEED_VERSION = 36;
 
     private DatabaseManager() {
     }
@@ -148,7 +148,9 @@ public final class DatabaseManager {
                         + ProductColumns.FAT_CONTENT + " TEXT, "
                         + ProductColumns.SKU + " TEXT, "
                         + ProductColumns.CATEGORY_ID + " TEXT, "
-                        + ProductColumns.SUBCATEGORY_ID + " TEXT"
+                        + ProductColumns.SUBCATEGORY_ID + " TEXT, "
+                        + "weightOptionsJson TEXT, "
+                        + "carbonSavingPoint REAL NOT NULL DEFAULT 0.0"
                         + ")";
 
         public static final String CREATE_CART_ITEMS_TABLE =

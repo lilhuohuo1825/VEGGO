@@ -24,6 +24,7 @@
     <string name="related_recipes">Công thức liên quan</string>
     <string name="reviews_ratings">Đánh giá &amp; nhận xét</string>
     <string name="add_to_cart">Thêm vào giỏ</string>
+    <string name="add_to_cart_success">Đã thêm vào giỏ hàng thành công!</string>
     <string name="cart_title_format">Giỏ hàng (%1$d)</string>
     <string name="cart_checkout_format">Mua hàng (%1$d)</string>
     <string name="buy_now">Mua ngay</string>
