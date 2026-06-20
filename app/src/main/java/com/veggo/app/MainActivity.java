@@ -1,10 +1,13 @@
 package com.veggo.app;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
@@ -30,6 +33,40 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private ComponentBottomNavBinding bottomNavBinding;
+    private Tab currentTab;
+    private android.net.Uri cameraImageUri = null;
+    private boolean isScanReceiptMode = true;
+
+    private final androidx.activity.result.ActivityResultLauncher<String> notificationPermLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                // Đã xử lý kết quả xin quyền thông báo, không cần làm gì thêm
+            });
+
+    private final androidx.activity.result.ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && cameraImageUri != null) {
+                    Intent intent = new Intent(this, AddFridgeIngredientActivity.class);
+                    if (isScanReceiptMode) {
+                        intent.putExtra("EXTRA_AI_IMAGE_URI", cameraImageUri.toString());
+                    } else {
+                        intent.putExtra("EXTRA_AI_INGREDIENT_URI", cameraImageUri.toString());
+                    }
+                    startActivity(intent);
+                }
+            }
+    );
+
+    private final androidx.activity.result.ActivityResultLauncher<String[]> cameraPermLauncher = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+            perms -> {
+                if (Boolean.TRUE.equals(perms.get(android.Manifest.permission.CAMERA))) {
+                    launchCamera();
+                } else {
+                    android.widget.Toast.makeText(this, "Cần cấp quyền camera để chụp ảnh", android.widget.Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,12 +93,21 @@ public class MainActivity extends AppCompatActivity {
         // Seed database from JSON assets if needed
         com.veggo.app.core.database.AssetDatabaseSeeder.seedIfNeeded(this);
 
+        // Xin quyền POST_NOTIFICATIONS trên Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                notificationPermLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+
         if (savedInstanceState == null) {
             Intent intent = getIntent();
             if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
                 openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
             } else {
-                openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+                boolean fromExternal = intent.getBooleanExtra("from_external", false);
+                openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)), fromExternal);
             }
         }
     }
@@ -73,7 +119,8 @@ public class MainActivity extends AppCompatActivity {
         if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
             openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
         } else {
-            openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)));
+            boolean fromExternal = intent.getBooleanExtra("from_external", false);
+            openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)), fromExternal);
         }
     }
 
@@ -97,45 +144,102 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openTab(Tab tab) {
-        setBottomNavVisible(true);
-        setSelectedTab(tab);
+        openTab(tab, false);
+    }
 
-        Fragment fragment;
+    private void openTab(Tab tab, boolean fromExternal) {
+        setBottomNavVisible(true);
+
+        boolean isAlreadyInHome = (currentTab == Tab.HOME);
+        
+        if (tab == Tab.HOME && isAlreadyInHome) {
+            if (!fromExternal) {
+                Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("HOME_FRAGMENT");
+                if (currentFragment instanceof HomeFragment) {
+                    ((HomeFragment) currentFragment).onHomeButtonPressed();
+                }
+            }
+            return;
+        }
+
+        if (tab == Tab.COMMUNITY) {
+            openCommunityScreen();
+            return;
+        }
+
+        setSelectedTab(tab);
+        this.currentTab = tab;
+
+        FragmentManager fm = getSupportFragmentManager();
+        fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+        
+        for (Fragment f : fm.getFragments()) {
+            if (f != null && f.getId() == R.id.mainFragmentContainer && !f.isHidden()) {
+                ft.hide(f);
+            }
+        }
+
+        String tag = tab.name();
+        Fragment targetFragment = fm.findFragmentByTag(tag);
+
         switch (tab) {
-            case COMMUNITY:
-                openCommunityScreen();
-                return;
             case CART:
                 openCartScreen();
                 return;
             case ORDERS:
-                fragment = OrderHistoryFragment.newInstance(false);
+                if (targetFragment == null) {
+                    targetFragment = OrderHistoryFragment.newInstance(false);
+                    ft.add(R.id.mainFragmentContainer, targetFragment, tag);
+                } else {
+                    ft.show(targetFragment);
+                }
                 break;
             case ACCOUNT:
-                fragment = new AppPreferences(this).isLoggedIn()
-                        ? new ProfileLoggedInFragment()
-                        : new ProfileFragment();
+                boolean isLoggedIn = new AppPreferences(this).isLoggedIn();
+                if (targetFragment != null) {
+                    boolean isCorrectClass = (isLoggedIn && targetFragment instanceof ProfileLoggedInFragment) || 
+                                             (!isLoggedIn && targetFragment instanceof ProfileFragment);
+                    if (!isCorrectClass) {
+                        ft.remove(targetFragment);
+                        targetFragment = null;
+                    }
+                }
+                if (targetFragment == null) {
+                    targetFragment = isLoggedIn ? new ProfileLoggedInFragment() : new ProfileFragment();
+                    ft.add(R.id.mainFragmentContainer, targetFragment, tag);
+                } else {
+                    ft.show(targetFragment);
+                }
                 break;
             case HOME:
             default:
-                fragment = new HomeFragment();
+                tag = "HOME_FRAGMENT";
+                targetFragment = fm.findFragmentByTag(tag);
+                if (targetFragment == null) {
+                    targetFragment = new HomeFragment();
+                    ft.add(R.id.mainFragmentContainer, targetFragment, tag);
+                } else {
+                    ft.show(targetFragment);
+                }
                 break;
         }
 
-        getSupportFragmentManager()
-                .popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mainFragmentContainer, fragment)
-                .commit();
+        ft.commit();
     }
 
     public void openCartScreen() {
         setSelectedTab(Tab.HOME);
         setBottomNavVisible(false);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mainFragmentContainer, new CartFragment())
+        FragmentManager fm = getSupportFragmentManager();
+        androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+        for (Fragment f : fm.getFragments()) {
+            if (f != null && f.getId() == R.id.mainFragmentContainer && !f.isHidden()) {
+                ft.hide(f);
+            }
+        }
+        ft.add(R.id.mainFragmentContainer, new CartFragment())
                 .addToBackStack("cart")
                 .commit();
     }
@@ -153,9 +257,15 @@ public class MainActivity extends AppCompatActivity {
             args.putString(com.veggo.app.presentation.category.CategoryDetailFragment.ARG_SUBCATEGORY_ID, subcategoryId);
         }
         fragment.setArguments(args);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mainFragmentContainer, fragment)
+        
+        FragmentManager fm = getSupportFragmentManager();
+        androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+        for (Fragment f : fm.getFragments()) {
+            if (f != null && f.getId() == R.id.mainFragmentContainer && !f.isHidden()) {
+                ft.hide(f);
+            }
+        }
+        ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category_detail")
                 .commit();
     }
@@ -171,9 +281,14 @@ public class MainActivity extends AppCompatActivity {
             args.putString(com.veggo.app.presentation.category.CategoryFragment.ARG_CATEGORY_ID, categoryId);
             fragment.setArguments(args);
         }
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mainFragmentContainer, fragment)
+        FragmentManager fm = getSupportFragmentManager();
+        androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+        for (Fragment f : fm.getFragments()) {
+            if (f != null && f.getId() == R.id.mainFragmentContainer && !f.isHidden()) {
+                ft.hide(f);
+            }
+        }
+        ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category")
                 .commit();
     }
@@ -183,14 +298,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void openScanScreen() {
-        startActivity(new Intent(this, AddFridgeIngredientActivity.class));
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        dialog.setContentView(R.layout.dialog_scan_options);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        dialog.findViewById(R.id.dialogOptionScanReceipt).setOnClickListener(v -> {
+            dialog.dismiss();
+            isScanReceiptMode = true;
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                launchCamera();
+            } else {
+                cameraPermLauncher.launch(new String[]{android.Manifest.permission.CAMERA});
+            }
+        });
+
+        dialog.findViewById(R.id.dialogOptionScanIngredient).setOnClickListener(v -> {
+            dialog.dismiss();
+            isScanReceiptMode = false;
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                launchCamera();
+            } else {
+                cameraPermLauncher.launch(new String[]{android.Manifest.permission.CAMERA});
+            }
+        });
+
+        dialog.show();
+    }
+
+    private void launchCamera() {
+        try {
+            String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
+            java.io.File storageDir = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES);
+            java.io.File photoFile = java.io.File.createTempFile("FRIDGE_" + timeStamp + "_", ".jpg", storageDir);
+            cameraImageUri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+            Intent intent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraImageUri);
+            cameraLauncher.launch(intent);
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            android.widget.Toast.makeText(this, "Không thể mở camera", android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void openCommunityScreen() {
         getSupportFragmentManager()
                 .popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-        setSelectedTab(Tab.COMMUNITY);
         startActivity(new Intent(this, CommunityHomeActivity.class));
+        overridePendingTransition(0, 0);
     }
 
     private void setSelectedTab(Tab tab) {

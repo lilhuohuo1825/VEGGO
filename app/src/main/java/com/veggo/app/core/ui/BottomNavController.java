@@ -50,8 +50,10 @@ public final class BottomNavController {
         }
         Intent intent = new Intent(activity, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, targetItemId);
+        intent.putExtra("from_external", true);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         activity.startActivity(intent);
+        activity.overridePendingTransition(0, 0);
     }
 
     private static void openCommunity(Activity activity, int selectedItemId) {
@@ -59,6 +61,7 @@ public final class BottomNavController {
             return;
         }
         activity.startActivity(new Intent(activity, CommunityHomeActivity.class));
+        activity.overridePendingTransition(0, 0);
     }
 
     private static void applyState(Activity activity, ComponentBottomNavBinding binding, int selectedItemId) {

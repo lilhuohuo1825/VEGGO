@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Sticky Product Tabs — hiển thị khi người dùng lướt qua phần Product Tabs trong ScrollView.
+    Nằm ngay bên dưới layout_home_sticky_header (top = 64dp).
+    visibility="gone" lúc khởi tạo; HomeFragment điều khiển show/hide.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/neutral_10"
+    android:elevation="2dp"
+    android:visibility="gone"
+    android:layout_marginTop="64dp">
+
+    <!-- Tab bar -->
+    <HorizontalScrollView
+        android:id="@+id/stickyTabsHsv"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:scrollbars="none"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp">
+
+            <!-- Tab 1: Phổ biến -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <TextView
+                    android:id="@+id/stickyTabPopular"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:text="Phổ biến"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp" />
+                <View
+                    android:id="@+id/stickyTabPopularIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="visible" />
+            </LinearLayout>
+
+            <!-- Tab 2: Bán chạy -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <TextView
+                    android:id="@+id/stickyTabTrending"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:text="Bán chạy"
+                    android:textColor="@color/neutral_60"
+                    android:textSize="14sp" />
+                <View
+                    android:id="@+id/stickyTabTrendingIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 3: Mới nhất -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <TextView
+                    android:id="@+id/stickyTabNewest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:text="Mới nhất"
+                    android:textColor="@color/neutral_60"
+                    android:textSize="14sp" />
+                <View
+                    android:id="@+id/stickyTabNewestIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 4: Giá tốt (toggle) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <LinearLayout
+                    android:id="@+id/stickyTabBestPriceContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
+                    <TextView
+                        android:id="@+id/stickyTabBestPrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
+                        android:gravity="center"
+                        android:text="Giá"
+                        android:textColor="@color/neutral_60"
+                        android:textSize="14sp" />
+                    <LinearLayout
+                        android:id="@+id/stickyPriceArrowGroup"
+                        android:layout_width="12dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageView
+                            android:id="@+id/stickyImgPriceArrowUp"
+                            android:layout_width="12dp"
+                            android:layout_height="9dp"
+                            android:src="@drawable/ic_chevron_up"
+                            app:tint="@color/neutral_60" />
+                        <ImageView
+                            android:id="@+id/stickyImgPriceArrowDown"
+                            android:layout_width="12dp"
+                            android:layout_height="9dp"
+                            android:src="@drawable/ic_chevron_down"
+                            app:tint="@color/neutral_60" />
+                    </LinearLayout>
+                </LinearLayout>
+                <View
+                    android:id="@+id/stickyTabBestPriceIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 5: Đánh giá cao -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <TextView
+                    android:id="@+id/stickyTabTopRated"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:text="Đánh giá cao"
+                    android:textColor="@color/neutral_60"
+                    android:textSize="14sp" />
+                <View
+                    android:id="@+id/stickyTabTopRatedIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+</LinearLayout>

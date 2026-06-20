@@ -111,13 +111,17 @@ public final class AssetScreenData {
                 if (ordersResponse.isSuccessful() && ordersResponse.body() != null) {
                     for (com.veggo.app.data.remote.dto.OrderDto orderDto : ordersResponse.body()) {
                         AssetModels.Order order = new AssetModels.Order();
-                        order.orderId = orderDto.getId();
-                        order.customerId = orderDto.getUserId();
+                        // Backend trả về orderId (ORD...) trong field "orderId", _id trong "_id"
+                        order.orderId = hasText(orderDto.getOrderId()) ? orderDto.getOrderId() : orderDto.getId();
+                        order.customerId = orderDto.getUserId(); // CustomerID (CUS000XXX)
+                        order.paymentMethod = orderDto.getPaymentMethod();
                         order.subtotal = orderDto.getSubtotal();
                         order.shippingFee = orderDto.getShippingFee();
+                        order.shippingDiscount = orderDto.getShippingDiscount();
+                        order.discount = orderDto.getDiscount();
                         order.totalAmount = orderDto.getTotal();
                         order.status = orderDto.getStatus();
-                        
+
                         order.createdAt = new AssetModels.MongoDate();
                         order.createdAt.date = orderDto.getCreatedAt();
 
@@ -125,37 +129,43 @@ public final class AssetScreenData {
 
                         // Detail
                         AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
-                        detail.orderId = orderDto.getId();
+                        detail.orderId = order.orderId;
                         detail.items = new ArrayList<>();
-                        for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
-                            AssetModels.OrderDetailItem item = new AssetModels.OrderDetailItem();
-                            item.productName = itemDto.getName();
-                            item.price = itemDto.getPrice();
-                            item.quantity = itemDto.getQuantity();
-                            item.image = itemDto.getImageUrl();
-                            item.unit = "kg";
-                            detail.items.add(item);
+                        if (orderDto.getItems() != null) {
+                            for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
+                                AssetModels.OrderDetailItem item = new AssetModels.OrderDetailItem();
+                                item.productName = itemDto.getName();
+                                item.price = itemDto.getPrice();
+                                item.originalPrice = itemDto.getOriginalPrice() > 0
+                                        ? itemDto.getOriginalPrice() : itemDto.getPrice();
+                                item.quantity = itemDto.getQuantity();
+                                item.image = itemDto.getImageUrl();
+                                item.sku = itemDto.getSku();
+                                item.unit = hasText(itemDto.getUnit()) ? itemDto.getUnit() : "kg";
+                                detail.items.add(item);
+                            }
                         }
 
                         Map<String, Object> addrMap = orderDto.getShippingAddress();
-                        if (addrMap != null) {
+                        if (addrMap != null && !addrMap.isEmpty()) {
                             AssetModels.ShippingInfo info = new AssetModels.ShippingInfo();
                             info.fullName = getMapString(addrMap, "receiverName");
-                            if (info.fullName == null || info.fullName.isEmpty()) {
+                            if (!hasText(info.fullName)) {
                                 info.fullName = getMapString(addrMap, "fullName");
                             }
                             info.phone = getMapString(addrMap, "phone");
                             info.email = getMapString(addrMap, "email");
-                            
+                            info.warehouseId = orderDto.getWarehouseId();
+
                             AssetModels.ShippingAddress addr = new AssetModels.ShippingAddress();
                             addr.detail = getMapString(addrMap, "line1");
-                            if (addr.detail == null || addr.detail.isEmpty()) {
+                            if (!hasText(addr.detail)) {
                                 addr.detail = getMapString(addrMap, "detail");
                             }
                             addr.ward = getMapString(addrMap, "ward");
                             addr.district = getMapString(addrMap, "district");
                             addr.city = getMapString(addrMap, "city");
-                            
+
                             info.address = addr;
                             detail.shippingInfo = info;
                         }
@@ -594,11 +604,8 @@ public final class AssetScreenData {
         
         sheet.findViewById(R.id.orderOptionHistory).setOnClickListener(v -> {
             dialog.dismiss();
-            if (!(context instanceof com.veggo.app.presentation.order.OrderHistoryActivity)) {
-                android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.OrderHistoryActivity.class);
-                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                context.startActivity(intent);
-            }
+            android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.OrderHistoryActivity.class);
+            context.startActivity(intent);
         });
         sheet.findViewById(R.id.orderOptionRecurring).setOnClickListener(v -> {
             dialog.dismiss();

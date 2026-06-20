@@ -39,27 +39,26 @@
             android:textStyle="bold" />
 
         <FrameLayout
-            android:id="@+id/smartFridgeAddButton"
+            android:id="@+id/smartFridgeHistoryButton"
             android:layout_width="42dp"
             android:layout_height="42dp"
-            android:background="@drawable/bg_community_circle"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/fridge_add_title"
+            android:contentDescription="Lịch sử mua hàng"
             android:clipChildren="false"
             android:clipToPadding="false">
             <androidx.appcompat.widget.AppCompatImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
-                android:src="@drawable/icon_plus"
-                android:contentDescription="@string/fridge_add_title" />
+                android:src="@drawable/ic_order_history_option"
+                android:contentDescription="Lịch sử mua hàng" />
         </FrameLayout>
     </LinearLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -190,11 +189,11 @@
                 android:textSize="@dimen/text_lg"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/fridgeInventoryList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:nestedScrollingEnabled="false" />
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

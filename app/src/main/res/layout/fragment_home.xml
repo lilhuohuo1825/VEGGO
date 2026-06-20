@@ -97,21 +97,16 @@
                     android:src="@drawable/ic_search"
                     app:tint="@color/primary_hover" />
 
-                <EditText
+                <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
+                    android:layout_marginEnd="6dp"
                     android:layout_weight="1"
                     android:fontFamily="@font/inter"
-                    android:hint="Tìm kiếm"
-                    android:textColorHint="#66167728"
-                    android:backgroundTint="@color/primary_bg"
-                    android:textColor="@color/neutral_100"
-                    android:textSize="16sp"
-                    android:focusable="false"
-                    android:clickable="false"
-                    android:longClickable="false"
-                    android:cursorVisible="false" />
+                    android:text="Tìm kiếm"
+                    android:textColor="#66167728"
+                    android:textSize="16sp" />
 
                 <FrameLayout
                     android:layout_width="36dp"
@@ -238,12 +233,13 @@
                     android:id="@+id/btnViewMoreCategories"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawablePadding="6dp"
+                    android:drawablePadding="4dp"
                     android:fontFamily="@font/inter"
                     android:textStyle="normal"
                     android:text="Xem thêm"
                     android:textColor="@color/primary_main"
                     android:textSize="14sp"
+                    android:gravity="center_vertical"
                     android:clickable="true"
                     android:focusable="true"
                     android:background="?attr/selectableItemBackgroundBorderless" />
@@ -294,12 +290,13 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:drawablePadding="6dp"
+                        android:drawablePadding="4dp"
                         android:fontFamily="@font/inter"
                         android:textStyle="normal"
                         android:text="Xem thêm"
                         android:textColor="@color/primary_main"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:gravity="center_vertical" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -340,12 +337,12 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawablePadding="6dp"
                     android:fontFamily="@font/inter"
                     android:textStyle="normal"
                     android:text="Xem thêm"
                     android:textColor="@color/primary_main"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:gravity="center_vertical" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -362,7 +359,7 @@
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_home_recipe" />
 
-            <!-- Product Tabs -->
+            <!-- Product Tabs (4 tabs, kết nối với /api/products/home?tab=...) -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -378,30 +375,32 @@
                     android:paddingStart="18dp"
                     android:paddingEnd="18dp">
 
+                    <!-- Tab 1: Phổ biến (popular) – active by default -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:gravity="bottom|center_horizontal">
                         <TextView
-                            android:id="@+id/tabToday"
+                            android:id="@+id/tabPopular"
                             android:layout_width="wrap_content"
                             android:layout_height="0dp"
                             android:layout_weight="1"
                             android:fontFamily="@font/inter"
                             android:textStyle="bold"
                             android:gravity="center"
-                            android:text="Today’s choices"
+                            android:text="Phổ biến"
                             android:textColor="@color/primary_main"
                             android:textSize="14sp" />
                         <View
-                            android:id="@+id/tabTodayIndicator"
+                            android:id="@+id/tabPopularIndicator"
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
                             android:background="@drawable/bg_order_tab_indicator"
                             android:visibility="visible" />
                     </LinearLayout>
 
+                    <!-- Tab 2: Bán chạy (trending) -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
@@ -409,47 +408,24 @@
                         android:orientation="vertical"
                         android:gravity="bottom|center_horizontal">
                         <TextView
-                            android:id="@+id/tabDiscount"
+                            android:id="@+id/tabTrending"
                             android:layout_width="wrap_content"
                             android:layout_height="0dp"
                             android:layout_weight="1"
                             android:fontFamily="@font/inter"
                             android:gravity="center"
-                            android:text="Limited discount!"
+                            android:text="Bán chạy"
                             android:textColor="@color/neutral_60"
                             android:textSize="14sp" />
                         <View
-                            android:id="@+id/tabDiscountIndicator"
+                            android:id="@+id/tabTrendingIndicator"
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
                             android:background="@drawable/bg_order_tab_indicator"
                             android:visibility="invisible" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="24dp"
-                        android:orientation="vertical"
-                        android:gravity="bottom|center_horizontal">
-                        <TextView
-                            android:id="@+id/tabCheapest"
-                            android:layout_width="wrap_content"
-                            android:layout_height="0dp"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/inter"
-                            android:gravity="center"
-                            android:text="Cheapest!"
-                            android:textColor="@color/neutral_60"
-                            android:textSize="14sp" />
-                        <View
-                            android:id="@+id/tabCheapestIndicator"
-                            android:layout_width="match_parent"
-                            android:layout_height="8dp"
-                            android:background="@drawable/bg_order_tab_indicator"
-                            android:visibility="invisible" />
-                    </LinearLayout>
-
+                    <!-- Tab 3: Mới nhất (newest) -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
@@ -463,7 +439,7 @@
                             android:layout_weight="1"
                             android:fontFamily="@font/inter"
                             android:gravity="center"
-                            android:text="Newest"
+                            android:text="Mới nhất"
                             android:textColor="@color/neutral_60"
                             android:textSize="14sp" />
                         <View
@@ -474,6 +450,62 @@
                             android:visibility="invisible" />
                     </LinearLayout>
 
+                    <!-- Tab 4: Giá tốt (toggle cao/thấp) -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="24dp"
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <LinearLayout
+                            android:id="@+id/tabBestPriceContainer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackgroundBorderless">
+                            <TextView
+                                android:id="@+id/tabBestPrice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:gravity="center"
+                                android:text="Giá"
+                                android:textColor="@color/neutral_60"
+                                android:textSize="14sp" />
+                            <LinearLayout
+                                android:id="@+id/homePriceArrowGroup"
+                                android:layout_width="12dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="3dp"
+                                android:orientation="vertical"
+                                android:gravity="center">
+                                <ImageView
+                                    android:id="@+id/homeImgPriceArrowUp"
+                                    android:layout_width="12dp"
+                                    android:layout_height="9dp"
+                                    android:src="@drawable/ic_chevron_up"
+                                    app:tint="@color/neutral_60" />
+                                <ImageView
+                                    android:id="@+id/homeImgPriceArrowDown"
+                                    android:layout_width="12dp"
+                                    android:layout_height="9dp"
+                                    android:src="@drawable/ic_chevron_down"
+                                    app:tint="@color/neutral_60" />
+                            </LinearLayout>
+                        </LinearLayout>
+                        <View
+                            android:id="@+id/tabBestPriceIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
+
+                    <!-- Tab 5: Đánh giá cao (top_rated) -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
@@ -481,17 +513,17 @@
                         android:orientation="vertical"
                         android:gravity="bottom|center_horizontal">
                         <TextView
-                            android:id="@+id/tabPopular"
+                            android:id="@+id/tabTopRated"
                             android:layout_width="wrap_content"
                             android:layout_height="0dp"
                             android:layout_weight="1"
                             android:fontFamily="@font/inter"
                             android:gravity="center"
-                            android:text="Popular"
+                            android:text="Đánh giá cao"
                             android:textColor="@color/neutral_60"
                             android:textSize="14sp" />
                         <View
-                            android:id="@+id/tabPopularIndicator"
+                            android:id="@+id/tabTopRatedIndicator"
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
                             android:background="@drawable/bg_order_tab_indicator"
@@ -505,7 +537,24 @@
                 android:layout_height="1dp"
                 android:background="@color/neutral_30" />
 
+            <!-- Neo cuộn cho danh sách sản phẩm -->
+            <View
+                android:id="@+id/productAnchor"
+                android:layout_width="match_parent"
+                android:layout_height="0dp" />
+
             <!-- Products Grid -->
+            <!-- ProgressBar hiển thị khi đang tải sản phẩm từ API -->
+            <ProgressBar
+                android:id="@+id/progressProducts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp"
+                android:indeterminateTint="@color/primary_main"
+                android:visibility="gone" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvProducts"
                 android:layout_width="match_parent"
@@ -517,12 +566,53 @@
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="2"
                 tools:listitem="@layout/item_product_grid" />
+
+            <!-- Nút "Xem thêm" (tải phân trang) -->
+            <LinearLayout
+                android:id="@+id/btnLoadMore"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Xem thêm"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/ic_chevron_down"
+                    app:tint="@color/primary_main"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="24dp" />
         </LinearLayout>
     </ScrollView>
 
     <include
         android:id="@+id/stickyHeader"
         layout="@layout/layout_home_sticky_header" />
+
+    <!-- Sticky Product Tabs – nằm dưới stickyHeader (top=64dp), show khi scroll tới tabs section -->
+    <include
+        android:id="@+id/stickyTabs"
+        layout="@layout/layout_home_sticky_tabs" />
 
     <!-- Floating Chatbot Icon -->
     <ImageView

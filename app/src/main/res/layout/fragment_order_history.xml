@@ -323,6 +323,20 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/orderHistoryAddAllToFridgeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="@dimen/spacing_md"
+                    android:background="@drawable/bg_order_primary_button"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="Thêm tất cả đơn vào tủ lạnh"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_sm"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
                 <include layout="@layout/item_order_pending" />
                 <include layout="@layout/item_order_shipping" />
                 <include layout="@layout/item_order_delivered" />

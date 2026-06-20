@@ -4,7 +4,18 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- Cấp quyền để đặt thông báo (AlarmManager) chính xác (Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Hoặc dùng quyền này nếu app là app đồng hồ/lịch (Android 13+). Thông thường chỉ cần SCHEDULE_EXACT_ALARM -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".VeggoApplication"
@@ -25,6 +36,18 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".core.notification.FridgeExpiryNotificationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.veggo.app.FRIDGE_EXPIRY_CHECK" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".presentation.promotion.PromotionDetailActivity"
+            android:exported="false" />
         <activity
             android:name=".presentation.chatbot.ChatbotActivity"
             android:exported="false" />
@@ -45,6 +68,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.profile.AddFridgeIngredientActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.FridgeIngredientDetailActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.profile.SmartFridgeActivity"
@@ -193,6 +219,16 @@
         <activity
             android:name=".presentation.search.SearchActivity"
             android:exported="true" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true" />

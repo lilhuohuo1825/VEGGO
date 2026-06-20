@@ -202,15 +202,33 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_lg"
-                android:fontFamily="@font/encodesans_bold"
-                android:text="@string/order_detail_products"
-                android:textColor="@color/primary_hover"
-                android:textSize="@dimen/text_lg"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:text="@string/order_detail_products"
+                    android:textColor="@color/primary_hover"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <CheckBox
+                    android:id="@+id/orderDetailSelectAllCheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:text="Chọn tất cả"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm"
+                    android:buttonTint="@color/primary_main"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/orderDetailProducts"
@@ -413,6 +431,20 @@
             android:gravity="center"
             android:text="@string/orders_return_refund"
             android:textColor="@color/primary_main"
+            android:textSize="@dimen/text_sm"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/orderDetailAddToFridgeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="140dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Thêm vào tủ lạnh"
+            android:textColor="@color/background_main"
             android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 

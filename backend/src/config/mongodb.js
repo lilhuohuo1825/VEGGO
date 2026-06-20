@@ -7,7 +7,17 @@ async function connectMongo() {
   }
 
   mongoose.set('strictQuery', true);
-  await mongoose.connect(uri);
+  try {
+    await mongoose.connect(uri);
+  } catch (error) {
+    if (error.message && error.message.includes('querySrv ECONNREFUSED')) {
+      throw new Error(
+        'MongoDB Atlas SRV DNS lookup was refused. Switch MONGODB_URI to the direct mongodb:// host list from backend/.env.example, or use a DNS server/network that allows SRV lookups.'
+      );
+    }
+
+    throw error;
+  }
   console.log('Connected to MongoDB Atlas');
 }
 

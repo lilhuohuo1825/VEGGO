@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/rlHeader"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/white"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <ImageView
+            android:id="@+id/imgBack"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_centerVertical="true"
+            android:padding="5dp"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_hover" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/inter"
+            android:text="@string/promotion_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/imgShare"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:padding="5dp"
+            android:src="@drawable/ic_share_green"
+            app:tint="@color/primary_hover" />
+
+    </RelativeLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/rlHeader">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgBanner"
+                android:layout_width="match_parent"
+                android:layout_height="126dp"
+                android:layout_marginStart="18dp"
+                android:elevation="2dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="18dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/banner_nam_rom"
+                app:shapeAppearanceOverlay="@style/RoundedCornersImage" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
+                android:background="@drawable/bg_tag_green"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_voucher"
+                    app:tint="@color/primary_main" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:text="@string/promotion_tag_voucher"
+                    android:textColor="@color/primary_main"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp">
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/tvCode"
+                    android:layout_marginEnd="16dp"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="@string/promotion_sample_name"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/btnCopyCode"
+                    android:layout_marginEnd="8dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_promotion_code_dashed"
+                    android:fontFamily="@font/inter_bold"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/promotion_sample_code"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:id="@+id/btnCopyCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_alignTop="@id/tvCode"
+                    android:layout_alignBottom="@id/tvCode"
+                    android:background="@drawable/bg_copy_button"
+                    android:src="@drawable/ic_copy"
+                    android:padding="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Copy code" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/tvDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
+                android:fontFamily="@font/inter_regular"
+                android:text="@string/promotion_sample_desc"
+                android:textColor="@color/neutral_80"
+                android:textSize="14sp" />
+
+            <!-- Summary Box -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
+                android:background="@drawable/bg_white_radius_10"
+                android:elevation="0dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_promotiontag"
+                        app:tint="@color/primary_hover" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvDiscount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/encodesans"
+                        android:textStyle="bold"
+                        android:text="@string/promotion_sample_discount"
+                        android:textColor="@color/primary_hover"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/tvMinOrder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="@string/promotion_sample_min_order"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Details List -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/white"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    style="@style/PromotionDetailRow">
+                    <TextView
+                        style="@style/PromotionDetailLabel"
+                        android:text="@string/promotion_label_time" />
+                    <TextView
+                        android:id="@+id/tvTime"
+                        style="@style/PromotionDetailValue"
+                        android:text="@string/promotion_sample_time" />
+                </LinearLayout>
+
+                <View style="@style/PromotionDivider" />
+
+                <LinearLayout
+                    style="@style/PromotionDetailRow">
+                    <TextView
+                        style="@style/PromotionDetailLabel"
+                        android:text="@string/promotion_label_usage" />
+                    <TextView
+                        android:id="@+id/tvUsage"
+                        style="@style/PromotionDetailValue"
+                        android:text="@string/promotion_sample_usage" />
+                </LinearLayout>
+
+                <View style="@style/PromotionDivider" />
+
+                <LinearLayout
+                    style="@style/PromotionDetailRow">
+                    <TextView
+                        style="@style/PromotionDetailLabel"
+                        android:text="@string/promotion_label_limit_per_user" />
+                    <TextView
+                        android:id="@+id/tvLimitPerUser"
+                        style="@style/PromotionDetailValue"
+                        android:text="@string/promotion_sample_limit_per_user" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Product Grid Title (always visible) -->
+            <TextView
+                android:id="@+id/tvProductGridTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="18dp"
+                android:layout_marginTop="14dp"
+                android:fontFamily="@font/inter"
+                android:textStyle="bold"
+                android:text="Sản phẩm áp dụng"
+                android:textColor="@color/neutral_100"
+                android:textSize="18sp" />
+
+            <!-- Product Tabs Wrapper — shown only for PROMO010/011 -->
+            <LinearLayout
+                android:id="@+id/layoutProductTabs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@color/white"
+                android:visibility="gone"
+                android:layout_marginTop="12dp">
+
+                <include
+                    android:id="@+id/includedProductTabs"
+                    layout="@layout/layout_home_sticky_tabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="visible" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/neutral_30" />
+
+                <!-- Neo cuộn cho danh sách sản phẩm -->
+                <View
+                    android:id="@+id/productAnchor"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp" />
+            </LinearLayout>
+
+            <!-- Product Grid -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvPromotionProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="8dp"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- Load More Button -->
+            <LinearLayout
+                android:id="@+id/btnLoadMoreContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/btnLoadMore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Xem thêm"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/ic_chevron_down"
+                    app:tint="@color/primary_main"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Sticky Product Tabs (floating) — shown only when scroll position passes inline tabs -->
+    <include
+        android:id="@+id/stickyProductTabs"
+        layout="@layout/layout_home_sticky_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rlHeader"
+        android:layout_marginTop="0dp"
+        android:elevation="2dp"
+        android:visibility="gone" />
+
+</RelativeLayout>

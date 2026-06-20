@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="promotion_title">Khuyến mãi</string>
+    <string name="promotion_tag_voucher">Mã giảm giá</string>
+    <string name="promotion_sample_name">Giải Nhiệt Mùa Hè - Giảm 10%\nDanh Mục Nấm Rơm</string>
+    <string name="promotion_sample_code">HEMROW10</string>
+    <string name="promotion_sample_desc">Ưu đãi thanh mát mùa hè dành riêng cho sản phẩm nấm rơm sạch</string>
+    <string name="promotion_label_discount">Giảm giá</string>
+    <string name="promotion_sample_discount">10%</string>
+    <string name="promotion_sample_max_discount">Tối đa 0đ</string>
+    <string name="promotion_sample_min_order">Không giới hạn giá trị\nđơn hàng tối thiểu</string>
+    <string name="promotion_label_time">Thời gian áp dụng: </string>
+    <string name="promotion_sample_time">15/06/2026 - 15/07/2026</string>
+    <string name="promotion_label_usage">Số lượt sử dụng: </string>
+    <string name="promotion_sample_usage">3.000 lượt</string>
+    <string name="promotion_label_limit_per_user">Giới hạn mỗi người dùng: </string>
+    <string name="promotion_sample_limit_per_user">2 lượt</string>
+    <string name="promotion_label_first_order">Áp dụng cho đơn hàng đầu tiên: </string>
+    <string name="promotion_sample_first_order">Không</string>
+    <string name="promotion_label_scope">Phạm vi áp dụng: </string>
+    <string name="promotion_sample_scope">Danh mục: Nấm rơm</string>
+    <string name="promotion_label_status">Trạng thái: </string>
+    <string name="promotion_sample_status">Đang diễn ra</string>
+    <string name="promotion_btn_start_shopping">MUA SẮM NGAY</string>
+</resources>
