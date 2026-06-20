@@ -11,6 +11,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const userRoutes = require('./routes/userRoutes');
 const communityRoutes = require('./routes/communityRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/blog', blogRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);
@@ -38,6 +40,12 @@ app.use((error, req, res, next) => {
 const port = process.env.PORT || 5001;
 
 connectMongo()
+  .then(() => {
+    if (typeof blogRoutes.ensureBlogLikeFields === 'function') {
+      return blogRoutes.ensureBlogLikeFields();
+    }
+    return null;
+  })
   .then(() => {
     app.listen(port, () => {
       console.log(`VEGGO API running on port ${port}`);

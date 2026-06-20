@@ -15,6 +15,15 @@ import com.veggo.app.R;
 import com.veggo.app.domain.model.Utility;
 
 public class UtilityAdapter extends ListAdapter<Utility, UtilityAdapter.UtilityViewHolder> {
+    private OnUtilityClickListener listener;
+
+    public interface OnUtilityClickListener {
+        void onUtilityClick(Utility utility);
+    }
+
+    public void setOnUtilityClickListener(OnUtilityClickListener listener) {
+        this.listener = listener;
+    }
 
     public UtilityAdapter() {
         super(new DiffUtil.ItemCallback<Utility>() {
@@ -39,7 +48,7 @@ public class UtilityAdapter extends ListAdapter<Utility, UtilityAdapter.UtilityV
 
     @Override
     public void onBindViewHolder(@NonNull UtilityViewHolder holder, int position) {
-        holder.bind(getItem(position));
+        holder.bind(getItem(position), listener);
     }
 
     static class UtilityViewHolder extends RecyclerView.ViewHolder {
@@ -52,11 +61,16 @@ public class UtilityAdapter extends ListAdapter<Utility, UtilityAdapter.UtilityV
             tvUtilityName = itemView.findViewById(R.id.tvUtilityName);
         }
 
-        void bind(Utility utility) {
+        void bind(Utility utility, OnUtilityClickListener listener) {
             tvUtilityName.setText(utility.getName());
             if (utility.getIconRes() != 0) {
                 imgUtility.setImageResource(utility.getIconRes());
             }
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onUtilityClick(utility);
+                }
+            });
         }
     }
 }

@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public final class BlogText {
     private BlogText() {
@@ -31,9 +32,40 @@ public final class BlogText {
         }
         try {
             Date date = Date.from(java.time.Instant.parse(isoDate));
-            return new SimpleDateFormat("dd MMM, yyyy - h:mm a", Locale.ENGLISH).format(date);
+            return new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault()).format(date);
         } catch (Exception exception) {
             return isoDate;
+        }
+    }
+
+    public static String date(String isoDate) {
+        if (isoDate == null || isoDate.trim().isEmpty()) {
+            return "";
+        }
+        try {
+            Date date = Date.from(java.time.Instant.parse(isoDate));
+            return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date);
+        } catch (Exception exception) {
+            return isoDate;
+        }
+    }
+
+    public static String relativeTime(String isoDate) {
+        if (isoDate == null || isoDate.trim().isEmpty()) {
+            return "";
+        }
+        try {
+            long diff = Math.max(0L, System.currentTimeMillis() - java.time.Instant.parse(isoDate).toEpochMilli());
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+            if (minutes < 1) return "vừa xong";
+            if (minutes < 60) return minutes + " phút trước";
+            long hours = TimeUnit.MILLISECONDS.toHours(diff);
+            if (hours < 24) return hours + " giờ trước";
+            long days = TimeUnit.MILLISECONDS.toDays(diff);
+            if (days < 7) return days + " ngày trước";
+            return date(isoDate);
+        } catch (Exception exception) {
+            return date(isoDate);
         }
     }
 

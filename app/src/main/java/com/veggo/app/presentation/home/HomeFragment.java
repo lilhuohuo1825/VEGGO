@@ -109,6 +109,11 @@ public class HomeFragment extends Fragment {
         // Utilities
         utilityAdapter = new UtilityAdapter();
         binding.rvUtilities.setAdapter(utilityAdapter);
+        utilityAdapter.setOnUtilityClickListener(utility -> {
+            if ("5".equals(utility.getId())) {
+                startActivity(new Intent(requireContext(), com.veggo.app.presentation.blog.BlogHomeActivity.class));
+            }
+        });
 
         // Categories
         categoryAdapter = new CategoryAdapter();

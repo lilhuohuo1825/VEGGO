@@ -2,6 +2,7 @@ package com.veggo.app.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "blogs")
@@ -17,6 +18,10 @@ public class BlogEntity {
     private String author;
     private String categoryTag;
     private String content;
+    @Ignore
+    private int likeCount;
+    @Ignore
+    private boolean likedByCurrentUser;
 
     public BlogEntity(
             @NonNull String id,
@@ -58,4 +63,8 @@ public class BlogEntity {
     public void setCategoryTag(String categoryTag) { this.categoryTag = categoryTag; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public int getLikeCount() { return likeCount; }
+    public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
+    public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
+    public void setLikedByCurrentUser(boolean likedByCurrentUser) { this.likedByCurrentUser = likedByCurrentUser; }
 }

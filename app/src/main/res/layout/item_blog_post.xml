@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/blogPostRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="14dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="top"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/blogPostImage"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/blogPostCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/neutral_70"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/blogPostTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/neutral_100"
+            android:textSize="14sp" />
+
+        <include
+            android:id="@+id/blogPostMeta"
+            layout="@layout/layout_blog_meta" />
+    </LinearLayout>
+</LinearLayout>

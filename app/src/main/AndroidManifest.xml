@@ -161,6 +161,9 @@
             android:name=".presentation.blog.BlogDetailActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.blog.BlogSearchActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.blog.BlogAllPostsActivity"
             android:exported="false" />
         <activity

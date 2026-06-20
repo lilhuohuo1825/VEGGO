@@ -34,7 +34,7 @@ public class BlogAllPostsActivity extends AppCompatActivity {
     private void render() {
         binding.blogAllPostsHeader.removeAllViews();
         binding.blogAllPostsContainer.removeAllViews();
-        BlogUi.addTopActions(this, binding.blogAllPostsHeader, "B\u00e0i \u0111\u0103ng");
+        BlogUi.addTopActions(this, binding.blogAllPostsHeader, "B\u00e0i \u0111\u0103ng", allBlogs);
         BlogUi.addCategoryTabs(this, binding.blogAllPostsHeader, allBlogs, selectedCategory, category -> {
             selectedCategory = category;
             render();

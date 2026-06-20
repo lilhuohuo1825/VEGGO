@@ -21,6 +21,7 @@ public class BlogHomeActivity extends AppCompatActivity {
     private BlogRepository repository;
     private List<BlogEntity> allBlogs = new ArrayList<>();
     private String selectedCategory = ALL_CATEGORY;
+    private boolean randomPopupShown;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -36,7 +37,16 @@ public class BlogHomeActivity extends AppCompatActivity {
         repository.getAll(blogs -> runOnUiThread(() -> {
             allBlogs = new ArrayList<>(blogs);
             render();
+            showRandomPopupOnce();
         }));
+    }
+
+    private void showRandomPopupOnce() {
+        if (randomPopupShown || allBlogs.isEmpty()) {
+            return;
+        }
+        randomPopupShown = true;
+        BlogUi.showRandomPostPopup(this, allBlogs);
     }
 
     private void render() {
@@ -47,7 +57,7 @@ public class BlogHomeActivity extends AppCompatActivity {
             return;
         }
 
-        BlogUi.addTopActions(this, binding.blogHomeHeader, "Blog");
+        BlogUi.addTopActions(this, binding.blogHomeHeader, "Blog", allBlogs);
         BlogUi.addSectionHeader(
                 this,
                 binding.blogHomeContainer,

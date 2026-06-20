@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private ComponentBottomNavBinding bottomNavBinding;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
