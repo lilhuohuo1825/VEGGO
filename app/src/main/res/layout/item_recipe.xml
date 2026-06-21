@@ -49,22 +49,14 @@
                 android:layout_margin="12dp"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvRecipePrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="6,3 €"
-                    android:textColor="@color/white"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvCookingTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cooking time: 15min"
                     android:textColor="@color/white"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="Thời gian: 30 Phút" />
             </LinearLayout>
         </RelativeLayout>
 

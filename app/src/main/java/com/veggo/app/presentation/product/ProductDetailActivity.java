@@ -9,12 +9,15 @@ import android.widget.TextView;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.snackbar.Snackbar;
 import com.veggo.app.R;
+import com.veggo.app.core.network.ApiHttpException;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Product;
+import com.veggo.app.domain.repository.ConsultationRepository;
 
 import java.util.Locale;
 
@@ -31,9 +34,13 @@ public class ProductDetailActivity extends BaseActivity {
     private TextView tvSold;
     private TextView tvPrice;
     private TextView tvOriginalPrice;
+    private View tvDiscountBadge;
     private TextView tvDescription;
     private TextView tvShowMoreDesc;
     private View llRelatedRecipes;
+    private View llSustainability;
+    private TextView tvEmissionFactor;
+    private TextView tvCarbonSavingPoint;
 
     // Rating summary views
     private TextView tvAverageRatingSummary;
@@ -43,9 +50,13 @@ public class ProductDetailActivity extends BaseActivity {
     // Consultation
     private com.veggo.app.adapter.ConsultationAdapter consultationAdapter;
     private androidx.recyclerview.widget.RecyclerView rvConsultations;
+    private android.widget.EditText edtQuestion;
+    private android.widget.ImageView btnSendQuestion;
+    private android.widget.ProgressBar progressSendQuestion;
     // Related products
     private com.veggo.app.adapter.RelatedProductAdapter relatedAdapter;
     private androidx.recyclerview.widget.RecyclerView rvRelatedProducts;
+    private com.veggo.app.adapter.RecipeAdapter recipeAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +73,6 @@ public class ProductDetailActivity extends BaseActivity {
         String productId = getIntent().getStringExtra(EXTRA_PRODUCT_ID);
         if (productId != null) {
             viewModel.setProductId(productId);
-        } else {
-            // Sử dụng ID thực tế từ products.json để kiểm tra hiển thị
-            // Sản phẩm 1: 68e36b50c0042663fb020b01
-            // Sản phẩm 2 (Rating thấp để test biểu đồ): 68e36b55c0042663fb020b12
-            viewModel.setProductId("68e36b50c0042663fb020b01");
         }
     }
 
@@ -74,6 +80,9 @@ public class ProductDetailActivity extends BaseActivity {
         viewModel.getProduct().observe(this, product -> {
             if (product != null) {
                 bindProductData(product);
+                viewModel.triggerReviewFetch(product);
+                viewModel.triggerConsultationFetch(product);
+                viewModel.triggerRelatedRecipesFetch(product);
             }
         });
 
@@ -108,12 +117,98 @@ public class ProductDetailActivity extends BaseActivity {
                 consultationAdapter.setQuestions(questions);
             }
         });
+
+        viewModel.isSubmittingQuestion().observe(this, this::setConsultationSubmittingUi);
+    }
+
+    private void setConsultationSubmittingUi(boolean submitting) {
+        if (btnSendQuestion != null) {
+            btnSendQuestion.setEnabled(!submitting);
+            btnSendQuestion.setAlpha(submitting ? 0.4f : 1f);
+            btnSendQuestion.setVisibility(submitting ? View.INVISIBLE : View.VISIBLE);
+        }
+        if (edtQuestion != null) {
+            edtQuestion.setEnabled(!submitting);
+        }
+        if (progressSendQuestion != null) {
+            progressSendQuestion.setVisibility(submitting ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void submitConsultationQuestion() {
+        if (edtQuestion == null) return;
+
+        String questionText = edtQuestion.getText().toString().trim();
+        if (questionText.isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.consultation_submit_empty,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.consultation_submit_no_sku,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        viewModel.submitQuestion(product.getSku(), questionText, null, product.getName(),
+                new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
+                        runOnUiThread(() -> {
+                            android.widget.Toast.makeText(ProductDetailActivity.this,
+                                    R.string.consultation_submit_success,
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                            edtQuestion.setText("");
+                        });
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        runOnUiThread(() -> showConsultationSubmitError(t, questionText));
+                    }
+                });
+    }
+
+    private void showConsultationSubmitError(Throwable t, String questionText) {
+        String message;
+        if (t instanceof ApiHttpException) {
+            int code = ((ApiHttpException) t).getCode();
+            if (code == 404) {
+                message = getString(R.string.consultation_submit_not_found);
+            } else if (code == 400) {
+                message = getString(R.string.consultation_submit_empty);
+            } else {
+                message = getString(R.string.consultation_submit_network_error);
+            }
+        } else if (t instanceof IllegalArgumentException) {
+            message = getString(R.string.consultation_submit_empty);
+        } else {
+            message = getString(R.string.consultation_submit_network_error);
+        }
+
+        View anchor = edtQuestion != null ? (View) edtQuestion.getParent() : findViewById(android.R.id.content);
+        Snackbar snackbar = Snackbar.make(anchor, message, Snackbar.LENGTH_LONG);
+        if (t instanceof ApiHttpException && ((ApiHttpException) t).getCode() >= 500
+                || !(t instanceof ApiHttpException)) {
+            snackbar.setAction(R.string.consultation_submit_retry, v -> {
+                edtQuestion.setText(questionText);
+                submitConsultationQuestion();
+            });
+        }
+        snackbar.show();
     }
 
     private void updateRatingSummary(java.util.List<com.veggo.app.domain.model.Review> reviews) {
         View ratingSummary = findViewById(R.id.llRatingSummary);
         if (reviews == null || reviews.isEmpty()) {
             if (ratingSummary != null) ratingSummary.setVisibility(View.GONE);
+            // Even if reviews are empty, we might want to show 0.0 (0) if the product exists
+            Product currentProduct = viewModel.getProduct().getValue();
+            if (currentProduct != null && tvRating != null) {
+                tvRating.setText(String.format(new Locale("vi", "VN"), "%.1f (0)", 0.0));
+            }
             return;
         }
         if (ratingSummary != null) ratingSummary.setVisibility(View.VISIBLE);
@@ -129,25 +224,27 @@ public class ProductDetailActivity extends BaseActivity {
             else if (star == 2) count2++;
             else if (star <= 1) count1++;
         }
-        float avg = total / reviews.size();
+        
+        int realTotalReviews = reviews.size();
+        float calculatedAvg = total / realTotalReviews;
+        
         Locale vnLocale = new Locale("vi", "VN");
         
-        tvAverageRatingSummary.setText(String.format(vnLocale, "%.1f", avg));
-        rbAverageRatingSummary.setRating(avg);
-        tvTotalRatingsSummary.setText(getString(R.string.reviews_count_format, reviews.size()));
+        tvAverageRatingSummary.setText(String.format(vnLocale, "%.1f", calculatedAvg));
+        rbAverageRatingSummary.setRating(calculatedAvg);
+        tvTotalRatingsSummary.setText(getString(R.string.reviews_count_format, realTotalReviews));
         
         // Cập nhật cả phần rating ở phía trên tiêu đề sản phẩm để đồng bộ với số lượng đánh giá thực tế
         if (tvRating != null) {
-            tvRating.setText(String.format(vnLocale, "%.1f (%d)", avg, reviews.size()));
+            tvRating.setText(String.format(vnLocale, "%.1f (%d)", calculatedAvg, realTotalReviews));
         }
 
         // Update ProgressBars and Counts
-        int totalReviews = reviews.size();
-        updateStarRow(R.id.progress5Star, R.id.tvCount5Star, count5, totalReviews);
-        updateStarRow(R.id.progress4Star, R.id.tvCount4Star, count4, totalReviews);
-        updateStarRow(R.id.progress3Star, R.id.tvCount3Star, count3, totalReviews);
-        updateStarRow(R.id.progress2Star, R.id.tvCount2Star, count2, totalReviews);
-        updateStarRow(R.id.progress1Star, R.id.tvCount1Star, count1, totalReviews);
+        updateStarRow(R.id.progress5Star, R.id.tvCount5Star, count5, realTotalReviews);
+        updateStarRow(R.id.progress4Star, R.id.tvCount4Star, count4, realTotalReviews);
+        updateStarRow(R.id.progress3Star, R.id.tvCount3Star, count3, realTotalReviews);
+        updateStarRow(R.id.progress2Star, R.id.tvCount2Star, count2, realTotalReviews);
+        updateStarRow(R.id.progress1Star, R.id.tvCount1Star, count1, realTotalReviews);
     }
 
     private void updateStarRow(int progressId, int textId, int count, int total) {
@@ -158,15 +255,6 @@ public class ProductDetailActivity extends BaseActivity {
         }
         if (tv != null) {
             tv.setText(String.valueOf(count));
-        }
-    }
-
-    private void loadMockConsultations() {
-        // This should ideally come from ViewModel -> Repository -> consultations.json
-        // For this demo, we'll initialize the adapter
-        if (consultationAdapter == null) {
-            consultationAdapter = new com.veggo.app.adapter.ConsultationAdapter();
-            rvConsultations.setAdapter(consultationAdapter);
         }
     }
 
@@ -188,34 +276,22 @@ public class ProductDetailActivity extends BaseActivity {
 
     private void updateRecipes(java.util.List<com.veggo.app.domain.model.Recipe> recipes) {
         androidx.recyclerview.widget.RecyclerView rvRecipes = findViewById(R.id.rvRecipes);
-        com.veggo.app.adapter.RecipeAdapter adapter = (com.veggo.app.adapter.RecipeAdapter) rvRecipes.getAdapter();
-        if (adapter == null) {
-            adapter = new com.veggo.app.adapter.RecipeAdapter();
-            rvRecipes.setAdapter(adapter);
+        if (recipeAdapter == null) {
+            recipeAdapter = new com.veggo.app.adapter.RecipeAdapter();
+            recipeAdapter.setOnRecipeClickListener(recipe -> {
+                android.content.Intent intent = new android.content.Intent(
+                        this, com.veggo.app.presentation.community.CommunityRecipeDetailActivity.class);
+                intent.putExtra(
+                        com.veggo.app.presentation.community.CommunityRecipeDetailActivity.EXTRA_INSTRUCTION_ID,
+                        recipe.getId());
+                startActivity(intent);
+            });
+            rvRecipes.setAdapter(recipeAdapter);
         }
-        adapter.setRecipes(recipes);
+        recipeAdapter.setRecipes(recipes);
     }
 
-    private void showMockData() {
-        Product mockProduct = new Product(
-                "mock_id_123",
-                "Australia beef tenderloin",
-                "SKU12345",
-                40000,
-                50000,
-                "https://images.unsplash.com/photo-1558030006-45c25be991f1?q=80&w=1000",
-                "450-500g / pack",
-                4.5f,
-                375,
-                1300,
-                "In terms of quality look for well-marbled tenderloin, where fat is interspersed within the muscle. This marbling enhances the flavor and juiciness when cooked. A high-quality tenderloin should have a vibrant red color and a firm texture.",
-                "Australia",
-                "Fresh",
-                "Non Fatty"
-        );
-        // Lưu vào SQLite để test
-        viewModel.addProduct(mockProduct);
-    }
+
 
     private void initViews() {
         ivProductImage = findViewById(R.id.ivProductImage);
@@ -225,10 +301,11 @@ public class ProductDetailActivity extends BaseActivity {
         tvSold = findViewById(R.id.tvSold);
         tvPrice = findViewById(R.id.tvPrice);
         tvOriginalPrice = findViewById(R.id.tvOriginalPrice);
+        tvDiscountBadge = findViewById(R.id.tvDiscountBadge);
         tvDescription = findViewById(R.id.tvDescription);
         tvShowMoreDesc = findViewById(R.id.tvShowMoreDesc);
         llRelatedRecipes = findViewById(R.id.llRelatedRecipes);
-        
+
         tvAverageRatingSummary = findViewById(R.id.tvAverageRatingSummary);
         rbAverageRatingSummary = findViewById(R.id.rbAverageRatingSummary);
         tvTotalRatingsSummary = findViewById(R.id.tvTotalRatingsSummary);
@@ -236,6 +313,13 @@ public class ProductDetailActivity extends BaseActivity {
         rvConsultations = findViewById(R.id.rvConsultations);
         consultationAdapter = new com.veggo.app.adapter.ConsultationAdapter();
         rvConsultations.setAdapter(consultationAdapter);
+
+        edtQuestion = findViewById(R.id.edtQuestion);
+        btnSendQuestion = findViewById(R.id.btnSendQuestion);
+        progressSendQuestion = findViewById(R.id.progressSendQuestion);
+        if (btnSendQuestion != null) {
+            btnSendQuestion.setOnClickListener(v -> submitConsultationQuestion());
+        }
 
         // Related products
         rvRelatedProducts = findViewById(R.id.rvRelatedProducts);
@@ -255,7 +339,7 @@ public class ProductDetailActivity extends BaseActivity {
         // Navigation buttons on Image
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnSearch).setOnClickListener(v -> {
-            // Handle search
+            startActivity(new android.content.Intent(this, com.veggo.app.presentation.search.SearchActivity.class));
         });
         findViewById(R.id.btnCart).setOnClickListener(v -> {
             // Navigate to Cart
@@ -361,7 +445,12 @@ public class ProductDetailActivity extends BaseActivity {
     }
 
     private void setupViewModel() {
-        ViewModelFactory factory = new ViewModelFactory(AppModule.provideProductRepository(this));
+        ViewModelFactory factory = new ViewModelFactory(
+                AppModule.provideProductRepository(this),
+                AppModule.provideReviewRepository(this),
+                AppModule.provideConsultationRepository(this),
+                AppModule.provideRecipeRepository()
+        );
         viewModel = new ViewModelProvider(this, factory).get(ProductViewModel.class);
     }
 
@@ -377,14 +466,28 @@ public class ProductDetailActivity extends BaseActivity {
         tvSold.setText(getString(R.string.sold_count_format, product.getSoldCount()));
         tvPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
         
-        if (product.getOriginalPrice() > 0) {
+        if (product.hasActiveDiscount()) {
             tvOriginalPrice.setVisibility(View.VISIBLE);
             tvOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
             tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            if (tvDiscountBadge != null) {
+                tvDiscountBadge.setVisibility(View.VISIBLE);
+                if (tvDiscountBadge instanceof TextView) {
+                    ((TextView) tvDiscountBadge).setText(calculateDiscountPercentage(product));
+                }
+            }
         } else {
             tvOriginalPrice.setVisibility(View.GONE);
+            if (tvDiscountBadge != null) tvDiscountBadge.setVisibility(View.GONE);
         }
         
         tvDescription.setText(product.getDescription());
+    }
+
+    private String calculateDiscountPercentage(Product product) {
+        if (product.getOriginalPrice() <= 0) return "";
+        long discount = product.getOriginalPrice() - product.getPrice();
+        int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
+        return "-" + percentage + "%";
     }
 }

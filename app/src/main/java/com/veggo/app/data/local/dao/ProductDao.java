@@ -25,6 +25,15 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE categoryId = :categoryId")
     LiveData<List<ProductEntity>> observeProductsByCategory(String categoryId);
 
+    @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId AND id != :excludeId LIMIT :limit")
+    LiveData<List<ProductEntity>> observeRelatedBySubcategory(String subcategoryId, String excludeId, int limit);
+
+    @Query("SELECT * FROM products WHERE categoryId = :categoryId AND id != :excludeId LIMIT :limit")
+    LiveData<List<ProductEntity>> observeRelatedByCategory(String categoryId, String excludeId, int limit);
+
+    @Query("SELECT * FROM products WHERE (subcategoryId = :subcategoryId OR categoryId = :categoryId) AND id != :excludeId ORDER BY (CASE WHEN subcategoryId = :subcategoryId THEN 0 ELSE 1 END) ASC, rating DESC LIMIT :limit")
+    LiveData<List<ProductEntity>> observeRelatedMerged(String categoryId, String subcategoryId, String excludeId, int limit);
+
     @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId")
     LiveData<List<ProductEntity>> observeProductsBySubcategory(String subcategoryId);
 
@@ -48,6 +57,9 @@ public interface ProductDao {
 
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     ProductEntity getProductById(String productId);
+
+    @Query("SELECT id, name, price, imageUrl FROM products WHERE name LIKE '%' || :query || '%' OR sku LIKE '%' || :query || '%' OR categoryId IN (SELECT categoryId FROM products WHERE name LIKE '%' || :query || '%')")
+    LiveData<List<ProductItemProjection>> searchProducts(String query);
 
     @Query("SELECT id FROM products WHERE sku = :sku LIMIT 1")
     String getProductIdBySku(String sku);

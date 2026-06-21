@@ -85,6 +85,13 @@
                         android:src="@drawable/ic_send"
                         app:tint="@color/primary_main"/>
 
+                    <ProgressBar
+                        android:id="@+id/progressSendQuestion"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="8dp"
+                        android:visibility="gone" />
+
                 </LinearLayout>
 
                 <TextView

@@ -9,25 +9,25 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.veggo.app.R;
-import com.veggo.app.assets.AssetModels;
+import com.veggo.app.domain.model.Consultation;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapter.ViewHolder> {
 
-    private List<AssetModels.Question> questions = new ArrayList<>();
+    private List<Consultation> questions = new ArrayList<>();
 
-    public void setQuestions(List<AssetModels.Question> questions) {
+    public void setQuestions(List<Consultation> questions) {
         this.questions = new ArrayList<>(questions);
         notifyDataSetChanged();
     }
 
-    public void addQuestion(AssetModels.Question question) {
+    public void addQuestion(Consultation question) {
         if (this.questions == null) {
             this.questions = new ArrayList<>();
         }
-        this.questions.add(0, question); // Thêm vào đầu danh sách
+        this.questions.add(0, question);
         notifyItemInserted(0);
     }
 
@@ -40,8 +40,7 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        AssetModels.Question question = questions.get(position);
-        holder.bind(question);
+        holder.bind(questions.get(position));
     }
 
     @Override
@@ -61,12 +60,14 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
             tvHelpful = itemView.findViewById(R.id.tvHelpful);
         }
 
-        public void bind(AssetModels.Question question) {
-            tvUserName.setText(question.customerName != null ? question.customerName : "Khách hàng");
-            tvQuestionTime.setText(question.createdAt != null ? question.createdAt : "Vừa xong");
-            tvQuestionContent.setText(question.question);
-            tvAnswerContent.setText(question.answer != null ? question.answer : "Chúng tôi sẽ sớm phản hồi câu hỏi của bạn.");
-            // In a real app, you'd handle "helpful" count from data
+        public void bind(Consultation question) {
+            tvUserName.setText(question.getCustomerName() != null ? question.getCustomerName() : "Khách hàng");
+            tvQuestionTime.setText(question.getCreatedAt() != null && !question.getCreatedAt().isEmpty()
+                    ? question.getCreatedAt() : "Vừa xong");
+            tvQuestionContent.setText(question.getQuestion());
+            tvAnswerContent.setText(question.getAnswer() != null && !question.getAnswer().isEmpty()
+                    ? question.getAnswer()
+                    : "Chúng tôi sẽ sớm phản hồi câu hỏi của bạn.");
         }
     }
 }

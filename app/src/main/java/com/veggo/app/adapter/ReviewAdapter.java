@@ -55,6 +55,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         private final View cvReviewImage1;
         private final View cvReviewImage2;
         private final View llReviewImages;
+        private final TextView tvHelpfulReview;
 
         public ReviewViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -68,6 +69,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             cvReviewImage1 = itemView.findViewById(R.id.cvReviewImage1);
             cvReviewImage2 = itemView.findViewById(R.id.cvReviewImage2);
             llReviewImages = itemView.findViewById(R.id.llReviewImages);
+            tvHelpfulReview = itemView.findViewById(R.id.tvHelpfulReview);
         }
 
         public void bind(Review review) {
@@ -75,6 +77,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             tvReviewTime.setText(review.getReviewTime());
             rbReviewRating.setRating(review.getRating());
             tvReviewContent.setText(review.getContent());
+            tvHelpfulReview.setText(itemView.getContext().getString(R.string.helpful_format, review.getHelpfulCount()));
 
             if (review.getAvatarUrl() != null && !review.getAvatarUrl().isEmpty()) {
                 Glide.with(itemView.getContext()).load(review.getAvatarUrl()).into(ivAvatar);

@@ -63,6 +63,29 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public LiveData<List<Product>> observeRelatedProducts(String currentProductId, String categoryId, String subcategoryId) {
+        // Ưu tiên subcategory, sau đó đến category, loại trừ sản phẩm hiện tại
+        String excludeId = currentProductId != null ? currentProductId : "";
+        String catId = categoryId != null ? categoryId : "";
+        String subcatId = subcategoryId != null ? subcategoryId : "";
+
+        return Transformations.map(
+                productDao.observeRelatedMerged(catId, subcatId, excludeId, 10),
+                entities -> toProductList(entities)
+        );
+    }
+
+    private List<Product> toProductList(List<com.veggo.app.data.local.entity.ProductEntity> entities) {
+        List<Product> products = new ArrayList<>();
+        if (entities != null) {
+            for (com.veggo.app.data.local.entity.ProductEntity entity : entities) {
+                products.add(ProductMapper.fromEntity(entity));
+            }
+        }
+        return products;
+    }
+
+    @Override
     public LiveData<List<Recipe>> getRelatedRecipes(String productId) {
         return Transformations.map(productDao.observeRelatedRecipes(productId), entities -> {
             List<Recipe> recipes = new ArrayList<>();
@@ -89,55 +112,16 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public LiveData<List<com.veggo.app.assets.AssetModels.Question>> getConsultations(String productId) {
-        androidx.lifecycle.MutableLiveData<List<com.veggo.app.assets.AssetModels.Question>> data = new androidx.lifecycle.MutableLiveData<>();
-        
-        executor.execute(() -> {
-            try {
-                ProductEntity product = productDao.getProductById(productId);
-                String sku = (product != null) ? product.getSku() : null;
-                
-                if (sku == null) {
-                    data.postValue(new ArrayList<>());
-                    return;
+    public LiveData<List<Product>> searchProducts(String query) {
+        return Transformations.map(productDao.searchProducts(query), projections -> {
+            List<Product> products = new ArrayList<>();
+            if (projections != null) {
+                for (ProductItemProjection projection : projections) {
+                    products.add(ProductMapper.fromProjection(projection));
                 }
-
-                com.google.gson.Gson gson = new com.google.gson.Gson();
-                
-                // Thử lấy từ AssetRecord (SQLite) theo documentId = sku
-                com.veggo.app.data.local.dao.AssetRecordDao assetDao = com.veggo.app.core.database.VeggoDatabase.getInstance(context).assetRecordDao();
-                com.veggo.app.data.local.entity.AssetRecordEntity record = assetDao.getById(com.veggo.app.assets.AssetFiles.COLLECTION_CONSULTATIONS, sku);
-                
-                if (record != null) {
-                    com.veggo.app.assets.AssetModels.Consultation c = gson.fromJson(record.getJson(), com.veggo.app.assets.AssetModels.Consultation.class);
-                    if (c != null && c.questions != null) {
-                        data.postValue(c.questions);
-                        return;
-                    }
-                }
-                
-                // Nếu không thấy theo ID (có thể schema cũ lưu cả mảng trong 1 record), thử lấy tất cả nhưng tối ưu hơn
-                // Hoặc nạp trực tiếp từ assets (cho trường hợp chưa seed)
-                com.veggo.app.assets.AssetJsonLoader loader = new com.veggo.app.assets.AssetJsonLoader(context);
-                List<com.veggo.app.assets.AssetModels.Consultation> consultations = loader.readList(com.veggo.app.assets.AssetFiles.CONSULTATIONS, com.veggo.app.assets.AssetModels.Consultation.class);
-                
-                if (consultations != null) {
-                    for (com.veggo.app.assets.AssetModels.Consultation c : consultations) {
-                        if (sku.equals(c.sku)) {
-                            data.postValue(c.questions);
-                            return;
-                        }
-                    }
-                }
-
-                data.postValue(new ArrayList<>());
-            } catch (Exception e) {
-                e.printStackTrace();
-                data.postValue(new ArrayList<>());
             }
+            return products;
         });
-
-        return data;
     }
 
     @Override

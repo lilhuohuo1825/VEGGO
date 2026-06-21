@@ -19,7 +19,12 @@ import java.util.List;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder> {
 
+    public interface OnRecipeClickListener {
+        void onRecipeClick(Recipe recipe);
+    }
+
     private List<Recipe> recipes = new ArrayList<>();
+    private OnRecipeClickListener onRecipeClickListener;
 
     public void setRecipes(List<Recipe> recipes) {
         this.recipes = recipes;
@@ -28,6 +33,10 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
 
     public void submitList(List<Recipe> recipes) {
         setRecipes(recipes);
+    }
+
+    public void setOnRecipeClickListener(OnRecipeClickListener listener) {
+        this.onRecipeClickListener = listener;
     }
 
     @NonNull
@@ -41,11 +50,28 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Recipe recipe = recipes.get(position);
         holder.tvRecipeName.setText(recipe.getName());
-        holder.tvRecipePrice.setText(recipe.getPrice());
-        holder.tvCookingTime.setText("Cooking time: " + recipe.getCookingTime());
-        holder.rbRecipeRating.setRating(recipe.getRating());
-        holder.tvRecipeRatingValue.setText(String.valueOf(recipe.getRating()));
-        holder.tvRecipeReviewCount.setText("(" + recipe.getReviewCount() + ")");
+
+        String cookingTime = recipe.getCookingTime();
+        if (cookingTime == null || cookingTime.trim().isEmpty()) {
+            holder.tvCookingTime.setVisibility(View.GONE);
+        } else {
+            holder.tvCookingTime.setVisibility(View.VISIBLE);
+            holder.tvCookingTime.setText(
+                    holder.itemView.getContext().getString(R.string.recipe_cooking_time_format, cookingTime));
+        }
+
+        if (recipe.getRating() <= 0f && recipe.getReviewCount() <= 0) {
+            holder.rbRecipeRating.setVisibility(View.GONE);
+            holder.tvRecipeRatingValue.setVisibility(View.GONE);
+            holder.tvRecipeReviewCount.setVisibility(View.GONE);
+        } else {
+            holder.rbRecipeRating.setVisibility(View.VISIBLE);
+            holder.tvRecipeRatingValue.setVisibility(View.VISIBLE);
+            holder.tvRecipeReviewCount.setVisibility(View.VISIBLE);
+            holder.rbRecipeRating.setRating(recipe.getRating());
+            holder.tvRecipeRatingValue.setText(String.valueOf(recipe.getRating()));
+            holder.tvRecipeReviewCount.setText("(" + recipe.getReviewCount() + ")");
+        }
         
         Glide.with(holder.itemView.getContext())
                 .load(recipe.getImageUrl())
@@ -53,7 +79,12 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
                 .into(holder.ivRecipeImage);
 
         holder.ivBookmark.setImageResource(recipe.isBookmarked() ? R.drawable.ic_save : R.drawable.ic_save);
-        // Note: For bookmark toggle, you'd need another icon or change tint
+
+        holder.itemView.setOnClickListener(v -> {
+            if (onRecipeClickListener != null) {
+                onRecipeClickListener.onRecipeClick(recipe);
+            }
+        });
     }
 
     @Override
@@ -64,7 +95,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivRecipeImage;
         ImageView ivBookmark;
-        TextView tvRecipePrice;
         TextView tvCookingTime;
         TextView tvRecipeName;
         RatingBar rbRecipeRating;
@@ -75,7 +105,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
             super(itemView);
             ivRecipeImage = itemView.findViewById(R.id.ivRecipeImage);
             ivBookmark = itemView.findViewById(R.id.ivBookmark);
-            tvRecipePrice = itemView.findViewById(R.id.tvRecipePrice);
             tvCookingTime = itemView.findViewById(R.id.tvCookingTime);
             tvRecipeName = itemView.findViewById(R.id.tvRecipeName);
             rbRecipeRating = itemView.findViewById(R.id.rbRecipeRating);

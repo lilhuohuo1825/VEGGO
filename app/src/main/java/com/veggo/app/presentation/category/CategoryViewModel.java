@@ -16,6 +16,11 @@ public class CategoryViewModel extends ViewModel {
 
     public CategoryViewModel(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
+        refresh();
+    }
+
+    public void refresh() {
+        categoryRepository.refreshCategories();
     }
 
     public LiveData<List<AssetModels.Category>> getCategories() {

@@ -18,6 +18,7 @@ public class CategoryDto {
 
     public String getCategoryName() { return categoryName; }
     public String getCategoryID() { return categoryID; }
+    public List<Subcategory> getSubcategories() { return subcategories; }
 
     public static class Id {
         @SerializedName("$oid")
@@ -30,5 +31,11 @@ public class CategoryDto {
         private String subcategoryID;
         @SerializedName("SubcategoryName")
         private String subcategoryName;
+        @SerializedName("img")
+        private String img;
+
+        public String getSubcategoryID() { return subcategoryID; }
+        public String getSubcategoryName() { return subcategoryName; }
+        public String getImg() { return img; }
     }
 }

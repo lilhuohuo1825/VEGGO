@@ -41,11 +41,9 @@ public class ReviewDetailActivity extends BaseActivity {
         setupViewModel();
         
         String productId = getIntent().getStringExtra(EXTRA_PRODUCT_ID);
-        if (productId == null || productId.isEmpty()) {
-            // Fallback để test nếu không có ID truyền sang
-            productId = "68e36b50c0042663fb020b01";
+        if (productId != null && !productId.isEmpty()) {
+            viewModel.setProductId(productId);
         }
-        viewModel.setProductId(productId);
         
         observeViewModel();
     }
@@ -90,6 +88,9 @@ public class ReviewDetailActivity extends BaseActivity {
         filter5Star.setOnClickListener(v -> applyFilter(filter5Star, 5));
         filter4Star.setOnClickListener(v -> applyFilter(filter4Star, 4));
         filterWithImages.setOnClickListener(v -> applyFilterWithImages(filterWithImages));
+
+        // Initial UI state for All
+        updateFilterUI(filterAll);
     }
 
     private void applyFilter(TextView view, Integer rating) {
@@ -134,16 +135,26 @@ public class ReviewDetailActivity extends BaseActivity {
     }
 
     private void setupViewModel() {
-        ViewModelFactory factory = new ViewModelFactory(AppModule.provideProductRepository(this));
+        ViewModelFactory factory = new ViewModelFactory(
+                AppModule.provideProductRepository(this),
+                AppModule.provideReviewRepository(this),
+                AppModule.provideConsultationRepository(this)
+        );
         viewModel = new ViewModelProvider(this, factory).get(ProductViewModel.class);
     }
 
     private void observeViewModel() {
+        viewModel.getProduct().observe(this, product -> {
+            if (product != null) {
+                viewModel.triggerReviewFetch(product);
+            }
+        });
+
         viewModel.getProductReviews().observe(this, reviews -> {
             if (reviews != null) {
                 this.allReviews = reviews;
                 updateFilterLabels(reviews);
-                if (currentFilterView != null && currentFilterView.getId() == R.id.filterAll) {
+                if (currentFilterView != null && (currentFilterView.getId() == R.id.filterAll || currentFilterView == findViewById(R.id.filterAll))) {
                     adapter.setReviews(reviews);
                 }
                 updateRatingSummary(reviews);
@@ -201,7 +212,12 @@ public class ReviewDetailActivity extends BaseActivity {
     }
 
     private void updateRatingSummary(List<Review> reviews) {
-        if (reviews == null || reviews.isEmpty()) return;
+        if (reviews == null || reviews.isEmpty()) {
+            tvAverageRating.setText("0.0");
+            rbAverageRating.setRating(0);
+            tvTotalRatings.setText(getString(R.string.reviews_count_format, 0));
+            return;
+        }
 
         int count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
         float total = 0;
@@ -216,7 +232,8 @@ public class ReviewDetailActivity extends BaseActivity {
         }
         float avg = total / reviews.size();
 
-        tvAverageRating.setText(String.format(Locale.getDefault(), "%.1f", avg));
+        Locale vnLocale = new Locale("vi", "VN");
+        tvAverageRating.setText(String.format(vnLocale, "%.1f", avg));
         rbAverageRating.setRating(avg);
         tvTotalRatings.setText(getString(R.string.reviews_count_format, reviews.size()));
 

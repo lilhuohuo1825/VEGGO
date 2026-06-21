@@ -5,11 +5,13 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -19,6 +21,8 @@ import com.veggo.app.presentation.order.OrderHistoryActivity;
 import com.veggo.app.presentation.about.AboutUsActivity;
 
 public class ProfileLoggedInFragment extends BaseFragment {
+    private View rootView;
+
     @Nullable
     @Override
     public View onCreateView(
@@ -26,7 +30,8 @@ public class ProfileLoggedInFragment extends BaseFragment {
             @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState
     ) {
-        return inflater.inflate(R.layout.fragment_profile_logged_in, container, false);
+        rootView = inflater.inflate(R.layout.fragment_profile_logged_in, container, false);
+        return rootView;
     }
 
     @Override
@@ -71,8 +76,14 @@ public class ProfileLoggedInFragment extends BaseFragment {
         view.findViewById(R.id.profileOrderDeliveredShortcut).setOnClickListener(v -> openOrders("delivered"));
         view.findViewById(R.id.profileOrderCancelledShortcut).setOnClickListener(v -> openOrders("cancelled"));
         view.findViewById(R.id.profileLogoutRow).setOnClickListener(v -> logout());
+    }
 
-        loadProfile(view);
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (rootView != null) {
+            loadProfile(rootView);
+        }
     }
 
     private void openOrders(@Nullable String status) {
@@ -84,16 +95,38 @@ public class ProfileLoggedInFragment extends BaseFragment {
     }
 
     private void loadProfile(View view) {
+        AppPreferences appPreferences = new AppPreferences(requireContext());
         new Thread(() -> {
             AssetScreenData.Snapshot snapshot = AssetScreenData.load(requireContext());
+            AssetModels.User user = snapshot.user;
+            if (user == null) {
+                user = buildUserFromPreferences(appPreferences);
+            }
+            AssetModels.User profileUser = user;
             if (!isAdded()) {
                 return;
             }
-            requireActivity().runOnUiThread(() -> bindProfile(view, snapshot.user));
+            requireActivity().runOnUiThread(() -> bindProfile(view, profileUser, appPreferences));
         }).start();
     }
 
-    private void bindProfile(View view, @Nullable AssetModels.User user) {
+    @NonNull
+    private AssetModels.User buildUserFromPreferences(@NonNull AppPreferences appPreferences) {
+        AssetModels.User user = new AssetModels.User();
+        user.phone = appPreferences.getCurrentPhone();
+        user.customerId = appPreferences.getCustomerId();
+        user.fullName = appPreferences.getFullName();
+        user.email = appPreferences.getEmail();
+        user.avatar = appPreferences.getAvatarUrl();
+        user.carbonPoint = 0;
+        return user;
+    }
+
+    private void bindProfile(
+            View view,
+            @Nullable AssetModels.User user,
+            @NonNull AppPreferences appPreferences
+    ) {
         if (user == null) {
             return;
         }
@@ -101,10 +134,34 @@ public class ProfileLoggedInFragment extends BaseFragment {
         String name = AssetScreenData.hasText(user.fullName)
                 ? user.fullName
                 : "Khách hàng " + user.customerId;
+        String phone = AssetScreenData.hasText(user.phone)
+                ? user.phone
+                : appPreferences.getCurrentPhone();
+        String avatarUrl = AssetScreenData.hasText(user.avatar)
+                ? user.avatar
+                : appPreferences.getAvatarUrl();
 
         AssetScreenData.setText(view, R.id.profileUserName, name);
-        AssetScreenData.setText(view, R.id.profileUserPhone, user.phone);
+        AssetScreenData.setText(view, R.id.profileUserPhone, phone);
         AssetScreenData.setText(view, R.id.profileCarbonBadge, user.carbonPoint + " điểm carbon");
+        bindAvatar(view, avatarUrl);
+    }
+
+    private void bindAvatar(@NonNull View view, @Nullable String avatarUrl) {
+        ImageView avatarView = view.findViewById(R.id.profileUserAvatar);
+        if (avatarView == null) {
+            return;
+        }
+        if (!AssetScreenData.hasText(avatarUrl)) {
+            avatarView.setImageResource(R.drawable.ic_profile_avatar);
+            return;
+        }
+        Glide.with(this)
+                .load(avatarUrl)
+                .placeholder(R.drawable.ic_profile_avatar)
+                .error(R.drawable.ic_profile_avatar)
+                .circleCrop()
+                .into(avatarView);
     }
 
     private void logout() {

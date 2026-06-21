@@ -15,12 +15,33 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/imgProduct"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="128dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_leaf" />
+            android:layout_height="128dp">
+
+            <ImageView
+                android:id="@+id/imgProduct"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_leaf" />
+
+            <TextView
+                android:id="@+id/tvDiscountBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="4dp"
+                android:background="@drawable/bg_discount_badge"
+                android:fontFamily="@font/inter"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="-25%"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvProductName"
@@ -64,16 +85,31 @@
             android:gravity="bottom|center_vertical"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tvProductPrice"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:fontFamily="@font/inter_medium"
-                android:text="0đ"
-                android:textColor="@color/neutral_100"
-                android:textSize="16sp" />
+                android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/tvProductPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_medium"
+                    android:text="0đ"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvOriginalPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:text="0đ"
+                    android:textColor="@color/neutral_40"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <ImageView
                 android:paddingTop="4dp"

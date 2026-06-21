@@ -76,6 +76,7 @@ public final class AssetScreenData {
                     user.email = userDto.getEmail();
                     user.carbonPoint = userDto.getCarbonPoint();
                     user.address = userDto.getAddress();
+                    user.avatar = userDto.getAvatarUrl();
                     // Add addresses from addresses list in UserDto
                     if (userDto.getAddresses() != null && !userDto.getAddresses().isEmpty()) {
                         for (com.veggo.app.data.remote.dto.UserDto.AddressDto addrDto : userDto.getAddresses()) {
@@ -101,7 +102,10 @@ public final class AssetScreenData {
                 user.customerId = customerId;
                 user.fullName = appPreferences.getFullName();
                 user.email = appPreferences.getEmail();
+                user.avatar = appPreferences.getAvatarUrl();
                 user.carbonPoint = 0;
+            } else {
+                enrichUserFromPreferences(user, appPreferences);
             }
 
             // 2. Fetch orders from MongoDB via OrderApi
@@ -205,6 +209,24 @@ public final class AssetScreenData {
             mappedUsers.add(mappedUser);
         }
         return mappedUsers;
+    }
+
+    private static void enrichUserFromPreferences(
+            @NonNull AssetModels.User user,
+            @NonNull AppPreferences appPreferences
+    ) {
+        if (hasText(appPreferences.getFullName())) {
+            user.fullName = appPreferences.getFullName();
+        }
+        if (hasText(appPreferences.getCurrentPhone())) {
+            user.phone = appPreferences.getCurrentPhone();
+        }
+        if (hasText(appPreferences.getEmail())) {
+            user.email = appPreferences.getEmail();
+        }
+        if (hasText(appPreferences.getAvatarUrl())) {
+            user.avatar = appPreferences.getAvatarUrl();
+        }
     }
 
     @Nullable

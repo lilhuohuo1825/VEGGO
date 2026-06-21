@@ -106,8 +106,9 @@ public class CategoryDetailFragment extends Fragment {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
             startActivity(intent);
         };
-        binding.layoutSearch.setOnClickListener(openSearchClick);
-        binding.etSearch.setOnClickListener(openSearchClick);
+        binding.layoutSearch.getRoot().setOnClickListener(openSearchClick);
+        binding.layoutSearch.edtSearch.setFocusable(false);
+        binding.layoutSearch.edtSearch.setOnClickListener(openSearchClick);
 
         binding.tabSubcategories.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -368,7 +369,7 @@ public class CategoryDetailFragment extends Fragment {
         List<Product> filtered = new ArrayList<>();
         
         // 1. Filter by Price and Search Query
-        String query = binding.etSearch.getText().toString().toLowerCase();
+        String query = binding.layoutSearch.edtSearch.getText().toString().toLowerCase();
         
         for (Product product : currentProducts) {
             boolean matchesSearch = query.isEmpty() || product.getName().toLowerCase().contains(query);
@@ -376,7 +377,7 @@ public class CategoryDetailFragment extends Fragment {
             
             if (matchesSearch && matchesPrice) {
                 if ("discount".equals(selectedSort)) {
-                    if (product.getPrice() < product.getOriginalPrice()) {
+                    if (product.hasActiveDiscount()) {
                         filtered.add(product);
                     }
                 } else if ("organic".equals(selectedSort)) {

@@ -1,6 +1,7 @@
 package com.veggo.app.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -68,6 +69,17 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             binding.tvProductName.setText(product.getName());
             binding.tvProductPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
             binding.tvRating.setText(String.valueOf(product.getRating() == 0 ? 5.0f : product.getRating()));
+
+            if (product.hasActiveDiscount()) {
+                binding.tvDiscountBadge.setText(calculateDiscountPercentage(product));
+                binding.tvDiscountBadge.setVisibility(View.VISIBLE);
+                binding.tvOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
+                binding.tvOriginalPrice.setVisibility(View.VISIBLE);
+                binding.tvOriginalPrice.setPaintFlags(binding.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                binding.tvDiscountBadge.setVisibility(View.GONE);
+                binding.tvOriginalPrice.setVisibility(View.GONE);
+            }
             
             Glide.with(binding.getRoot().getContext())
                     .load(product.getImageUrl())
@@ -80,6 +92,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                     listener.onProductClick(product);
                 }
             });
+        }
+
+        private String calculateDiscountPercentage(Product product) {
+            if (product.getOriginalPrice() <= 0) return "";
+            long discount = product.getOriginalPrice() - product.getPrice();
+            int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
+            return "-" + percentage + "%";
         }
     }
 }

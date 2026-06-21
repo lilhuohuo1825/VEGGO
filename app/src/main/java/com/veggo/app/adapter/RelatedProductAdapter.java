@@ -73,12 +73,15 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
             binding.tvRelatedWeight.setText(product.getWeight() == null ? "" : product.getWeight());
             binding.tvRelatedPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
 
-            if (product.getOriginalPrice() > 0) {
+            if (product.hasActiveDiscount()) {
                 binding.tvRelatedOriginalPrice.setVisibility(android.view.View.VISIBLE);
                 binding.tvRelatedOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
                 binding.tvRelatedOriginalPrice.setPaintFlags(binding.tvRelatedOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                binding.tvDiscountBadge.setVisibility(android.view.View.VISIBLE);
+                binding.tvDiscountBadge.setText(calculateDiscountPercentage(product));
             } else {
                 binding.tvRelatedOriginalPrice.setVisibility(android.view.View.GONE);
+                binding.tvDiscountBadge.setVisibility(android.view.View.GONE);
             }
 
             Glide.with(binding.getRoot().getContext())
@@ -94,6 +97,13 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
             binding.btnAddRelated.setOnClickListener(v -> {
                 if (addListener != null) addListener.onAdd(product);
             });
+        }
+
+        private String calculateDiscountPercentage(Product product) {
+            if (product.getOriginalPrice() <= 0) return "";
+            long discount = product.getOriginalPrice() - product.getPrice();
+            int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
+            return "-" + percentage + "%";
         }
     }
 }
