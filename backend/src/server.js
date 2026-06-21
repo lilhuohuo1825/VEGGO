@@ -10,26 +10,20 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const userRoutes = require('./routes/userRoutes');
-// ... existing imports
 const reviewRoutes = require('./routes/reviewRoutes');
 const consultationRoutes = require('./routes/consultationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const treeCompleteRoutes = require('./routes/treeCompleteRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
-console.log('reviewRoutes =', reviewRoutes);
-console.log('typeof reviewRoutes =', typeof reviewRoutes);
-
+const promotionRoutes = require('./routes/promotionRoutes');
+const promoImageRoutes = require('./routes/promoImageRoutes');
+const fridgeRoutes = require('./routes/fridgeRoutes');
 
 const app = express();
 
-console.log("productRoutes", typeof productRoutes);
-console.log("cartRoutes", typeof cartRoutes);
-console.log("orderRoutes", typeof orderRoutes);
-console.log("userRoutes", typeof userRoutes);
-console.log("reviewRoutes", typeof reviewRoutes);
-
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
 
 app.get('/api/health', (req, res) => {
@@ -40,12 +34,14 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
-// ... after other app.use calls
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/tree_complete', treeCompleteRoutes);
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/promo-images', promoImageRoutes);
+app.use('/api/fridge', fridgeRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);

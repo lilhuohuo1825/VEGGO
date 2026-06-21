@@ -1,75 +1,114 @@
 package com.veggo.app.data.remote.dto;
 
 import com.google.gson.annotations.SerializedName;
+
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DTO ánh xạ từ response product MongoDB. Hỗ trợ cả field cũ và mới để các
+ * luồng Product, Checkout và Home dùng chung mapper.
+ */
 public class ProductDto {
-    @SerializedName("_id")
+    @SerializedName(value = "_id", alternate = {"id"})
     private String id;
 
-    @SerializedName("product_name")
-    private String productName;
+    @SerializedName(value = "product_name", alternate = {"name"})
+    private String name;
 
+    private String brand;
     private String sku;
+    private String unit;
+    private String weight;
+    private String origin;
+    private String status;
     private long price;
-    
-    @SerializedName("base_price")
+
+    @SerializedName(value = "base_price", alternate = {"originalPrice"})
     private long originalPrice;
 
-    private String unit;
+    @SerializedName(value = "image", alternate = {"imageList"})
+    private List<String> image;
 
-    @SerializedName("image")
-    private List<String> imageList;
+    @SerializedName(value = "imageUrl")
+    private String imageUrl;
 
-    @SerializedName("WeightOptions")
+    @SerializedName(value = "WeightOptions", alternate = {"weightOptions"})
     private List<Double> weightOptions;
 
-    @SerializedName("CarbonSavingPoint")
+    @SerializedName(value = "CarbonSavingPoint", alternate = {"carbonSavingPoint"})
     private double carbonSavingPoint;
 
     private String description;
     private int stock;
-    private Boolean isActive;
-    
-    // Additional fields for mapping
+
+    @SerializedName(value = "isActive", alternate = {"active"})
+    private Boolean active;
+
     private float rating;
     private int reviewCount;
+
+    @SerializedName(value = "purchase_count", alternate = {"soldCount"})
     private int soldCount;
-    private String origin;
+
+    private int liked;
     private String condition;
     private String fatContent;
+
+    @SerializedName(value = "CategoryID", alternate = {"categoryId"})
     private String categoryId;
+
+    @SerializedName(value = "SubcategoryID", alternate = {"subcategoryId"})
     private String subcategoryId;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public String getProductName() { return productName; }
-    public String getName() { return productName; } // Alias for Mapper
-    public void setProductName(String productName) { this.productName = productName; }
-    public void setName(String name) { this.productName = name; }
+    public String getProductName() { return name; }
+    public String getName() { return name; }
+    public void setProductName(String productName) { this.name = productName; }
+    public void setName(String name) { this.name = name; }
+
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
 
     public long getPrice() { return price; }
     public void setPrice(long price) { this.price = price; }
-    
+
     public long getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(long originalPrice) { this.originalPrice = originalPrice; }
 
     public String getUnit() { return unit; }
-    public String getWeight() { return unit; } // Alias
     public void setUnit(String unit) { this.unit = unit; }
 
-    public List<String> getImageList() { return imageList; }
-    public void setImageList(List<String> imageList) { this.imageList = imageList; }
+    public String getWeight() {
+        return weight != null && !weight.trim().isEmpty() ? weight : unit;
+    }
+    public void setWeight(String weight) { this.weight = weight; }
+
+    public List<String> getImageList() { return image; }
+    public List<String> getImage() { return image; }
+    public void setImageList(List<String> imageList) { this.image = imageList; }
+    public void setImage(List<String> image) { this.image = image; }
+
     public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
         if (imageUrl != null) {
-            this.imageList = java.util.Collections.singletonList(imageUrl);
+            if (this.image == null) {
+                this.image = new ArrayList<>();
+            }
+            this.image.clear();
+            this.image.add(imageUrl);
         }
     }
-    public String getImageUrl() { return getFirstImage(); }
+
+    public String getImageUrl() {
+        if (image != null && !image.isEmpty()) return image.get(0);
+        return imageUrl;
+    }
 
     public List<Double> getWeightOptions() { return weightOptions; }
     public void setWeightOptions(List<Double> weightOptions) { this.weightOptions = weightOptions; }
@@ -83,8 +122,11 @@ public class ProductDto {
     public int getStock() { return stock; }
     public void setStock(int stock) { this.stock = stock; }
 
-    public Boolean getActive() { return isActive; }
-    public void setActive(Boolean active) { isActive = active; }
+    public Boolean getActive() {
+        if (active != null) return active;
+        return status == null ? null : "Active".equalsIgnoreCase(status);
+    }
+    public void setActive(Boolean active) { this.active = active; }
 
     public float getRating() { return rating; }
     public void setRating(float rating) { this.rating = rating; }
@@ -95,8 +137,14 @@ public class ProductDto {
     public int getSoldCount() { return soldCount; }
     public void setSoldCount(int soldCount) { this.soldCount = soldCount; }
 
+    public int getLiked() { return liked; }
+    public void setLiked(int liked) { this.liked = liked; }
+
     public String getOrigin() { return origin; }
     public void setOrigin(String origin) { this.origin = origin; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public String getCondition() { return condition; }
     public void setCondition(String condition) { this.condition = condition; }
@@ -111,9 +159,7 @@ public class ProductDto {
     public void setSubcategoryId(String subcategoryId) { this.subcategoryId = subcategoryId; }
 
     public String getFirstImage() {
-        if (imageList != null && !imageList.isEmpty()) {
-            return imageList.get(0);
-        }
-        return "";
+        String firstImage = getImageUrl();
+        return firstImage != null ? firstImage : "";
     }
 }

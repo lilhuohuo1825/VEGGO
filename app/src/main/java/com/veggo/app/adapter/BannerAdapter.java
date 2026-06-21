@@ -16,6 +16,16 @@ import com.veggo.app.domain.model.Banner;
 
 public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewHolder> {
 
+    public interface OnBannerClickListener {
+        void onBannerClick(Banner banner);
+    }
+
+    private OnBannerClickListener onBannerClickListener;
+
+    public void setOnBannerClickListener(OnBannerClickListener listener) {
+        this.onBannerClickListener = listener;
+    }
+
     public BannerAdapter() {
         super(new DiffUtil.ItemCallback<Banner>() {
             @Override
@@ -55,12 +65,18 @@ public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewH
         return getCurrentList().size();
     }
 
-    static class BannerViewHolder extends RecyclerView.ViewHolder {
+    class BannerViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imgBanner;
 
         BannerViewHolder(@NonNull View itemView) {
             super(itemView);
             imgBanner = itemView.findViewById(R.id.imgBanner);
+            itemView.setOnClickListener(v -> {
+                int position = getBindingAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && onBannerClickListener != null) {
+                    onBannerClickListener.onBannerClick(getItem(position % getCurrentList().size()));
+                }
+            });
         }
 
         void bind(Banner banner) {

@@ -1,6 +1,7 @@
 package com.veggo.app.presentation.profile;
 
 import android.os.Bundle;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -132,6 +133,34 @@ public class PostNotificationsActivity extends BaseActivity {
                 "%",
                 true
         ));
+
+        // Đọc thông báo nguyên liệu sắp hết hạn từ SharedPreferences
+        SharedPreferences expiryPrefs = getSharedPreferences("fridge_notifications", MODE_PRIVATE);
+        String expiryItems = expiryPrefs.getString("fridge_expiry_items_json", null);
+        long expiryTime = expiryPrefs.getLong("fridge_expiry_time", 0);
+        if (expiryItems != null && !expiryItems.isEmpty()) {
+            // Chỉ hiển thị trong vòng 2 ngày
+            long twoDaysMs = 2L * 24 * 60 * 60 * 1000;
+            if (System.currentTimeMillis() - expiryTime < twoDaysMs) {
+                String[] names = expiryItems.split(", ");
+                String title = "⚠️ Nguyên liệu sắp hết hạn!";
+                String body;
+                if (names.length == 1) {
+                    body = names[0] + " sẽ hết hạn vào ngày mai. Hãy sử dụng sớm!";
+                } else {
+                    body = names.length + " nguyên liệu sắp hết hạn: " + expiryItems;
+                }
+                notificationItems.add(new PostNotificationItem(
+                        CATEGORY_OTHER,
+                        title,
+                        body,
+                        "Xem tủ lạnh",
+                        "Hôm nay",
+                        "⏰",
+                        true
+                ));
+            }
+        }
     }
 
     private void showNotifications(String category) {

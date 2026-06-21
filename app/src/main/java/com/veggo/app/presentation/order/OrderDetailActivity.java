@@ -4,16 +4,45 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.data.remote.api.FridgeApi;
+import com.veggo.app.data.remote.dto.FridgeBatchRequestDto;
 import com.veggo.app.presentation.checkout.CheckoutActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+
 public class OrderDetailActivity extends BaseActivity {
+
+    private static final SimpleDateFormat ISO_DATE =
+            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+
+    static {
+        ISO_DATE.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
+    /** key = index trong danh sách sản phẩm, value = item */
+    private final Map<Integer, AssetModels.OrderDetailItem> selectedItems = new HashMap<>();
+    private AssetModels.OrderDetail currentDetail;
+    private boolean isDeliveredOrder = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,7 +57,7 @@ public class OrderDetailActivity extends BaseActivity {
             String orderId = getIntent().getStringExtra(AssetScreenData.EXTRA_ORDER_ID);
             AssetModels.Order order = findOrder(snapshot, orderId);
             AssetModels.OrderDetail detail = order == null ? null : snapshot.detailByOrderId.get(order.orderId);
-            
+
             java.util.Map<String, String> skuToIdMap = new java.util.HashMap<>();
             if (detail != null && detail.items != null) {
                 com.veggo.app.data.local.dao.ProductDao dao = com.veggo.app.core.database.VeggoDatabase.getInstance(this).productDao();
@@ -41,8 +70,25 @@ public class OrderDetailActivity extends BaseActivity {
                     }
                 }
             }
-            
-            runOnUiThread(() -> bindDetail(snapshot, order, detail, skuToIdMap));
+
+            // Lấy danh sách fridge items
+            List<com.veggo.app.data.remote.dto.FridgeItemDto> fridgeItems = new java.util.ArrayList<>();
+            try {
+                String customerId = new AppPreferences(this).getCustomerId();
+                if (customerId != null && !customerId.isEmpty()) {
+                    FridgeApi api = ApiClient.createService(FridgeApi.class);
+                    retrofit2.Response<List<com.veggo.app.data.remote.dto.FridgeItemDto>> response = api.getFridgeItems(customerId).execute();
+                    if (response.isSuccessful() && response.body() != null) {
+                        fridgeItems = response.body();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            final List<com.veggo.app.data.remote.dto.FridgeItemDto> finalFridgeItems = fridgeItems;
+
+            runOnUiThread(() -> bindDetail(snapshot, order, detail, skuToIdMap, finalFridgeItems));
         }).start();
     }
 
@@ -59,7 +105,8 @@ public class OrderDetailActivity extends BaseActivity {
             AssetScreenData.Snapshot snapshot,
             AssetModels.Order order,
             AssetModels.OrderDetail detail,
-            java.util.Map<String, String> skuToIdMap
+            java.util.Map<String, String> skuToIdMap,
+            List<com.veggo.app.data.remote.dto.FridgeItemDto> fridgeItems
     ) {
         if (order == null) {
             return;
@@ -106,7 +153,17 @@ public class OrderDetailActivity extends BaseActivity {
             AssetModels.Warehouse warehouse = snapshot.warehouseById.get(detail.shippingInfo.warehouseId);
             String warehouseText = warehouse == null ? detail.shippingInfo.warehouseId : warehouse.warehouseName;
             AssetScreenData.setText(findViewById(android.R.id.content), R.id.orderDetailWarehouse, warehouseText);
-            bindProducts(detail, skuToIdMap);
+        }
+
+        // Xác định loại đơn hàng để hiện/ẩn fridge feature
+        // Chỉ cho phép tính năng Fridge đối với đơn hàng có trạng thái "completed"
+        String status = order.status != null ? order.status : "";
+        isDeliveredOrder = "completed".equals(status);
+        currentDetail = detail;
+
+        // Bind products (với checkbox nếu là đơn đã giao)
+        if (detail != null) {
+            bindProducts(detail, skuToIdMap, fridgeItems, order.orderId);
         }
 
         // Bind bottom action buttons dynamically based on status
@@ -115,16 +172,17 @@ public class OrderDetailActivity extends BaseActivity {
         View btnReturn = findViewById(R.id.orderDetailReturnButton);
         View btnReceived = findViewById(R.id.orderDetailReceivedButton);
         View btnBuyAgain = findViewById(R.id.orderDetailBuyAgainButton);
+        View btnAddToFridge = findViewById(R.id.orderDetailAddToFridgeButton);
 
-        if (bottomActions != null && btnCancel != null && btnReturn != null && btnReceived != null && btnBuyAgain != null) {
-            // Hide all buttons by default
+        if (bottomActions != null && btnCancel != null && btnReturn != null
+                && btnReceived != null && btnBuyAgain != null) {
             bottomActions.setVisibility(View.VISIBLE);
             btnCancel.setVisibility(View.GONE);
             btnReturn.setVisibility(View.GONE);
             btnReceived.setVisibility(View.GONE);
             btnBuyAgain.setVisibility(View.GONE);
+            if (btnAddToFridge != null) btnAddToFridge.setVisibility(View.GONE);
 
-            String status = order.status != null ? order.status : "";
             switch (status) {
                 case "pending":
                     btnCancel.setVisibility(View.VISIBLE);
@@ -155,6 +213,12 @@ public class OrderDetailActivity extends BaseActivity {
                 case "returned":
                     btnReturn.setVisibility(View.VISIBLE);
                     btnReceived.setVisibility(View.VISIBLE);
+
+                    // Hiện button thêm vào tủ lạnh nếu trạng thái là completed
+                    if ("completed".equals(status) && btnAddToFridge != null) {
+                        btnAddToFridge.setVisibility(View.VISIBLE);
+                        btnAddToFridge.setOnClickListener(v -> onAddToFridgeClicked());
+                    }
 
                     btnReturn.setOnClickListener(v ->
                             startActivity(new Intent(this, ReturnsActivity.class))
@@ -195,30 +259,38 @@ public class OrderDetailActivity extends BaseActivity {
     private void updateOrderStatus(AssetModels.Order order, String newStatus, String toastMsg) {
         order.status = newStatus;
         new Thread(() -> {
-            String documentId = order.orderId;
-            if (order.objectId != null && order.objectId.oid != null && !order.objectId.oid.trim().isEmpty()) {
-                documentId = order.objectId.oid;
+            // Cập nhật backend API
+            try {
+                com.veggo.app.data.remote.api.OrderApi orderApi =
+                        ApiClient.createService(com.veggo.app.data.remote.api.OrderApi.class);
+                java.util.Map<String, String> body = new java.util.HashMap<>();
+                body.put("status", newStatus);
+                // Dùng orderId (ORD...) để gọi PATCH API
+                String apiOrderId = order.orderId;
+                orderApi.updateOrderStatus(apiOrderId, body).execute();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            new com.veggo.app.core.database.AssetRepository(this).upsert(
-                    com.veggo.app.assets.AssetFiles.COLLECTION_ORDERS,
-                    documentId,
-                    order
-            );
             runOnUiThread(() -> {
-                android.widget.Toast.makeText(this, toastMsg, android.widget.Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, toastMsg, Toast.LENGTH_SHORT).show();
                 loadOrderDetail(); // Reload order details to refresh UI
             });
         }).start();
     }
 
-    private void bindProducts(AssetModels.OrderDetail detail, java.util.Map<String, String> skuToIdMap) {
+    private void bindProducts(AssetModels.OrderDetail detail, java.util.Map<String, String> skuToIdMap, List<com.veggo.app.data.remote.dto.FridgeItemDto> fridgeItems, String orderId) {
         LinearLayout container = findViewById(R.id.orderDetailProducts);
         container.removeAllViews();
+        selectedItems.clear();
+
         if (detail.items == null) {
             return;
         }
         LayoutInflater inflater = LayoutInflater.from(this);
         int topMargin = getResources().getDimensionPixelSize(R.dimen.spacing_md);
+
+        int totalAddable = 0;
+
         for (int index = 0; index < detail.items.size(); index++) {
             AssetModels.OrderDetailItem item = detail.items.get(index);
             View row = inflater.inflate(R.layout.item_order_detail_product_kale, container, false);
@@ -231,19 +303,215 @@ public class OrderDetailActivity extends BaseActivity {
                 row.setLayoutParams(params);
             }
             AssetScreenData.bindDetailProduct(this, row, item);
-            row.setOnClickListener(v -> {
-                Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
-                String productId = item.sku != null ? skuToIdMap.get(item.sku) : null;
-                if (productId == null && item.objectId != null) {
-                    productId = item.objectId.oid; // Fallback
+
+            boolean alreadyAdded = false;
+            for (com.veggo.app.data.remote.dto.FridgeItemDto fItem : fridgeItems) {
+                if (orderId != null && orderId.equals(fItem.getOrderId()) && item.sku != null && item.sku.equals(fItem.getSku())) {
+                    alreadyAdded = true;
+                    break;
                 }
-                if (productId == null) {
-                    productId = item.sku; // Fallback
+            }
+
+            // Checkbox cho tủ lạnh
+            CheckBox checkBox = row.findViewById(R.id.orderDetailProductCheckBox);
+            TextView addedBadge = row.findViewById(R.id.orderDetailProductAddedBadge);
+
+            if (isDeliveredOrder) {
+                if (alreadyAdded) {
+                    if (checkBox != null) checkBox.setVisibility(View.GONE);
+                    if (addedBadge != null) addedBadge.setVisibility(View.VISIBLE);
+                    row.setAlpha(0.6f);
+                } else {
+                    totalAddable++;
+                    if (addedBadge != null) addedBadge.setVisibility(View.GONE);
+                    if (checkBox != null) {
+                        checkBox.setVisibility(View.VISIBLE);
+                        final int itemIndex = index;
+                        // Khi bấm vào cả row thì toggle checkbox
+                        row.setOnClickListener(v -> {
+                            checkBox.setChecked(!checkBox.isChecked());
+                            if (checkBox.isChecked()) {
+                                selectedItems.put(itemIndex, item);
+                            } else {
+                                selectedItems.remove(itemIndex);
+                            }
+                            updateSelectAllCheckboxState();
+                        });
+                        checkBox.setOnClickListener(v -> {
+                            if (checkBox.isChecked()) {
+                                selectedItems.put(itemIndex, item);
+                            } else {
+                                selectedItems.remove(itemIndex);
+                            }
+                            updateSelectAllCheckboxState();
+                        });
+                    }
                 }
-                intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
-                startActivity(intent);
-            });
+            } else {
+                // Đơn chưa giao: click vào để xem chi tiết sản phẩm
+                row.setOnClickListener(v -> {
+                    Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
+                    String productId = item.sku != null ? skuToIdMap.get(item.sku) : null;
+                    if (productId == null && item.objectId != null) {
+                        productId = item.objectId.oid;
+                    }
+                    if (productId == null) {
+                        productId = item.sku;
+                    }
+                    intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
+                    startActivity(intent);
+                });
+            }
+
             container.addView(row);
+        }
+
+        CheckBox selectAllBox = findViewById(R.id.orderDetailSelectAllCheckBox);
+        if (selectAllBox != null) {
+            if (isDeliveredOrder && totalAddable > 0) {
+                selectAllBox.setVisibility(View.VISIBLE);
+                selectAllBox.setOnCheckedChangeListener(null);
+                selectAllBox.setChecked(false);
+                selectAllBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    for (int i = 0; i < container.getChildCount(); i++) {
+                        View row = container.getChildAt(i);
+                        CheckBox cb = row.findViewById(R.id.orderDetailProductCheckBox);
+                        if (cb != null && cb.getVisibility() == View.VISIBLE) {
+                            cb.setChecked(isChecked);
+                            if (isChecked) {
+                                selectedItems.put(i, detail.items.get(i));
+                            } else {
+                                selectedItems.remove(i);
+                            }
+                        }
+                    }
+                });
+            } else {
+                selectAllBox.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void updateSelectAllCheckboxState() {
+        LinearLayout container = findViewById(R.id.orderDetailProducts);
+        if (container == null) return;
+        int totalAddable = 0;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View row = container.getChildAt(i);
+            CheckBox cb = row.findViewById(R.id.orderDetailProductCheckBox);
+            if (cb != null && cb.getVisibility() == View.VISIBLE) {
+                totalAddable++;
+            }
+        }
+
+        CheckBox selectAllBox = findViewById(R.id.orderDetailSelectAllCheckBox);
+        if (selectAllBox != null && totalAddable > 0) {
+            selectAllBox.setOnCheckedChangeListener(null);
+            selectAllBox.setChecked(selectedItems.size() == totalAddable);
+            selectAllBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                for (int i = 0; i < container.getChildCount(); i++) {
+                    View row = container.getChildAt(i);
+                    CheckBox cb = row.findViewById(R.id.orderDetailProductCheckBox);
+                    if (cb != null && cb.getVisibility() == View.VISIBLE) {
+                        cb.setChecked(isChecked);
+                        if (isChecked) {
+                            selectedItems.put(i, currentDetail.items.get(i));
+                        } else {
+                            selectedItems.remove(i);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    private void onAddToFridgeClicked() {
+        if (currentDetail == null || currentDetail.items == null || currentDetail.items.isEmpty()) {
+            Toast.makeText(this, "Không có nguyên liệu nào trong đơn hàng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (selectedItems.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn ít nhất 1 nguyên liệu để thêm", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<AssetModels.OrderDetailItem> toAdd = new ArrayList<>(selectedItems.values());
+
+        String customerId = new AppPreferences(this).getCustomerId();
+        if (customerId == null || customerId.isEmpty()) {
+            Toast.makeText(this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<FridgeBatchRequestDto.FridgeItemRequestDto> dtoItems = new ArrayList<>();
+        String purchaseDate = ISO_DATE.format(new Date());
+        // Hạn sử dụng mặc định: 7 ngày sau ngày mua
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.add(Calendar.DAY_OF_YEAR, 7);
+        String expiryDate = ISO_DATE.format(cal.getTime());
+
+        for (AssetModels.OrderDetailItem item : toAdd) {
+            dtoItems.add(new FridgeBatchRequestDto.FridgeItemRequestDto(
+                    item.productName != null ? item.productName : "",
+                    item.quantity,
+                    purchaseDate,
+                    expiryDate,
+                    item.sku != null ? item.sku : "",
+                    currentDetail.orderId != null ? currentDetail.orderId : "",
+                    item.image != null ? item.image : "",
+                    null,
+                    item.unit != null ? item.unit : "kg",
+                    "history",
+                    null
+            ));
+        }
+
+        FridgeBatchRequestDto requestDto = new FridgeBatchRequestDto(dtoItems);
+
+        // Vô hiệu hóa button để tránh bấm nhiều lần
+        View btnAddToFridge = findViewById(R.id.orderDetailAddToFridgeButton);
+        if (btnAddToFridge != null) btnAddToFridge.setEnabled(false);
+
+        final String userId = customerId;
+        new Thread(() -> {
+            try {
+                FridgeApi fridgeApi = ApiClient.createService(FridgeApi.class);
+                retrofit2.Response<?> response = fridgeApi.addBatchItems(userId, requestDto).execute();
+                runOnUiThread(() -> {
+                    if (btnAddToFridge != null) btnAddToFridge.setEnabled(true);
+                    if (response.isSuccessful()) {
+                        // Reset selection
+                        selectedItems.clear();
+                        resetCheckboxes();
+                        Toast.makeText(this,
+                                "Đã thêm " + dtoItems.size() + " nguyên liệu vào tủ lạnh!",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this,
+                                "Không thể thêm vào tủ lạnh. Vui lòng thử lại.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> {
+                    if (btnAddToFridge != null) btnAddToFridge.setEnabled(true);
+                    Toast.makeText(this,
+                            "Lỗi kết nối. Vui lòng kiểm tra mạng.",
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    private void resetCheckboxes() {
+        LinearLayout container = findViewById(R.id.orderDetailProducts);
+        if (container == null) return;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View row = container.getChildAt(i);
+            CheckBox cb = row.findViewById(R.id.orderDetailProductCheckBox);
+            if (cb != null) cb.setChecked(false);
         }
     }
 

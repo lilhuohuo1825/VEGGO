@@ -5,6 +5,7 @@
     android:background="@color/background_main"
     android:orientation="vertical">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="64dp"
@@ -14,17 +15,17 @@
         android:paddingEnd="@dimen/spacing_md">
 
         <ImageView
-    android:id="@+id/addFridgeBackButton"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:contentDescription="@string/orders_back"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+            android:id="@+id/addFridgeBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/orders_back"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
 
         <TextView
             android:layout_width="0dp"
@@ -55,6 +56,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Scan card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -83,18 +85,18 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_sm"
                         android:lineSpacingExtra="2dp"
-                        android:text="@string/fridge_scan_body"
+                        android:text="Scan nhanh hóa đơn đã mua"
                         android:textColor="@color/neutral_70"
                         android:textSize="@dimen/text_sm" />
 
                     <TextView
-                        android:layout_width="128dp"
+                        android:layout_width="160dp"
                         android:layout_height="42dp"
                         android:layout_marginTop="@dimen/spacing_md"
                         android:background="@drawable/bg_order_primary_button"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="@string/fridge_open_camera"
+                        android:text="SCAN HÓA ĐƠN"
                         android:textAllCaps="true"
                         android:textColor="@color/background_main"
                         android:textSize="@dimen/text_sm" />
@@ -110,60 +112,36 @@
                         android:layout_width="30dp"
                         android:layout_height="30dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_scan" />
+                        android:src="@drawable/ic_scan"
+                        android:tint="@color/primary_main" />
                 </FrameLayout>
             </LinearLayout>
 
+            <!-- Dynamic container for multiple manual input blocks -->
             <LinearLayout
+                android:id="@+id/fridgeManualBlocksContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="vertical" />
+                
+            <!-- Nút Thêm sản phẩm khác -->
+            <TextView
+                android:id="@+id/fridgeAddAnotherBlockBtn"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
                 android:layout_marginTop="@dimen/spacing_md"
-                android:background="@drawable/bg_order_card"
-                android:orientation="vertical"
-                android:padding="@dimen/spacing_lg">
+                android:fontFamily="@font/inter_semibold"
+                android:gravity="center"
+                android:text="+ Thêm nguyên liệu khác"
+                android:textColor="@color/primary_main"
+                android:textSize="@dimen/text_sm"
+                android:clickable="true"
+                android:focusable="true" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter_semibold"
-                    android:text="@string/fridge_manual_title"
-                    android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_md"
-                    android:textStyle="bold" />
-
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:text="@string/fridge_name" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                <EditText android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/spacing_xs" android:background="@drawable/bg_input" android:hint="@string/fridge_name_hint" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:textColor="@color/neutral_100" android:textColorHint="@color/neutral_60" android:textSize="@dimen/text_sm" />
-
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:orientation="horizontal">
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/fridge_quantity" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                        <EditText android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/spacing_xs" android:background="@drawable/bg_input" android:hint="@string/fridge_quantity_hint" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:textColor="@color/neutral_100" android:textColorHint="@color/neutral_60" android:textSize="@dimen/text_sm" />
-                    </LinearLayout>
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/fridge_location" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                        <TextView android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/spacing_xs" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:text="@string/fridge_location_hint" android:textColor="@color/neutral_60" android:textSize="@dimen/text_sm" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:orientation="horizontal">
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/fridge_buy_date" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                        <TextView android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/spacing_xs" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="27/05/2026" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                    </LinearLayout>
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/fridge_expiry" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
-                        <TextView android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/spacing_xs" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/fridge_expiry_hint" android:textColor="@color/neutral_60" android:textSize="@dimen/text_sm" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/spacing_sm" android:gravity="center_vertical" android:orientation="horizontal">
-                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_check" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:text="@string/fridge_reminder" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
-                </LinearLayout>
-            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
+    <!-- Bottom action bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="84dp"
@@ -174,7 +152,33 @@
         android:paddingStart="@dimen/spacing_lg"
         android:paddingEnd="@dimen/spacing_lg">
 
-        <TextView android:id="@+id/addFridgeCancelButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@drawable/bg_order_cancel_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/fridge_cancel" android:textColor="@color/primary_main" android:textSize="@dimen/text_sm" />
-        <TextView android:layout_width="0dp" android:layout_height="48dp" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1.35" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/fridge_save" android:textColor="@color/background_main" android:textSize="@dimen/text_sm" />
+        <TextView
+            android:id="@+id/addFridgeCancelButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_order_cancel_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/fridge_cancel"
+            android:textColor="@color/primary_main"
+            android:textSize="@dimen/text_sm"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/addFridgeSaveButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_weight="1.35"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/fridge_save"
+            android:textColor="@color/background_main"
+            android:textSize="@dimen/text_sm"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 </LinearLayout>

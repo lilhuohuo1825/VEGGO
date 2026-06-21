@@ -20,20 +20,38 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.core.ui.BaseFragment;
+import com.veggo.app.data.remote.api.FridgeApi;
+import com.veggo.app.data.remote.dto.FridgeBatchRequestDto;
 import com.veggo.app.presentation.profile.OrderHistoryFragmentExtras;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class OrderHistoryFragment extends BaseFragment {
     private static final String ARG_SHOW_BACK_BUTTON = "arg_show_back_button";
+
+    private static final SimpleDateFormat ISO_DATE =
+            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+
+    static {
+        ISO_DATE.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
 
     private AssetScreenData.Snapshot snapshot;
     private LinearLayout orderListContainer;
     private ScrollView orderListScroll;
     private HorizontalScrollView orderStatusScroll;
     private View orderEmptyState;
+    private View btnAddAllToFridge;
     private String initialStatus;
     private String currentStatus;
 
@@ -73,6 +91,11 @@ public class OrderHistoryFragment extends BaseFragment {
         orderListScroll = view.findViewById(R.id.orderListScroll);
         orderStatusScroll = view.findViewById(R.id.orderStatusScroll);
         orderEmptyState = view.findViewById(R.id.orderEmptyState);
+        btnAddAllToFridge = view.findViewById(R.id.orderHistoryAddAllToFridgeButton);
+        if (btnAddAllToFridge != null) {
+            btnAddAllToFridge.setOnClickListener(v -> onAddAllToFridgeClicked());
+        }
+
         view.findViewById(R.id.orderEmptyShopButton).setOnClickListener(v -> openShopping());
         view.findViewById(R.id.orderTabAll).setOnClickListener(v -> showOrders(null));
         view.findViewById(R.id.orderTabPending).setOnClickListener(v -> showOrders("pending"));
@@ -139,6 +162,12 @@ public class OrderHistoryFragment extends BaseFragment {
         }
         showEmptyState(false);
         LayoutInflater inflater = LayoutInflater.from(requireContext());
+
+        if (btnAddAllToFridge != null) {
+            boolean isCompletedTab = "delivered".equals(status) || "completed".equals(status);
+            btnAddAllToFridge.setVisibility(isCompletedTab ? View.VISIBLE : View.GONE);
+        }
+
         for (AssetModels.Order order : orders) {
             View card = inflater.inflate(layoutForStatus(order.status), orderListContainer, false);
             AssetScreenData.bindOrderCard(requireContext(), card, snapshot, order);
@@ -256,5 +285,107 @@ public class OrderHistoryFragment extends BaseFragment {
         return R.layout.item_order_cancelled;
     }
 
+    private void onAddAllToFridgeClicked() {
+        if (snapshot == null) return;
+        List<AssetModels.Order> completedOrders = AssetScreenData.filterOrders(snapshot, "completed");
 
+        if (completedOrders.isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Không có đơn hàng nào ở trạng thái đã nhận (completed)", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String customerId = new AppPreferences(requireContext()).getCustomerId();
+        if (customerId == null || customerId.isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Không tìm thấy thông tin người dùng", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (btnAddAllToFridge != null) btnAddAllToFridge.setEnabled(false);
+
+        new Thread(() -> {
+            try {
+                // 1. Fetch current fridge items
+                FridgeApi fridgeApi = ApiClient.createService(FridgeApi.class);
+                retrofit2.Response<List<com.veggo.app.data.remote.dto.FridgeItemDto>> fridgeRes = fridgeApi.getFridgeItems(customerId).execute();
+                List<com.veggo.app.data.remote.dto.FridgeItemDto> existingItems = new ArrayList<>();
+                if (fridgeRes.isSuccessful() && fridgeRes.body() != null) {
+                    existingItems = fridgeRes.body();
+                }
+
+                // 2. Prepare items to add
+                List<FridgeBatchRequestDto.FridgeItemRequestDto> dtoItems = new ArrayList<>();
+                String purchaseDate = ISO_DATE.format(new Date());
+                Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                cal.add(Calendar.DAY_OF_YEAR, 7);
+                String expiryDate = ISO_DATE.format(cal.getTime());
+
+                for (AssetModels.Order order : completedOrders) {
+                    AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(order.orderId);
+                    if (detail == null || detail.items == null) continue;
+
+                    for (AssetModels.OrderDetailItem item : detail.items) {
+                        // Check if already added
+                        boolean alreadyAdded = false;
+                        for (com.veggo.app.data.remote.dto.FridgeItemDto fItem : existingItems) {
+                            if (order.orderId.equals(fItem.getOrderId()) && item.sku != null && item.sku.equals(fItem.getSku())) {
+                                alreadyAdded = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyAdded) {
+                            dtoItems.add(new FridgeBatchRequestDto.FridgeItemRequestDto(
+                                    item.productName != null ? item.productName : "",
+                                    item.quantity,
+                                    purchaseDate,
+                                    expiryDate,
+                                    item.sku != null ? item.sku : "",
+                                    order.orderId,
+                                    item.image != null ? item.image : "",
+                                    null,
+                                    item.unit != null ? item.unit : "kg",
+                                    "history",
+                                    null
+                            ));
+                        }
+                    }
+                }
+
+                requireActivity().runOnUiThread(() -> {
+                    if (dtoItems.isEmpty()) {
+                        if (btnAddAllToFridge != null) btnAddAllToFridge.setEnabled(true);
+                        android.widget.Toast.makeText(requireContext(), "Tất cả sản phẩm đã có trong tủ lạnh rồi", android.widget.Toast.LENGTH_SHORT).show();
+                    } else {
+                        // 3. Add to fridge
+                        new Thread(() -> {
+                            try {
+                                retrofit2.Response<?> addRes = fridgeApi.addBatchItems(customerId, new FridgeBatchRequestDto(dtoItems)).execute();
+                                requireActivity().runOnUiThread(() -> {
+                                    if (btnAddAllToFridge != null) btnAddAllToFridge.setEnabled(true);
+                                    if (addRes.isSuccessful()) {
+                                        android.widget.Toast.makeText(requireContext(), "Đã thêm " + dtoItems.size() + " nguyên liệu vào tủ lạnh!", android.widget.Toast.LENGTH_LONG).show();
+                                    } else {
+                                        android.widget.Toast.makeText(requireContext(), "Không thể thêm vào tủ lạnh. Vui lòng thử lại.", android.widget.Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                requireActivity().runOnUiThread(() -> {
+                                    if (btnAddAllToFridge != null) btnAddAllToFridge.setEnabled(true);
+                                    android.widget.Toast.makeText(requireContext(), "Lỗi kết nối", android.widget.Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        }).start();
+                    }
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                requireActivity().runOnUiThread(() -> {
+                    if (btnAddAllToFridge != null) btnAddAllToFridge.setEnabled(true);
+                    android.widget.Toast.makeText(requireContext(), "Lỗi khi kiểm tra tủ lạnh", android.widget.Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
 }

@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.google.firebase.FirebaseApp;
 import com.veggo.app.core.database.AssetDatabaseSeeder;
+import com.veggo.app.core.notification.FridgeExpiryScheduler;
 
 public class VeggoApplication extends Application {
     @Override
@@ -11,11 +12,12 @@ public class VeggoApplication extends Application {
         super.onCreate();
         FirebaseApp.initializeApp(this);
 
-        // Seed on a background thread FIRST — Room cannot be accessed on the main thread.
-        // seedIfNeeded() uses an internal executor and is safe to call here.
-        // Firebase sync starts after seeding to avoid overwriting freshly-seeded data.
-        AssetDatabaseSeeder.seedIfNeeded(this);
+        // Seed xong trước khi auth/profile thao tác để tránh bị tiến trình nền ghi đè.
+        AssetDatabaseSeeder.seedIfNeededBlocking(this);
 
         com.veggo.app.core.network.FirebaseSyncManager.getInstance(this).syncProducts();
+
+        // Lên lịch kiểm tra nguyên liệu sắp hết hạn mỗi ngày
+        FridgeExpiryScheduler.scheduleDailyCheck(this);
     }
 }
