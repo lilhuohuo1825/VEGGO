@@ -7,11 +7,15 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.lifecycle.ViewModelProvider;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiHttpException;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
@@ -119,6 +123,19 @@ public class ProductDetailActivity extends BaseActivity {
         });
 
         viewModel.isSubmittingQuestion().observe(this, this::setConsultationSubmittingUi);
+        viewModel.getAddToCartSuccess().observe(this, success -> {
+            if (success) {
+                android.widget.Toast.makeText(this, R.string.add_to_cart_success, android.widget.Toast.LENGTH_SHORT).show();
+                viewModel.resetAddToCartStatus();
+            }
+        });
+
+        viewModel.getCartError().observe(this, error -> {
+            if (error != null) {
+                android.widget.Toast.makeText(this, error, android.widget.Toast.LENGTH_SHORT).show();
+                viewModel.resetAddToCartStatus();
+            }
+        });
     }
 
     private void setConsultationSubmittingUi(boolean submitting) {
@@ -190,7 +207,7 @@ public class ProductDetailActivity extends BaseActivity {
 
         View anchor = edtQuestion != null ? (View) edtQuestion.getParent() : findViewById(android.R.id.content);
         Snackbar snackbar = Snackbar.make(anchor, message, Snackbar.LENGTH_LONG);
-        if (t instanceof ApiHttpException && ((ApiHttpException) t).getCode() >= 500
+        if ((t instanceof ApiHttpException && ((ApiHttpException) t).getCode() >= 500)
                 || !(t instanceof ApiHttpException)) {
             snackbar.setAction(R.string.consultation_submit_retry, v -> {
                 edtQuestion.setText(questionText);
@@ -342,7 +359,11 @@ public class ProductDetailActivity extends BaseActivity {
             startActivity(new android.content.Intent(this, com.veggo.app.presentation.search.SearchActivity.class));
         });
         findViewById(R.id.btnCart).setOnClickListener(v -> {
-            // Navigate to Cart
+            // Chuyển về MainActivity và chọn tab Giỏ hàng
+            android.content.Intent intent = new android.content.Intent(this, com.veggo.app.MainActivity.class);
+            intent.putExtra(com.veggo.app.MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_cart);
+            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
         });
         
         // "Show more" for description
@@ -410,6 +431,7 @@ public class ProductDetailActivity extends BaseActivity {
         View btnIncrease = view.findViewById(R.id.tvIncrease);
         View btnConfirm = view.findViewById(R.id.btnConfirmAddToCart);
         View btnClose = view.findViewById(R.id.btnClose);
+        ChipGroup weightGroup = view.findViewById(R.id.cgWeight);
 
         // Bind data
         Glide.with(this).load(product.getImageUrl()).into(ivThumb);
@@ -418,6 +440,8 @@ public class ProductDetailActivity extends BaseActivity {
         tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice()));
 
         final int[] quantity = {1};
+        final double[] selectedWeight = {1.0};
+        bindWeightOptions(weightGroup, product.getWeightOptions(), selectedWeight);
         
         btnDecrease.setOnClickListener(v -> {
             if (quantity[0] > 1) {
@@ -436,8 +460,14 @@ public class ProductDetailActivity extends BaseActivity {
         btnClose.setOnClickListener(v -> bottomSheetDialog.dismiss());
 
         btnConfirm.setOnClickListener(v -> {
-            // Logic thêm vào giỏ hàng thực tế
-            android.widget.Toast.makeText(this, "Đã thêm " + quantity[0] + " " + product.getName() + " vào giỏ hàng", android.widget.Toast.LENGTH_SHORT).show();
+            String sku = product.getSku();
+            if (sku == null || sku.trim().isEmpty()) {
+                android.widget.Toast.makeText(this, "Không tìm thấy SKU sản phẩm", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String customerId = resolveCustomerId();
+            viewModel.addToCart(customerId, sku, quantity[0], selectedWeight[0]);
             bottomSheetDialog.dismiss();
         });
 
@@ -449,7 +479,8 @@ public class ProductDetailActivity extends BaseActivity {
                 AppModule.provideProductRepository(this),
                 AppModule.provideReviewRepository(this),
                 AppModule.provideConsultationRepository(this),
-                AppModule.provideRecipeRepository()
+                AppModule.provideRecipeRepository(),
+                AppModule.provideCartRepository(this)
         );
         viewModel = new ViewModelProvider(this, factory).get(ProductViewModel.class);
     }
@@ -489,5 +520,80 @@ public class ProductDetailActivity extends BaseActivity {
         long discount = product.getOriginalPrice() - product.getPrice();
         int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
         return "-" + percentage + "%";
+    }
+
+    private String resolveCustomerId() {
+        AppPreferences appPreferences = new AppPreferences(this);
+        String customerId = appPreferences.getCustomerId();
+        if (customerId == null || customerId.trim().isEmpty()) {
+            customerId = new com.veggo.app.core.preferences.PreferencesManager(this).getUserId();
+        }
+        if (customerId == null || customerId.trim().isEmpty()) {
+            customerId = "CUS900025";
+        }
+        return customerId;
+    }
+
+    private void bindWeightOptions(ChipGroup chipGroup, java.util.List<Double> weightOptions, double[] selectedWeight) {
+        if (chipGroup == null) {
+            return;
+        }
+
+        chipGroup.removeAllViews();
+
+        java.util.List<Double> resolvedOptions = new java.util.ArrayList<>();
+        if (weightOptions != null) {
+            for (Double option : weightOptions) {
+                if (option != null && option > 0) {
+                    resolvedOptions.add(option);
+                }
+            }
+        }
+
+        if (resolvedOptions.isEmpty()) {
+            resolvedOptions.add(1.0);
+        }
+
+        for (int i = 0; i < resolvedOptions.size(); i++) {
+            double option = resolvedOptions.get(i);
+            Chip chip = new Chip(this);
+            chip.setCheckable(true);
+            chip.setText(formatWeightOption(option));
+            chip.setChipBackgroundColorResource(R.color.chip_choice_background_color);
+            chip.setChipStrokeColorResource(R.color.chip_choice_stroke_color);
+            chip.setChipStrokeWidth(1f);
+            chip.setTextColor(ContextCompat.getColor(this, R.color.chip_choice_text_color));
+            chip.setChecked(i == 0);
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedWeight[0] = option;
+                }
+            });
+            chipGroup.addView(chip);
+
+            if (i == 0) {
+                selectedWeight[0] = option;
+            }
+        }
+    }
+
+    private String formatWeightOption(double weight) {
+        if (weight >= 1.0) {
+            if (Math.abs(weight - Math.round(weight)) < 0.0001) {
+                return String.format(Locale.US, "%.0fkg", weight);
+            }
+            return String.format(Locale.US, "%skg", trimTrailingZeros(weight));
+        }
+
+        int grams = (int) Math.round(weight * 1000d);
+        return grams + "g";
+    }
+
+    private String trimTrailingZeros(double value) {
+        String text = String.format(Locale.US, "%.3f", value);
+        while (text.contains(".") && (text.endsWith("0") || text.endsWith("."))) {
+            text = text.substring(0, text.length() - 1);
+        }
+        return text;
     }
 }

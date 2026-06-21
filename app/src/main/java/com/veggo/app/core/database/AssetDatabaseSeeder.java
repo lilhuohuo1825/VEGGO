@@ -152,6 +152,9 @@ public final class AssetDatabaseSeeder {
                     assetProduct.basePrice > 0 ? assetProduct.basePrice : assetProduct.price,
                     assetProduct.sku,
                     firstImage(assetProduct.image),
+                    assetProduct.weightOptions != null && !assetProduct.weightOptions.isEmpty()
+                        ? new com.google.gson.Gson().toJson(parseWeightOptions(assetProduct.weightOptions))
+                        : null,
                     assetProduct.weight != null ? assetProduct.weight : assetProduct.unit,
                     (float) assetProduct.rating,
                     assetProduct.liked,
@@ -161,10 +164,22 @@ public final class AssetDatabaseSeeder {
                     assetProduct.status != null ? assetProduct.status : "Mới",
                     assetProduct.brand != null ? assetProduct.brand : "Veggo",
                     assetProduct.categoryId,
-                    assetProduct.subcategoryId
+                    assetProduct.subcategoryId,
+                    0.0 // carbonSavingPoint default for assets
             ));
         }
         return products;
+    }
+
+    private static List<Double> parseWeightOptions(List<String> source) {
+        List<Double> result = new ArrayList<>();
+        for (String value : source) {
+            try {
+                result.add(Double.parseDouble(value));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return result;
     }
 
     private static List<RecipeEntity> readRecipes(AssetJsonLoader loader, List<ProductEntity> products) throws Exception {

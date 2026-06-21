@@ -17,8 +17,8 @@
 
         <ImageView
             android:id="@+id/imgItemCheckbox"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
             android:src="@drawable/ic_checkbox_checked" />
 
         <ImageView
@@ -57,8 +57,8 @@
 
                 <ImageView
                     android:id="@+id/imgDeleteCartItem"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/ic_trash" />
             </LinearLayout>
@@ -76,6 +76,16 @@
                 android:textColor="#167728"
                 android:textSize="10sp"
                 tools:text="200gr" />
+
+            <TextView
+                android:id="@+id/tvCarbonPoint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/inter_medium"
+                android:textColor="#57AF37"
+                android:textSize="11sp"
+                tools:text="Carbon: 33.1" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -111,16 +121,16 @@
 
                 <TextView
                     android:id="@+id/tvDecreaseQuantity"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:gravity="center"
                     android:text="-"
                     android:textColor="#57AF37" />
 
                 <TextView
                     android:id="@+id/tvQuantity"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:background="#57AF37"
                     android:gravity="center"
                     android:text="1"
@@ -131,8 +141,8 @@
 
                 <TextView
                     android:id="@+id/tvIncreaseQuantity"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:gravity="center"
                     android:text="+"
                     android:textColor="#57AF37" />

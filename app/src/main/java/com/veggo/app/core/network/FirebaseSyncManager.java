@@ -73,7 +73,23 @@ public class FirebaseSyncManager {
                 Long originalPriceL = doc.getLong("originalPrice");
                 String sku = doc.getString("sku");
                 String imageUrl = doc.getString("imageUrl");
-                String weight = doc.getString("weight");
+                
+                // Firestore might store numbers as Strings or vice-versa. 
+                // Using doc.get() and manual conversion to be safe.
+                Object weightObj = doc.get("weight");
+                String weight = weightObj != null ? String.valueOf(weightObj) : null;
+
+                Object weightOptionsRaw = doc.get("WeightOptions");
+                List<String> weightOptions = new ArrayList<>();
+                if (weightOptionsRaw instanceof List) {
+                    List<?> list = (List<?>) weightOptionsRaw;
+                    for (Object item : list) {
+                        if (item != null) {
+                            weightOptions.add(String.valueOf(item));
+                        }
+                    }
+                }
+
                 Double ratingD = doc.getDouble("rating");
                 Long reviewCountL = doc.getLong("reviewCount");
                 Long soldCountL = doc.getLong("soldCount");
@@ -90,10 +106,27 @@ public class FirebaseSyncManager {
                 int reviewCount = reviewCountL != null ? reviewCountL.intValue() : 0;
                 int soldCount = soldCountL != null ? soldCountL.intValue() : 0;
 
+                String weightOptionsJson = null;
+                if (weightOptions != null && !weightOptions.isEmpty()) {
+                    List<Double> values = new ArrayList<>();
+                    for (String option : weightOptions) {
+                        try {
+                            values.add(Double.parseDouble(option));
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                    if (!values.isEmpty()) {
+                        weightOptionsJson = new com.google.gson.Gson().toJson(values);
+                    }
+                }
+
+                Double carbonPointD = doc.getDouble("CarbonSavingPoint");
+                double carbonSavingPoint = carbonPointD != null ? carbonPointD : 0.0;
+
                 ProductEntity entity = new ProductEntity(
-                        id, name, price, originalPrice, sku, imageUrl, weight,
+                        id, name, price, originalPrice, sku, imageUrl, weightOptionsJson, weight,
                         rating, reviewCount, soldCount, desc, origin, condition, fatContent,
-                        catId, subId
+                        catId, subId, carbonSavingPoint
                 );
                 activeProducts.add(entity);
             } catch (Exception e) {

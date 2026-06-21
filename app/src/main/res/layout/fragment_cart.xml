@@ -138,8 +138,8 @@
 
                 <ImageView
                     android:id="@+id/imgCbAll"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_checkbox_checked" />
 
                 <TextView
@@ -207,8 +207,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#66000000"
-        android:clickable="true"
-        android:focusable="true"
+        android:clickable="false"
+        android:focusable="false"
         android:visibility="gone" />
 
 </FrameLayout>

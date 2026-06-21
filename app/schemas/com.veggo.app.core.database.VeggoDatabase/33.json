@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 33,
-    "identityHash": "640c9cbbbefb92b199748abed5977d61",
+    "identityHash": "eccbdeb5af62d3a29e2740695add553e",
     "entities": [
       {
         "tableName": "products",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT, `price` INTEGER NOT NULL, `originalPrice` INTEGER NOT NULL, `sku` TEXT, `imageUrl` TEXT, `weight` TEXT, `rating` REAL NOT NULL, `reviewCount` INTEGER NOT NULL, `soldCount` INTEGER NOT NULL, `description` TEXT, `origin` TEXT, `condition` TEXT, `fatContent` TEXT, `categoryId` TEXT, `subcategoryId` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT, `price` INTEGER NOT NULL, `originalPrice` INTEGER NOT NULL, `sku` TEXT, `imageUrl` TEXT, `weightOptionsJson` TEXT, `weight` TEXT, `rating` REAL NOT NULL, `reviewCount` INTEGER NOT NULL, `soldCount` INTEGER NOT NULL, `description` TEXT, `origin` TEXT, `condition` TEXT, `fatContent` TEXT, `categoryId` TEXT, `subcategoryId` TEXT, `carbonSavingPoint` REAL NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -41,6 +41,12 @@
           {
             "fieldPath": "imageUrl",
             "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "weightOptionsJson",
+            "columnName": "weightOptionsJson",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -103,6 +109,12 @@
             "columnName": "subcategoryId",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "carbonSavingPoint",
+            "columnName": "carbonSavingPoint",
+            "affinity": "REAL",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -922,7 +934,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '640c9cbbbefb92b199748abed5977d61')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eccbdeb5af62d3a29e2740695add553e')"
     ]
   }
 }

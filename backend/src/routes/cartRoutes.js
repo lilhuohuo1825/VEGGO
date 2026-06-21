@@ -1,52 +1,22 @@
 const express = require('express');
-const Cart = require('../models/Cart');
+const cartController = require('../controllers/cartController');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
 
-router.get('/:userId', asyncHandler(async (req, res) => {
-  const cart = await Cart.findOne({ userId: req.params.userId }).populate('items.productId');
-  res.json(cart || { userId: req.params.userId, items: [] });
-}));
+// GET /cart/{customerId}
+router.get('/:customerId', asyncHandler(cartController.getCart));
 
-router.post('/:userId/items', asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body;
-  const cart = await Cart.findOneAndUpdate(
-    { userId: req.params.userId },
-    { $setOnInsert: { userId: req.params.userId } },
-    { new: true, upsert: true }
-  );
+// POST /cart/{customerId}/items
+router.post('/:customerId/items', asyncHandler(cartController.addItem));
 
-  const item = cart.items.find((entry) => entry.productId.toString() === productId);
-  if (item) {
-    item.quantity += quantity || 1;
-  } else {
-    cart.items.push({ productId, quantity: quantity || 1 });
-  }
+// PATCH /cart/{customerId}/items/:sku
+router.patch('/:customerId/items/:sku', asyncHandler(cartController.updateItemQuantity));
 
-  await cart.save();
-  const updatedCart = await Cart.findOne({ userId: req.params.userId }).populate('items.productId');
-  res.json(updatedCart);
-}));
+// DELETE /cart/{customerId}/items/:sku
+router.delete('/:customerId/items/:sku', asyncHandler(cartController.removeItem));
 
-router.delete('/:userId/items/:productId', asyncHandler(async (req, res) => {
-  const cart = await Cart.findOneAndUpdate(
-    { userId: req.params.userId },
-    { $pull: { items: { productId: req.params.productId } } },
-    { new: true }
-  ).populate('items.productId');
-
-  res.json(cart || { userId: req.params.userId, items: [] });
-}));
-
-router.delete('/:userId', asyncHandler(async (req, res) => {
-  await Cart.findOneAndUpdate(
-    { userId: req.params.userId },
-    { $set: { items: [] } },
-    { new: true, upsert: true }
-  );
-
-  res.json({ userId: req.params.userId, items: [] });
-}));
+// DELETE /cart/{customerId} (Clear cart)
+router.delete('/:customerId', asyncHandler(cartController.clearCart));
 
 module.exports = router;
