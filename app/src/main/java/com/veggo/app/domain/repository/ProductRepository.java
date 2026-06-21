@@ -14,6 +14,7 @@ public interface ProductRepository {
     LiveData<List<com.veggo.app.domain.model.Review>> getProductReviews(String productId);
     LiveData<List<Product>> observeProductsByCategory(String categoryId);
     LiveData<List<Product>> observeProductsBySubcategory(String subcategoryId);
-    LiveData<List<com.veggo.app.assets.AssetModels.Question>> getConsultations(String productId);
+    LiveData<List<Product>> observeRelatedProducts(String currentProductId, String categoryId, String subcategoryId);
+    LiveData<List<Product>> searchProducts(String query);
     void refreshProducts();
 }

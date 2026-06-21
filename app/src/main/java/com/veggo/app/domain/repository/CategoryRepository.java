@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface CategoryRepository {
     LiveData<List<AssetModels.Category>> observeCategories();
+    void refreshCategories();
 }

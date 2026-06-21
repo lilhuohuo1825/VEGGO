@@ -102,8 +102,15 @@ public class HomeFragment extends Fragment {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
             startActivity(intent);
         };
-        binding.layoutSearch.setOnClickListener(openSearchClick);
+        binding.layoutSearch.getRoot().setOnClickListener(openSearchClick);
+        binding.layoutSearch.edtSearch.setFocusable(false);
+        binding.layoutSearch.edtSearch.setOnClickListener(openSearchClick);
+        
         binding.stickyHeader.layoutStickySearch.setOnClickListener(openSearchClick);
+        if (binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch) != null) {
+            binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch).setFocusable(false);
+            binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch).setOnClickListener(openSearchClick);
+        }
 
         binding.btnChatbot.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class);

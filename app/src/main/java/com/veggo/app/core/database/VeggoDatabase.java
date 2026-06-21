@@ -87,6 +87,20 @@ public abstract class VeggoDatabase extends RoomDatabase {
                             db.execSQL(DatabaseManager.Sql.CREATE_USERS_TABLE);
                             db.execSQL(DatabaseManager.Sql.CREATE_RECIPES_TABLE);
                             db.execSQL(DatabaseManager.Sql.CREATE_REVIEWS_TABLE);
+                            // Reset seed version so seeder runs after fresh DB creation
+                            context.getApplicationContext()
+                                    .getSharedPreferences("veggo_asset_database_seed", android.content.Context.MODE_PRIVATE)
+                                    .edit().putInt("seeded_asset_version", 0).apply();
+                        }
+
+                        @Override
+                        public void onDestructiveMigration(@androidx.annotation.NonNull androidx.sqlite.db.SupportSQLiteDatabase db) {
+                            super.onDestructiveMigration(db);
+                            // DB was wiped by fallbackToDestructiveMigration – reset the seed flag
+                            // so AssetDatabaseSeeder re-seeds the fresh database on next startup.
+                            context.getApplicationContext()
+                                    .getSharedPreferences("veggo_asset_database_seed", android.content.Context.MODE_PRIVATE)
+                                    .edit().putInt("seeded_asset_version", 0).apply();
                         }
                     })
                     .fallbackToDestructiveMigration()

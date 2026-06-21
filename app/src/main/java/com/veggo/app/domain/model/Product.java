@@ -75,6 +75,10 @@ public class Product {
     public long getPrice() { return price; }
     public long getOriginalPrice() { return originalPrice; }
 
+    public boolean hasActiveDiscount() {
+        return originalPrice > price && originalPrice > 0;
+    }
+
     public String getImageUrl() {
         if (imageUrl != null) return imageUrl;
         if (image != null && !image.isEmpty()) return image.get(0);

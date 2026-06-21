@@ -85,7 +85,8 @@ public class LoginActivity extends BaseActivity {
                     userDto.getPhone(),
                     userDto.getCustomerId(),
                     userDto.getFullName(),
-                    userDto.getEmail()
+                    userDto.getEmail(),
+                    userDto.getAvatarUrl()
             );
             Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
 

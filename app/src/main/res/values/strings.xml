@@ -14,6 +14,7 @@
     <string name="price_format">%.0fđ</string>
     <string name="sold_count_format">Đã bán %1$d</string>
     <string name="reviews_count_format">%1$d đánh giá</string>
+    <string name="helpful_format">Hữu ích (%1$d)</string>
     <string name="filter_all_format">Tất cả (%1$d)</string>
     <string name="filter_5_star_format">5 sao (%1$d)</string>
     <string name="filter_4_star_format">4 sao (%1$d)</string>
@@ -21,7 +22,15 @@
     <string name="customer_photos_format">Ảnh khách hàng (%1$d)</string>
     <string name="show_less">Thu gọn</string>
     <string name="show_more">Xem thêm</string>
+    <string name="consultation_submit_success">Gửi câu hỏi thành công</string>
+    <string name="consultation_submit_empty">Vui lòng nhập câu hỏi</string>
+    <string name="consultation_submit_no_sku">Không thể gửi câu hỏi cho sản phẩm này</string>
+    <string name="consultation_submit_not_found">Chưa có dữ liệu tư vấn cho sản phẩm này</string>
+    <string name="consultation_submit_network_error">Không thể gửi câu hỏi. Kiểm tra kết nối mạng.</string>
+    <string name="consultation_submit_retry">Thử lại</string>
+    <string name="consultation_question_count_format">Câu hỏi (%1$d)</string>
     <string name="related_recipes">Công thức liên quan</string>
+    <string name="recipe_cooking_time_format">Thời gian: %1$s</string>
     <string name="reviews_ratings">Đánh giá &amp; nhận xét</string>
     <string name="add_to_cart">Thêm vào giỏ</string>
     <string name="cart_title_format">Giỏ hàng (%1$d)</string>
@@ -69,6 +78,12 @@
     <string name="address_make_default">Đặt làm địa chỉ mặc định</string>
     <string name="address_cancel">Huỷ</string>
     <string name="address_done">Hoàn thành</string>
+    <string name="address_add_success">Thêm địa chỉ thành công</string>
+    <string name="address_update_success">Cập nhật địa chỉ thành công</string>
+    <string name="address_empty">Chưa có địa chỉ nào</string>
+    <string name="address_delete_confirm">Bạn có chắc muốn xóa địa chỉ này?</string>
+    <string name="address_delete">Xóa</string>
+    <string name="address_edit_title">Chỉnh sửa địa chỉ</string>
     <string name="profile_carbon">Điểm Carbon</string>
     <string name="carbon_title">Điểm Carbon</string>
     <string name="carbon_current_label">Điểm xanh hiện có</string>

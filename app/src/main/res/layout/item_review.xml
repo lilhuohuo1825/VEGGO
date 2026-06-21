@@ -123,7 +123,7 @@
         <ImageView
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:src="@drawable/ic_helpful"
+            android:src="@drawable/ic_heart_grey"
             app:tint="@color/neutral_60" />
 
         <TextView
@@ -131,9 +131,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
-            android:text="Helpful (24)"
+            android:text="@string/helpful_format"
             android:textColor="@color/neutral_60"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            tools:text="Hữu ích (24)"/>
     </LinearLayout>
 
     <View

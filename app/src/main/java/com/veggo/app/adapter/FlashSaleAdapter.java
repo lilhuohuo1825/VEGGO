@@ -74,7 +74,13 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
             tvProductName.setText(flashSale.getName());
             tvProductPrice.setText(CurrencyFormatter.formatVnd(flashSale.getPrice()));
             tvRating.setText(String.valueOf(flashSale.getRating()));
-            tvDiscount.setText(flashSale.getDiscount());
+            
+            if (flashSale.getDiscount() != null && !flashSale.getDiscount().isEmpty()) {
+                tvDiscount.setText(flashSale.getDiscount());
+                tvDiscount.setVisibility(View.VISIBLE);
+            } else {
+                tvDiscount.setVisibility(View.GONE);
+            }
             
             if (flashSale.getImageUrl() != null && !flashSale.getImageUrl().isEmpty()) {
                 Glide.with(imgProduct.getContext())

@@ -4,33 +4,29 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.veggo.app.MainActivity;
 import com.veggo.app.databinding.ActivitySearchBinding;
 import com.veggo.app.di.AppModule;
-import com.veggo.app.assets.AssetModels;
-import com.veggo.app.domain.repository.CategoryRepository;
+import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.ProductRepository;
 import com.veggo.app.core.ui.ViewModelFactory;
-import com.veggo.app.presentation.category.CategoryViewModel;
+import com.veggo.app.presentation.product.ProductDetailActivity;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class SearchActivity extends AppCompatActivity {
     private ActivitySearchBinding binding;
-    private CategorySearchAdapter adapter;
-    private CategoryRepository categoryRepository;
+    private SearchViewModel viewModel;
+    private GlobalSearchAdapter searchAdapter;
+    private CategorySearchAdapter categoryAdapter;
     private ProductRepository productRepository;
-
-    private List<AssetModels.Category> allCategories = new ArrayList<>();
-    private Map<String, Integer> productCounts = new HashMap<>();
+    private com.veggo.app.domain.repository.CategoryRepository categoryRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +34,10 @@ public class SearchActivity extends AppCompatActivity {
         binding = ActivitySearchBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        categoryRepository = AppModule.provideCategoryRepository(this);
         productRepository = AppModule.provideProductRepository(this);
+        categoryRepository = AppModule.provideCategoryRepository(this);
+        ViewModelFactory factory = new ViewModelFactory(productRepository, categoryRepository, null);
+        viewModel = new ViewModelProvider(this, factory).get(SearchViewModel.class);
 
         setupViews();
         observeData();
@@ -48,25 +46,42 @@ public class SearchActivity extends AppCompatActivity {
     private void setupViews() {
         binding.btnBack.setOnClickListener(v -> finish());
 
-        adapter = new CategorySearchAdapter();
-        binding.rvCategories.setLayoutManager(new GridLayoutManager(this, 2));
-        binding.rvCategories.setAdapter(adapter);
-
-        adapter.setOnCategoryClickListener(category -> {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra(MainActivity.EXTRA_CATEGORY_ID, category.categoryId);
+        // Setup Category List (Empty State)
+        categoryAdapter = new CategorySearchAdapter();
+        binding.rvCategories.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 2));
+        binding.rvCategories.setAdapter(categoryAdapter);
+        categoryAdapter.setOnCategoryClickListener(category -> {
+            Intent intent = new Intent(this, com.veggo.app.MainActivity.class);
+            intent.putExtra(com.veggo.app.MainActivity.EXTRA_CATEGORY_ID, category.categoryId);
             startActivity(intent);
-            finish();
         });
 
-        binding.edtSearch.addTextChangedListener(new TextWatcher() {
+        // Setup Search Results
+        searchAdapter = new GlobalSearchAdapter();
+        binding.rvSearchResults.setLayoutManager(new LinearLayoutManager(this));
+        binding.rvSearchResults.setAdapter(searchAdapter);
+
+        searchAdapter.setOnItemClickListener(new GlobalSearchAdapter.OnItemClickListener() {
+            @Override
+            public void onProductClick(Product product) {
+                Intent intent = new Intent(SearchActivity.this, ProductDetailActivity.class);
+                intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onFeatureClick(SearchViewModel.FeatureResult feature) {
+                handleFeatureNavigation(feature);
+            }
+        });
+
+        binding.layoutSearch.edtSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterCategories(s.toString());
+                viewModel.setSearchQuery(s.toString());
             }
 
             @Override
@@ -75,46 +90,59 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void observeData() {
-        // Observe categories
-        categoryRepository.observeCategories().observe(this, categories -> {
-            if (categories != null) {
-                allCategories = categories;
-                updateAdapter();
+        viewModel.getCategories().observe(this, categories -> {
+            categoryAdapter.setData(categories);
+        });
+
+        viewModel.getSearchQuery().observe(this, query -> {
+            if (query.isEmpty()) {
+                binding.rvCategories.setVisibility(android.view.View.VISIBLE);
+                binding.rvSearchResults.setVisibility(android.view.View.GONE);
+            } else {
+                binding.rvCategories.setVisibility(android.view.View.GONE);
+                binding.rvSearchResults.setVisibility(android.view.View.VISIBLE);
             }
         });
 
-        // Observe products to compute counts
-        productRepository.observeProducts().observe(this, products -> {
-            if (products != null) {
-                productCounts.clear();
-                for (com.veggo.app.domain.model.Product product : products) {
-                    String catId = product.getCategoryId();
-                    if (catId != null) {
-                        int count = productCounts.containsKey(catId) ? productCounts.get(catId) : 0;
-                        productCounts.put(catId, count + 1);
-                    }
-                }
-                updateAdapter();
-            }
+        viewModel.getProductResults().observe(this, products -> {
+            updateResults();
+        });
+
+        viewModel.getFeatureResults().observe(this, features -> {
+            updateResults();
         });
     }
 
-    private void updateAdapter() {
-        adapter.setData(allCategories, productCounts);
+    private void updateResults() {
+        List<Product> products = viewModel.getProductResults().getValue();
+        List<SearchViewModel.FeatureResult> features = viewModel.getFeatureResults().getValue();
+        searchAdapter.setResults(products, features);
     }
 
-    private void filterCategories(String query) {
-        if (query.isEmpty()) {
-            adapter.setData(allCategories, productCounts);
-            return;
+    private void handleFeatureNavigation(SearchViewModel.FeatureResult feature) {
+        Intent intent = null;
+        switch (feature.getType()) {
+            case "refrigerator":
+                intent = new Intent(this, com.veggo.app.presentation.profile.SmartFridgeActivity.class);
+                break;
+            case "ai_assistant":
+                intent = new Intent(this, com.veggo.app.presentation.chatbot.ChatbotActivity.class);
+                break;
+            case "taste_profile":
+                intent = new Intent(this, com.veggo.app.presentation.profile.TastePreferencesActivity.class);
+                break;
+            case "green_points":
+                intent = new Intent(this, com.veggo.app.presentation.profile.CarbonPointsActivity.class);
+                break;
+            case "articles":
+                intent = new Intent(this, com.veggo.app.presentation.blog.BlogHomeActivity.class);
+                break;
         }
 
-        List<AssetModels.Category> filtered = new ArrayList<>();
-        for (AssetModels.Category cat : allCategories) {
-            if (cat.categoryName.toLowerCase().contains(query.toLowerCase())) {
-                filtered.add(cat);
-            }
+        if (intent != null) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Tính năng " + feature.getName() + " đang được phát triển", Toast.LENGTH_SHORT).show();
         }
-        adapter.setData(filtered, productCounts);
     }
 }

@@ -1,9 +1,25 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const User = require('../models/User');
 const asyncHandler = require('../middleware/asyncHandler');
+const { uploadAvatar } = require('../utils/avatarStorage');
+const { validateProfileInput, formatProfileResponse } = require('../utils/profileValidation');
 
 const router = express.Router();
+
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: AVATAR_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!file || file.mimetype.startsWith('image/')) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Chỉ chấp nhận file ảnh'));
+  },
+});
 
 // --- Traditional Auth (SSOT - MongoDB Atlas) ---
 
@@ -53,23 +69,21 @@ router.post('/register', asyncHandler(async (req, res) => {
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
 
-  // Tìm user theo Phone (Field PascalCase trong MongoDB)
-  const user = await User.findOne({ Phone: phone });
+  const user = await User.findOne({ Phone: phone })
+    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType TotalSpent CertificateID PasswordVersion LastPasswordReset firebaseUid name email phone')
+    .lean();
   if (!user || !user.Password) {
     return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
   }
 
-  // So sánh mật khẩu bằng bcrypt
   const isMatch = await bcrypt.compare(password, user.Password);
   if (!isMatch) {
     return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
   }
 
-  // Thành công: Trả về user không có Password
-  const userResponse = user.toObject();
-  delete userResponse.Password;
-
-  res.json(userResponse);
+  delete user.Password;
+  user._id = String(user._id);
+  res.json(user);
 }));
 
 /**
@@ -127,13 +141,14 @@ router.post('/reset-password', asyncHandler(async (req, res) => {
  * GET /api/users/phone/:phone
  */
 router.get('/phone/:phone', asyncHandler(async (req, res) => {
-  const user = await User.findOne({ Phone: req.params.phone });
+  const user = await User.findOne({ Phone: req.params.phone })
+    .select('-Password -RegisterDate -updated_at -LastPasswordReset')
+    .lean();
   if (!user) {
     return res.status(404).json({ message: 'Không tìm thấy người dùng' });
   }
-  const userResponse = user.toObject();
-  delete userResponse.Password;
-  res.json(userResponse);
+  user._id = String(user._id);
+  res.json(user);
 }));
 
 // --- Firebase Auth (Giữ nguyên cho các chức năng khác) ---
@@ -155,5 +170,72 @@ router.post('/sync', asyncHandler(async (req, res) => {
   );
   res.json(user);
 }));
+
+/**
+ * 6. Cập nhật thông tin cá nhân
+ * PUT /api/users/profile
+ */
+router.put('/profile', upload.single('avatar'), asyncHandler(async (req, res) => {
+  const currentPhone = String(req.header('X-Current-Phone') || '').trim();
+  if (!currentPhone) {
+    return res.status(400).json({ message: 'Thiếu thông tin phiên đăng nhập' });
+  }
+
+  const validation = validateProfileInput({
+    name: req.body.name,
+    phone: req.body.phone,
+    email: req.body.email,
+  });
+  if (!validation.valid) {
+    return res.status(validation.status).json({ message: validation.message });
+  }
+
+  const existingUser = await User.findOne({ Phone: currentPhone })
+    .select('_id FullName Phone Email name phone email avatarUrl')
+    .lean();
+  if (!existingUser) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+
+  const { name, phone, email } = validation.data;
+  if (phone !== currentPhone) {
+    const phoneTaken = await User.findOne({ Phone: phone, _id: { $ne: existingUser._id } })
+      .select('_id')
+      .lean();
+    if (phoneTaken) {
+      return res.status(400).json({ message: 'Số điện thoại này đã được sử dụng' });
+    }
+  }
+
+  const updatePayload = {
+    FullName: name,
+    Phone: phone,
+    Email: email,
+    name,
+    phone,
+    email,
+  };
+
+  if (req.file) {
+    const avatarUrl = await uploadAvatar(req, req.file, String(existingUser._id));
+    if (avatarUrl) {
+      updatePayload.avatarUrl = avatarUrl;
+    }
+  }
+
+  await User.updateOne({ _id: existingUser._id }, { $set: updatePayload });
+
+  res.json(formatProfileResponse({ ...existingUser, ...updatePayload }));
+}));
+
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ message: 'Ảnh đại diện quá lớn (tối đa 5MB)' });
+  }
+  if (error && error.message === 'Chỉ chấp nhận file ảnh') {
+    return res.status(400).json({ message: error.message });
+  }
+  return next(error);
+});
 
 module.exports = router;

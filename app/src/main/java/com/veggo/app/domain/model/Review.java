@@ -9,14 +9,16 @@ public class Review {
     private String content;
     private String avatarUrl;
     private List<String> imageUrls;
+    private int helpfulCount;
 
-    public Review(String reviewerName, String reviewTime, float rating, String content, String avatarUrl, List<String> imageUrls) {
+    public Review(String reviewerName, String reviewTime, float rating, String content, String avatarUrl, List<String> imageUrls, int helpfulCount) {
         this.reviewerName = reviewerName;
         this.reviewTime = reviewTime;
         this.rating = rating;
         this.content = content;
         this.avatarUrl = avatarUrl;
         this.imageUrls = imageUrls;
+        this.helpfulCount = helpfulCount;
     }
 
     // Getters
@@ -26,4 +28,5 @@ public class Review {
     public String getContent() { return content; }
     public String getAvatarUrl() { return avatarUrl; }
     public List<String> getImageUrls() { return imageUrls; }
+    public int getHelpfulCount() { return helpfulCount; }
 }
