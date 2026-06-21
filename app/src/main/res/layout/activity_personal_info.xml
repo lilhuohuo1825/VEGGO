@@ -97,7 +97,6 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:minWidth="142dp"
-                    android:text="@string/profile_carbon_badge"
                     android:textColor="@color/primary_main"
                     android:textSize="12sp" />
             </LinearLayout>

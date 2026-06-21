@@ -6,8 +6,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.utils.JsonUtils;
 import com.veggo.app.R;
+import com.veggo.app.data.remote.api.PromotionApi;
+import com.veggo.app.data.remote.dto.FlashSaleResponseDto;
 import com.veggo.app.domain.model.Blog;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.model.Utility;
@@ -24,6 +27,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeViewModel extends ViewModel {
 
@@ -93,6 +100,39 @@ public class HomeViewModel extends ViewModel {
     }
 
     private void loadFlashSales() {
+        PromotionApi promotionApi = ApiClient.createService(PromotionApi.class);
+        promotionApi.getFlashSales().enqueue(new Callback<FlashSaleResponseDto>() {
+            @Override
+            public void onResponse(Call<FlashSaleResponseDto> call, Response<FlashSaleResponseDto> response) {
+                FlashSaleResponseDto body = response.body();
+                if (response.isSuccessful() && body != null && body.isSuccess() && body.getData() != null && !body.getData().isEmpty()) {
+                    List<FlashSale> flashSaleList = new ArrayList<>();
+                    for (FlashSaleResponseDto.FlashSaleItemDto item : body.getData()) {
+                        flashSaleList.add(new FlashSale(
+                                item.getId(),
+                                item.getName(),
+                                item.getPrice(),
+                                item.getUnit(),
+                                item.getDiscount(),
+                                0,
+                                item.getImageUrl(),
+                                item.getRating()
+                        ));
+                    }
+                    _flashSales.setValue(flashSaleList);
+                } else {
+                    loadFallbackFlashSales();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FlashSaleResponseDto> call, Throwable t) {
+                loadFallbackFlashSales();
+            }
+        });
+    }
+
+    private void loadFallbackFlashSales() {
         List<FlashSale> flashSaleList = new ArrayList<>();
         flashSaleList.add(new FlashSale("68d1501b1108dd931e9631a6", "Táo Envy Mỹ", 120000, "1.5kg", "-20%", 0, "https://lh3.googleusercontent.com/voEE3B_IhofqhrkoWMN05xl_FqpvHnGOc0NoTCvD1A9IeGtCE0E8X_BAeAb4Y136YmxkUOCR0nGJSXW-KtekoNy38c6_sWurnQ=rw", 4.5f));
         flashSaleList.add(new FlashSale("68d150221108dd931e9631d4", "Bơ Sáp Đắk Lắk", 45000, "1kg", "-15%", 0, "https://lh3.googleusercontent.com/PKppN4rs6zjbBlbMk_AXcwjTk-40oORwBRW9njwjANV5gFgme2ioKCV4nKuTUNYck_V41-pBPfSeoSTu5rE9KQxSFKICMDWkYg=rw", 4.2f));

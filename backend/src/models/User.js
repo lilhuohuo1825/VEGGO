@@ -35,7 +35,8 @@ const userSchema = new mongoose.Schema(
     CarbonPoint: { type: Number, default: 0 },
     CertificateID: { type: String, default: null },
     PasswordVersion: { type: Number, default: 1 },
-    LastPasswordReset: { type: Date, default: null }
+    LastPasswordReset: { type: Date, default: null },
+    isActive: { type: Boolean, default: true, index: true }
   },
   {
     // Tự động quản lý RegisterDate (createdAt) và updated_at (updatedAt)

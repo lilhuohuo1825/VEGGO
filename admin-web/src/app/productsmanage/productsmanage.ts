@@ -43,6 +43,10 @@ interface ProductJSON {
   post_date?: any;
   liked?: number;
   groups?: string[]; // Product groups
+  EmissionFactor?: number;
+  allowCustomWeight?: boolean;
+  AllowCustomWeight?: boolean;   // DB field name (capital A)
+  WeightOptions?: number[];      // DB array of weight variants
 }
 
 /**
@@ -82,6 +86,10 @@ export interface Product {
   PurchaseCount?: number; // Số lượt mua
   liked?: number; // Số lượt like
   reviewCount?: number; // Số lượt đánh giá
+  status?: string;
+  EmissionFactor?: number;
+  allowCustomWeight?: boolean;
+  WeightOptions?: number[];      // e.g. [0.5, 1, 1.5]
 }
 
 /**
@@ -103,6 +111,7 @@ export interface FilterCriteria {
   maxPrice?: number;
   rating?: number; // Exact rating, not minimum
   group?: string;
+  status?: 'Active' | 'Inactive';
 }
 
 /**
@@ -237,7 +246,12 @@ function mapProductFromJSON(json: ProductJSON, index: number): Product {
     groups: json.groups && Array.isArray(json.groups) ? json.groups : [], // Map groups from API
     PurchaseCount: json.purchase_count || 0, // Số lượt mua
     liked: json.liked || 0, // Số lượt like
-    reviewCount: (json as any).reviewCount || 0 // Số lượt đánh giá
+    reviewCount: (json as any).reviewCount || 0, // Số lượt đánh giá
+    status: json.status || 'Active',
+    EmissionFactor: json.EmissionFactor || 0,
+    // DB stores as AllowCustomWeight (capital A) — support both for compatibility
+    allowCustomWeight: json.AllowCustomWeight || json.allowCustomWeight || false,
+    WeightOptions: json.WeightOptions || []
   };
 }
 
@@ -401,7 +415,11 @@ function createEmptyProduct(): Product {
     salePrice: 0,
     images: [],
     groups: [],
-    rating: undefined // Rating rỗng khi tạo sản phẩm mới, sẽ được tính từ reviews
+    rating: undefined, // Rating rỗng khi tạo sản phẩm mới, sẽ được tính từ reviews
+    status: 'Active',
+    EmissionFactor: 0,
+    allowCustomWeight: false,
+    WeightOptions: []
   };
 }
 
@@ -577,7 +595,11 @@ function filterProductsByCriteria(
   if (filters.group && filters.group !== 'all') {
     filtered = filtered.filter(p => p.groups && p.groups.includes(filters.group!));
   }
-  
+
+  if (filters.status) {
+    filtered = filtered.filter(p => (p.status || 'Active') === filters.status);
+  }
+
   return filtered;
 }
 
@@ -788,6 +810,7 @@ export class ProductsManage implements OnInit {
   editingProduct = false;
   currentProduct: Product = createEmptyProduct();
   originalProduct: Product | null = null; // Lưu bản sao ban đầu để revert khi hủy
+  private productQueryHandled = false;
   
   // Products data loaded from JSON
   products: Product[] = [];
@@ -989,6 +1012,7 @@ export class ProductsManage implements OnInit {
         
         // Extract group names
         this.extractAllGroupNames();
+        this.openProductFromQueryParams();
         
         // Log category distribution
         const categoryCount = new Map<string, number>();
@@ -1192,7 +1216,6 @@ export class ProductsManage implements OnInit {
       return;
     }
     
-    // Map Product interface to backend format
     const productData: any = {
       _id: this.currentProduct.code || this.currentProduct.id?.toString(),
       product_name: this.currentProduct.name,
@@ -1216,13 +1239,16 @@ export class ProductsManage implements OnInit {
       safety_warning: this.currentProduct.safetyWarning || '',
       responsible_org: this.currentProduct.responsibleOrg || '',
       color: this.currentProduct.color || '',
-      status: 'Active',
+      status: this.currentProduct.status || 'Active',
+      EmissionFactor: this.currentProduct.EmissionFactor !== undefined ? Number(this.currentProduct.EmissionFactor) : 0,
+      AllowCustomWeight: this.currentProduct.allowCustomWeight || false,
+      WeightOptions: this.currentProduct.WeightOptions || [],
       // Thêm các trường bổ sung nếu có
       // Rating không được set khi tạo mới, sẽ được tính từ reviews
       // Nếu đang edit và có rating từ reviews, giữ nguyên
       rating: this.currentProduct.rating !== undefined && this.currentProduct.rating !== null ? this.currentProduct.rating : undefined,
-      purchase_count: 0,
-      liked: 0,
+      purchase_count: this.currentProduct.PurchaseCount || 0,
+      liked: this.currentProduct.liked || 0,
       groups: this.currentProduct.groups || []
     };
     
@@ -1488,6 +1514,27 @@ export class ProductsManage implements OnInit {
   }
 
   /**
+   * Getter: Convert WeightOptions number[] → comma-separated string for display
+   */
+  get weightOptionsText(): string {
+    const opts = this.currentProduct?.WeightOptions;
+    if (!opts || opts.length === 0) return '';
+    return opts.join(', ');
+  }
+
+  /**
+   * Handler: Convert user-entered comma-separated string → WeightOptions number[]
+   */
+  onWeightOptionsChange(value: string): void {
+    const parsed = value
+      .split(',')
+      .map(s => parseFloat(s.trim()))
+      .filter(n => !isNaN(n));
+    this.currentProduct.WeightOptions = parsed;
+    this.onFieldChange('WeightOptions', parsed);
+  }
+
+  /**
    * Auto-update a specific field in MongoDB and sync with JSON
    */
   private autoUpdateField(fieldName: string, value: any): void {
@@ -1567,25 +1614,66 @@ export class ProductsManage implements OnInit {
     this.currentProduct = JSON.parse(JSON.stringify(product)); // Deep copy để chỉnh sửa
     this.editingProduct = true;
     this.showProductForm = true;
+    this.extractCategories();
+    this.extractColors();
+    if (this.currentProduct.category) {
+      this.onCategoryChange(this.currentProduct.category);
+    } else {
+      this.formSubcategories = [];
+    }
   }
 
-  /**
-   * Delete selected products
-   */
+  private openProductFromQueryParams(): void {
+    if (this.productQueryHandled) return;
+
+    const params = this.route.snapshot.queryParams;
+    if (params['openProduct'] !== 'true' || !params['productId']) return;
+
+    const targetId = this.normalizeProductLookupKey(params['productId']);
+    const product = this.allProducts.find((item) => {
+      const keys = [item._id, item.code, item.sku, item.id, item.name];
+      return keys.some((key) => this.normalizeProductLookupKey(key) === targetId);
+    });
+
+    this.productQueryHandled = true;
+
+    if (product) {
+      this.viewProductDetail(product);
+      setTimeout(() => {
+        const stockInput = document.querySelector<HTMLInputElement>('input[name="stock"]');
+        stockInput?.focus();
+        stockInput?.select();
+      }, 200);
+    } else {
+      this.notificationService.showWarning('Không tìm thấy sản phẩm cần nhập hàng');
+    }
+  }
+
+  private normalizeProductLookupKey(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') {
+      if (value.$oid) return String(value.$oid).trim().toLowerCase();
+      if (value.toString && typeof value.toString === 'function') {
+        return value.toString().trim().toLowerCase();
+      }
+    }
+    return String(value).trim().toLowerCase();
+  }
+
   deleteProducts(): void {
     // Check if any products are selected
     const selected = this.products.filter(p => p.selected);
     
     if (selected.length === 0) {
-      this.displayPopup('Vui lòng chọn sản phẩm cần xóa', 'error');
+      this.displayPopup('Vui lòng chọn sản phẩm cần đổi trạng thái', 'error');
       return;
     }
 
     // Show confirmation dialog
     this.showConfirmation(
-      `Bạn có chắc chắn muốn xóa ${selected.length} sản phẩm?`,
+      `Bạn có chắc chắn muốn thay đổi trạng thái Ẩn/Hiện (Active/Inactive) cho ${selected.length} sản phẩm?`,
       () => {
-        // Delete products via API - check for pending orders first
+        // Toggle status via API
         this.processDeleteProducts(selected);
       }
     );
@@ -1716,9 +1804,9 @@ export class ProductsManage implements OnInit {
         }
       });
           
-          console.log(`✅ Deleted ${successCount} products successfully`);
+          console.log(`✅ Toggled status of ${successCount} products successfully`);
           if (failedCount > 0) {
-            console.warn(`⚠️ Failed to delete ${failedCount} products`);
+            console.warn(`⚠️ Failed to toggle status of ${failedCount} products`);
           }
           
       // Reload products from MongoDB
@@ -1727,18 +1815,16 @@ export class ProductsManage implements OnInit {
           this.selectedCount = 0;
           this.selectAll = false;
           
-      // Show success message with affected orders info if any
-      if (affectedOrders.length > 0) {
-        this.displayPopup(`Đã xóa ${successCount} sản phẩm thành công. Đã xóa sản phẩm khỏi ${affectedOrders.length} đơn hàng đang xử lý và cập nhật tổng tiền tương ứng.`, 'success');
-      } else if (failedCount > 0) {
-            this.displayPopup(`Đã xóa ${successCount} sản phẩm, ${failedCount} sản phẩm lỗi`, 'error');
+      // Show success message
+      if (failedCount > 0) {
+            this.displayPopup(`Đã cập nhật trạng thái cho ${successCount} sản phẩm, ${failedCount} sản phẩm lỗi`, 'error');
           } else {
-            this.displayPopup(`Đã xóa ${successCount} sản phẩm thành công`, 'success');
+            this.displayPopup(`Đã thay đổi trạng thái thành công cho ${successCount} sản phẩm`, 'success');
           }
         }).catch(error => {
-          console.error('❌ Error deleting products:', error);
+          console.error('❌ Error toggling product status:', error);
           const errorMessage = error.error?.message || error.error?.error || error.message || 'Lỗi không xác định';
-          this.displayPopup('Lỗi khi xóa sản phẩm: ' + errorMessage, 'error');
+          this.displayPopup('Lỗi khi cập nhật trạng thái sản phẩm: ' + errorMessage, 'error');
           this.loadProducts();
         });
       }
@@ -1964,6 +2050,15 @@ export class ProductsManage implements OnInit {
       this.currentFilters.group = undefined;
     } else {
       this.currentFilters.group = group;
+    }
+    this.updateProductsList();
+  }
+
+  toggleStatusFilter(status: 'Active' | 'Inactive'): void {
+    if (this.currentFilters.status === status) {
+      this.currentFilters.status = undefined;
+    } else {
+      this.currentFilters.status = status;
     }
     this.updateProductsList();
   }

@@ -48,6 +48,16 @@ interface PromotionJSON {
   created_at?: string | { $date: string };
   updated_at?: string | { $date: string };
   updatedAt?: string | { $date: string };
+  imageUrl?: string;
+  banner_data?: any;
+  bannerData?: any;
+  show_on_app?: boolean;
+  showOnApp?: boolean;
+  isVisibleOnApp?: boolean;
+  promotionKind?: 'Promotion' | 'FlashSale';
+  promotion_kind?: 'Promotion' | 'FlashSale';
+  displaySection?: string;
+  display_section?: string;
 }
 
 /**
@@ -78,6 +88,13 @@ export interface Promotion {
   updatedAt?: string;
   selected?: boolean;
   groups?: string[];
+  imageUrl?: string;
+  bannerData?: any;
+  showOnApp?: boolean;
+  promotionKind?: 'Promotion' | 'FlashSale';
+  promotion_kind?: 'Promotion' | 'FlashSale';
+  displaySection?: string;
+  display_section?: string;
 }
 
 /**
@@ -91,6 +108,18 @@ export interface FilterCriteria {
   minDiscount?: number;
   maxDiscount?: number;
   group?: string;
+}
+
+interface TargetOption {
+  id?: string;
+  name?: string;
+  sku?: string;
+  categoryId?: string;
+  price?: number;
+  unit?: string;
+  imageUrl?: string;
+  rating?: number;
+  stock?: number;
 }
 
 /**
@@ -121,6 +150,7 @@ export class PromotionManage implements OnInit {
   isLoading: boolean = true;
   showSortDropdown: boolean = false;
   showGroupModal: boolean = false;
+  showPromotionTypeModal: boolean = false;
   showAddEditModal: boolean = false;
   showDetailModal: boolean = false;
   showConfirmModal: boolean = false;
@@ -161,17 +191,22 @@ export class PromotionManage implements OnInit {
   // Target selection data (for add/edit modal)
   targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category';
   selectedTargets: string[] = [];
-  availableCategories: string[] = [];
-  availableSubcategories: string[] = [];
+  availableCategories: TargetOption[] = [];
+  availableSubcategories: TargetOption[] = [];
   availableBrands: string[] = [];
   availableProducts: any[] = [];
   isLoadingTargets: boolean = false;
   targetSearchTerm: string = '';
+  targetDetailNames: Record<string, string> = {};
 
   // Target selection data (for detail modal)
   detailTargetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category';
   detailSelectedTargets: string[] = [];
   detailTargetSearchTerm: string = '';
+  detailTargetDetailNames: Record<string, string> = {};
+
+  readonly timeHours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
+  readonly timeMinutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
 
   /**
    * ============================================================================
@@ -256,7 +291,7 @@ export class PromotionManage implements OnInit {
   /**
    * Get available target options based on target type
    */
-  getAvailableTargetOptions(): string[] | any[] {
+  getAvailableTargetOptions(): Array<string | TargetOption> {
     if (!this.currentPromotion) return [];
     
     // If scope is Brand or Product, use scope directly
@@ -275,9 +310,9 @@ export class PromotionManage implements OnInit {
   /**
    * Get target value from option (for Product it's SKU, others it's the string itself)
    */
-  getTargetValue(option: string | any): string {
-    if (this.currentPromotion?.scope === 'Product' && typeof option === 'object') {
-      return option.sku || option;
+  getTargetValue(option: string | TargetOption): string {
+    if (typeof option === 'object') {
+      return option.sku || option.id || option.name || '';
     }
     return option;
   }
@@ -285,9 +320,14 @@ export class PromotionManage implements OnInit {
   /**
    * Get target label for display
    */
-  getTargetLabel(option: string | any): string {
+  getTargetLabel(option: string | TargetOption): string {
     if (this.currentPromotion?.scope === 'Product' && typeof option === 'object') {
-      return `${option.name} (${option.sku})`;
+      const price = option.price ? ` - ${Number(option.price).toLocaleString('vi-VN')}đ` : '';
+      const stock = option.stock !== undefined ? ` - Tồn: ${option.stock}` : '';
+      return `${option.name} (${option.sku})${price}${stock}`;
+    }
+    if (typeof option === 'object') {
+      return option.name || option.id || '';
     }
     return option;
   }
@@ -298,6 +338,49 @@ export class PromotionManage implements OnInit {
   onTargetSearchChange(): void {
     // Filtering is done in getFilteredTargetOptions()
     this.cdr.detectChanges();
+  }
+
+  getTimePart(timeValue: string | undefined, part: 'hour' | 'minute'): string {
+    const [hour = '00', minute = '00'] = String(timeValue || '00:00').split(':');
+    return part === 'hour' ? hour.padStart(2, '0') : minute.padStart(2, '0');
+  }
+
+  private extractTime(dateValue: any, fallback: string = '00:00'): string {
+    if (!dateValue) return fallback;
+    if (typeof dateValue === 'string' && /^\d{2}:\d{2}/.test(dateValue)) {
+      return dateValue.slice(0, 5);
+    }
+
+    const rawValue = typeof dateValue === 'object' && dateValue.$date ? dateValue.$date : dateValue;
+    const date = new Date(rawValue);
+    if (isNaN(date.getTime())) return fallback;
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+
+  setCurrentPromotionTimePart(
+    field: 'startTime' | 'endTime',
+    part: 'hour' | 'minute',
+    value: string
+  ): void {
+    if (!this.currentPromotion) return;
+    const currentHour = this.getTimePart(this.currentPromotion[field], 'hour');
+    const currentMinute = this.getTimePart(this.currentPromotion[field], 'minute');
+    const nextHour = part === 'hour' ? value : currentHour;
+    const nextMinute = part === 'minute' ? value : currentMinute;
+    this.currentPromotion[field] = `${nextHour}:${nextMinute}`;
+  }
+
+  setSelectedPromotionTimePart(
+    field: 'startTime' | 'endTime',
+    part: 'hour' | 'minute',
+    value: string
+  ): void {
+    if (!this.selectedPromotion) return;
+    const currentHour = this.getTimePart(this.selectedPromotion[field], 'hour');
+    const currentMinute = this.getTimePart(this.selectedPromotion[field], 'minute');
+    const nextHour = part === 'hour' ? value : currentHour;
+    const nextMinute = part === 'minute' ? value : currentMinute;
+    this.selectedPromotion[field] = `${nextHour}:${nextMinute}`;
   }
 
   /**
@@ -322,7 +405,7 @@ export class PromotionManage implements OnInit {
   /**
    * Get filtered target options based on search term
    */
-  getFilteredTargetOptions(): string[] | any[] {
+  getFilteredTargetOptions(): Array<string | TargetOption> {
     const options = this.getAvailableTargetOptions();
     
     if (!this.targetSearchTerm || this.targetSearchTerm.trim() === '') {
@@ -331,38 +414,94 @@ export class PromotionManage implements OnInit {
     
     const searchTerm = this.targetSearchTerm.toLowerCase().trim();
     
-    if (this.currentPromotion?.scope === 'Product') {
-      return (options as any[]).filter(option => {
-        const name = (option.name || '').toLowerCase();
-        const sku = (option.sku || '').toLowerCase();
-        return name.includes(searchTerm) || sku.includes(searchTerm);
-      });
-    } else {
-      // For Category, Subcategory, Brand (string arrays)
-      return (options as string[]).filter(option => 
-        option.toLowerCase().includes(searchTerm)
-      );
-    }
+    return options.filter(option => {
+      const label = this.getTargetLabel(option).toLowerCase();
+      const value = this.getTargetValue(option).toLowerCase();
+      return label.includes(searchTerm) || value.includes(searchTerm);
+    });
   }
 
   /**
    * Get display name for a target value (for selected tags)
    */
   getTargetDisplayName(targetValue: string): string {
-    if (this.currentPromotion?.scope === 'Product') {
-      // Find the product by SKU
-      const product = this.availableProducts.find(p => p.sku === targetValue);
-      return product ? `${product.name} (${product.sku})` : targetValue;
+    const option = this.findTargetOption(targetValue, this.currentPromotion?.scope, this.targetType);
+    return option ? this.getTargetLabel(option) : this.targetDetailNames[targetValue] || targetValue;
+  }
+
+  private buildTargetDetailNameMap(details: any[]): Record<string, string> {
+    return details.reduce((acc: Record<string, string>, detail: any) => {
+      const ref = detail?.ref || detail?.id || detail?.sku;
+      const name = detail?.name || detail?.label;
+      if (ref && name) acc[ref] = name;
+      return acc;
+    }, {});
+  }
+
+  private findTargetOption(
+    targetValue: string,
+    scope?: Promotion['scope'],
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+  ): string | TargetOption | undefined {
+    let options: Array<string | TargetOption> = [];
+
+    if (scope === 'Product') {
+      options = this.availableProducts;
+    } else if (scope === 'Brand') {
+      options = this.availableBrands;
+    } else if (scope === 'Category') {
+      options = targetType === 'Subcategory' ? this.availableSubcategories : this.availableCategories;
     }
-    // For Category, Subcategory, Brand - just return the value
-    return targetValue;
+
+    return options.find(option => {
+      const normalizedValue = this.normalizeTargetKey(targetValue);
+      if (typeof option === 'string') return this.normalizeTargetKey(option) === normalizedValue;
+      return this.normalizeTargetKey(option.id || '') === normalizedValue
+        || this.normalizeTargetKey(option.name || '') === normalizedValue
+        || this.normalizeTargetKey(option.sku || '') === normalizedValue;
+    });
+  }
+
+  private normalizeTargetKey(value: string): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private getCanonicalTargetValue(
+    targetValue: string,
+    scope?: Promotion['scope'],
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+  ): string {
+    const option = this.findTargetOption(targetValue, scope, targetType);
+    if (!option) return String(targetValue || '').trim();
+    return typeof option === 'string' ? option : (option.sku || option.id || option.name || targetValue);
+  }
+
+  private isSameTarget(
+    first: string,
+    second: string,
+    scope?: Promotion['scope'],
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+  ): boolean {
+    return this.normalizeTargetKey(this.getCanonicalTargetValue(first, scope, targetType))
+      === this.normalizeTargetKey(this.getCanonicalTargetValue(second, scope, targetType));
+  }
+
+  private normalizeTargetRefs(
+    refs: string[],
+    scope?: Promotion['scope'],
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+  ): string[] {
+    return refs.map(ref => {
+      const option = this.findTargetOption(ref, scope, targetType);
+      return option ? this.getTargetValue(option) : ref;
+    });
   }
 
   /**
    * Remove a target from selected list
    */
   removeTarget(targetValue: string): void {
-    const index = this.selectedTargets.indexOf(targetValue);
+    const index = this.selectedTargets.findIndex(selected => this.isSameTarget(selected, targetValue, this.currentPromotion?.scope, this.targetType));
     if (index > -1) {
       this.selectedTargets.splice(index, 1);
     }
@@ -388,7 +527,7 @@ export class PromotionManage implements OnInit {
    * Toggle target selection
    */
   toggleTarget(target: string): void {
-    const index = this.selectedTargets.indexOf(target);
+    const index = this.selectedTargets.findIndex(selected => this.isSameTarget(selected, target, this.currentPromotion?.scope, this.targetType));
     if (index > -1) {
       this.selectedTargets.splice(index, 1);
     } else {
@@ -400,7 +539,16 @@ export class PromotionManage implements OnInit {
    * Check if target is selected
    */
   isTargetSelected(target: string): boolean {
-    return this.selectedTargets.includes(target);
+    return this.selectedTargets.some(selected => this.isSameTarget(selected, target, this.currentPromotion?.scope, this.targetType));
+  }
+
+  setTargetSelected(target: string, checked: boolean): void {
+    const index = this.selectedTargets.findIndex(selected => this.isSameTarget(selected, target, this.currentPromotion?.scope, this.targetType));
+    if (checked && index === -1) {
+      this.selectedTargets.push(target);
+    } else if (!checked && index > -1) {
+      this.selectedTargets.splice(index, 1);
+    }
   }
 
   /**
@@ -421,8 +569,13 @@ export class PromotionManage implements OnInit {
               this.targetType = targetData.target_type as any;
             }
           }
-          // Set selected targets
-          this.selectedTargets = targetData.target_ref || [];
+          // Set selected targets from promotion_targets, resolving legacy names to IDs where possible
+          this.selectedTargets = this.normalizeTargetRefs(
+            targetData.target_ref || [],
+            this.currentPromotion?.scope,
+            this.targetType
+          );
+          this.targetDetailNames = this.buildTargetDetailNameMap(targetData.target_details || []);
           console.log('✅ Loaded promotion target:', {
             targetType: this.targetType,
             selectedTargets: this.selectedTargets
@@ -430,12 +583,14 @@ export class PromotionManage implements OnInit {
         } else {
           console.log('No target found for promotion:', promotionId);
           this.selectedTargets = [];
+          this.targetDetailNames = {};
         }
       },
       error: (error: any) => {
         // Target doesn't exist, that's okay (promotion might not have target)
         console.log('No target found for promotion (error):', promotionId, error);
         this.selectedTargets = [];
+        this.targetDetailNames = {};
       }
     });
   }
@@ -504,8 +659,13 @@ export class PromotionManage implements OnInit {
               this.detailTargetType = targetData.target_type as any;
             }
           }
-          // Set selected targets
-          this.detailSelectedTargets = targetData.target_ref || [];
+          // Set selected targets from promotion_targets, resolving legacy names to IDs where possible
+          this.detailSelectedTargets = this.normalizeTargetRefs(
+            targetData.target_ref || [],
+            this.selectedPromotion?.scope,
+            this.detailTargetType
+          );
+          this.detailTargetDetailNames = this.buildTargetDetailNameMap(targetData.target_details || []);
           console.log('✅ Loaded detail promotion target:', {
             targetType: this.detailTargetType,
             selectedTargets: this.detailSelectedTargets
@@ -513,6 +673,7 @@ export class PromotionManage implements OnInit {
         } else {
           console.log('No target found for promotion:', promotionId);
           this.detailSelectedTargets = [];
+          this.detailTargetDetailNames = {};
         }
         this.cdr.detectChanges();
       },
@@ -520,6 +681,7 @@ export class PromotionManage implements OnInit {
         // Target doesn't exist, that's okay (promotion might not have target)
         console.log('No target found for promotion (error):', promotionId, error);
         this.detailSelectedTargets = [];
+        this.detailTargetDetailNames = {};
         this.cdr.detectChanges();
       }
     });
@@ -556,7 +718,7 @@ export class PromotionManage implements OnInit {
   /**
    * Get available target options for detail modal
    */
-  getDetailAvailableTargetOptions(): string[] | any[] {
+  getDetailAvailableTargetOptions(): Array<string | TargetOption> {
     if (!this.selectedPromotion) return [];
     
     const scope = this.selectedPromotion.scope;
@@ -577,7 +739,7 @@ export class PromotionManage implements OnInit {
   /**
    * Get filtered target options for detail modal
    */
-  getDetailFilteredTargetOptions(): string[] | any[] {
+  getDetailFilteredTargetOptions(): Array<string | TargetOption> {
     const options = this.getDetailAvailableTargetOptions();
     
     if (!this.detailTargetSearchTerm || this.detailTargetSearchTerm.trim() === '') {
@@ -586,26 +748,19 @@ export class PromotionManage implements OnInit {
     
     const searchTerm = this.detailTargetSearchTerm.toLowerCase().trim();
     
-    if (this.selectedPromotion?.scope === 'Product') {
-      return (options as any[]).filter(option => {
-        const name = (option.name || '').toLowerCase();
-        const sku = (option.sku || '').toLowerCase();
-        return name.includes(searchTerm) || sku.includes(searchTerm);
-      });
-    } else {
-      // For Category, Subcategory, Brand (string arrays)
-      return (options as string[]).filter(option => 
-        option.toLowerCase().includes(searchTerm)
-      );
-    }
+    return options.filter(option => {
+      const label = this.getDetailTargetLabel(option).toLowerCase();
+      const value = this.getDetailTargetValue(option).toLowerCase();
+      return label.includes(searchTerm) || value.includes(searchTerm);
+    });
   }
 
   /**
    * Get target value for detail modal
    */
-  getDetailTargetValue(option: string | any): string {
-    if (this.selectedPromotion?.scope === 'Product') {
-      return option.sku || option;
+  getDetailTargetValue(option: string | TargetOption): string {
+    if (typeof option === 'object') {
+      return option.sku || option.id || option.name || '';
     }
     return option;
   }
@@ -613,9 +768,14 @@ export class PromotionManage implements OnInit {
   /**
    * Get target label for detail modal
    */
-  getDetailTargetLabel(option: string | any): string {
-    if (this.selectedPromotion?.scope === 'Product') {
-      return `${option.name} (${option.sku})`;
+  getDetailTargetLabel(option: string | TargetOption): string {
+    if (this.selectedPromotion?.scope === 'Product' && typeof option === 'object') {
+      const price = option.price ? ` - ${Number(option.price).toLocaleString('vi-VN')}đ` : '';
+      const stock = option.stock !== undefined ? ` - Tồn: ${option.stock}` : '';
+      return `${option.name} (${option.sku})${price}${stock}`;
+    }
+    if (typeof option === 'object') {
+      return option.name || option.id || '';
     }
     return option;
   }
@@ -624,27 +784,22 @@ export class PromotionManage implements OnInit {
    * Get display name for a target value in detail modal
    */
   getDetailTargetDisplayName(targetValue: string): string {
-    if (this.selectedPromotion?.scope === 'Product') {
-      // Find the product by SKU
-      const product = this.availableProducts.find(p => p.sku === targetValue);
-      return product ? `${product.name} (${product.sku})` : targetValue;
-    }
-    // For Category, Subcategory, Brand - just return the value
-    return targetValue;
+    const option = this.findTargetOption(targetValue, this.selectedPromotion?.scope, this.detailTargetType);
+    return option ? this.getDetailTargetLabel(option) : this.detailTargetDetailNames[targetValue] || targetValue;
   }
 
   /**
    * Check if target is selected in detail modal
    */
   isDetailTargetSelected(target: string): boolean {
-    return this.detailSelectedTargets.includes(target);
+    return this.detailSelectedTargets.some(selected => this.isSameTarget(selected, target, this.selectedPromotion?.scope, this.detailTargetType));
   }
 
   /**
    * Toggle target selection in detail modal
    */
   toggleDetailTarget(target: string): void {
-    const index = this.detailSelectedTargets.indexOf(target);
+    const index = this.detailSelectedTargets.findIndex(selected => this.isSameTarget(selected, target, this.selectedPromotion?.scope, this.detailTargetType));
     if (index > -1) {
       this.detailSelectedTargets.splice(index, 1);
     } else {
@@ -652,11 +807,20 @@ export class PromotionManage implements OnInit {
     }
   }
 
+  setDetailTargetSelected(target: string, checked: boolean): void {
+    const index = this.detailSelectedTargets.findIndex(selected => this.isSameTarget(selected, target, this.selectedPromotion?.scope, this.detailTargetType));
+    if (checked && index === -1) {
+      this.detailSelectedTargets.push(target);
+    } else if (!checked && index > -1) {
+      this.detailSelectedTargets.splice(index, 1);
+    }
+  }
+
   /**
    * Remove a target from selected list in detail modal
    */
   removeDetailTarget(targetValue: string): void {
-    const index = this.detailSelectedTargets.indexOf(targetValue);
+    const index = this.detailSelectedTargets.findIndex(selected => this.isSameTarget(selected, targetValue, this.selectedPromotion?.scope, this.detailTargetType));
     if (index > -1) {
       this.detailSelectedTargets.splice(index, 1);
     }
@@ -841,7 +1005,9 @@ export class PromotionManage implements OnInit {
         minPurchase: item.minPurchase || item.min_order_value,
         maxDiscount: item.maxDiscount || item.max_discount_value,
         startDate: startDateFormatted || startDate, // Use formatted date for input
+        startTime: (item as any).startTime || (item as any).start_time || this.extractTime(item.startDate || item.start_date, '00:00'),
         endDate: endDateFormatted || endDate, // Use formatted date for input
+        endTime: (item as any).endTime || (item as any).end_time || this.extractTime(item.endDate || item.end_date, '23:59'),
         usageLimit: finalUsageLimit,
         userLimit: finalUserLimit,
         usageCount: usageCount,
@@ -849,7 +1015,12 @@ export class PromotionManage implements OnInit {
         status: status,
         updatedAt: updatedAt,
         selected: false,
-        groups: []
+        groups: [],
+        imageUrl: item.imageUrl || item.bannerData?.imageUrl || item.banner_data?.imageUrl || '',
+        bannerData: item.bannerData || item.banner_data || null,
+        showOnApp: item.showOnApp ?? item.show_on_app ?? item.isVisibleOnApp ?? true,
+        promotion_kind: item.promotion_kind || item.promotionKind || 'Promotion',
+        display_section: item.display_section || item.displaySection || ''
       };
 
       // Store promotion_id from MongoDB for update operations (reuse promotionId from above)
@@ -1310,14 +1481,15 @@ export class PromotionManage implements OnInit {
    */
 
   addPromotion(): void {
+    this.showPromotionTypeModal = true;
+  }
+
+  closePromotionTypeModal(): void {
+    this.showPromotionTypeModal = false;
+  }
+
+  startRegularPromotionCreation(): void {
     this.editMode = false;
-    // Get today's date in YYYY-MM-DD format for date inputs
-    const today = new Date().toISOString().split('T')[0];
-    // Set end date to 30 days from now
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 30);
-    const endDate = futureDate.toISOString().split('T')[0];
-    
     this.currentPromotion = {
       code: '',
       name: '',
@@ -1328,20 +1500,74 @@ export class PromotionManage implements OnInit {
       discountValue: 0,
       minPurchase: 0,
       maxDiscount: 0,
-      startDate: today,
-      endDate: endDate,
+      startDate: new Date().toISOString().split('T')[0],
+      startTime: '00:00',
+      endDate: new Date().toISOString().split('T')[0],
+      endTime: '23:59',
       usageLimit: 0,
       userLimit: 1,
       usageCount: 0,
       isFirstOrderOnly: false,
-      status: 'upcoming'
+      status: 'active',
+      imageUrl: '',
+      bannerData: null,
+      showOnApp: true,
+      promotion_kind: 'Promotion',
+      display_section: 'promotion'
+    };
+
+    this.selectedTargets = [];
+    this.targetType = 'Category';
+    this.targetSearchTerm = '';
+    this.targetDetailNames = {};
+    this.dateRangeError = false;
+    this.showPromotionTypeModal = false;
+    this.showAddEditModal = true;
+  }
+
+  startFlashSaleCreation(): void {
+    this.editMode = false;
+    // Get today's date in YYYY-MM-DD format for date inputs
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const endTimeDate = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const endTime = `${String(endTimeDate.getHours()).padStart(2, '0')}:${String(endTimeDate.getMinutes()).padStart(2, '0')}`;
+    
+    this.currentPromotion = {
+      code: '',
+      name: 'Flash Sale trong ngày',
+      description: 'Flash sale bán nhanh trong ngày, hiển thị ở section Flash Sale của app.',
+      type: 'Admin',
+      scope: 'Product',
+      discountType: 'percentage',
+      discountValue: 10,
+      minPurchase: 0,
+      maxDiscount: 0,
+      startDate: today,
+      startTime,
+      endDate: today,
+      endTime,
+      usageLimit: 0,
+      userLimit: 1,
+      usageCount: 0,
+      isFirstOrderOnly: false,
+      status: 'active',
+      imageUrl: '',
+      bannerData: null,
+      showOnApp: true,
+      promotion_kind: 'FlashSale',
+      display_section: 'flash_sale'
     };
     
     // Reset target selection
     this.selectedTargets = [];
-    this.targetType = 'Category';
+    this.targetType = 'Product';
     this.targetSearchTerm = '';
+    this.targetDetailNames = {};
+    this.dateRangeError = false;
     
+    this.showPromotionTypeModal = false;
     this.showAddEditModal = true;
   }
 
@@ -1501,8 +1727,154 @@ export class PromotionManage implements OnInit {
     }
   }
 
+  getBannerSrc(url: string): string {
+    if (!url) return '';
+    if (url.startsWith('/api/promo-images/')) {
+      const base = environment.apiUrl.replace(/\/api$/, '');
+      return `${base}${url}`;
+    }
+    return url;
+  }
+
+  onBannerUpload(event: Event, target: 'current' | 'detail' = 'current'): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files?.length) return;
+    const file = input.files[0];
+
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+
+    this.http.post<any>(`${environment.apiUrl}/promotions/upload-banner-image`, fd).subscribe({
+      next: (res) => {
+        if (res.success && res.imageUrl) {
+          if (target === 'detail' && this.selectedPromotion) {
+            this.selectedPromotion.imageUrl = res.imageUrl;
+            this.selectedPromotion.bannerData = this.buildBannerData(res.imageUrl);
+          } else if (this.currentPromotion) {
+            this.currentPromotion.imageUrl = res.imageUrl;
+            this.currentPromotion.bannerData = this.buildBannerData(res.imageUrl);
+          }
+          input.value = '';
+          if (res.storageProvider === 'mongodb') {
+            console.warn('Firebase Storage upload failed, using MongoDB fallback:', res.firebaseError);
+            this.notificationService.showWarning('Đã lưu tạm ảnh, nhưng Firebase Storage chưa upload được');
+          } else {
+            this.notificationService.showSuccess('Tải ảnh banner lên thành công');
+          }
+        } else {
+          this.notificationService.showError('Không lấy được link ảnh sau khi tải lên');
+        }
+      },
+      error: (err) => {
+        console.error('Error uploading banner:', err);
+        this.notificationService.showError('Lỗi tải ảnh lên backend');
+      }
+    });
+  }
+
+  removeBanner(): void {
+    if (this.currentPromotion) {
+      this.currentPromotion.imageUrl = '';
+      this.currentPromotion.bannerData = null;
+    }
+  }
+
+  buildBannerData(imageUrl: string): any {
+    if (!imageUrl) return null;
+    return {
+      imageUrl,
+      src: this.getBannerSrc(imageUrl),
+      type: 'promotion-banner',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  isFlashSaleCreateMode(): boolean {
+    return !this.editMode && (this.currentPromotion as any)?.promotion_kind === 'FlashSale';
+  }
+
+  isFlashSaleDetailMode(): boolean {
+    return (this.selectedPromotion as any)?.promotion_kind === 'FlashSale'
+      || (this.selectedPromotion as any)?.promotionKind === 'FlashSale';
+  }
+
+  private buildDateTime(dateValue?: string, timeValue?: string): Date {
+    const date = dateValue || new Date().toISOString().split('T')[0];
+    const time = timeValue || '00:00';
+    return new Date(`${date}T${time}:00`);
+  }
+
+  private buildFlashSaleCode(startDate: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `FS${startDate.getFullYear()}${pad(startDate.getMonth() + 1)}${pad(startDate.getDate())}${pad(startDate.getHours())}${pad(startDate.getMinutes())}`;
+  }
+
+  private prepareFlashSaleData(): any | null {
+    if (!this.currentPromotion) return null;
+
+    if (!this.selectedTargets.length) {
+      this.notificationService.showWarning('Vui lòng chọn ít nhất một sản phẩm để chạy Flash Sale');
+      return null;
+    }
+
+    if (!this.currentPromotion.startDate || !this.currentPromotion.startTime || !this.currentPromotion.endTime) {
+      this.notificationService.showWarning('Vui lòng chọn ngày, giờ bắt đầu và giờ kết thúc Flash Sale');
+      return null;
+    }
+
+    const startDate = this.buildDateTime(this.currentPromotion.startDate, this.currentPromotion.startTime);
+    const endDate = this.buildDateTime(this.currentPromotion.startDate, this.currentPromotion.endTime);
+    if (endDate <= startDate) {
+      this.notificationService.showWarning('Giờ kết thúc Flash Sale phải sau giờ bắt đầu');
+      return null;
+    }
+
+    if (!this.currentPromotion.discountValue || Number(this.currentPromotion.discountValue) <= 0) {
+      this.notificationService.showWarning('Vui lòng nhập mức giảm cho Flash Sale');
+      return null;
+    }
+
+    const code = this.currentPromotion.code?.trim() || this.buildFlashSaleCode(startDate);
+    const timeRange = `${this.currentPromotion.startTime} - ${this.currentPromotion.endTime}`;
+
+    return {
+      code,
+      name: this.currentPromotion.name?.trim() || `Flash Sale ${timeRange}`,
+      description: this.currentPromotion.description || `Flash Sale trong ngày ${this.currentPromotion.startDate}, khung giờ ${timeRange}`,
+      type: 'Admin',
+      scope: 'Product',
+      promotion_kind: 'FlashSale',
+      display_section: 'flash_sale',
+      discount_type: this.currentPromotion.discountType === 'fixed' ? 'fixed' : 'percent',
+      discount_value: Number(this.currentPromotion.discountValue) || 0,
+      max_discount_value: Number(this.currentPromotion.maxDiscount) || 0,
+      min_order_value: 0,
+      usage_limit: Number(this.currentPromotion.usageLimit) || 0,
+      user_limit: Number(this.currentPromotion.userLimit) || 1,
+      is_first_order_only: false,
+      start_date: startDate,
+      end_date: endDate,
+      status: 'Active',
+      created_by: 'admin',
+      created_at: new Date(),
+      updated_at: new Date(),
+      imageUrl: this.currentPromotion.imageUrl || '',
+      banner_data: this.currentPromotion.bannerData || this.buildBannerData(this.currentPromotion.imageUrl || ''),
+      show_on_app: true
+    };
+  }
+
   savePromotion(): void {
     if (!this.currentPromotion) return;
+
+    if (this.isFlashSaleCreateMode()) {
+      const flashSaleData = this.prepareFlashSaleData();
+      if (!flashSaleData) return;
+      this.currentPromotion.scope = 'Product';
+      this.targetType = 'Product';
+      this.createPromotionInMongoDB(flashSaleData);
+      return;
+    }
     
     // Validate required fields
     if (!this.currentPromotion.code || !this.currentPromotion.name || 
@@ -1552,9 +1924,14 @@ export class PromotionManage implements OnInit {
       start_date: new Date(this.currentPromotion.startDate),
       end_date: new Date(this.currentPromotion.endDate),
       status: this.mapStatusToBackend(this.currentPromotion.status || 'active'),
+      promotion_kind: 'Promotion',
+      display_section: 'promotion',
       created_by: 'admin',
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
+      imageUrl: this.currentPromotion.imageUrl || '',
+      banner_data: this.currentPromotion.bannerData || this.buildBannerData(this.currentPromotion.imageUrl || ''),
+      show_on_app: this.currentPromotion.showOnApp !== false
     };
 
     // Don't generate promotion_id in frontend - let backend generate it with format PROMOxxx
@@ -1910,6 +2287,12 @@ export class PromotionManage implements OnInit {
    * Handle start date change in add/edit modal
    */
   onStartDateChange(): void {
+    if (this.isFlashSaleCreateMode() && this.currentPromotion?.startDate) {
+      this.currentPromotion.endDate = this.currentPromotion.startDate;
+      this.dateRangeError = false;
+      return;
+    }
+
     if (this.currentPromotion?.startDate && this.currentPromotion?.endDate) {
       const startDate = new Date(this.currentPromotion.startDate);
       const endDate = new Date(this.currentPromotion.endDate);
@@ -1942,6 +2325,12 @@ export class PromotionManage implements OnInit {
    * Handle start date change in detail modal
    */
   onDetailStartDateChange(): void {
+    if (this.isFlashSaleDetailMode() && this.selectedPromotion?.startDate) {
+      this.selectedPromotion.endDate = this.selectedPromotion.startDate;
+      this.detailDateRangeError = false;
+      return;
+    }
+
     if (this.selectedPromotion?.startDate && this.selectedPromotion?.endDate) {
       const startDate = new Date(this.selectedPromotion.startDate);
       const endDate = new Date(this.selectedPromotion.endDate);
@@ -1975,11 +2364,16 @@ export class PromotionManage implements OnInit {
    */
   viewPromotionDetail(promotion: Promotion): void {
     this.selectedPromotion = { ...promotion };
+    if (this.isFlashSaleDetailMode()) {
+      this.selectedPromotion.scope = 'Product';
+      this.selectedPromotion.endDate = this.selectedPromotion.startDate;
+      this.detailTargetType = 'Product';
+    }
     
     // Reset detail target selection
     this.detailSelectedTargets = [];
     this.detailTargetSearchTerm = '';
-    this.detailTargetType = 'Category';
+    this.detailTargetType = this.isFlashSaleDetailMode() ? 'Product' : 'Category';
     
     // Load promotion target if exists
     const promotionId = (promotion as any).promotion_id;
@@ -2019,6 +2413,35 @@ export class PromotionManage implements OnInit {
   saveDetailChanges(): void {
     if (!this.selectedPromotion) return;
 
+    const isFlashSale = this.isFlashSaleDetailMode();
+    if (isFlashSale) {
+      this.selectedPromotion.scope = 'Product';
+      this.selectedPromotion.endDate = this.selectedPromotion.startDate;
+      this.detailTargetType = 'Product';
+
+      if (!this.detailSelectedTargets || this.detailSelectedTargets.length === 0) {
+        this.notificationService.showWarning('Vui lòng chọn ít nhất một sản phẩm để chạy Flash Sale');
+        return;
+      }
+
+      if (!this.selectedPromotion.startDate || !this.selectedPromotion.startTime || !this.selectedPromotion.endTime) {
+        this.notificationService.showWarning('Vui lòng chọn ngày, giờ bắt đầu và giờ kết thúc Flash Sale');
+        return;
+      }
+
+      const flashStartDate = this.buildDateTime(this.selectedPromotion.startDate, this.selectedPromotion.startTime);
+      const flashEndDate = this.buildDateTime(this.selectedPromotion.startDate, this.selectedPromotion.endTime);
+      if (flashEndDate <= flashStartDate) {
+        this.notificationService.showWarning('Giờ kết thúc Flash Sale phải sau giờ bắt đầu');
+        return;
+      }
+
+      if (!this.selectedPromotion.discountValue || Number(this.selectedPromotion.discountValue) <= 0) {
+        this.notificationService.showWarning('Vui lòng nhập mức giảm cho Flash Sale');
+        return;
+      }
+    }
+
     // Validate required fields
     if (!this.selectedPromotion.code || !this.selectedPromotion.name || 
         !this.selectedPromotion.discountValue || !this.selectedPromotion.startDate || 
@@ -2054,20 +2477,29 @@ export class PromotionManage implements OnInit {
       code: this.selectedPromotion.code.trim(),
       name: this.selectedPromotion.name.trim(),
       description: this.selectedPromotion.description || '',
-      type: this.selectedPromotion.type || 'User',
-      scope: this.selectedPromotion.scope || 'Order',
+      type: isFlashSale ? 'Admin' : (this.selectedPromotion.type || 'User'),
+      scope: isFlashSale ? 'Product' : (this.selectedPromotion.scope || 'Order'),
       discount_type: this.selectedPromotion.discountType === 'percentage' ? 'percent' : 
                      this.selectedPromotion.discountType || 'fixed',
       discount_value: Number(this.selectedPromotion.discountValue) || 0,
-      max_discount_value: Number(this.selectedPromotion.maxDiscount) || 0,
-      min_order_value: Number(this.selectedPromotion.minPurchase) || 0,
+      max_discount_value: isFlashSale ? 0 : Number(this.selectedPromotion.maxDiscount) || 0,
+      min_order_value: isFlashSale ? 0 : Number(this.selectedPromotion.minPurchase) || 0,
       usage_limit: Number(this.selectedPromotion.usageLimit) || 0,
-      user_limit: Number(this.selectedPromotion.userLimit) || 1,
-      is_first_order_only: this.selectedPromotion.isFirstOrderOnly || false,
-      start_date: new Date(this.selectedPromotion.startDate),
-      end_date: new Date(this.selectedPromotion.endDate),
-      status: this.mapStatusToBackend(this.selectedPromotion.status || 'active'),
-      updated_at: new Date()
+      user_limit: isFlashSale ? Number(this.selectedPromotion.userLimit) || 1 : Number(this.selectedPromotion.userLimit) || 1,
+      is_first_order_only: isFlashSale ? false : this.selectedPromotion.isFirstOrderOnly || false,
+      start_date: isFlashSale
+        ? this.buildDateTime(this.selectedPromotion.startDate, this.selectedPromotion.startTime)
+        : new Date(this.selectedPromotion.startDate),
+      end_date: isFlashSale
+        ? this.buildDateTime(this.selectedPromotion.startDate, this.selectedPromotion.endTime)
+        : new Date(this.selectedPromotion.endDate),
+      status: isFlashSale ? 'Active' : this.mapStatusToBackend(this.selectedPromotion.status || 'active'),
+      promotion_kind: isFlashSale ? 'FlashSale' : 'Promotion',
+      display_section: isFlashSale ? 'flash_sale' : 'promotion',
+      updated_at: new Date(),
+      imageUrl: this.selectedPromotion.imageUrl || '',
+      banner_data: this.selectedPromotion.bannerData || this.buildBannerData(this.selectedPromotion.imageUrl || ''),
+      show_on_app: isFlashSale ? true : this.selectedPromotion.showOnApp !== false
     };
 
     // Get promotion_id from selectedPromotion

@@ -109,7 +109,6 @@
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:minWidth="124dp"
-                        android:text="@string/posts_author_badge"
                         android:textColor="@color/primary_hover"
                         android:textSize="@dimen/text_sm" />
 
@@ -120,7 +119,6 @@
                         android:background="@drawable/bg_post_chip_on_hero"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="@string/posts_count_badge"
                         android:textColor="@color/background_main"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -142,7 +140,6 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="12\nBài đăng"
                     android:textColor="@color/neutral_80"
                     android:textSize="@dimen/text_sm" />
 
@@ -153,7 +150,6 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="486\nTym"
                     android:textColor="@color/neutral_80"
                     android:textSize="@dimen/text_sm" />
 
@@ -164,7 +160,6 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="94\nBình luận"
                     android:textColor="@color/neutral_80"
                     android:textSize="@dimen/text_sm" />
 
@@ -175,7 +170,6 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/inter_semibold"
                     android:gravity="center"
-                    android:text="76\nLưu"
                     android:textColor="@color/neutral_80"
                     android:textSize="@dimen/text_sm" />
             </LinearLayout>

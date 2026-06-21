@@ -71,7 +71,9 @@ public class CarbonHistoryActivity extends BaseActivity {
     private void bindHistory(AssetScreenData.Snapshot snapshot) {
         bindEarnedList((LinearLayout) allList, snapshot);
         bindEarnedList((LinearLayout) receivedList, snapshot);
-        ((LinearLayout) redeemedList).removeAllViews();
+        LinearLayout redeemedContainer = (LinearLayout) redeemedList;
+        redeemedContainer.removeAllViews();
+        redeemedContainer.addView(createEmptyState("Bạn chưa có lịch sử đổi điểm carbon."));
     }
 
     private void bindEarnedList(LinearLayout container, AssetScreenData.Snapshot snapshot) {
@@ -79,14 +81,46 @@ public class CarbonHistoryActivity extends BaseActivity {
         LayoutInflater inflater = LayoutInflater.from(this);
         for (AssetModels.Order order : snapshot.orders) {
             AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(order.orderId);
-            if (detail == null || detail.carbonPointEarned <= 0) {
+            int points = totalCarbonPoints(detail);
+            if (points <= 0) {
                 continue;
             }
             View item = inflater.inflate(R.layout.item_carbon_history_earned_order, container, false);
             AssetScreenData.setText(item, R.id.carbonHistoryTitle, "Mua hàng xanh\n#" + order.orderId);
             AssetScreenData.setText(item, R.id.carbonHistoryDate, AssetScreenData.date(order.createdAt));
-            AssetScreenData.setText(item, R.id.carbonHistoryPoints, "+" + detail.carbonPointEarned + " C");
+            AssetScreenData.setText(item, R.id.carbonHistoryPoints, "+" + points + " C");
             container.addView(item);
         }
+        if (container.getChildCount() == 0) {
+            container.addView(createEmptyState("Bạn chưa có lịch sử nhận điểm carbon."));
+        }
+    }
+
+    private int totalCarbonPoints(AssetModels.OrderDetail detail) {
+        if (detail == null) return 0;
+        if (detail.carbonPointEarned > 0) return detail.carbonPointEarned;
+        int total = 0;
+        if (detail.items != null) {
+            for (AssetModels.OrderDetailItem item : detail.items) {
+                total += item.carbonPointEarned;
+            }
+        }
+        return total;
+    }
+
+    private TextView createEmptyState(String message) {
+        TextView emptyView = new TextView(this);
+        emptyView.setText(message);
+        emptyView.setTextColor(ContextCompat.getColor(this, R.color.neutral_60));
+        emptyView.setTextSize(14);
+        emptyView.setGravity(android.view.Gravity.CENTER);
+        emptyView.setPadding(dp(16), dp(24), dp(16), dp(24));
+        emptyView.setBackgroundResource(R.drawable.bg_profile_card);
+        emptyView.setFontFeatureSettings("kern");
+        return emptyView;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

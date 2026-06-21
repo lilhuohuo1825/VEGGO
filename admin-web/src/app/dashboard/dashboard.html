@@ -93,22 +93,12 @@
     </div>
   </div>
 
-  <!-- Revenue Chart - Full Width -->
+  <!-- Revenue / Profit Chart - Full Width -->
   <div class="revenue-chart-full" id="revenue-chart-section">
     <div class="chart-section">
       <div class="chart-header">
-        <h2 class="chart-title">Doanh thu</h2>
+        <h2 class="chart-title">Doanh thu - Lợi nhuận</h2>
         <div class="chart-controls">
-          <div class="time-toggle">
-            <button class="toggle-btn active" (click)="setTimePeriod('current')">
-              <span class="dot"></span>
-              Tháng này
-            </button>
-            <button class="toggle-btn" (click)="setTimePeriod('previous')">
-              <span class="dot"></span>
-              Tháng trước
-            </button>
-          </div>
           <select class="year-selector" [(ngModel)]="selectedYear" (change)="onYearChange()">
             <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
           </select>
@@ -123,6 +113,11 @@
         <canvas #revenueChart></canvas>
       </div>
     </div>
+  </div>
+
+  <!-- Vietnam Distribution Map -->
+  <div style="margin-top: 24px; position: relative; z-index: 1001;">
+    <app-dashboard-vn-map [orders]="allOrders"></app-dashboard-vn-map>
   </div>
 
   <!-- Pie Charts and Customers Section -->
@@ -151,60 +146,56 @@
     </div>
 
     <!-- Customers and Total Orders Container - Stacked vertically -->
-    <div class="customers-orders-container">
-      <!-- Customers Chart -->
-      <div class="chart-section">
+    <div class="customers-orders-container" style="width: 100%;">
+      <!-- Combined Activity Chart (Total Orders & New Customers) -->
+      <div class="chart-section" style="width: 100%;">
         <div class="chart-header">
-          <h2 class="chart-title">Khách hàng</h2>
-          <div class="chart-controls">
-            <select class="year-selector" [(ngModel)]="selectedYearCustomers" (change)="onYearChangeCustomers()">
-              <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+          <h2 class="chart-title">Hoạt động hệ thống (Đơn hàng & Khách hàng mới)</h2>
+          <div class="chart-controls" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <!-- Chế độ xem (Scale Mode) -->
+            <select class="scale-selector" [(ngModel)]="activityScaleMode" (change)="onScaleModeChange()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #E5E7EB; background: white; font-weight: 500;">
+              <option value="year">Scale: Năm</option>
+              <option value="month">Scale: Tháng</option>
+              <option value="week">Scale: Tuần</option>
+              <option value="day">Scale: Ngày</option>
+              <option value="hour">Scale: Giờ</option>
             </select>
-            <select class="month-selector" [(ngModel)]="selectedMonthCustomers" (change)="onMonthChangeCustomers()">
-              <option *ngFor="let month of months; let i = index" [value]="i + 1">
-                Tháng {{ i + 1 }}
-              </option>
-            </select>
-            <div class="week-selector">
-              <span>Tuần:</span>
-              <select class="week-select" [(ngModel)]="selectedWeekCustomers" (change)="onWeekChangeCustomers()">
-                <option *ngFor="let week of availableWeeksCustomers" [value]="week.week">
-                  {{ week.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="chart-container">
-          <canvas #customersChart></canvas>
-        </div>
-      </div>
 
-      <!-- Total Orders Chart -->
-      <div class="chart-section total-orders-inline">
-        <div class="chart-header">
-          <h2 class="chart-title">Tổng đơn hàng</h2>
-          <div class="chart-controls">
-            <select class="year-selector" [(ngModel)]="selectedYearOrders" (change)="onYearChangeOrders()">
+            <!-- Chọn Năm -->
+            <select class="year-selector" [(ngModel)]="selectedYearActivity" (change)="onYearChangeActivity()">
               <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
             </select>
-            <select class="month-selector" [(ngModel)]="selectedMonthOrders" (change)="onMonthChangeOrders()">
+
+            <!-- Chọn Tháng (không hiện cho Scale Năm) -->
+            <select class="month-selector" *ngIf="activityScaleMode !== 'year'" [(ngModel)]="selectedMonthActivity" (change)="onMonthChangeActivity()">
               <option *ngFor="let month of months; let i = index" [value]="i + 1">
                 Tháng {{ i + 1 }}
               </option>
             </select>
-            <div class="week-selector">
+
+            <!-- Chọn Tuần (chỉ hiện cho Scale Tuần) -->
+            <div class="week-selector" *ngIf="activityScaleMode === 'week'">
               <span>Tuần:</span>
-              <select class="week-select" [(ngModel)]="selectedWeekOrders" (change)="onWeekChangeOrders()">
-                <option *ngFor="let week of availableWeeksOrders" [value]="week.week">
+              <select class="week-select" [(ngModel)]="selectedWeekActivity" (change)="onWeekChangeActivity()">
+                <option *ngFor="let week of availableWeeksActivity" [value]="week.week">
                   {{ week.label }}
                 </option>
               </select>
             </div>
+
+            <!-- Chọn Ngày (hiện cho Scale Ngày, Giờ) -->
+            <select class="day-selector" *ngIf="activityScaleMode === 'day' || activityScaleMode === 'hour'" [(ngModel)]="selectedDayActivity" (change)="onDayChangeActivity()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #E5E7EB; background: white;">
+              <option *ngFor="let day of availableDaysActivity" [value]="day">Ngày {{ day }}</option>
+            </select>
+
+            <!-- Chọn Giờ (chỉ hiện cho Scale Giờ) -->
+            <select class="hour-selector" *ngIf="activityScaleMode === 'hour'" [(ngModel)]="selectedHourActivity" (change)="onHourChangeActivity()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #E5E7EB; background: white;">
+              <option *ngFor="let hour of availableHoursActivity" [value]="hour">{{ hour }}h</option>
+            </select>
           </div>
         </div>
-        <div class="chart-container">
-          <canvas #ordersChart></canvas>
+        <div class="chart-container" style="height: 350px; position: relative;">
+          <canvas #combinedTimelineChart></canvas>
         </div>
       </div>
     </div>
@@ -247,6 +238,11 @@
       </div>
       <div class="reviews-table-container">
         <table class="reviews-table">
+          <colgroup>
+            <col style="width: 55%">
+            <col style="width: 27%">
+            <col style="width: 18%">
+          </colgroup>
           <thead>
             <tr>
               <th>Khách hàng</th>
@@ -258,16 +254,18 @@
             <tr *ngFor="let review of recentReviews">
               <td>
                 <div class="customer-info">
-                  <div class="customer-avatar"></div>
+                  <div class="customer-avatar">{{ (review.full_name || 'K')[0].toUpperCase() }}</div>
                   <div class="customer-details">
                     <div class="customer-name">{{ review.full_name || 'Khách vãng lai' }}</div>
+                    <div class="review-comment" *ngIf="review.comment">{{ review.comment }}</div>
                   </div>
                 </div>
               </td>
               <td>{{ formatReviewTime(review.time || review.review_date || review.date || review.created_at) }}</td>
               <td>
-                <div class="rating-stars">
-                  <span *ngFor="let star of getStars(review.rating || 5)" class="star" [ngClass]="star">★</span>
+                <div class="rating-compact">
+                  <span class="rating-number">{{ review.rating || 5 }}</span>
+                  <span class="rating-star-single">★</span>
                 </div>
               </td>
             </tr>
@@ -279,6 +277,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Products Section -->
   <div class="products-section">
@@ -297,31 +296,54 @@
 
       <!-- Out of Stock Products -->
       <div class="chart-section stock-section">
-        <div class="section-header">
-          <h2 class="chart-title">Tình trạng tồn kho</h2>
-        </div>
-        <div class="stock-list-container">
-          <div class="stock-list-item" (click)="navigateToProductsWithFilter('low-stock')" style="cursor: pointer;">
-            <div class="stock-icon low-stock-icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="4" y="5" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M7 9H13" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-            </div>
-            <span class="stock-label">Sắp hết hàng</span>
-            <span class="stock-count">{{ lowStockCount }}</span>
+        <div class="section-header inventory-header">
+          <div>
+            <p class="inventory-eyebrow">Cảnh báo tồn kho</p>
+            <h2 class="chart-title">Theo dõi tồn kho</h2>
           </div>
-          <div class="stock-list-item" (click)="navigateToProductsWithFilter('out-of-stock')" style="cursor: pointer;">
-            <div class="stock-icon out-of-stock-icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="4" y="5" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M4 5L16 15M16 5L4 15" stroke="currentColor" stroke-width="1.5"/>
-                <rect x="6" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
-                <rect x="12" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
-              </svg>
+          <button class="inventory-view-all" (click)="navigateToProductsWithFilter(inventoryFilter === 'all' ? 'out-of-stock' : inventoryFilter)">
+            Xem thêm
+          </button>
+        </div>
+
+        <div class="inventory-filter-row">
+          <label class="inventory-filter-label" for="inventory-filter">Bộ lọc</label>
+          <select
+            id="inventory-filter"
+            class="inventory-filter-select"
+            [ngModel]="inventoryFilter"
+            (ngModelChange)="setInventoryFilter($event)">
+            <option value="all">Tất cả cảnh báo ({{ outOfStockCount + lowStockCount }})</option>
+            <option value="out-of-stock">Hết hàng ({{ outOfStockCount }})</option>
+            <option value="low-stock">Sắp hết &lt;10 ({{ lowStockCount }})</option>
+          </select>
+        </div>
+
+        <div class="inventory-table">
+          <div class="inventory-table-head">
+            <span>Sản phẩm</span>
+            <span>Tồn kho</span>
+            <span></span>
+          </div>
+
+          <div class="inventory-row" *ngFor="let product of inventoryWatchProducts">
+            <div class="inventory-product">
+              <img [src]="getProductImage(product)" [alt]="getProductName(product)" class="inventory-product-image">
+              <div class="inventory-product-info">
+                <div class="inventory-product-name">{{ getProductName(product) }}</div>
+                <div class="inventory-product-sku" *ngIf="product.sku">SKU: {{ product.sku }}</div>
+              </div>
             </div>
-            <span class="stock-label">Hết hàng</span>
-            <span class="stock-count">{{ outOfStockCount }}</span>
+            <span class="inventory-stock" [class.out]="product.calculatedStock === 0" [class.low]="product.calculatedStock > 0">
+              {{ product.calculatedStock }}
+            </span>
+            <button class="inventory-import-btn" (click)="navigateToInventoryProduct(product)">
+              Nhập hàng
+            </button>
+          </div>
+
+          <div class="inventory-empty" *ngIf="inventoryWatchProducts.length === 0">
+            Không có sản phẩm {{ getInventoryFilterLabel() | lowercase }}
           </div>
         </div>
       </div>

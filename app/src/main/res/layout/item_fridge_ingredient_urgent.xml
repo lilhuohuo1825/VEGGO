@@ -33,7 +33,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter_semibold"
-            android:text="Cải kale Đà Lạt"
             android:textColor="@color/neutral_100"
             android:textSize="@dimen/text_sm"
             android:textStyle="bold" />
@@ -43,7 +42,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="200gr · Ngăn rau"
             android:textColor="@color/neutral_70"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
@@ -61,7 +59,6 @@
             android:background="@drawable/bg_fridge_warning_chip"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
-            android:text="Còn 1 ngày"
             android:textColor="@color/danger_main"
             android:textSize="@dimen/text_xs" />
 

@@ -323,6 +323,23 @@
             </div>
           </div>
 
+          <div class="info-section" *ngIf="!isNewOrder && !isEditMode && orderData.deliveryInfo.warehouseId">
+            <h4 class="section-subtitle">Giao từ</h4>
+            <div class="warehouse-source-card">
+              <div class="warehouse-source-icon">WH</div>
+              <div class="warehouse-source-info">
+                <strong>{{ orderData.deliveryInfo.warehouseName }}</strong>
+                <span class="warehouse-source-code">{{ orderData.deliveryInfo.warehouseId }}</span>
+                <span class="warehouse-source-address" *ngIf="orderData.deliveryInfo.warehouseAddress">
+                  {{ orderData.deliveryInfo.warehouseAddress }}
+                </span>
+                <span class="warehouse-source-address muted" *ngIf="!orderData.deliveryInfo.warehouseAddress">
+                  Chưa có địa chỉ kho
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- Edit mode (new order or edit mode) -->
           <!-- Thông tin nhận hàng -->
           <div class="info-section" *ngIf="isNewOrder || isEditMode">
@@ -353,6 +370,27 @@
                 [(ngModel)]="orderData.deliveryInfo.email"
                 placeholder="Email"
               />
+            </div>
+          </div>
+
+          <div class="info-section" *ngIf="isNewOrder || isEditMode">
+            <h4 class="section-subtitle">Giao từ</h4>
+            <div class="info-row">
+              <label class="info-label">Kho xuất:</label>
+              <select
+                class="form-select"
+                [(ngModel)]="orderData.deliveryInfo.warehouseId"
+                (ngModelChange)="onWarehouseChange()"
+              >
+                <option value="">Chọn kho xuất</option>
+                <option *ngFor="let warehouse of warehouses" [value]="warehouse.code || warehouse.warehouse_id || warehouse._id">
+                  {{ warehouse.name || warehouse.code }}{{ warehouse.code ? ' - ' + warehouse.code : '' }}
+                </option>
+              </select>
+            </div>
+            <div class="info-row" *ngIf="orderData.deliveryInfo.warehouseAddress">
+              <span class="info-label">Địa chỉ kho:</span>
+              <span class="info-value">{{ orderData.deliveryInfo.warehouseAddress }}</span>
             </div>
           </div>
 

@@ -321,13 +321,7 @@
                 android:id="@+id/orderListContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <include layout="@layout/item_order_pending" />
-                <include layout="@layout/item_order_shipping" />
-                <include layout="@layout/item_order_delivered" />
-                <include layout="@layout/item_order_cancelled" />
-            </LinearLayout>
+                android:orientation="vertical" />
         </ScrollView>
 
         <LinearLayout

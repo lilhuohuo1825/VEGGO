@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://vgreen.onrender.com/api',
+  apiUrl: 'http://localhost:5001/api',
   firebase: {
     apiKey: "AIzaSyDRdUiBHRPiGA3D4bS4tQE1bEn0QcBnPRU",
     authDomain: "veggo-123.firebaseapp.com",

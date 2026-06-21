@@ -51,43 +51,6 @@ public class PostNotificationsActivity extends BaseActivity {
 
     private void buildNotifications(List<AssetModels.CommunityPost> posts) {
         notificationItems.clear();
-        notificationItems.add(new PostNotificationItem(
-                CATEGORY_QA,
-                "Admin đã phản hồi câu hỏi",
-                "Câu hỏi về cách bảo quản cải kale đã được trả lời.",
-                "Xem trả lời",
-                "Hôm nay",
-                "?",
-                true
-        ));
-        notificationItems.add(new PostNotificationItem(
-                CATEGORY_QA,
-                "Câu hỏi có phản hồi mới",
-                "Một người dùng khác bổ sung kinh nghiệm chọn cà chua bi.",
-                "Xem Q&A",
-                "Hôm qua",
-                "!",
-                false
-        ));
-        notificationItems.add(new PostNotificationItem(
-                CATEGORY_ORDERS,
-                "Đơn hàng đang được giao",
-                "Đơn rau củ tươi của bạn dự kiến đến trong khung 16:00 - 18:00.",
-                "Theo dõi đơn",
-                "Hôm nay",
-                "✓",
-                true
-        ));
-        notificationItems.add(new PostNotificationItem(
-                CATEGORY_ORDERS,
-                "Nhắc đánh giá đơn hàng",
-                "Đơn cải kale organic đã hoàn tất. Chia sẻ nhận xét để nhận điểm carbon.",
-                "Đánh giá",
-                "2 ngày trước",
-                "!",
-                false
-        ));
-        LayoutInflater inflater = LayoutInflater.from(this);
         for (AssetModels.CommunityPost post : posts) {
             if (post.likeCount > 0) {
                 notificationItems.add(new PostNotificationItem(
@@ -123,15 +86,6 @@ public class PostNotificationsActivity extends BaseActivity {
                 ));
             }
         }
-        notificationItems.add(new PostNotificationItem(
-                CATEGORY_OTHER,
-                "Ưu đãi cá nhân mới",
-                "Bạn có voucher freeship cho đơn rau củ từ 199.000đ.",
-                "Xem ưu đãi",
-                "Hôm nay",
-                "%",
-                true
-        ));
     }
 
     private void showNotifications(String category) {
