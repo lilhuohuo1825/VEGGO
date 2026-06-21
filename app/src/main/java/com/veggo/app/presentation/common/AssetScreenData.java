@@ -48,9 +48,10 @@ public final class AssetScreenData {
         AssetModels.User user = null;
         List<AssetModels.Order> customerOrders = new ArrayList<>();
         Map<String, AssetModels.OrderDetail> detailByOrderId = new HashMap<>();
+        com.veggo.app.data.remote.api.CertificateApi.CertificateRequestDto latestCertificateRequest = null;
 
         AssetRepository repository = new AssetRepository(context);
-        List<AssetModels.Certificate> certificates = repository.getCertificates();
+        List<AssetModels.Certificate> certificates = loadCertificates(repository);
         List<AssetModels.Warehouse> warehouses = repository.getWarehouses();
         List<AssetModels.CommunityPost> communityPosts = repository.getCommunityPosts();
         List<AssetModels.Reminder> reminders = repository.getReminders();
@@ -72,9 +73,13 @@ public final class AssetScreenData {
                     user = new AssetModels.User();
                     user.phone = userDto.getPhone();
                     user.customerId = userDto.getCustomerId();
+                    if (hasText(user.customerId)) {
+                        customerId = user.customerId;
+                    }
                     user.fullName = userDto.getFullName();
                     user.email = userDto.getEmail();
                     user.carbonPoint = userDto.getCarbonPoint();
+                    user.certificateId = userDto.getCertificateId();
                     user.address = userDto.getAddress();
                     user.avatar = userDto.getAvatarUrl();
                     // Add addresses from addresses list in UserDto
@@ -108,7 +113,26 @@ public final class AssetScreenData {
                 enrichUserFromPreferences(user, appPreferences);
             }
 
-            // 2. Fetch orders from MongoDB via OrderApi
+            if (!hasText(customerId) && user != null && hasText(user.customerId)) {
+                customerId = user.customerId;
+            }
+
+            // 2. Fetch latest certificate request so the UI can distinguish pending/rejected states.
+            try {
+                if (hasText(customerId)) {
+                    com.veggo.app.data.remote.api.CertificateApi certificateApi =
+                            com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.CertificateApi.class);
+                    retrofit2.Response<com.veggo.app.data.remote.api.CertificateApi.CertificateRequestResponse> requestResponse =
+                            certificateApi.getLatestRequest(customerId).execute();
+                    if (requestResponse.isSuccessful() && requestResponse.body() != null) {
+                        latestCertificateRequest = requestResponse.body().data;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // 3. Fetch orders from MongoDB via OrderApi
             try {
                 com.veggo.app.data.remote.api.OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.OrderApi.class);
                 retrofit2.Response<List<com.veggo.app.data.remote.dto.OrderDto>> ordersResponse = orderApi.getOrders(customerId).execute();
@@ -134,6 +158,8 @@ public final class AssetScreenData {
                         // Detail
                         AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
                         detail.orderId = order.orderId;
+                        detail.carbonPointEarned = orderDto.getCarbonPointEarned();
+                        detail.totalCarbonEmission = orderDto.getTotalCarbonEmission();
                         detail.items = new ArrayList<>();
                         if (orderDto.getItems() != null) {
                             for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
@@ -146,6 +172,8 @@ public final class AssetScreenData {
                                 item.image = itemDto.getImageUrl();
                                 item.sku = itemDto.getSku();
                                 item.unit = hasText(itemDto.getUnit()) ? itemDto.getUnit() : "kg";
+                                item.carbonPointEarned = itemDto.getCarbonPointEarned();
+                                item.totalCarbonEmission = itemDto.getTotalCarbonEmission();
                                 detail.items.add(item);
                             }
                         }
@@ -195,12 +223,33 @@ public final class AssetScreenData {
                 customerOrders,
                 detailByOrderId,
                 certificates,
+                latestCertificateRequest,
                 warehouseById,
                 communityPosts,
                 reminders,
                 inventories,
                 instructions
         );
+    }
+
+    @NonNull
+    private static List<AssetModels.Certificate> loadCertificates(@NonNull AssetRepository repository) {
+        try {
+            com.veggo.app.data.remote.api.CertificateApi certificateApi =
+                    com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.CertificateApi.class);
+            retrofit2.Response<com.veggo.app.data.remote.api.CertificateApi.CertificateResponse> response =
+                    certificateApi.getCertificates().execute();
+            if (response.isSuccessful() && response.body() != null && response.body().data != null && !response.body().data.isEmpty()) {
+                List<AssetModels.Certificate> certificates = new ArrayList<>();
+                for (com.veggo.app.data.remote.api.CertificateApi.CertificateDto certificateDto : response.body().data) {
+                    certificates.add(certificateDto.toAssetModel());
+                }
+                return certificates;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return repository.getCertificates();
     }
 
     @NonNull
@@ -439,6 +488,7 @@ public final class AssetScreenData {
             @NonNull AssetModels.Order order
     ) {
         if (detail == null || detail.items == null || detail.items.isEmpty()) {
+            clearProductBlock(root);
             return;
         }
         AssetModels.OrderDetailItem item = detail.items.get(0);
@@ -452,6 +502,15 @@ public final class AssetScreenData {
         if (image != null && hasText(item.image)) {
             Glide.with(context).load(item.image).placeholder(R.drawable.ic_vegetable).into(image);
         }
+    }
+
+    private static void clearProductBlock(@NonNull View root) {
+        setText(root, R.id.orderItemProductName, "");
+        setText(root, R.id.orderItemVariant, "");
+        setText(root, R.id.orderItemQuantity, "");
+        setText(root, R.id.orderItemOldPrice, "");
+        setText(root, R.id.orderItemPrice, "");
+        setText(root, R.id.orderItemTotal, "");
     }
 
     public static void bindDetailProduct(
@@ -583,6 +642,8 @@ public final class AssetScreenData {
         public final Map<String, AssetModels.OrderDetail> detailByOrderId;
         @NonNull
         public final List<AssetModels.Certificate> certificates;
+        @Nullable
+        public final com.veggo.app.data.remote.api.CertificateApi.CertificateRequestDto latestCertificateRequest;
         @NonNull
         public final Map<String, AssetModels.Warehouse> warehouseById;
         @NonNull
@@ -600,6 +661,7 @@ public final class AssetScreenData {
                 @NonNull List<AssetModels.Order> orders,
                 @NonNull Map<String, AssetModels.OrderDetail> detailByOrderId,
                 @NonNull List<AssetModels.Certificate> certificates,
+                @Nullable com.veggo.app.data.remote.api.CertificateApi.CertificateRequestDto latestCertificateRequest,
                 @NonNull Map<String, AssetModels.Warehouse> warehouseById,
                 @NonNull List<AssetModels.CommunityPost> communityPosts,
                 @NonNull List<AssetModels.Reminder> reminders,
@@ -611,6 +673,7 @@ public final class AssetScreenData {
             this.orders = Collections.unmodifiableList(orders);
             this.detailByOrderId = detailByOrderId;
             this.certificates = Collections.unmodifiableList(certificates);
+            this.latestCertificateRequest = latestCertificateRequest;
             this.warehouseById = warehouseById;
             this.communityPosts = Collections.unmodifiableList(communityPosts);
             this.reminders = Collections.unmodifiableList(reminders);

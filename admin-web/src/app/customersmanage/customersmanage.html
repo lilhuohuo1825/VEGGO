@@ -254,6 +254,11 @@
 
   <!-- REQUESTS TAB -->
   <div *ngIf="currentTab === 'requests'" class="requests-container">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+      <button (click)="evaluateCertificateRequests()" style="background: var(--primary-main); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+        Quét lại đơn đã giao
+      </button>
+    </div>
     <div class="customers-table-container">
       <table class="customers-table">
         <thead>
@@ -275,7 +280,7 @@
             <td>{{req.userId}}</td>
             <td><strong>{{req.requestedCer}}</strong></td>
             <td>{{req.totalPoints}}</td>
-            <td>{{req.createdAt?.toDate() | date:'dd/MM/yyyy HH:mm'}}</td>
+            <td>{{formatCertificateDate(req.createdAt)}}</td>
             <td>
               <button (click)="approveRequest(req)" style="background: var(--primary-main); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 8px;">Duyệt</button>
               <button (click)="rejectRequest(req)" style="background: var(--danger-main); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Từ chối</button>

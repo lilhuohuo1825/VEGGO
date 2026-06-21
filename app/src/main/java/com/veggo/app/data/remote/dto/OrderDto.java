@@ -11,11 +11,11 @@ public class OrderDto {
     private String id;
 
     /** Mã đơn hàng dạng ORD... */
-    @SerializedName("orderId")
+    @SerializedName(value = "orderId", alternate = {"OrderID"})
     private String orderId;
 
     /** CustomerID (CUS000XXX) – backend trả về field này trong userId */
-    @SerializedName("userId")
+    @SerializedName(value = "userId", alternate = {"CustomerID"})
     private String userId;
 
     private String paymentMethod;
@@ -25,12 +25,17 @@ public class OrderDto {
     private long shippingDiscount;
     private long discount;
     private long total;
+    private long totalAmount;
     private String status;
     private Map<String, Object> shippingAddress;
     private String warehouseId;
     private String createdAt;
+    @SerializedName("CarbonPointEarned")
+    private int carbonPointEarned;
+    @SerializedName("TotalCarbonEmission")
+    private double totalCarbonEmission;
 
-    public String getId() { return id; }
+    public String getId() { return orderId != null && !orderId.isEmpty() ? orderId : id; }
     public void setId(String id) { this.id = id; }
 
     public String getOrderId() { return orderId; }
@@ -57,7 +62,7 @@ public class OrderDto {
     public long getDiscount() { return discount; }
     public void setDiscount(long discount) { this.discount = discount; }
 
-    public long getTotal() { return total; }
+    public long getTotal() { return totalAmount > 0 ? totalAmount : total; }
     public void setTotal(long total) { this.total = total; }
 
     public String getStatus() { return status; }
@@ -71,17 +76,25 @@ public class OrderDto {
 
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public int getCarbonPointEarned() { return carbonPointEarned; }
+    public double getTotalCarbonEmission() { return totalCarbonEmission; }
 
     public static class OrderItemDto {
+        @SerializedName("sku")
+        private String sku;
         private String productId;
         private String name;
         private long price;
         private long originalPrice;
         private int quantity;
         private String imageUrl;
-        private String sku;
         private String unit;
+        @SerializedName("CarbonPointEarned")
+        private int carbonPointEarned;
+        @SerializedName("TotalCarbonEmission")
+        private double totalCarbonEmission;
 
+        public String getSku() { return sku; }
         public String getProductId() { return productId; }
         public void setProductId(String productId) { this.productId = productId; }
         public String getName() { return name; }
@@ -94,9 +107,10 @@ public class OrderDto {
         public void setQuantity(int quantity) { this.quantity = quantity; }
         public String getImageUrl() { return imageUrl; }
         public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-        public String getSku() { return sku; }
         public void setSku(String sku) { this.sku = sku; }
         public String getUnit() { return unit; }
         public void setUnit(String unit) { this.unit = unit; }
+        public int getCarbonPointEarned() { return carbonPointEarned; }
+        public double getTotalCarbonEmission() { return totalCarbonEmission; }
     }
 }

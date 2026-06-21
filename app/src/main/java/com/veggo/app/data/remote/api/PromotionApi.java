@@ -1,5 +1,6 @@
 package com.veggo.app.data.remote.api;
 
+import com.veggo.app.data.remote.dto.FlashSaleResponseDto;
 import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.HomeProductResponse;
 
@@ -21,4 +22,7 @@ public interface PromotionApi {
             @retrofit2.http.Query("limit") Integer limit,
             @retrofit2.http.Query("skip") Integer skip
     );
+
+    @GET("promotions/flash-sales")
+    Call<FlashSaleResponseDto> getFlashSales();
 }

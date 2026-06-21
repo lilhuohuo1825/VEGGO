@@ -36,7 +36,8 @@ const userSchema = new mongoose.Schema(
     CertificateID: { type: String, default: null },
     PasswordVersion: { type: Number, default: 1 },
     LastPasswordReset: { type: Date, default: null },
-    tastePreferences: { type: mongoose.Schema.Types.Mixed, default: null }
+    tastePreferences: { type: mongoose.Schema.Types.Mixed, default: null },
+    isActive: { type: Boolean, default: true, index: true }
   },
   {
     // Tự động quản lý RegisterDate (createdAt) và updated_at (updatedAt)

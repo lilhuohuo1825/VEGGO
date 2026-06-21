@@ -157,6 +157,44 @@ export class CustomersManage implements OnInit, OnDestroy {
     });
   }
 
+  evaluateCertificateRequests() {
+    this.apiService.evaluateCertificateRequests().subscribe({
+      next: (result) => {
+        this.popupMessage = `Đã quét ${result?.evaluated || 0} khách hàng, tạo ${result?.created || 0} yêu cầu mới`;
+        this.popupType = 'success';
+        this.showPopup = true;
+        this.loadCerRequests();
+        this.loadCustomers();
+        setTimeout(() => this.showPopup = false, 3000);
+      },
+      error: (error: any) => {
+        this.popupMessage = 'Lỗi khi quét lại chứng nhận: ' + (error.error?.message || error.message);
+        this.popupType = 'error';
+        this.showPopup = true;
+        setTimeout(() => this.showPopup = false, 4000);
+      }
+    });
+  }
+
+  formatCertificateDate(value: any): string {
+    if (!value) return '';
+    if (value.toDate && typeof value.toDate === 'function') {
+      value = value.toDate();
+    } else if (value.$date) {
+      value = value.$date;
+    }
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
   ngOnInit(): void {
     // Load address tree data for Vietnamese name formatting
     this.loadAddressTree();

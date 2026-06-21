@@ -61,7 +61,6 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="2"
-                    android:text="@string/profile_sample_name"
                     android:textColor="@color/veggo_text_primary"
                     android:textSize="17sp"
                     android:textStyle="bold" />
@@ -73,7 +72,6 @@
                     android:layout_marginTop="2dp"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="@string/profile_sample_phone"
                     android:textColor="@color/veggo_text_secondary"
                     android:textSize="16sp" />
 
@@ -86,7 +84,6 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:minWidth="110dp"
-                    android:text="@string/profile_carbon_badge"
                     android:textColor="@color/veggo_leaf"
                     android:textSize="12sp" />
             </LinearLayout>

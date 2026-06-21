@@ -57,7 +57,8 @@
             <FrameLayout
                 android:id="@+id/addressSecondaryContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:visibility="gone">
 
                 <include layout="@layout/item_address" />
             </FrameLayout>
@@ -66,7 +67,8 @@
                 android:id="@+id/addressDefaultContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_lg">
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:visibility="gone">
 
                 <include layout="@layout/item_address_default" />
             </FrameLayout>

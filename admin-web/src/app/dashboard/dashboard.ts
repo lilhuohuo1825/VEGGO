@@ -15,12 +15,13 @@ import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../services/api.service';
 import { interval, Subscription, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, debounceTime, retry, tap } from 'rxjs/operators';
+import { DashboardVnMapComponent } from './dashboard-vn-map/dashboard-vn-map.component';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DashboardVnMapComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
   standalone: true,
@@ -32,6 +33,9 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('customersChart') customersChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('promotionChart') promotionChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('topProductsChart') topProductsChart!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('combinedTimelineChart') combinedTimelineChart!: ElementRef<HTMLCanvasElement>;
+
+  combinedTimelineChartInstance: any;
 
   private apiService = inject(ApiService);
   private http = inject(HttpClient);
@@ -45,6 +49,28 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.router
       .navigate(['/products'], {
         queryParams: { stockStatus: stockStatus },
+      })
+      .then(() => {
+        this.updateSidebarActiveState('products');
+      });
+  }
+
+  navigateToInventoryProduct(product: any): void {
+    const stock = this.getProductStock(product);
+    const stockStatus = stock === 0 ? 'out-of-stock' : 'low-stock';
+    const productId =
+      this.normalizeLookupKey(product._id) ||
+      this.normalizeLookupKey(product.id) ||
+      this.normalizeLookupKey(product.sku);
+
+    this.router
+      .navigate(['/products'], {
+        queryParams: {
+          stockStatus,
+          productId,
+          openProduct: 'true',
+          focus: 'stock',
+        },
       })
       .then(() => {
         this.updateSidebarActiveState('products');
@@ -113,17 +139,29 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   selectedMonth: number = new Date().getMonth() + 1;
   timePeriod: 'current' | 'previous' = 'current';
 
-  // Customers chart settings - filter by week
+  // Activity timeline chart settings
+  activityScaleMode: 'year' | 'month' | 'week' | 'day' | 'hour' = 'week';
+  selectedYearActivity: number = new Date().getFullYear();
+  selectedMonthActivity: number = new Date().getMonth() + 1;
+  selectedWeekActivity: number = 1;
+  selectedDayActivity: number = new Date().getDate();
+  selectedHourActivity: number = new Date().getHours();
+  startDayActivity: number = 1;
+  endDayActivity: number = 7;
+  availableWeeksActivity: any[] = [];
+  availableDaysActivity: number[] = [];
+  availableHoursActivity: number[] = Array.from({ length: 24 }, (_, i) => i);
+  activityChartLabels: string[] = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  ordersByDayActivity: number[] = [0, 0, 0, 0, 0, 0, 0];
+  customersByDayActivity: number[] = [0, 0, 0, 0, 0, 0, 0];
+
+  // Legacy chart properties kept for compile compatibility
   selectedYearCustomers: number = new Date().getFullYear();
   selectedMonthCustomers: number = new Date().getMonth() + 1;
-  selectedWeekCustomers: number = 1; // Tuần được chọn (1-4 hoặc 5)
-
-  // Orders chart settings - filter by week
+  selectedWeekCustomers: number = 1;
   selectedYearOrders: number = new Date().getFullYear();
   selectedMonthOrders: number = new Date().getMonth() + 1;
-  selectedWeekOrders: number = 1; // Tuần được chọn (1-4 hoặc 5)
-
-  // Computed start/end days based on selected week
+  selectedWeekOrders: number = 1;
   startDayCustomers: number = 1;
   endDayCustomers: number = 7;
   startDayOrders: number = 1;
@@ -143,6 +181,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   allProducts: any[] = [];
   topProducts: any[] = [];
   outOfStockProducts: any[] = [];
+  inventoryWatchProducts: any[] = [];
+  inventoryFilter: 'all' | 'out-of-stock' | 'low-stock' = 'all';
   outOfStockCount: number = 0; // Số sản phẩm hết hàng (quantity = 0)
   lowStockCount: number = 0; // Số sản phẩm sắp hết hàng (quantity > 0 và < 10)
 
@@ -382,10 +422,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           }
         }
 
-        if (ordersChanged || !this.ordersChartInstance) {
-          if (this.ordersChartInstance) {
-            this.updateOrdersChart();
-          }
+        if (ordersChanged || !this.combinedTimelineChartInstance) {
+          this.createCombinedTimelineChart();
         }
 
         // Update status pie chart
@@ -408,10 +446,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         // Calculate customers by day of week (based on new account registrations)
         const usersChanged = previousUsersCount !== users.length;
         this.calculateCustomersByDay();
-        if (usersChanged || ordersChanged || !this.customersChartInstance) {
-          if (this.customersChartInstance) {
-            this.updateCustomersChart();
-          }
+        if (usersChanged || ordersChanged) {
+          this.createCombinedTimelineChart();
         }
 
         // Xử lý products data - đảm bảo luôn là array
@@ -432,6 +468,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           if (this.topProductsChartInstance) {
             this.updateTopProductsChart();
           }
+        }
+
+        if (this.chart && (productsChanged || ordersChanged)) {
+          this.updateChart();
         }
 
         // Xử lý promotions data - đảm bảo luôn là array
@@ -457,6 +497,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           promotions: promotions.length,
           timestamp: this.lastUpdateTime.toISOString(),
         });
+        this.createCombinedTimelineChart();
       },
       error: (error: any) => {
         console.error('Error loading dashboard data:', error);
@@ -1053,16 +1094,23 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   /**
    * Load recent reviews from reviews collection (MongoDB)
+   * Backend đã flatten và sort theo thời gian giảm dần
    */
   loadRecentReviews(): void {
     console.log('🔄 Loading recent reviews from MongoDB...');
 
-    // Load from MongoDB API
     this.apiService.getReviews().subscribe({
       next: (reviewsData) => {
-        console.log(`✅ Loaded ${reviewsData.length} review documents from MongoDB`);
+        console.log(`✅ Loaded ${reviewsData.length} reviews from MongoDB`);
         if (Array.isArray(reviewsData) && reviewsData.length > 0) {
-          this.processReviewsData(reviewsData);
+          // Backend đã trả về mảng phẳng và đã sort
+          // Kiểm tra nếu là dạng phẳng (từ backend mới) hay dạng nested (fallback)
+          const isFlat = reviewsData[0] && !Array.isArray(reviewsData[0].reviews);
+          if (isFlat) {
+            this.processFlattedReviews(reviewsData);
+          } else {
+            this.processReviewsData(reviewsData);
+          }
         } else {
           console.warn('⚠️ No reviews data found');
           this.recentReviews = [];
@@ -1076,7 +1124,46 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Process reviews data: flatten, sort, and format for display
+   * Xử lý mảng reviews phẳng đã được backend flatten + sort sẵn
+   */
+  processFlattedReviews(reviews: any[]): void {
+    // Lấy 5 review mới nhất để chiều cao bằng với section Đơn hàng gần đây (5 rows)
+    const latestReviews = reviews.slice(0, 5);
+
+    this.recentReviews = latestReviews.map((review) => {
+      // Lấy tên người đánh giá
+      let customerName = review.fullname || review.full_name || review.name || 'Khách vãng lai';
+
+      // Nếu có customer_id, thử map với users để lấy tên đầy đủ
+      const customerID = review.customer_id || review.CustomerID;
+      if (customerID && this.allUsers && this.allUsers.length > 0) {
+        const user = this.allUsers.find(
+          (u) => (u.CustomerID || u.customer_id || u.customerId) === customerID
+        );
+        if (user) {
+          customerName =
+            user.FullName || user.full_name || user.fullName || user.name || customerName;
+        }
+      }
+
+      const reviewTime = review.time || review.created_at || review.date || review.review_date;
+
+      return {
+        full_name: customerName,
+        rating: review.rating || 5,
+        review_date: reviewTime,
+        time: reviewTime,
+        sku: review.sku,
+        customer_id: customerID,
+        comment: review.comment || review.content || '',
+      };
+    });
+
+    console.log(`✅ Processed ${this.recentReviews.length} recent reviews for display`);
+  }
+
+  /**
+   * Process reviews data: flatten, sort, and format for display (fallback for nested format)
    */
   processReviewsData(reviewsData: any[]): void {
     // Flatten reviews: mỗi document có sku và mảng reviews[]
@@ -1122,8 +1209,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       return dateB.getTime() - dateA.getTime();
     });
 
-    // Get latest 4 reviews (như trong hình ảnh)
-    const latestReviews = validReviews.slice(0, 4);
+    // Lấy 5 review mới nhất (bằng với số orders hiển thị)
+    const latestReviews = validReviews.slice(0, 5);
 
     // Map và format reviews để hiển thị
     this.recentReviews = latestReviews.map((review) => {
@@ -1152,6 +1239,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         time: reviewTime, // Đảm bảo có trường time
         sku: review.sku,
         customer_id: customerID,
+        comment: review.comment || review.content || '',
       };
     });
 
@@ -2867,6 +2955,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     // Tính doanh thu theo ngày từ orders thực tế trong MongoDB
     // Dữ liệu được lấy từ this.allOrders (đã được load từ MongoDB)
     const data = this.calculateRevenueByDay(this.allOrders, year, month);
+    const profitData = this.calculateProfitByDay(this.allOrders, year, month);
 
     // Debug: Log để kiểm tra data
     const totalRevenue = data.reduce((sum: number, val: number) => sum + val, 0);
@@ -2903,10 +2992,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     // Đảm bảo data và labels là arrays hợp lệ
     if (!Array.isArray(data) || data.length !== daysInMonth) {
       console.warn(`⚠️ Invalid data array. Expected length: ${daysInMonth}, Got: ${data.length}`);
-      return { labels, data: new Array(daysInMonth).fill(0) };
+      return { labels, data: new Array(daysInMonth).fill(0), profitData: new Array(daysInMonth).fill(0) };
     }
 
-    return { labels, data };
+    return { labels, data, profitData };
   }
 
   /**
@@ -2920,6 +3009,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
     // Đảm bảo dữ liệu là array từ MongoDB
     const data = Array.isArray(chartData.data) ? chartData.data : [];
+    const profitData = Array.isArray(chartData.profitData) ? chartData.profitData : [];
     const labels = Array.isArray(chartData.labels) ? chartData.labels : [];
 
     // Debug: Log data trước khi tạo chart
@@ -2948,6 +3038,19 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
             pointBorderColor: '#fff',
             pointBorderWidth: 2,
           },
+          {
+            label: 'Lợi nhuận (VNĐ)',
+            data: profitData,
+            borderColor: '#F6C343',
+            backgroundColor: 'rgba(246, 195, 67, 0.12)',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#F6C343',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+          },
         ],
       },
       options: {
@@ -2955,13 +3058,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false,
+            display: true,
           },
           tooltip: {
             callbacks: {
               label: (context: any) => {
                 const value = context.parsed.y || 0;
-                return `Doanh thu: ${value.toFixed(2)}tr VNĐ`;
+                return `${context.dataset.label}: ${value.toFixed(2)}tr VNĐ`;
               },
             },
           },
@@ -3271,29 +3374,20 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     this.createRevenueChart();
 
-    // Khởi tạo orders chart sau khi view ready
-    setTimeout(() => {
-      this.createOrdersChart();
-    }, 100);
-
     // Khởi tạo status pie chart sau khi view ready
     setTimeout(() => {
       this.createStatusChart();
     }, 200);
 
-    // Khởi tạo customers chart
-    setTimeout(() => {
-      this.createCustomersChart();
-    }, 300);
-
     // Khởi tạo promotion chart
     setTimeout(() => {
       this.createPromotionChart();
-    }, 350);
+    }, 300);
 
     // Khởi tạo top products chart
     setTimeout(() => {
       this.createTopProductsChart();
+      this.createCombinedTimelineChart();
     }, 400);
 
     // Khởi tạo charts cho widgets sau khi view ready và sau khi data được load
@@ -3347,6 +3441,407 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  onScaleModeChange() {
+    this.createCombinedTimelineChart();
+  }
+
+  onYearChangeActivity() {
+    this.createCombinedTimelineChart();
+  }
+
+  onMonthChangeActivity() {
+    this.createCombinedTimelineChart();
+  }
+
+  onWeekChangeActivity() {
+    this.createCombinedTimelineChart();
+  }
+
+  onDayChangeActivity() {
+    this.createCombinedTimelineChart();
+  }
+
+  onHourChangeActivity() {
+    this.createCombinedTimelineChart();
+  }
+
+  generateDaysActivity() {
+    const year = this.selectedYearActivity;
+    const month = this.selectedMonthActivity;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    this.availableDaysActivity = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    if (this.selectedDayActivity > daysInMonth) {
+      this.selectedDayActivity = 1;
+    }
+  }
+
+  generateWeeksActivity() {
+    const year = this.selectedYearActivity;
+    const month = this.selectedMonthActivity;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const weeks: any[] = [];
+    let startDay = 1;
+    let weekNum = 1;
+
+    while (startDay <= daysInMonth) {
+      const endDay = Math.min(startDay + 6, daysInMonth);
+      weeks.push({
+        week: weekNum,
+        label: `Tuần ${weekNum} (${startDay}-${endDay})`,
+        startDay: startDay,
+        endDay: endDay
+      });
+      startDay += 7;
+      weekNum++;
+    }
+    this.availableWeeksActivity = weeks;
+
+    if (this.selectedWeekActivity > weeks.length) {
+      this.selectedWeekActivity = 1;
+    }
+    const current = weeks[this.selectedWeekActivity - 1];
+    if (current) {
+      this.startDayActivity = current.startDay;
+      this.endDayActivity = current.endDay;
+    }
+  }
+
+  calculateActivityData() {
+    this.generateDaysActivity();
+    this.generateWeeksActivity();
+
+    let labels: string[] = [];
+    let ordersData: number[] = [];
+    let customersData: number[] = [];
+
+    if (this.activityScaleMode === 'year') {
+      labels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+      ordersData = new Array(12).fill(0);
+      customersData = new Array(12).fill(0);
+
+      this.allOrders.forEach(o => {
+        const rawDate = o.createdAt || o.created_at || o.date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d.getFullYear() === this.selectedYearActivity) {
+          ordersData[d.getMonth()]++;
+        }
+      });
+
+      this.allUsers.forEach(u => {
+        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d.getFullYear() === this.selectedYearActivity) {
+          customersData[d.getMonth()]++;
+        }
+      });
+
+    } else if (this.activityScaleMode === 'month') {
+      const daysInMonth = new Date(this.selectedYearActivity, this.selectedMonthActivity, 0).getDate();
+      labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+      ordersData = new Array(daysInMonth).fill(0);
+      customersData = new Array(daysInMonth).fill(0);
+
+      this.allOrders.forEach(o => {
+        const rawDate = o.createdAt || o.created_at || o.date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d.getFullYear() === this.selectedYearActivity && (d.getMonth() + 1) === this.selectedMonthActivity) {
+          ordersData[d.getDate() - 1]++;
+        }
+      });
+
+      this.allUsers.forEach(u => {
+        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d.getFullYear() === this.selectedYearActivity && (d.getMonth() + 1) === this.selectedMonthActivity) {
+          customersData[d.getDate() - 1]++;
+        }
+      });
+
+    } else if (this.activityScaleMode === 'week') {
+      const startDate = new Date(
+        this.selectedYearActivity,
+        this.selectedMonthActivity - 1,
+        this.startDayActivity
+      );
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(
+        this.selectedYearActivity,
+        this.selectedMonthActivity - 1,
+        this.endDayActivity
+      );
+      endDate.setHours(23, 59, 59, 999);
+
+      const daysInWeek = Math.min(7, this.endDayActivity - this.startDayActivity + 1);
+      const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      const firstDayOfWeek = startDate.getDay();
+
+      for (let i = 0; i < daysInWeek; i++) {
+        const dayIndex = (firstDayOfWeek + i) % 7;
+        labels.push(dayLabels[dayIndex]);
+      }
+
+      ordersData = new Array(daysInWeek).fill(0);
+      customersData = new Array(daysInWeek).fill(0);
+
+      this.allOrders.forEach(o => {
+        const rawDate = o.createdAt || o.created_at || o.date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d >= startDate && d <= endDate) {
+          const dayDiff = Math.floor((d.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (dayDiff >= 0 && dayDiff < daysInWeek) {
+            ordersData[dayDiff]++;
+          }
+        }
+      });
+
+      this.allUsers.forEach(u => {
+        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (d >= startDate && d <= endDate) {
+          const dayDiff = Math.floor((d.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (dayDiff >= 0 && dayDiff < daysInWeek) {
+            customersData[dayDiff]++;
+          }
+        }
+      });
+
+    } else if (this.activityScaleMode === 'day') {
+      labels = Array.from({ length: 24 }, (_, i) => `${i}h`);
+      ordersData = new Array(24).fill(0);
+      customersData = new Array(24).fill(0);
+
+      this.allOrders.forEach(o => {
+        const rawDate = o.createdAt || o.created_at || o.date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (
+          d.getFullYear() === this.selectedYearActivity &&
+          (d.getMonth() + 1) === this.selectedMonthActivity &&
+          d.getDate() === this.selectedDayActivity
+        ) {
+          ordersData[d.getHours()]++;
+        }
+      });
+
+      this.allUsers.forEach(u => {
+        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (
+          d.getFullYear() === this.selectedYearActivity &&
+          (d.getMonth() + 1) === this.selectedMonthActivity &&
+          d.getDate() === this.selectedDayActivity
+        ) {
+          customersData[d.getHours()]++;
+        }
+      });
+
+    } else if (this.activityScaleMode === 'hour') {
+      labels = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => `${m}m`);
+      ordersData = new Array(12).fill(0);
+      customersData = new Array(12).fill(0);
+
+      this.allOrders.forEach(o => {
+        const rawDate = o.createdAt || o.created_at || o.date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (
+          d.getFullYear() === this.selectedYearActivity &&
+          (d.getMonth() + 1) === this.selectedMonthActivity &&
+          d.getDate() === this.selectedDayActivity &&
+          d.getHours() === this.selectedHourActivity
+        ) {
+          const minBin = Math.floor(d.getMinutes() / 5);
+          if (minBin >= 0 && minBin < 12) {
+            ordersData[minBin]++;
+          }
+        }
+      });
+
+      this.allUsers.forEach(u => {
+        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+        if (
+          d.getFullYear() === this.selectedYearActivity &&
+          (d.getMonth() + 1) === this.selectedMonthActivity &&
+          d.getDate() === this.selectedDayActivity &&
+          d.getHours() === this.selectedHourActivity
+        ) {
+          const minBin = Math.floor(d.getMinutes() / 5);
+          if (minBin >= 0 && minBin < 12) {
+            customersData[minBin]++;
+          }
+        }
+      });
+    }
+
+    this.activityChartLabels = labels;
+    this.ordersByDayActivity = ordersData;
+    this.customersByDayActivity = customersData;
+  }
+
+  createCombinedTimelineChart() {
+    if (!this.combinedTimelineChart) return;
+    const ctx = this.combinedTimelineChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.combinedTimelineChartInstance) {
+      this.combinedTimelineChartInstance.destroy();
+    }
+
+    this.calculateActivityData();
+
+    this.combinedTimelineChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: this.activityChartLabels,
+        datasets: [
+          {
+            label: 'Đơn hàng mới',
+            data: this.ordersByDayActivity,
+            borderColor: '#F2CD38', // Yellow
+            backgroundColor: 'rgba(242, 205, 56, 0.1)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Tài khoản mới',
+            data: this.customersByDayActivity,
+            borderColor: '#3CB018', // Green
+            backgroundColor: 'rgba(60, 176, 24, 0.1)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                family: 'SF Pro, Lexend, sans-serif',
+                size: 12
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private parseMoneyValue(value: any): number {
+    if (typeof value === 'number') return value;
+    if (value === null || value === undefined) return 0;
+    return parseFloat(String(value).replace(/[^0-9.-]/g, '')) || 0;
+  }
+
+  private getNullableMoneyValue(...values: any[]): number | null {
+    for (const value of values) {
+      if (value === null || value === undefined || value === '') continue;
+      const parsed =
+        typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+  }
+
+  private normalizeLookupKey(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') {
+      if (value.$oid) return String(value.$oid).trim().toLowerCase();
+      if (value.toString && typeof value.toString === 'function') {
+        return value.toString().trim().toLowerCase();
+      }
+    }
+    return String(value).trim().toLowerCase();
+  }
+
+  private buildProductLookup(): Map<string, any> {
+    const lookup = new Map<string, any>();
+    const products = Array.isArray(this.allProducts) ? this.allProducts : [];
+
+    products.forEach((product) => {
+      [
+        product.sku,
+        product.SKU,
+        product._id,
+        product.id,
+        product.product_id,
+        product.ProductID,
+        product.code,
+      ].forEach((key) => {
+        const normalizedKey = this.normalizeLookupKey(key);
+        if (normalizedKey) {
+          lookup.set(normalizedKey, product);
+        }
+      });
+    });
+
+    return lookup;
+  }
+
+  private findProductForOrderItem(item: any, productLookup: Map<string, any>): any | null {
+    const keys = [
+      item.sku,
+      item.SKU,
+      item.productSku,
+      item.product_sku,
+      item.productId,
+      item.product_id,
+      item.ProductID,
+      item.id,
+    ];
+
+    for (const key of keys) {
+      const product = productLookup.get(this.normalizeLookupKey(key));
+      if (product) return product;
+    }
+
+    return null;
+  }
+
+  private getOrderRevenueAmount(order: any): number {
+    return this.parseMoneyValue(
+      order.totalAmount || order.total_amount || order.total_price || order.total || order.order_total || 0
+    );
+  }
+
+  private isPaidOrder(order: any): boolean {
+    const status = order.status || order.order_status || '';
+    return status === 'completed' || status === 'delivered';
+  }
+
   /**
    * Tính doanh thu theo ngày trong tháng từ orders thực tế - DỮ LIỆU THẬT TỪ MONGODB
    */
@@ -3373,7 +3868,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     orders.forEach((order, index) => {
       // Chỉ tính các đơn hàng đã thanh toán (completed/delivered)
       const status = order.status || order.order_status || '';
-      if (status !== 'completed' && status !== 'delivered') {
+      if (!this.isPaidOrder(order)) {
         return; // Bỏ qua đơn hàng chưa thanh toán, hủy, hoặc hoàn tiền
       }
 
@@ -3420,18 +3915,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         const day = orderDate.getDate() - 1; // Array index (0-based)
 
         if (day >= 0 && day < daysInMonth) {
-          // Lấy giá trị từ các trường có thể có: totalAmount (MongoDB), total_amount, total_price, total, order_total
-          const total =
-            order.totalAmount ||
-            order.total_amount ||
-            order.total_price ||
-            order.total ||
-            order.order_total ||
-            0;
-          const amount =
-            typeof total === 'number'
-              ? total
-              : parseFloat(String(total).replace(/[^0-9.-]/g, '')) || 0;
+          const amount = this.getOrderRevenueAmount(order);
 
           // Debug: Log order được tính
           if (ordersInMonth < 5) {
@@ -3541,44 +4025,104 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     return revenueByDay;
   }
 
-  updateChart() {
-    // Tính số ngày trong tháng được chọn
-    const daysInMonth = new Date(this.selectedYear, this.selectedMonth, 0).getDate();
-    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+  /**
+   * Tính lợi nhuận theo ngày: (giá bán item - base_price sản phẩm) * số lượng.
+   */
+  calculateProfitByDay(orders: any[], year: number, month: number): number[] {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const profitByDay = new Array(daysInMonth).fill(0);
 
-    // Tính tháng trước
-    let prevMonth = this.selectedMonth - 1;
-    let prevYear = this.selectedYear;
-    if (prevMonth === 0) {
-      prevMonth = 12;
-      prevYear = this.selectedYear - 1;
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return profitByDay;
     }
 
-    // Tính doanh thu từ orders thực tế
-    const currentMonthData = this.calculateRevenueByDay(
-      this.allOrders,
-      this.selectedYear,
-      this.selectedMonth
-    );
+    const productLookup = this.buildProductLookup();
 
-    const previousMonthData = this.calculateRevenueByDay(this.allOrders, prevYear, prevMonth);
+    orders.forEach((order) => {
+      if (!this.isPaidOrder(order)) return;
 
-    // Tính số ngày trong tháng trước
-    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+      const orderDate = this.parseOrderDate(order);
+      const orderMatches =
+        Number(orderDate.getFullYear()) === Number(year) &&
+        Number(orderDate.getMonth() + 1) === Number(month);
+
+      if (!orderMatches) return;
+
+      const day = orderDate.getDate() - 1;
+      if (day < 0 || day >= daysInMonth) return;
+
+      const items = Array.isArray(order.items) ? order.items : [];
+      const orderProfit = items.reduce((sum: number, item: any) => {
+        const product = this.findProductForOrderItem(item, productLookup);
+        const basePrice = this.getNullableMoneyValue(
+          item.base_price,
+          item.basePrice,
+          product?.base_price,
+          product?.basePrice,
+          product?.BasePrice,
+          product?.originalPrice,
+          product?.original_price
+        );
+
+        if (basePrice === null) return sum;
+
+        const salePrice = this.parseMoneyValue(
+          item.price || item.salePrice || item.sale_price || item.ProductPrice || product?.price || 0
+        );
+        const quantity = this.parseMoneyValue(item.quantity || item.qty || item.Quantity || 1);
+
+        return sum + (salePrice - basePrice) * quantity;
+      }, 0);
+
+      profitByDay[day] += orderProfit / 1000000;
+    });
+
+    return profitByDay;
+  }
+
+  updateChart() {
+    // Tính số ngày trong tháng được chọn
+    const selectedYear = Number(this.selectedYear);
+    const selectedMonth = Number(this.selectedMonth);
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+
+    const revenueData = this.calculateRevenueByDay(this.allOrders, selectedYear, selectedMonth);
+    const profitData = this.calculateProfitByDay(this.allOrders, selectedYear, selectedMonth);
+    const datasets = [
+      {
+        label: 'Doanh thu',
+        data: revenueData,
+        borderColor: '#3CB018',
+        backgroundColor: 'rgba(60, 176, 24, 0.12)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#3CB018',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        borderWidth: 2,
+      },
+      {
+        label: 'Lợi nhuận',
+        data: profitData,
+        borderColor: '#F6C343',
+        backgroundColor: 'rgba(246, 195, 67, 0.12)',
+        fill: false,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#F6C343',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        borderWidth: 2,
+      },
+    ];
 
     if (this.chart) {
       this.chart.data.labels = labels;
-      if (this.timePeriod === 'current') {
-        this.chart.data.datasets[0].data = currentMonthData;
-        this.chart.data.datasets[0].label = `Tháng ${this.selectedMonth}/${this.selectedYear}`;
-        this.chart.data.datasets[1].data = previousMonthData.slice(-daysInMonth);
-        this.chart.data.datasets[1].label = `Tháng ${prevMonth}/${prevYear}`;
-      } else {
-        this.chart.data.datasets[0].data = previousMonthData;
-        this.chart.data.datasets[0].label = `Tháng ${prevMonth}/${prevYear}`;
-        this.chart.data.datasets[1].data = currentMonthData.slice(-daysInPrevMonth);
-        this.chart.data.datasets[1].label = `Tháng ${this.selectedMonth}/${this.selectedYear}`;
-      }
+      this.chart.data.datasets = datasets;
       this.chart.update('none'); // Update without animation for smoother refresh
     } else {
       // Tạo chart mới
@@ -3587,46 +4131,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [
-            {
-              label:
-                this.timePeriod === 'current'
-                  ? `Tháng ${this.selectedMonth}/${this.selectedYear}`
-                  : `Tháng ${prevMonth}/${prevYear}`,
-              data: this.timePeriod === 'current' ? currentMonthData : previousMonthData,
-              borderColor: '#3CB018',
-              backgroundColor: 'rgba(60, 176, 24, 0.15)',
-              fill: true,
-              tension: 0.4,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              pointBackgroundColor: '#3CB018',
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              borderWidth: 2,
-            },
-            {
-              label:
-                this.timePeriod === 'current'
-                  ? `Tháng ${prevMonth}/${prevYear}`
-                  : `Tháng ${this.selectedMonth}/${this.selectedYear}`,
-              data:
-                this.timePeriod === 'current'
-                  ? previousMonthData.slice(-daysInMonth)
-                  : currentMonthData.slice(-daysInPrevMonth),
-              borderColor: '#68CB3C',
-              backgroundColor: 'transparent',
-              borderDash: [5, 5],
-              fill: false,
-              tension: 0.4,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-              pointBackgroundColor: '#68CB3C',
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              borderWidth: 2,
-            },
-          ],
+          datasets,
         },
         options: {
           responsive: true,
@@ -4402,7 +4907,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Calculate top 3 best-selling products
+   * Calculate top 5 best-selling products by purchase_count
    */
   calculateTopProducts(): void {
     if (!this.allProducts || this.allProducts.length === 0) {
@@ -4410,14 +4915,34 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Sort by quantity sold (assuming there's a sold or quantity field)
+    // Sort by purchase_count (field name from MongoDB)
     const sortedProducts = [...this.allProducts].sort((a, b) => {
-      const soldA = a.quantity_sold || a.sold || a.quantity || 0;
-      const soldB = b.quantity_sold || b.sold || b.quantity || 0;
-      return soldB - soldA;
+      const soldA =
+        a.purchase_count ??
+        a.quantity_sold ??
+        a.soldCount ??
+        a.sold_count ??
+        a.sold ??
+        0;
+      const soldB =
+        b.purchase_count ??
+        b.quantity_sold ??
+        b.soldCount ??
+        b.sold_count ??
+        b.sold ??
+        0;
+      return Number(soldB) - Number(soldA);
     });
 
-    this.topProducts = sortedProducts.slice(0, 3);
+    // Lấy top 5 để chart đủ thông tin
+    this.topProducts = sortedProducts.slice(0, 5);
+    console.log(
+      '📦 Top products by purchase_count:',
+      this.topProducts.map((p) => ({
+        name: p.product_name || p.name,
+        sold: p.purchase_count ?? p.quantity_sold ?? p.sold ?? 0,
+      }))
+    );
   }
 
   /**
@@ -4431,32 +4956,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.outOfStockCount = 0;
       this.lowStockCount = 0;
       this.outOfStockProducts = [];
+      this.inventoryWatchProducts = [];
       return;
     }
 
-    // Tính stock từ các trường có thể có - giống với mapProductFromJSON trong productsmanage
-    const productsWithStock = this.allProducts.map((product) => {
-      let stock = 0;
-      if (product.quantity !== undefined && product.quantity !== null) {
-        stock = Number(product.quantity) || 0;
-      } else if (product.quantity_available !== undefined && product.quantity_available !== null) {
-        stock = Number(product.quantity_available) || 0;
-      } else if (product.stock !== undefined && product.stock !== null) {
-        stock = Number(product.stock) || 0;
-      } else if (product.Quantity !== undefined && product.Quantity !== null) {
-        stock = Number(product.Quantity) || 0;
-      } else {
-        // Nếu không có trường stock, tính dựa trên _id hoặc index để đảm bảo nhất quán
-        const productId = product._id || product.id || product.sku || '';
-        const seed = productId
-          ? String(productId)
-              .split('')
-              .reduce((acc, char) => acc + char.charCodeAt(0), 0)
-          : 0;
-        stock = seed % 100; // Stock từ 0-99 dựa trên _id
-      }
-      return { ...product, calculatedStock: stock };
-    });
+    const productsWithStock = this.allProducts.map((product) => ({
+      ...product,
+      calculatedStock: this.getProductStock(product),
+    }));
 
     // Đếm sản phẩm hết hàng (stock = 0)
     this.outOfStockCount = productsWithStock.filter((p) => p.calculatedStock === 0).length;
@@ -4466,8 +4973,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       (p) => p.calculatedStock > 0 && p.calculatedStock < 10
     ).length;
 
-    // Don't store the full list, just count
-    this.outOfStockProducts = [];
+    this.outOfStockProducts = productsWithStock.filter((p) => p.calculatedStock === 0);
+    this.updateInventoryWatchProducts();
 
     console.log('📊 Stock calculation:', {
       totalProducts: this.allProducts.length,
@@ -4484,6 +4991,60 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         },
       })),
     });
+  }
+
+  setInventoryFilter(filter: 'all' | 'out-of-stock' | 'low-stock'): void {
+    this.inventoryFilter = filter;
+    this.updateInventoryWatchProducts();
+  }
+
+  updateInventoryWatchProducts(): void {
+    const products = (Array.isArray(this.allProducts) ? this.allProducts : [])
+      .map((product) => ({
+        ...product,
+        calculatedStock: this.getProductStock(product),
+      }))
+      .filter((product) => {
+        if (this.inventoryFilter === 'out-of-stock') {
+          return product.calculatedStock === 0;
+        }
+        if (this.inventoryFilter === 'low-stock') {
+          return product.calculatedStock > 0 && product.calculatedStock < 10;
+        }
+        return product.calculatedStock < 10;
+      })
+      .sort((a, b) => a.calculatedStock - b.calculatedStock);
+
+    this.inventoryWatchProducts = products.slice(0, 5);
+  }
+
+  getProductStock(product: any): number {
+    if (!product) return 0;
+    if (product.stock !== undefined && product.stock !== null) return Number(product.stock) || 0;
+    if (product.quantity !== undefined && product.quantity !== null) return Number(product.quantity) || 0;
+    if (product.quantity_available !== undefined && product.quantity_available !== null) {
+      return Number(product.quantity_available) || 0;
+    }
+    if (product.Quantity !== undefined && product.Quantity !== null) return Number(product.Quantity) || 0;
+    return 0;
+  }
+
+  getProductName(product: any): string {
+    return product?.product_name || product?.name || product?.ProductName || 'Sản phẩm';
+  }
+
+  getProductImage(product: any): string {
+    const image = product?.image || product?.Image || product?.images;
+    if (Array.isArray(image)) {
+      return image.find((url) => !!url) || '/assets/icons/image.png';
+    }
+    return image || '/assets/icons/image.png';
+  }
+
+  getInventoryFilterLabel(): string {
+    if (this.inventoryFilter === 'out-of-stock') return 'Hết hàng';
+    if (this.inventoryFilter === 'low-stock') return 'Sắp hết';
+    return 'Tất cả cảnh báo';
   }
 
   /**
@@ -4505,44 +5066,42 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Update top products horizontal bar chart with data
+   * Update top products horizontal bar chart with REAL data from this.topProducts
    */
   updateTopProductsChart(): void {
     if (!this.topProductsChart || !this.topProductsChart.nativeElement) return;
 
-    // Use real product names from product.json
-    const sampleProducts = [
-      {
-        name: 'Ca cao hoà tan 6 trong 1 Napo hộp 10x22g',
-        quantity_sold: 38,
-        sold: 38,
-        quantity: 38,
-      },
-      { name: 'Bột cacao Good Night hộp giấy 150g', quantity_sold: 28, sold: 28, quantity: 28 },
-      { name: 'Bột Ca Cao Caravelle Gói 300g', quantity_sold: 23, sold: 23, quantity: 23 },
-      { name: 'Cà phê sữa 3in1 Chất Vina hộp 240g', quantity_sold: 20, sold: 20, quantity: 20 },
-    ];
+    // Dùng dữ liệu thật từ this.topProducts (đã sort theo purchase_count)
+    const products = this.topProducts;
 
-    // Function to shorten product names for display
-    const shortenProductName = (name: string, maxLength: number = 30): string => {
-      if (!name || name.length <= maxLength) return name;
-      return name.substring(0, maxLength - 3) + '...';
-    };
+    // Helper: lấy tên sản phẩm
+    const getName = (p: any): string =>
+      p.product_name || p.name || p.ProductName || 'Sản phẩm';
 
-    // Always use sample data for demonstration
-    const labels = sampleProducts.map((p) => p.name);
-    const shortenedLabels = labels.map((name) => shortenProductName(name, 30));
-    const data = sampleProducts.map((p) => p.quantity_sold);
+    // Helper: lấy số lượng đã bán
+    const getSold = (p: any): number =>
+      Number(p.purchase_count ?? p.quantity_sold ?? p.soldCount ?? p.sold_count ?? p.sold ?? 0);
 
-    // VGreen color - solid dark green for all bars
-    const productBackgroundColor = '#3CB018'; // VGreen solid color
-    const productBorderColor = '#256E05'; // Dark green border
+    // Rút ngắn tên cho trục Y
+    const shortenName = (name: string, max = 30): string =>
+      name && name.length > max ? name.substring(0, max - 3) + '...' : (name || '');
+
+    const labels    = products.map((p) => getName(p));
+    const shortened = labels.map((n) => shortenName(n));
+    const data      = products.map((p) => getSold(p));
+
+    const bgColor   = '#3CB018';
+    const borderClr = '#256E05';
+    const maxSold = data.length > 0 ? Math.max(...data) : 0;
+    const xAxisMax = this.getTopProductsAxisMax(maxSold);
+    const chartOptions = this.getTopProductsChartOptions(labels, shortened, data, xAxisMax);
 
     if (this.topProductsChartInstance) {
-      this.topProductsChartInstance.data.labels = shortenedLabels;
+      this.topProductsChartInstance.data.labels = shortened;
       this.topProductsChartInstance.data.datasets[0].data = data;
-      this.topProductsChartInstance.data.datasets[0].backgroundColor = productBackgroundColor;
-      this.topProductsChartInstance.data.datasets[0].borderColor = productBorderColor;
+      this.topProductsChartInstance.data.datasets[0].backgroundColor = bgColor;
+      this.topProductsChartInstance.data.datasets[0].borderColor = borderClr;
+      this.topProductsChartInstance.options = chartOptions;
       this.topProductsChartInstance.update('none');
     } else {
       this.topProductsChartInstance = new Chart(
@@ -4550,75 +5109,117 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         {
           type: 'bar',
           data: {
-            labels: shortenedLabels,
+            labels: shortened,
             datasets: [
               {
                 label: 'Số lượng bán',
                 data: data,
-                backgroundColor: productBackgroundColor,
-                borderColor: productBorderColor,
+                backgroundColor: bgColor,
+                borderColor: borderClr,
                 borderWidth: 1,
               },
             ],
           },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false,
-              },
-              tooltip: {
-                callbacks: {
-                  title: (tooltipItems: any) => {
-                    // Show full product name in tooltip
-                    const index = tooltipItems[0].dataIndex;
-                    const product = sampleProducts[index];
-                    return product?.name || 'Sản phẩm';
-                  },
-                  label: (context: any) => {
-                    return `Số lượng: ${context.parsed.x}`;
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                beginAtZero: true,
-                grid: {
-                  color: '#F3F4F6',
-                },
-                ticks: {
-                  font: {
-                    family: 'SF Pro',
-                    size: 11,
-                  },
-                  color: '#9CA3AF',
-                },
-              },
-              y: {
-                grid: {
-                  display: false,
-                },
-                ticks: {
-                  font: {
-                    family: 'SF Pro',
-                    size: 11,
-                  },
-                  color: '#1A1A1A',
-                  maxRotation: 0,
-                  autoSkip: false,
-                  callback: (value: any, index: number) => {
-                    // Return shortened labels for display
-                    return shortenedLabels[index] || '';
-                  },
-                },
-              },
-            },
-          },
+          options: chartOptions,
+          plugins: [this.getTopProductsValueLabelPlugin()],
         }
       );
     }
+  }
+
+  private getTopProductsAxisMax(maxSold: number): number {
+    if (maxSold <= 0) return 10;
+    const padded = maxSold * 1.28;
+    const magnitude = Math.pow(10, Math.max(0, Math.floor(Math.log10(padded)) - 1));
+    return Math.ceil(padded / magnitude) * magnitude;
+  }
+
+  private getTopProductsChartOptions(
+    labels: string[],
+    shortened: string[],
+    data: number[],
+    xAxisMax: number
+  ): any {
+    return {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          left: 8,
+          right: 76,
+          top: 8,
+          bottom: 4,
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (tooltipItems: any) => {
+              const idx = tooltipItems[0].dataIndex;
+              return labels[idx] || 'Sản phẩm';
+            },
+            label: (context: any) =>
+              `Lượt bán: ${Number(context.parsed.x || 0).toLocaleString('vi-VN')}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: xAxisMax,
+          grid: { color: '#F3F4F6' },
+          border: { display: false },
+          ticks: {
+            maxTicksLimit: 5,
+            font: { family: 'SF Pro', size: 10 },
+            color: '#9CA3AF',
+            callback: (value: any) => Number(value).toLocaleString('vi-VN'),
+          },
+        },
+        y: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            crossAlign: 'far',
+            padding: 12,
+            font: { family: 'SF Pro', size: 11, weight: 600 as any },
+            color: '#1A1A1A',
+            maxRotation: 0,
+            autoSkip: false,
+            callback: (_: any, index: number) => {
+              const name = shortened[index] || '';
+              const sold = Number(data[index] || 0).toLocaleString('vi-VN');
+              return [name, `${sold} lượt bán`];
+            },
+          },
+        },
+      },
+    };
+  }
+
+  private getTopProductsValueLabelPlugin(): any {
+    return {
+      id: 'topProductsValueLabel',
+      afterDatasetsDraw: (chart: any) => {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        const values = chart.data.datasets[0].data || [];
+
+        ctx.save();
+        ctx.font = '600 11px "SF Pro", sans-serif';
+        ctx.fillStyle = '#256E05';
+        ctx.textBaseline = 'middle';
+
+        meta.data.forEach((bar: any, index: number) => {
+          const value = Number(values[index] || 0);
+          const label = `${value.toLocaleString('vi-VN')} lượt`;
+          ctx.fillText(label, bar.x + 10, bar.y);
+        });
+
+        ctx.restore();
+      },
+    };
   }
 }

@@ -89,7 +89,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_semibold"
-                        android:text="@string/orders_sample_id"
                         android:textColor="@color/primary_hover"
                         android:textSize="@dimen/text_sm"
                         android:textStyle="bold" />
@@ -118,7 +117,6 @@
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:minWidth="76dp"
-                        android:text="@string/orders_status_delivered"
                         android:textColor="@color/primary_main"
                         android:textSize="@dimen/text_xs" />
                 </LinearLayout>
@@ -143,7 +141,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_sample_time"
                         android:textColor="@color/neutral_100"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -168,7 +165,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_sample_payment"
                         android:textColor="@color/neutral_100"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -196,7 +192,6 @@
                         android:layout_weight="1.4"
                         android:fontFamily="@font/inter_medium"
                         android:gravity="end"
-                        android:text="@string/order_detail_sample_warehouse"
                         android:textColor="@color/neutral_100"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -235,11 +230,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_md"
-                android:orientation="vertical">
-
-                <include layout="@layout/item_order_detail_product_kale" />
-                <include layout="@layout/item_order_detail_product_combo" />
-            </LinearLayout>
+                android:orientation="vertical" />
 
             <Space
                 android:layout_width="match_parent"
@@ -282,7 +273,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_subtotal_value"
                         android:textColor="@color/neutral_100"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -307,7 +297,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_discount_product_value"
                         android:textColor="@color/primary_main"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -332,7 +321,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_discount_value"
                         android:textColor="@color/primary_main"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -357,7 +345,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_medium"
-                        android:text="@string/order_detail_shipping_fee_value"
                         android:textColor="@color/neutral_100"
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
@@ -389,7 +376,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_semibold"
-                        android:text="@string/order_detail_total_value"
                         android:textColor="@color/danger_main"
                         android:textSize="@dimen/text_lg"
                         android:textStyle="bold" />

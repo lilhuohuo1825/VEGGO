@@ -1,0 +1,183 @@
+<section class="vn-map-section" aria-label="Bản đồ Việt Nam">
+  <div class="vn-map-card">
+    <div class="vn-map-card-head">
+      <div class="vn-map-title-wrap">
+        <h4 class="vn-map-title">Bản đồ Phân bổ VEGGO</h4>
+        <p class="vn-map-sub">
+          Bản đồ tương tác hệ thống kho hàng và phân bổ đơn hàng tại Việt Nam.
+        </p>
+      </div>
+      <div class="vn-map-mode" role="group" aria-label="Chế độ hiển thị">
+        <button
+          type="button"
+          class="vn-map-mode-btn"
+          [class.active]="mapMode === 'warehouses'"
+          (click)="setMode('warehouses')"
+        >
+          Hệ thống kho hàng
+        </button>
+        <button
+          type="button"
+          class="vn-map-mode-btn"
+          [class.active]="mapMode === 'orders'"
+          (click)="setMode('orders')"
+        >
+          Phân bổ đơn hàng
+        </button>
+      </div>
+    </div>
+
+    <div class="vn-map-card-body" *ngIf="!loadError && !mapApiError">
+      <div class="vn-map-loading-overlay" *ngIf="loading">
+        <span>Đang tải dữ liệu bản đồ…</span>
+      </div>
+
+      <div class="vn-map-col vn-map-col-map">
+        <div class="vn-map-legend">
+          <span class="vn-legend-item stores" *ngIf="mapMode === 'warehouses'">
+            <i class="bi bi-geo-alt-fill" style="color: #3CB018;"></i> Marker = Vị trí kho hàng của VEGGO
+          </span>
+          <span class="vn-legend-item orders" *ngIf="mapMode === 'orders'">
+            <i class="bi bi-circle-fill" style="color: #F2CD38;"></i> Vòng tròn = Số lượng đơn hàng (theo địa chỉ nhận)
+          </span>
+        </div>
+        <div class="vn-map-host-wrap">
+          <div #mapHost class="vn-map-host"></div>
+        </div>
+      </div>
+
+      <aside class="vn-map-col vn-map-col-detail">
+        <!-- Chưa chọn tỉnh / kho -->
+        <div class="vn-detail-empty" *ngIf="!selectedProvince && !selectedWarehouse">
+          <i class="bi bi-geo-alt vn-detail-empty-icon"></i>
+          <p>Chọn một tỉnh/thành hoặc marker kho hàng trên bản đồ để xem chi tiết.</p>
+        </div>
+
+        <!-- Đơn hàng: thống kê -->
+        <div class="vn-detail-content" *ngIf="selectedProvince && mapMode === 'orders'">
+          <div class="vn-detail-head">
+            <h5 class="vn-detail-name">{{ selectedProvince.name }}</h5>
+            <button type="button" class="vn-detail-close" (click)="clearProvinceSelection()">Đóng</button>
+          </div>
+          <ng-container *ngIf="orderDetailForSelected() as od">
+            <div class="vn-stat-grid">
+              <div class="vn-stat-pill">
+                <span class="lab">Tổng số đơn</span>
+                <span class="val">{{ od.total }}</span>
+              </div>
+            </div>
+            <h6 class="vn-mini-title" style="margin-top: 15px;">Đơn hàng gần đây</h6>
+            <ul class="vn-order-list">
+              <li *ngFor="let o of od.samples" (click)="openOrderDetail(o)" class="vn-order-item-clickable">
+                <div class="vn-order-row">
+                  <span class="vn-order-id">{{ orderLabel(o) }}</span>
+                  <span class="vn-order-amt">{{ formatMoney(o?.totalAmount || o?.total) }}</span>
+                </div>
+                <div class="vn-order-meta">
+                  <span class="vn-badge" [class.completed]="o?.status === 'completed'" [class.pending]="o?.status === 'pending'">
+                    {{ o?.status }}
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </ng-container>
+        </div>
+
+        <!-- Kho hàng: danh sách (chưa chọn kho cụ thể) -->
+        <div
+          class="vn-detail-content vn-store-list-panel"
+          *ngIf="mapMode === 'warehouses' && !selectedWarehouse"
+        >
+          <div class="vn-detail-head">
+            <h5 class="vn-detail-name">Hệ thống kho hàng</h5>
+          </div>
+          <p class="vn-detail-note" *ngIf="warehouses.length">
+            Có {{ warehouses.length }} kho hàng hoạt động. Chọn một kho để xem bản đồ chi tiết.
+          </p>
+          <ul class="vn-store-list">
+            <li *ngFor="let wh of warehouses" (click)="selectWarehouse(wh)">
+              <span class="vn-store-name" style="color: #3CB018; font-weight: 600;">{{ wh.name }}</span>
+              <span class="vn-store-addr">{{ wh.address }}</span>
+              <span class="vn-store-meta">Mã kho: {{ wh.code }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Kho hàng: chi tiết -->
+        <div
+          class="vn-detail-content vn-store-detail-panel"
+          *ngIf="mapMode === 'warehouses' && selectedWarehouse"
+        >
+          <button type="button" class="vn-back-list" (click)="clearWarehouseSelection()">
+            ← Quay lại danh sách
+          </button>
+
+          <div class="vn-store-detail-head" style="margin-top: 15px;">
+            <h5 class="vn-detail-title" style="color: #3CB018; font-weight: bold;">{{ selectedWarehouse.name }}</h5>
+            <p style="margin: 5px 0;"><strong>Mã kho:</strong> {{ selectedWarehouse.code }}</p>
+            <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> {{ selectedWarehouse.address }}</p>
+          </div>
+
+          <div class="vn-detail-map-row" style="margin-top: 15px;">
+            <div class="vn-mini-map" *ngIf="getMapUrl(selectedWarehouse)">
+              <iframe
+                [src]="getMapUrl(selectedWarehouse)!"
+                title="Bản đồ kho hàng"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                style="width: 100%; height: 200px; border: none; border-radius: 8px;"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="vn-map-card-body error-body" *ngIf="loadError || mapApiError">
+      <div class="vn-map-error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <p>{{ loadError || mapApiError }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Chi tiết đơn hàng khi click -->
+<div class="vn-order-modal-backdrop" *ngIf="selectedOrder" (click)="closeOrderDetail()">
+  <div class="vn-order-modal" (click)="$event.stopPropagation()">
+    <div class="vn-order-modal-head">
+      <h5>Chi tiết đơn hàng</h5>
+      <button type="button" class="vn-order-modal-close" (click)="closeOrderDetail()">Đóng</button>
+    </div>
+    <div class="vn-order-modal-body" *ngIf="selectedOrder">
+      <div class="vn-order-kv">
+        <span class="k">Mã đơn hàng</span>
+        <span class="v">{{ selectedOrder.OrderID || selectedOrder.order_id || selectedOrder._id }}</span>
+      </div>
+      <div class="vn-order-kv">
+        <span class="k">Khách hàng</span>
+        <span class="v">{{ orderCustomerName(selectedOrder) }}</span>
+      </div>
+      <div class="vn-order-kv">
+        <span class="k">Số điện thoại</span>
+        <span class="v">{{ orderPhone(selectedOrder) }}</span>
+      </div>
+      <div class="vn-order-kv">
+        <span class="k">Địa chỉ nhận</span>
+        <span class="v">{{ orderAddress(selectedOrder) }}</span>
+      </div>
+      <div class="vn-order-kv">
+        <span class="k">Tổng tiền</span>
+        <span class="v" style="color: #3CB018; font-weight: 700;">{{ formatMoney(selectedOrder.totalAmount || selectedOrder.total) }}</span>
+      </div>
+      <div class="vn-order-kv">
+        <span class="k">Trạng thái</span>
+        <span class="v">
+          <span class="vn-badge" [class.completed]="selectedOrder.status === 'completed'" [class.pending]="selectedOrder.status === 'pending'">
+            {{ selectedOrder.status }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

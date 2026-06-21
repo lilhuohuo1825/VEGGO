@@ -2,10 +2,23 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background_main">
 
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:overScrollMode="never" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:paddingBottom="104dp">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="104dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
             <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:gravity="center_vertical" android:orientation="horizontal">
                 <ImageView
     android:id="@+id/carbonCertificateBackButton"
@@ -23,51 +36,21 @@
                 <Space android:layout_width="40dp" android:layout_height="40dp" />
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="@dimen/spacing_lg" android:background="@drawable/bg_carbon_hero_card" android:gravity="center" android:orientation="vertical" android:padding="@dimen/spacing_lg">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="300dp" android:layout_marginTop="@dimen/spacing_lg" android:background="@drawable/bg_carbon_hero_card" android:gravity="center" android:orientation="vertical" android:padding="@dimen/spacing_lg">
                 <FrameLayout android:layout_width="112dp" android:layout_height="112dp" android:background="@drawable/bg_carbon_icon_circle">
                     <ImageView android:layout_width="54dp" android:layout_height="54dp" android:layout_gravity="center" android:contentDescription="@string/carbon_certificate_title" android:src="@drawable/ic_profile_leaf" />
                 </FrameLayout>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_lg" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/carbon_certificate_label" android:textColor="@color/primary_hover" android:textSize="@dimen/text_sm" android:textStyle="bold" />
-                <TextView android:id="@+id/carbonCertificateName" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/carbon_level_seed" android:textColor="@color/primary_hover" android:textSize="34sp" android:textStyle="bold" />
-                <TextView android:id="@+id/carbonCertificateDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:gravity="center" android:lineSpacingExtra="4dp" android:text="@string/carbon_certificate_body" android:textColor="@color/neutral_70" android:textSize="@dimen/text_md" />
+                <TextView android:id="@+id/carbonCertificateName" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:autoSizeMaxTextSize="22sp" android:autoSizeMinTextSize="16sp" android:autoSizeStepGranularity="1sp" android:autoSizeTextType="uniform" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:includeFontPadding="false" android:maxLines="1" android:singleLine="true" android:textColor="@color/primary_hover" android:textSize="20sp" android:textStyle="bold" />
+                <TextView android:id="@+id/carbonCertificatePoints" android:layout_width="wrap_content" android:layout_height="32dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_carbon_badge" android:fontFamily="@font/inter_semibold" android:gravity="center" android:minWidth="104dp" android:textColor="@color/primary_hover" android:textSize="@dimen/text_sm" />
+                <TextView android:id="@+id/carbonCertificateStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_xs" android:fontFamily="@font/inter_semibold" android:gravity="center" android:textColor="@color/neutral_80" android:textSize="@dimen/text_xs" />
+                <TextView android:id="@+id/carbonCertificateDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:gravity="center" android:lineSpacingExtra="3dp" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_lg" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_lg">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/carbon_certificate_path" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
-                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="@dimen/spacing_md" android:gravity="center_vertical" android:orientation="horizontal">
-                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
-                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
-                    </FrameLayout>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:fontFamily="@font/inter_semibold" android:text="@string/carbon_level_seed" android:textColor="@color/primary_hover" android:textSize="@dimen/text_md" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="1.000 C" android:textColor="@color/primary_hover" android:textSize="@dimen/text_md" />
-                </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                
-                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
-                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
-                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
-                    </FrameLayout>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Lá bạc" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="2.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                
-                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
-                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
-                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
-                    </FrameLayout>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Vườn vàng" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="5.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="56dp" android:background="@color/neutral_30" />
-                
-                <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:gravity="center_vertical" android:orientation="horizontal">
-                    <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_carbon_icon_circle">
-                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_profile_leaf" />
-                    </FrameLayout>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Rừng xanh" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:text="10.000 C" android:textColor="@color/neutral_80" android:textSize="@dimen/text_md" />
-                </LinearLayout>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_xs" android:text="Các mốc được lấy từ dữ liệu certificate hiện tại." android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+                <LinearLayout android:id="@+id/carbonCertificatePathList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

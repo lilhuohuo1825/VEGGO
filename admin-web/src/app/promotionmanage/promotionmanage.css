@@ -1018,6 +1018,10 @@
   max-width: 800px;
 }
 
+.modal-content.promotion-type-modal {
+  max-width: 680px;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -1104,6 +1108,253 @@
 textarea.input-field {
   resize: vertical;
   min-height: 80px;
+}
+
+.date-input {
+  min-height: 46px;
+  color: #111827;
+  background:
+    linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%),
+    #FFFFFF;
+  cursor: pointer;
+}
+
+.date-input:hover,
+.time-select:hover {
+  border-color: #86D76D;
+  background-color: #FAFFF8;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  padding: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.75;
+  filter: hue-rotate(55deg) saturate(1.2);
+  transition: all 0.2s ease;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: rgba(60, 176, 24, 0.12);
+}
+
+.time-select-group {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1.5px solid #D1D5DB;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  transition: all 0.2s ease;
+}
+
+.time-select-group:focus-within {
+  border-color: #3CB018;
+  box-shadow: 0 0 0 3px rgba(60, 176, 24, 0.1);
+  background: #FFFFFF;
+}
+
+.time-select {
+  min-height: 34px;
+  padding: 6px 28px 6px 10px !important;
+  border: none !important;
+  border-radius: 8px;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  text-align-last: center;
+}
+
+.time-select:focus {
+  background-color: #F0FDF4 !important;
+  box-shadow: none !important;
+}
+
+.time-select option {
+  color: #111827;
+  background: #FFFFFF;
+  font-weight: 500;
+}
+
+.time-separator {
+  color: #3CB018;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.promotion-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.promotion-type-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 18px;
+  border: 1.5px solid #D1D5DB;
+  border-radius: 14px;
+  background: #FFFFFF;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Lexend', sans-serif;
+}
+
+.promotion-type-card:hover {
+  border-color: #3CB018;
+  background: #F8FFF5;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(60, 176, 24, 0.14);
+}
+
+.promotion-type-card.flash:hover {
+  border-color: #F59E0B;
+  background: #FFFBEB;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.16);
+}
+
+.promotion-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #256E05 0%, #3CB018 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.promotion-type-card.flash .promotion-type-icon {
+  background: linear-gradient(135deg, #F97316 0%, #FACC15 100%);
+}
+
+.promotion-type-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promotion-type-content strong {
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.promotion-type-content span {
+  color: #6B7280;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.flash-sale-info {
+  border: 1px solid rgba(60, 176, 24, 0.28);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(60, 176, 24, 0.1), rgba(255, 255, 255, 0.85));
+  color: #256E05;
+}
+
+.flash-sale-info strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.flash-sale-info span {
+  display: block;
+  color: #4B5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.banner-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px dashed #B7E5A6;
+  padding: 14px;
+  border-radius: 12px;
+  background: #F8FFF5;
+}
+
+.banner-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.banner-upload-btn {
+  flex-shrink: 0;
+  border: none;
+  background: linear-gradient(135deg, #256E05 0%, #3CB018 100%);
+  color: #FFFFFF;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(60, 176, 24, 0.22);
+}
+
+.banner-or {
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.banner-url-input {
+  flex: 1;
+}
+
+.banner-preview {
+  position: relative;
+  width: fit-content;
+}
+
+.banner-preview img {
+  max-height: 96px;
+  max-width: 260px;
+  border-radius: 8px;
+  border: 1px solid #DDEFE0;
+  object-fit: cover;
+}
+
+.banner-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #DC2626;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.28);
+}
+
+.banner-remove-btn:hover {
+  background: #B91C1C;
 }
 
 .modal-footer {

@@ -42,19 +42,8 @@
             </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/carbonHistoryAllList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical">
-            <include layout="@layout/item_carbon_history_earned_order" />
-            <include layout="@layout/item_carbon_history_earned_review" />
-            <include layout="@layout/item_carbon_history_redeemed" />
-            <include layout="@layout/item_carbon_history_earned_bag" />
-        </LinearLayout>
-        <LinearLayout android:id="@+id/carbonHistoryReceivedList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" android:visibility="gone">
-            <include layout="@layout/item_carbon_history_earned_order" />
-            <include layout="@layout/item_carbon_history_earned_review" />
-            <include layout="@layout/item_carbon_history_earned_bag" />
-        </LinearLayout>
-        <LinearLayout android:id="@+id/carbonHistoryRedeemedList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" android:visibility="gone">
-            <include layout="@layout/item_carbon_history_redeemed" />
-        </LinearLayout>
+        <LinearLayout android:id="@+id/carbonHistoryAllList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" />
+        <LinearLayout android:id="@+id/carbonHistoryReceivedList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" android:visibility="gone" />
+        <LinearLayout android:id="@+id/carbonHistoryRedeemedList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical" android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

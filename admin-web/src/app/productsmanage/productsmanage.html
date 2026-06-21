@@ -48,8 +48,8 @@
         [disabled]="selectedCount === 0"
         (click)="deleteProducts(); $event.stopPropagation(); $event.preventDefault()" 
         type="button">
-        <img src="/assets/icons/trash_red.png" alt="Delete">
-        <span>Xoá</span>
+        <img src="/assets/icons/trash_red.png" alt="Toggle Status">
+        <span>Ẩn/Hiện</span>
       </button>
       
       <button class="btn-action btn-group" (click)="openGroupModal()" [disabled]="selectedCount < 2">
@@ -136,6 +136,25 @@
                   <img src="/assets/icons/group.png" alt="Group" class="empty-icon" style="width: 20px; height: 20px;">
                   <span>Chưa có nhóm nào</span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Status with Submenu -->
+            <div class="dropdown-item-parent">
+              <div class="dropdown-item">
+                <img src="/assets/icons/storage.png" alt="Status" class="item-icon">
+                <span>Trạng thái</span>
+                <span class="arrow-right">›</span>
+              </div>
+              <div class="dropdown-submenu">
+                <label class="dropdown-option" (click)="toggleStatusFilter('Active')">
+                  <input type="checkbox" [checked]="currentFilters.status === 'Active'" (click)="$event.stopPropagation()">
+                  <span>Hiện (Active)</span>
+                </label>
+                <label class="dropdown-option" (click)="toggleStatusFilter('Inactive')">
+                  <input type="checkbox" [checked]="currentFilters.status === 'Inactive'" (click)="$event.stopPropagation()">
+                  <span>Ẩn (Inactive)</span>
+                </label>
               </div>
             </div>
             
@@ -278,7 +297,8 @@
           <th class="col-category">Phân loại</th>
           <th class="col-groups">Giá bán</th>
           <th class="col-rating">Đánh giá</th>
-          <th class="col-updated">Cập nhật gần nhất</th>
+          <th class="col-status">Trạng thái</th>
+          <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
@@ -323,7 +343,11 @@
             </div>
             <div class="rating-value">{{product.rating || 0}}</div>
           </td>
-          <td class="col-updated">{{product.updated}}</td>
+          <td class="col-status">
+            <span class="status-badge" [ngClass]="product.status === 'Inactive' ? 'inactive' : 'active'">
+              {{product.status === 'Inactive' ? 'Ẩn (Inactive)' : 'Hiện (Active)'}}
+            </span>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -430,6 +454,80 @@
           <label class="form-label">Tồn kho:</label>
           <input type="number" class="form-input" placeholder="xxx" [(ngModel)]="currentProduct.stock" (ngModelChange)="onFieldChange('stock', $event)" name="stock">
         </div>
+
+        <!-- Hệ số phát thải & Trạng thái -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Hệ số phát thải (EmissionFactor):</label>
+            <input type="number" step="0.01" class="form-input" placeholder="Ví dụ: 1.2" [(ngModel)]="currentProduct.EmissionFactor" (ngModelChange)="onFieldChange('EmissionFactor', $event)" name="EmissionFactor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trạng thái hiển thị:</label>
+            <div class="form-select-wrapper">
+              <select 
+                class="form-select" 
+                [(ngModel)]="currentProduct.status" 
+                (ngModelChange)="onFieldChange('status', $event)" 
+                name="status">
+                <option value="Active">Hiện (Active)</option>
+                <option value="Inactive">Ẩn (Inactive)</option>
+              </select>
+              <img src="/assets/icons/arrowdown.png" alt="Dropdown" class="select-icon">
+            </div>
+          </div>
+        </div>
+
+        <!-- Cho phép tùy chỉnh khối lượng (Allow Custom Weight) -->
+        <div class="form-group full-width checkbox-form-group">
+          <label class="form-checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentProduct.allowCustomWeight" (ngModelChange)="onFieldChange('allowCustomWeight', $event)" name="allowCustomWeight">
+            <span class="checkbox-text">Cho phép tùy biến khối lượng / Biến thể (gram/kg...)</span>
+          </label>
+        </div>
+
+        <!-- Custom Weight Options (hiện khi allowCustomWeight = true) -->
+        <ng-container *ngIf="currentProduct.allowCustomWeight">
+          <div class="form-row">
+            <!-- Đơn vị tính biến thể -->
+            <div class="form-group">
+              <label class="form-label">Đơn vị tính (Unit):</label>
+              <div class="form-select-wrapper">
+                <select
+                  class="form-select"
+                  [(ngModel)]="currentProduct.unit"
+                  (ngModelChange)="onFieldChange('unit', $event)"
+                  name="customUnit">
+                  <option value="">Chọn đơn vị...</option>
+                  <option value="g">g (gram)</option>
+                  <option value="Kg">Kg (kilogram)</option>
+                  <option value="kg">kg (kilogram)</option>
+                  <option value="ml">ml (milliliter)</option>
+                  <option value="l">l (liter)</option>
+                  <option value="Hộp">Hộp</option>
+                  <option value="hộp">Hộp</option>
+                  <option value="Gói">Gói</option>
+                  <option value="gói">Gói</option>
+                  <option value="túi">Túi</option>
+                  <option value="cái">Cái</option>
+                  <option value="bó">Bó</option>
+                </select>
+                <img src="/assets/icons/arrowdown.png" alt="Dropdown" class="select-icon">
+              </div>
+            </div>
+
+            <!-- Các mức khối lượng (WeightOptions) -->
+            <div class="form-group">
+              <label class="form-label">Mức khối lượng (Weight Options):</label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="VD: 0.5, 1, 1.5 (cách nhau bằng dấu phẩy)"
+                [value]="weightOptionsText"
+                (change)="onWeightOptionsChange($any($event.target).value)"
+                name="customWeightOptions">
+            </div>
+          </div>
+        </ng-container>
 
         <!-- Thống kê sản phẩm -->
         <div class="form-row">

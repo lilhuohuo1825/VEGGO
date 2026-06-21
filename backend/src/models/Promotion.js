@@ -11,7 +11,10 @@ const bannerDataSchema = new mongoose.Schema(
 const promotionSchema = new mongoose.Schema(
   {
     promotion_id: { type: String, index: true },
+    code: { type: String, trim: true, unique: true, sparse: true },
     name: { type: String, default: '' },
+    discount: { type: Number, default: 0, min: 0 },
+    description: { type: String, default: '' },
     banner_data: { type: bannerDataSchema, default: undefined },
     isActive: { type: Boolean, default: true },
   },

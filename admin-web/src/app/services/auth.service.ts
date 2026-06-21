@@ -5,6 +5,8 @@ import { User } from 'firebase/auth';
 import { Firestore, doc, getDoc } from '@angular/fire/firestore';
 import { Observable, from, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface AdminUser {
   id: string;
@@ -21,38 +23,50 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
+  private http = inject(HttpClient);
   
   // Signal để track trạng thái đăng nhập
   isAuthenticated = signal<boolean>(false);
   currentUser = signal<AdminUser | null>(null);
 
   constructor() {
-    // Tự động lắng nghe trạng thái đăng nhập từ Firebase Auth
+    // 1. Phục hồi session đã đăng nhập qua MongoDB nếu có
+    const savedUserJson = localStorage.getItem('adminUser');
+    if (savedUserJson) {
+      try {
+        const savedUser = JSON.parse(savedUserJson);
+        this.isAuthenticated.set(true);
+        this.currentUser.set(savedUser);
+      } catch (e) {
+        console.error('Lỗi khi khôi phục session adminUser:', e);
+      }
+    }
+
+    // 2. Tự động lắng nghe trạng thái đăng nhập từ Firebase Auth
     authState(this.auth).subscribe(async (user: User | null) => {
       if (user) {
         try {
-          // Lấy thông tin user từ Firestore để check role
           const userDocRef = doc(this.firestore, `users/${user.uid}`);
           const userSnap = await getDoc(userDocRef);
           
           if (userSnap.exists()) {
             const userData = userSnap.data();
             if (userData['role'] === 'admin') {
-              this.isAuthenticated.set(true);
-              this.currentUser.set({
+              const adminInfo = {
                 id: user.uid,
                 email: user.email || '',
                 name: userData['name'] || user.email || 'Admin',
                 role: 'admin',
                 certificate: userData['certificate']
-              });
+              };
+              localStorage.setItem('adminUser', JSON.stringify(adminInfo));
+              this.isAuthenticated.set(true);
+              this.currentUser.set(adminInfo);
             } else {
-              // Không phải admin -> đăng xuất
               await signOut(this.auth);
               this.clearSession();
             }
           } else {
-            // Document không tồn tại
             await signOut(this.auth);
             this.clearSession();
           }
@@ -61,32 +75,61 @@ export class AuthService {
           this.clearSession();
         }
       } else {
-        this.clearSession();
+        // Chỉ xóa session khi Firebase báo logout và đồng thời không có session local
+        if (!localStorage.getItem('adminUser')) {
+          this.clearSession();
+        }
       }
     });
   }
 
   /**
-   * Đăng nhập bằng Firebase Auth
+   * Đăng nhập thông qua MongoDB và fallback Firebase Auth
    */
   login(email: string, password: string): Observable<boolean> {
-    return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
-      switchMap(async (credential) => {
-        const user = credential.user;
-        // Check role trên Firestore
-        const userDocRef = doc(this.firestore, `users/${user.uid}`);
-        const userSnap = await getDoc(userDocRef);
-        
-        if (userSnap.exists() && userSnap.data()['role'] === 'admin') {
-           return true;
-        } else {
-           await signOut(this.auth);
-           throw new Error("Tài khoản này không có quyền quản trị (Admin).");
+    // Thử đăng nhập qua backend MongoDB trước
+    return this.http.post(`${environment.apiUrl}/users/admin/login`, { email, password }).pipe(
+      map((response: any) => {
+        if (response && response.success && response.user) {
+          localStorage.setItem('adminUser', JSON.stringify(response.user));
+          this.isAuthenticated.set(true);
+          this.currentUser.set(response.user);
+          return true;
         }
+        return false;
       }),
-      catchError(error => {
-        console.error('❌ Lỗi đăng nhập:', error);
-        throw error;
+      catchError(mongoError => {
+        console.warn('⚠️ Đăng nhập bằng MongoDB thất bại, thử đăng nhập bằng Firebase Auth...', mongoError.message);
+        
+        // Thử đăng nhập bằng Firebase Auth nếu MongoDB không phản hồi hoặc có lỗi
+        return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
+          switchMap(async (credential) => {
+            const user = credential.user;
+            const userDocRef = doc(this.firestore, `users/${user.uid}`);
+            const userSnap = await getDoc(userDocRef);
+            
+            if (userSnap.exists() && userSnap.data()['role'] === 'admin') {
+              const adminInfo = {
+                id: user.uid,
+                email: user.email || '',
+                name: userSnap.data()['name'] || user.email || 'Admin',
+                role: 'admin',
+                certificate: userSnap.data()['certificate']
+              };
+              localStorage.setItem('adminUser', JSON.stringify(adminInfo));
+              this.isAuthenticated.set(true);
+              this.currentUser.set(adminInfo);
+              return true;
+            } else {
+              await signOut(this.auth);
+              throw new Error("Tài khoản này không có quyền quản trị (Admin).");
+            }
+          }),
+          catchError(fbError => {
+            console.error('❌ Lỗi đăng nhập Firebase:', fbError);
+            throw fbError;
+          })
+        );
       })
     );
   }
@@ -95,7 +138,12 @@ export class AuthService {
    * Đăng xuất
    */
   logout(): void {
+    localStorage.removeItem('adminUser');
     signOut(this.auth).then(() => {
+      this.clearSession();
+      this.router.navigate(['/login']);
+    }).catch(() => {
+      // Đề phòng lỗi Firebase Auth signOut (khi đăng nhập qua MongoDB đơn thuần)
       this.clearSession();
       this.router.navigate(['/login']);
     });
@@ -105,6 +153,7 @@ export class AuthService {
    * Xóa session
    */
   private clearSession(): void {
+    localStorage.removeItem('adminUser');
     this.isAuthenticated.set(false);
     this.currentUser.set(null);
   }
@@ -117,11 +166,10 @@ export class AuthService {
   }
 
   /**
-   * Gửi email reset password qua Firebase Auth
+   * Gửi email reset password qua Backend API để nhận OTP
    */
   requestPasswordReset(email: string): Observable<any> {
-    return from(sendPasswordResetEmail(this.auth, email)).pipe(
-      map(() => ({ success: true, message: 'Email khôi phục đã được gửi.' })),
+    return this.http.post(`${environment.apiUrl}/users/admin/forgot-password`, { email }).pipe(
       catchError(error => {
         console.error('Password reset request error:', error);
         throw error;
@@ -129,12 +177,30 @@ export class AuthService {
     );
   }
 
-  // Giữ lại các hàm stub để giao diện cũ không bị lỗi biên dịch
+  /**
+   * Xác thực OTP qua Backend API
+   */
   verifyOTP(email: string, otp: string): Observable<any> {
-    return of({ success: true });
+    return this.http.post(`${environment.apiUrl}/users/admin/verify-otp`, { email, otp }).pipe(
+      catchError(error => {
+        console.error('OTP verification failed:', error);
+        throw error;
+      })
+    );
   }
 
+  /**
+   * Đổi mật khẩu qua Backend API bằng OTP và mật khẩu mới
+   */
   resetPassword(email: string, otp: string, newPassword: string): Observable<boolean> {
-    return of(true);
+    return this.http.post(`${environment.apiUrl}/users/admin/reset-password`, { email, otp, newPassword }).pipe(
+      map((response: any) => {
+        return !!(response && response.success);
+      }),
+      catchError(error => {
+        console.error('Reset password error:', error);
+        throw error;
+      })
+    );
   }
 }

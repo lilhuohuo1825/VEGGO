@@ -112,7 +112,6 @@
                         android:background="@drawable/bg_post_chip_light"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="@string/fridge_ingredients_count"
                         android:textColor="@color/primary_hover"
                         android:textSize="@dimen/text_xs" />
 
@@ -124,7 +123,6 @@
                         android:background="@drawable/bg_fridge_soon_chip"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="@string/fridge_expiring_count"
                         android:textColor="@color/secondary_hover"
                         android:textSize="@dimen/text_xs" />
                 </LinearLayout>

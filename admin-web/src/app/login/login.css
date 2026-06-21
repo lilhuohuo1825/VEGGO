@@ -14,13 +14,13 @@
 .login-page::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -40px;
   left: 0;
   right: 0;
   bottom: 0;
   background-image: url('/assets/images/BG_Admin.png');
   background-size: cover;
-  background-position: center;
+  background-position: top center;
   background-repeat: no-repeat;
   z-index: 0;
 }
@@ -54,6 +54,7 @@
   position: relative;
   z-index: 10;
   margin-right: 0;
+  margin-top: 130px;
 }
 
 .login-box {
@@ -66,7 +67,7 @@
 }
 
 .login-title {
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 28px;
   font-weight: 700;
   text-align: center;
@@ -85,7 +86,7 @@
 }
 
 .forgot-description a {
-  color: #3cb018;
+  color: #57AF37;
   text-decoration: none;
   font-weight: 500;
 }
@@ -110,7 +111,7 @@
 
 .form-group label {
   display: block;
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #333;
@@ -137,8 +138,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #3cb018;
-  box-shadow: 0 0 0 3px rgba(60, 176, 24, 0.1);
+  border-color: #57AF37;
+  box-shadow: 0 0 0 3px rgba(87, 175, 55, 0.1);
 }
 
 .form-input:disabled {
@@ -208,7 +209,7 @@
 }
 
 .forgot-link {
-  color: #3cb018;
+  color: #57AF37;
   text-decoration: none;
   font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 500;
@@ -224,18 +225,18 @@
 .submit-btn {
   width: 100%;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #3cb018 0%, #349409 100%);
+  background: linear-gradient(135deg, #57AF37 0%, #3E8D22 100%);
   color: #ffffff;
   border: none;
   border-radius: 10px;
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 8px;
-  box-shadow: 0 4px 15px rgba(60, 176, 24, 0.3);
+  box-shadow: 0 4px 15px rgba(87, 175, 55, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -256,9 +257,9 @@
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #349409 0%, #256e05 100%);
+  background: linear-gradient(135deg, #3E8D22 0%, #2A6E12 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(60, 176, 24, 0.4);
+  box-shadow: 0 6px 20px rgba(87, 175, 55, 0.4);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -296,7 +297,7 @@
 }
 
 .back-to-login a {
-  color: #3cb018;
+  color: #57AF37;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
@@ -318,7 +319,7 @@
 }
 
 .back-link:hover {
-  background: rgba(60, 176, 24, 0.1);
+  background: rgba(87, 175, 55, 0.1);
   text-decoration: none;
   transform: translateX(-2px);
 }
@@ -335,7 +336,7 @@
   width: 50px;
   height: 56px;
   text-align: center;
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -346,8 +347,8 @@
 
 .otp-input:focus {
   outline: none;
-  border-color: #3cb018;
-  box-shadow: 0 0 0 3px rgba(60, 176, 24, 0.1);
+  border-color: #57AF37;
+  box-shadow: 0 0 0 3px rgba(87, 175, 55, 0.1);
 }
 
 /* Responsive */
@@ -421,7 +422,7 @@
 }
 
 .popup-icon.success {
-  background: linear-gradient(135deg, #3cb018 0%, #2d8a1f 100%);
+  background: linear-gradient(135deg, #57AF37 0%, #3E8D22 100%);
 }
 
 .popup-icon.error {
@@ -448,7 +449,7 @@
 }
 
 .popup-btn-ok {
-  background: linear-gradient(135deg, #3cb018 0%, #2d8a1f 100%);
+  background: linear-gradient(135deg, #57AF37 0%, #3E8D22 100%);
   color: white;
   border: none;
   border-radius: 8px;

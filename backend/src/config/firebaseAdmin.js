@@ -20,9 +20,19 @@ function initFirebaseAdmin() {
   }
 
   const serviceAccount = require(resolvedPath);
-  admin.initializeApp({
+  const defaultStorageBucket = serviceAccount.project_id
+    ? `${serviceAccount.project_id}.firebasestorage.app`
+    : undefined;
+  const appOptions = {
     credential: admin.credential.cert(serviceAccount),
-  });
+    projectId: serviceAccount.project_id,
+  };
+
+  if (process.env.FIREBASE_STORAGE_BUCKET || defaultStorageBucket) {
+    appOptions.storageBucket = process.env.FIREBASE_STORAGE_BUCKET || defaultStorageBucket;
+  }
+
+  admin.initializeApp(appOptions);
 
   console.log('Firebase Admin initialized');
   return admin;

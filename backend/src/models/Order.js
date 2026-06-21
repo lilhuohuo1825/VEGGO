@@ -24,6 +24,7 @@ const orderSchema = new mongoose.Schema(
       default: 'pending',
     },
     shippingAddress: { type: Object, default: {} },
+    isActive: { type: Boolean, default: true, index: true },
   },
   { timestamps: true }
 );

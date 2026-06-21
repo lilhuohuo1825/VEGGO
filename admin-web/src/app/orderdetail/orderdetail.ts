@@ -49,6 +49,22 @@ export class OrderDetail implements OnInit, OnDestroy {
   isEditMode: boolean = false; // Flag to check if this is edit mode
   users: any[] = []; // List of users for customer selection
   customerIDSearch: string = ''; // Customer ID search input
+  warehouses: any[] = [];
+  warehousesMap: Map<string, any> = new Map();
+  private readonly legacyWarehouseFallback: Record<string, { name: string; address: string }> = {
+    wh001: {
+      name: 'Tổng kho VGreen - Cần Thơ',
+      address: '20 Đường Lê Lợi, phường Cái Khế, Quận Ninh Kiều, TP. Cần Thơ',
+    },
+    wh002: {
+      name: 'Kho hàng VGreen - Cơ sở 2',
+      address: '126 Đường Hùng Vương, Phường Bến Nghé, Quận 1, Hồ Chí Minh',
+    },
+    wh003: {
+      name: 'Kho hàng VGreen - Cơ sở 3',
+      address: '217 Đường Hoàng Diệu, Phường Dĩ An, Thành phố Dĩ An, Bình Dương',
+    },
+  };
 
   // Product selection modal
   showProductModal: boolean = false;
@@ -145,6 +161,9 @@ export class OrderDetail implements OnInit, OnDestroy {
       district: '',
       ward: '',
       streetAddress: '',
+      warehouseId: '',
+      warehouseName: '',
+      warehouseAddress: '',
     },
     note: '',
     paymentMethod: 'COD',
@@ -175,6 +194,7 @@ export class OrderDetail implements OnInit, OnDestroy {
     this.route.params.subscribe((params) => {
       this.orderId = params['id'];
       this.isNewOrder = this.orderId === 'new';
+      this.loadWarehouses();
 
       if (this.isNewOrder) {
         // Initialize empty order data for new order
@@ -240,6 +260,70 @@ export class OrderDetail implements OnInit, OnDestroy {
         this.loadPromotions();
       },
     });
+  }
+
+  loadWarehouses(): void {
+    this.apiService.getWarehouses().subscribe({
+      next: (warehouses) => {
+        this.warehouses = Array.isArray(warehouses) ? warehouses : [];
+        this.warehousesMap.clear();
+        this.warehouses.forEach((warehouse) => {
+          [
+            warehouse.code,
+            warehouse.warehouse_id,
+            warehouse.ma_kho,
+            warehouse.id,
+            warehouse._id,
+          ].forEach((key) => {
+            const normalizedKey = this.normalizeWarehouseKey(key);
+            if (normalizedKey) {
+              this.warehousesMap.set(normalizedKey, warehouse);
+            }
+          });
+        });
+
+        if (this.orderData.deliveryInfo.warehouseId) {
+          this.applyWarehouseInfo(this.orderData.deliveryInfo.warehouseId);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error loading warehouses:', error);
+      },
+    });
+  }
+
+  private normalizeWarehouseKey(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') {
+      if (value.$oid) return String(value.$oid).trim().toLowerCase();
+      if (value.toString && typeof value.toString === 'function') {
+        return value.toString().trim().toLowerCase();
+      }
+    }
+    return String(value).trim().toLowerCase();
+  }
+
+  private getWarehouseById(warehouseId: string): any | null {
+    const normalizedId = this.normalizeWarehouseKey(warehouseId);
+    return this.warehousesMap.get(normalizedId) || this.legacyWarehouseFallback[normalizedId] || null;
+  }
+
+  onWarehouseChange(): void {
+    this.applyWarehouseInfo(this.orderData.deliveryInfo.warehouseId);
+  }
+
+  private applyWarehouseInfo(warehouseId: string): void {
+    const warehouse = this.getWarehouseById(warehouseId);
+    this.orderData.deliveryInfo.warehouseId = warehouseId || '';
+    this.orderData.deliveryInfo.warehouseName =
+      warehouse?.name ||
+      warehouse?.warehouse_name ||
+      warehouse?.ten_kho ||
+      warehouse?.code ||
+      warehouseId ||
+      '';
+    this.orderData.deliveryInfo.warehouseAddress =
+      warehouse?.address || warehouse?.dia_chi?.dia_chi_day_du || '';
   }
 
   /**
@@ -394,6 +478,9 @@ export class OrderDetail implements OnInit, OnDestroy {
         district: '',
         ward: '',
         streetAddress: '',
+        warehouseId: '',
+        warehouseName: '',
+        warehouseAddress: '',
       },
       note: '',
       paymentMethod: 'COD',
@@ -1071,6 +1158,13 @@ export class OrderDetail implements OnInit, OnDestroy {
     const provinceName = this.order.shippingInfo?.address?.city || '';
     const districtName = this.order.shippingInfo?.address?.district || '';
     const wardName = this.order.shippingInfo?.address?.ward || '';
+    const warehouseId =
+      this.order.shippingInfo?.warehouse_id ||
+      this.order.shippingInfo?.warehouseId ||
+      this.order.shippingInfo?.warehouse?.code ||
+      this.order.warehouse_id ||
+      '';
+    const warehouse = this.getWarehouseById(warehouseId);
 
     const deliveryInfo = {
       name: this.order.shippingInfo?.fullName || customerInfo.name,
@@ -1081,6 +1175,21 @@ export class OrderDetail implements OnInit, OnDestroy {
       district: districtName,
       ward: wardName,
       streetAddress: this.order.shippingInfo?.address?.detail || '',
+      warehouseId: warehouseId,
+      warehouseName:
+        warehouse?.name ||
+        warehouse?.warehouse_name ||
+        warehouse?.ten_kho ||
+        this.order.shippingInfo?.warehouseName ||
+        this.order.shippingInfo?.warehouse_name ||
+        warehouseId ||
+        '',
+      warehouseAddress:
+        warehouse?.address ||
+        warehouse?.dia_chi?.dia_chi_day_du ||
+        this.order.shippingInfo?.warehouseAddress ||
+        this.order.shippingInfo?.warehouse_address ||
+        '',
     };
 
     // If in edit mode, set selected address values after address data is loaded
@@ -1336,6 +1445,9 @@ export class OrderDetail implements OnInit, OnDestroy {
         district: '',
         ward: '',
         streetAddress: '',
+        warehouseId: '',
+        warehouseName: '',
+        warehouseAddress: '',
       },
       note: this.order.notes || '',
       paymentMethod: 'COD',
@@ -2152,6 +2264,9 @@ export class OrderDetail implements OnInit, OnDestroy {
         district: '',
         ward: '',
         streetAddress: '',
+        warehouseId: this.orderData.deliveryInfo.warehouseId || '',
+        warehouseName: this.orderData.deliveryInfo.warehouseName || '',
+        warehouseAddress: this.orderData.deliveryInfo.warehouseAddress || '',
       };
     }
   }
@@ -3174,6 +3289,7 @@ export class OrderDetail implements OnInit, OnDestroy {
           detail: detail,
         },
         deliveryMethod: 'standard',
+        warehouse_id: this.orderData.deliveryInfo.warehouseId || '',
         warehouseAddress: '',
         notes: String(this.orderData.note || '').trim(),
       },
@@ -3500,6 +3616,7 @@ export class OrderDetail implements OnInit, OnDestroy {
           detail: detail,
         },
         deliveryMethod: 'standard',
+        warehouse_id: this.orderData.deliveryInfo.warehouseId || '',
         warehouseAddress: '',
         notes: String(this.orderData.note || '').trim(),
       },

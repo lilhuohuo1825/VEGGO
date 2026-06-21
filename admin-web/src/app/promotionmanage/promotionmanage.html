@@ -205,6 +205,38 @@
   </div>
 </div>
 
+<!-- Promotion Type Modal -->
+<div class="modal-overlay" *ngIf="showPromotionTypeModal" (click)="closePromotionTypeModal()">
+  <div class="modal-content promotion-type-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Chọn loại khuyến mãi</h2>
+      <button class="close-btn" (click)="closePromotionTypeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="promotion-type-options">
+        <button type="button" class="promotion-type-card" (click)="startRegularPromotionCreation()">
+          <div class="promotion-type-icon">%</div>
+          <div class="promotion-type-content">
+            <strong>Tạo chương trình khuyến mãi</strong>
+            <span>Lưu thông tin vào promotions và tạo promotion_targets khi chọn danh mục, thương hiệu hoặc sản phẩm áp dụng.</span>
+          </div>
+        </button>
+
+        <button type="button" class="promotion-type-card flash" (click)="startFlashSaleCreation()">
+          <div class="promotion-type-icon">FS</div>
+          <div class="promotion-type-content">
+            <strong>Tạo Flash Sale</strong>
+            <span>Chọn sản phẩm bán nhanh trong ngày, khung giờ ngắn và hiển thị ở section Flash Sale của app.</span>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closePromotionTypeModal()">Hủy</button>
+    </div>
+  </div>
+</div>
+
 <!-- Group Modal -->
 <div class="modal-overlay" *ngIf="showGroupModal" (click)="closeGroupModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
@@ -232,31 +264,63 @@
 <div class="modal-overlay" *ngIf="showAddEditModal" (click)="closeAddEditModal()">
   <div class="modal-content large" (click)="$event.stopPropagation()" *ngIf="currentPromotion">
     <div class="modal-header">
-      <h2>{{editMode ? 'Chỉnh sửa khuyến mãi' : 'Thêm khuyến mãi mới'}}</h2>
+      <h2>{{isFlashSaleCreateMode() ? 'Tạo Flash Sale trong ngày' : (editMode ? 'Chỉnh sửa khuyến mãi' : 'Thêm khuyến mãi mới')}}</h2>
       <button class="close-btn" (click)="closeAddEditModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group full-width flash-sale-info" *ngIf="isFlashSaleCreateMode()">
+          <strong>Flash Sale bán nhanh</strong>
+          <span>Chọn sản phẩm cần bán nhanh trong ngày, đặt mức giảm và khung giờ vài tiếng. Flash Sale sẽ hiển thị ở section Flash Sale của app khi đến giờ.</span>
+        </div>
+
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Mã khuyến mãi <span class="required-asterisk">*</span></label>
           <input type="text" [(ngModel)]="currentPromotion.code" placeholder="VD: VGKM2024" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Tên khuyến mãi <span class="required-asterisk">*</span></label>
           <input type="text" [(ngModel)]="currentPromotion.name" placeholder="VD: Giảm giá mùa hè" class="input-field">
         </div>
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
           <label>Mô tả</label>
           <textarea [(ngModel)]="currentPromotion.description" placeholder="Mô tả chi tiết..." class="input-field" rows="3"></textarea>
         </div>
-        <div class="form-group">
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
+          <label>Banner</label>
+          <div class="banner-upload-wrapper">
+            <input type="file" (change)="onBannerUpload($event)" accept="image/*" style="display: none;" #bannerFileInput>
+            <div class="banner-input-row">
+              <button type="button" class="banner-upload-btn" (click)="bannerFileInput.click()">
+                Upload ảnh banner
+              </button>
+              <span class="banner-or">hoặc</span>
+              <input
+                type="text"
+                [(ngModel)]="currentPromotion.imageUrl"
+                (ngModelChange)="currentPromotion.bannerData = buildBannerData($event)"
+                class="input-field banner-url-input">
+            </div>
+            <div class="banner-preview" *ngIf="currentPromotion.imageUrl">
+              <img [src]="getBannerSrc(currentPromotion.imageUrl)" alt="Banner">
+              <button type="button" class="banner-remove-btn" (click)="removeBanner()">×</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentPromotion.showOnApp" class="checkbox-input">
+            <span>Hiển thị khuyến mãi này trên giao diện website/app</span>
+          </label>
+        </div>
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Loại khuyến mãi <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="currentPromotion.type" class="input-field">
             <option value="User">Người dùng (User)</option>
             <option value="Admin">Quản trị (Admin)</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Trạng thái <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="currentPromotion.status" class="input-field">
             <option value="active">Đang hoạt động (Active)</option>
@@ -265,60 +329,90 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Loại giảm giá <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleCreateMode() ? 'Kiểu giảm Flash Sale' : 'Loại giảm giá'}} <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="currentPromotion.discountType" class="input-field">
             <option value="percentage">Phần trăm (%)</option>
             <option value="fixed">Số tiền cố định (₫)</option>
-            <option value="buy1get1">Mua 1 tặng 1</option>
+            <option value="buy1get1" *ngIf="!isFlashSaleCreateMode()">Mua 1 tặng 1</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Giá trị giảm <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleCreateMode() ? 'Mức giảm' : 'Giá trị giảm'}} <span class="required-asterisk">*</span></label>
           <input type="number" [(ngModel)]="currentPromotion.discountValue" placeholder="0" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Giá trị đơn hàng tối thiểu</label>
           <input type="number" [(ngModel)]="currentPromotion.minPurchase" placeholder="VD: 100000" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Giảm tối đa (₫)</label>
           <input type="number" [(ngModel)]="currentPromotion.maxDiscount" placeholder="VD: 50000" class="input-field">
         </div>
         <div class="form-group">
-          <label>Ngày bắt đầu <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleCreateMode() ? 'Ngày chạy Flash Sale' : 'Ngày bắt đầu'}} <span class="required-asterisk">*</span></label>
           <input type="date" [(ngModel)]="currentPromotion.startDate" 
                  (ngModelChange)="onStartDateChange()" 
-                 class="input-field">
+                 class="input-field date-input">
+        </div>
+        <div class="form-group">
+          <label>{{isFlashSaleCreateMode() ? 'Giới hạn sử dụng Flash Sale' : 'Giới hạn sử dụng'}}</label>
+          <input type="number" [(ngModel)]="currentPromotion.usageLimit" placeholder="Để trống = không giới hạn" class="input-field">
         </div>
         <div class="form-group">
           <label>Giờ bắt đầu</label>
-          <input type="time" [(ngModel)]="currentPromotion.startTime" 
-                 class="input-field">
+          <div class="time-select-group">
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(currentPromotion.startTime, 'hour')"
+              (ngModelChange)="setCurrentPromotionTimePart('startTime', 'hour', $event)"
+              aria-label="Giờ bắt đầu">
+              <option *ngFor="let hour of timeHours" [value]="hour">{{hour}}</option>
+            </select>
+            <span class="time-separator">:</span>
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(currentPromotion.startTime, 'minute')"
+              (ngModelChange)="setCurrentPromotionTimePart('startTime', 'minute', $event)"
+              aria-label="Phút bắt đầu">
+              <option *ngFor="let minute of timeMinutes" [value]="minute">{{minute}}</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Ngày kết thúc <span class="required-asterisk">*</span></label>
           <input type="date" [(ngModel)]="currentPromotion.endDate" 
                  [min]="currentPromotion.startDate || ''"
                  (ngModelChange)="onEndDateChange()" 
-                 class="input-field">
+                 class="input-field date-input">
           <small class="error-message" *ngIf="dateRangeError" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: block;">
             Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu
           </small>
         </div>
         <div class="form-group">
           <label>Giờ kết thúc</label>
-          <input type="time" [(ngModel)]="currentPromotion.endTime" 
-                 class="input-field">
+          <div class="time-select-group">
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(currentPromotion.endTime, 'hour')"
+              (ngModelChange)="setCurrentPromotionTimePart('endTime', 'hour', $event)"
+              aria-label="Giờ kết thúc">
+              <option *ngFor="let hour of timeHours" [value]="hour">{{hour}}</option>
+            </select>
+            <span class="time-separator">:</span>
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(currentPromotion.endTime, 'minute')"
+              (ngModelChange)="setCurrentPromotionTimePart('endTime', 'minute', $event)"
+              aria-label="Phút kết thúc">
+              <option *ngFor="let minute of timeMinutes" [value]="minute">{{minute}}</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Giới hạn sử dụng</label>
-          <input type="number" [(ngModel)]="currentPromotion.usageLimit" placeholder="Để trống = không giới hạn" class="input-field">
-        </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
           <label>Giới hạn mỗi người dùng</label>
           <input type="number" [(ngModel)]="currentPromotion.userLimit" placeholder="Số lần sử dụng/người" class="input-field">
         </div>
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
           <label class="checkbox-label">
             <input type="checkbox" [(ngModel)]="currentPromotion.isFirstOrderOnly" class="checkbox-input">
             <span>Chỉ áp dụng cho đơn hàng đầu tiên</span>
@@ -326,7 +420,7 @@
         </div>
 
         <!-- Phạm vi áp dụng - Moved to bottom before Target Selection -->
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
           <label>Phạm vi áp dụng <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="currentPromotion.scope" (change)="onScopeChange()" class="input-field">
             <option value="Order">Đơn hàng (Order)</option>
@@ -341,12 +435,12 @@
         <!-- Target Selection Section - Only show when scope is Category, Product, or Brand -->
         <div class="form-group full-width target-selection-section" *ngIf="currentPromotion.scope === 'Category' || currentPromotion.scope === 'Product' || currentPromotion.scope === 'Brand'">
           <div class="target-selection-header">
-            <label class="target-section-label">Phạm vi áp dụng cụ thể <span class="required-asterisk">*</span></label>
-            <span class="target-help-text">Chọn các {{currentPromotion.scope === 'Category' ? 'danh mục' : currentPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm'}} để áp dụng khuyến mãi</span>
+            <label class="target-section-label">{{isFlashSaleCreateMode() ? 'Sản phẩm Flash Sale' : 'Phạm vi áp dụng cụ thể'}} <span class="required-asterisk">*</span></label>
+            <span class="target-help-text">{{isFlashSaleCreateMode() ? 'Chọn các sản phẩm cần bán nhanh trong khung giờ Flash Sale' : 'Chọn các ' + (currentPromotion.scope === 'Category' ? 'danh mục' : currentPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm') + ' để áp dụng khuyến mãi'}}</span>
           </div>
           
           <!-- Target Type Selection (only for Category scope) -->
-          <div class="target-type-selector" *ngIf="currentPromotion.scope === 'Category'">
+          <div class="target-type-selector" *ngIf="currentPromotion.scope === 'Category' && !isFlashSaleCreateMode()">
             <label>Loại danh mục <span class="required-asterisk">*</span></label>
             <select [(ngModel)]="targetType" (change)="onTargetTypeChange()" class="input-field">
               <option value="Category">Danh mục chính (Category)</option>
@@ -376,7 +470,7 @@
                 <input 
                   type="checkbox" 
                   [checked]="isTargetSelected(getTargetValue(option))"
-                  (change)="toggleTarget(getTargetValue(option))"
+                  (change)="setTargetSelected(getTargetValue(option), $any($event.target).checked)"
                   class="target-checkbox"
                   (click)="$event.stopPropagation()">
                 <span class="target-label">{{getTargetLabel(option)}}</span>
@@ -409,7 +503,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" (click)="closeAddEditModal()">Hủy</button>
-      <button class="btn-primary" (click)="savePromotion()">{{editMode ? 'Cập nhật' : 'Thêm mới'}}</button>
+      <button class="btn-primary" (click)="savePromotion()">{{isFlashSaleCreateMode() ? 'Tạo Flash Sale' : (editMode ? 'Cập nhật' : 'Thêm mới')}}</button>
     </div>
   </div>
 </div>
@@ -432,31 +526,63 @@
 <div class="modal-overlay" *ngIf="showDetailModal" (click)="closeDetailModal()">
   <div class="modal-content large" (click)="$event.stopPropagation()" *ngIf="selectedPromotion">
     <div class="modal-header">
-      <h2>Chi tiết khuyến mãi</h2>
+      <h2>{{isFlashSaleDetailMode() ? 'Chi tiết Flash Sale' : 'Chi tiết khuyến mãi'}}</h2>
       <button class="close-btn" (click)="closeDetailModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group full-width flash-sale-info" *ngIf="isFlashSaleDetailMode()">
+          <strong>Flash Sale bán nhanh</strong>
+          <span>Chỉnh mức giảm, giới hạn sử dụng, khung giờ và danh sách sản phẩm áp dụng cho Flash Sale.</span>
+        </div>
+
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Mã khuyến mãi <span class="required-asterisk">*</span></label>
           <input type="text" [(ngModel)]="selectedPromotion.code" placeholder="VD: VGKM2024" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Tên khuyến mãi <span class="required-asterisk">*</span></label>
           <input type="text" [(ngModel)]="selectedPromotion.name" placeholder="VD: Giảm giá mùa hè" class="input-field">
         </div>
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
           <label>Mô tả</label>
           <textarea [(ngModel)]="selectedPromotion.description" placeholder="Mô tả chi tiết..." class="input-field" rows="3"></textarea>
         </div>
-        <div class="form-group">
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
+          <label>Banner</label>
+          <div class="banner-upload-wrapper">
+            <input type="file" (change)="onBannerUpload($event, 'detail')" accept="image/*" style="display: none;" #detailBannerFileInput>
+            <div class="banner-input-row">
+              <button type="button" class="banner-upload-btn" (click)="detailBannerFileInput.click()">
+                Upload ảnh banner
+              </button>
+              <span class="banner-or">hoặc</span>
+              <input
+                type="text"
+                [(ngModel)]="selectedPromotion.imageUrl"
+                (ngModelChange)="selectedPromotion.bannerData = buildBannerData($event)"
+                class="input-field banner-url-input">
+            </div>
+            <div class="banner-preview" *ngIf="selectedPromotion.imageUrl">
+              <img [src]="getBannerSrc(selectedPromotion.imageUrl)" alt="Banner">
+              <button type="button" class="banner-remove-btn" (click)="selectedPromotion.imageUrl = ''; selectedPromotion.bannerData = null">×</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="selectedPromotion.showOnApp" class="checkbox-input">
+            <span>Hiển thị khuyến mãi này trên giao diện website/app</span>
+          </label>
+        </div>
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Loại khuyến mãi <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="selectedPromotion.type" class="input-field">
             <option value="User">Người dùng (User)</option>
             <option value="Admin">Quản trị viên (Admin)</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Trạng thái <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="selectedPromotion.status" class="input-field">
             <option value="active">Đang hoạt động (Active)</option>
@@ -465,50 +591,94 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Loại giảm giá <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleDetailMode() ? 'Kiểu giảm Flash Sale' : 'Loại giảm giá'}} <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="selectedPromotion.discountType" class="input-field">
             <option value="percentage">Phần trăm (%)</option>
             <option value="fixed">Cố định</option>
-            <option value="buy1get1">Mua 1 tặng 1</option>
+            <option value="buy1get1" *ngIf="!isFlashSaleDetailMode()">Mua 1 tặng 1</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Giá trị giảm <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleDetailMode() ? 'Mức giảm' : 'Giá trị giảm'}} <span class="required-asterisk">*</span></label>
           <input type="number" [(ngModel)]="selectedPromotion.discountValue" placeholder="0" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Giá trị đơn hàng tối thiểu</label>
           <input type="number" [(ngModel)]="selectedPromotion.minPurchase" placeholder="0" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Giảm tối đa (đ)</label>
           <input type="number" [(ngModel)]="selectedPromotion.maxDiscount" placeholder="0" class="input-field">
         </div>
         <div class="form-group">
-          <label>Ngày bắt đầu <span class="required-asterisk">*</span></label>
+          <label>{{isFlashSaleDetailMode() ? 'Ngày chạy Flash Sale' : 'Ngày bắt đầu'}} <span class="required-asterisk">*</span></label>
           <input type="date" [(ngModel)]="selectedPromotion.startDate" 
                  (ngModelChange)="onDetailStartDateChange()" 
-                 class="input-field">
+                 class="input-field date-input">
+        </div>
+        <div class="form-group" *ngIf="isFlashSaleDetailMode()">
+          <label>Giới hạn sử dụng Flash Sale</label>
+          <input type="number" [(ngModel)]="selectedPromotion.usageLimit" placeholder="0" class="input-field">
         </div>
         <div class="form-group">
+          <label>Giờ bắt đầu</label>
+          <div class="time-select-group">
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(selectedPromotion.startTime, 'hour')"
+              (ngModelChange)="setSelectedPromotionTimePart('startTime', 'hour', $event)"
+              aria-label="Giờ bắt đầu">
+              <option *ngFor="let hour of timeHours" [value]="hour">{{hour}}</option>
+            </select>
+            <span class="time-separator">:</span>
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(selectedPromotion.startTime, 'minute')"
+              (ngModelChange)="setSelectedPromotionTimePart('startTime', 'minute', $event)"
+              aria-label="Phút bắt đầu">
+              <option *ngFor="let minute of timeMinutes" [value]="minute">{{minute}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Ngày kết thúc <span class="required-asterisk">*</span></label>
           <input type="date" [(ngModel)]="selectedPromotion.endDate" 
                  [min]="selectedPromotion.startDate || ''"
                  (ngModelChange)="onDetailEndDateChange()" 
-                 class="input-field">
+                 class="input-field date-input">
           <small class="error-message" *ngIf="detailDateRangeError" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: block;">
             Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu
           </small>
         </div>
         <div class="form-group">
+          <label>Giờ kết thúc</label>
+          <div class="time-select-group">
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(selectedPromotion.endTime, 'hour')"
+              (ngModelChange)="setSelectedPromotionTimePart('endTime', 'hour', $event)"
+              aria-label="Giờ kết thúc">
+              <option *ngFor="let hour of timeHours" [value]="hour">{{hour}}</option>
+            </select>
+            <span class="time-separator">:</span>
+            <select
+              class="input-field time-select"
+              [ngModel]="getTimePart(selectedPromotion.endTime, 'minute')"
+              (ngModelChange)="setSelectedPromotionTimePart('endTime', 'minute', $event)"
+              aria-label="Phút kết thúc">
+              <option *ngFor="let minute of timeMinutes" [value]="minute">{{minute}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Giới hạn sử dụng</label>
           <input type="number" [(ngModel)]="selectedPromotion.usageLimit" placeholder="0" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
           <label>Giới hạn mỗi người dùng</label>
           <input type="number" [(ngModel)]="selectedPromotion.userLimit" placeholder="0" class="input-field">
         </div>
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
           <label class="checkbox-label">
             <input type="checkbox" [(ngModel)]="selectedPromotion.isFirstOrderOnly" class="checkbox-input">
             <span>Chỉ áp dụng cho đơn hàng đầu tiên</span>
@@ -516,7 +686,7 @@
         </div>
 
         <!-- Phạm vi áp dụng - Moved to bottom before Target Selection -->
-        <div class="form-group full-width">
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
           <label>Phạm vi áp dụng <span class="required-asterisk">*</span></label>
           <select [(ngModel)]="selectedPromotion.scope" (change)="onDetailScopeChange()" class="input-field">
             <option value="Order">Đơn hàng (Order)</option>
@@ -531,18 +701,31 @@
         <!-- Target Selection Section - Only show when scope is Category, Product, or Brand -->
         <div class="form-group full-width target-selection-section" *ngIf="selectedPromotion.scope === 'Category' || selectedPromotion.scope === 'Product' || selectedPromotion.scope === 'Brand'">
           <div class="target-selection-header">
-            <label class="target-section-label">Phạm vi áp dụng cụ thể <span class="required-asterisk">*</span></label>
-            <span class="target-help-text">Chọn các {{selectedPromotion.scope === 'Category' ? 'danh mục' : selectedPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm'}} để áp dụng khuyến mãi</span>
+            <label class="target-section-label">{{isFlashSaleDetailMode() ? 'Sản phẩm Flash Sale' : 'Phạm vi áp dụng cụ thể'}} <span class="required-asterisk">*</span></label>
+            <span class="target-help-text">{{isFlashSaleDetailMode() ? 'Chọn các sản phẩm cần bán nhanh trong khung giờ Flash Sale' : 'Chọn các ' + (selectedPromotion.scope === 'Category' ? 'danh mục' : selectedPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm') + ' để áp dụng khuyến mãi'}}</span>
           </div>
           
           <!-- Target Type Selection (only for Category scope) -->
-          <div class="target-type-selector" *ngIf="selectedPromotion.scope === 'Category'">
+          <div class="target-type-selector" *ngIf="selectedPromotion.scope === 'Category' && !isFlashSaleDetailMode()">
             <label>Loại danh mục <span class="required-asterisk">*</span></label>
             <select [(ngModel)]="detailTargetType" (change)="onDetailTargetTypeChange()" class="input-field">
               <option value="Category">Danh mục chính (Category)</option>
               <option value="Subcategory">Danh mục phụ (Subcategory)</option>
             </select>
             <span class="target-help-text">Chọn loại danh mục bạn muốn áp dụng khuyến mãi</span>
+          </div>
+
+          <div class="selected-targets-summary" *ngIf="detailSelectedTargets.length > 0">
+            <div class="summary-header">
+              <strong>Đang áp dụng cho ({{detailSelectedTargets.length}}):</strong>
+              <button type="button" class="clear-all-btn" (click)="clearAllDetailTargets()">Xóa tất cả</button>
+            </div>
+            <div class="selected-targets-tags">
+              <span class="target-tag" *ngFor="let targetValue of detailSelectedTargets">
+                {{getDetailTargetDisplayName(targetValue)}}
+                <button type="button" class="tag-remove" (click)="removeDetailTarget(targetValue)">×</button>
+              </span>
+            </div>
           </div>
 
           <!-- Target Selection List -->
@@ -566,7 +749,7 @@
                 <input 
                   type="checkbox" 
                   [checked]="isDetailTargetSelected(getDetailTargetValue(option))"
-                  (change)="toggleDetailTarget(getDetailTargetValue(option))"
+                  (change)="setDetailTargetSelected(getDetailTargetValue(option), $any($event.target).checked)"
                   class="target-checkbox"
                   (click)="$event.stopPropagation()">
                 <span class="target-label">{{getDetailTargetLabel(option)}}</span>
@@ -580,19 +763,6 @@
               <span>Đang tải danh sách...</span>
             </div>
             
-            <!-- Selected Targets Summary -->
-            <div class="selected-targets-summary" *ngIf="detailSelectedTargets.length > 0">
-              <div class="summary-header">
-                <strong>Đã chọn ({{detailSelectedTargets.length}}):</strong>
-                <button type="button" class="clear-all-btn" (click)="clearAllDetailTargets()">Xóa tất cả</button>
-              </div>
-              <div class="selected-targets-tags">
-                <span class="target-tag" *ngFor="let targetValue of detailSelectedTargets">
-                  {{getDetailTargetDisplayName(targetValue)}}
-                  <button type="button" class="tag-remove" (click)="removeDetailTarget(targetValue)">×</button>
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
