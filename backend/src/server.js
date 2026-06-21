@@ -18,6 +18,8 @@ const recipeRoutes = require('./routes/recipeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const promoImageRoutes = require('./routes/promoImageRoutes');
 const fridgeRoutes = require('./routes/fridgeRoutes');
+const communityRoutes = require('./routes/communityRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 const app = express();
 
@@ -25,6 +27,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'VEGGO API' });
@@ -42,6 +45,8 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/promo-images', promoImageRoutes);
 app.use('/api/fridge', fridgeRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/blog', blogRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);
@@ -56,6 +61,12 @@ app.use((error, req, res, next) => {
 const port = process.env.PORT || 5001;
 
 connectMongo()
+  .then(() => {
+    if (typeof blogRoutes.ensureBlogLikeFields === 'function') {
+      return blogRoutes.ensureBlogLikeFields();
+    }
+    return null;
+  })
   .then(() => {
     app.listen(port, () => {
       console.log(`VEGGO API running on port ${port}`);

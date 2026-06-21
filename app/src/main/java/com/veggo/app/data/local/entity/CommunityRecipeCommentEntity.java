@@ -2,6 +2,7 @@ package com.veggo.app.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "community_recipe_comments")
@@ -15,6 +16,8 @@ public class CommunityRecipeCommentEntity {
     private String content;
     private int likeCount;
     private int sortOrder;
+    @Ignore
+    private boolean likedByCurrentUser;
 
     public CommunityRecipeCommentEntity(@NonNull String id, String recipeId, String userName, String userImageUrl, String content, int likeCount, int sortOrder) {
         this.id = id;
@@ -40,4 +43,6 @@ public class CommunityRecipeCommentEntity {
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+    public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
+    public void setLikedByCurrentUser(boolean likedByCurrentUser) { this.likedByCurrentUser = likedByCurrentUser; }
 }

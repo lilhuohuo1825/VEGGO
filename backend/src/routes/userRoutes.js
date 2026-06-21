@@ -50,7 +50,8 @@ router.post('/register', asyncHandler(async (req, res) => {
     Password: hashedPassword,
     FullName: fullName || 'Người dùng mới',
     Email: email || '',
-    PasswordVersion: 3 // Phiên bản mật khẩu mới nhất
+    PasswordVersion: 3, // Phiên bản mật khẩu mới nhất
+    tastePreferences: defaultTastePreferences()
   });
 
   await newUser.save();
@@ -151,6 +152,34 @@ router.get('/phone/:phone', asyncHandler(async (req, res) => {
   res.json(user);
 }));
 
+router.get('/:customerId/taste-preferences', asyncHandler(async (req, res) => {
+  const user = await User.findOne({ CustomerID: req.params.customerId });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+  if (!user.tastePreferences) {
+    user.tastePreferences = defaultTastePreferences();
+    await User.collection.updateOne(
+      { CustomerID: req.params.customerId },
+      { $set: { tastePreferences: user.tastePreferences } }
+    );
+  }
+  res.json(user.tastePreferences);
+}));
+
+router.put('/:customerId/taste-preferences', asyncHandler(async (req, res) => {
+  const user = await User.findOne({ CustomerID: req.params.customerId });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+  const tastePreferences = normalizeTastePreferences(req.body, user.tastePreferences);
+  await User.collection.updateOne(
+    { CustomerID: req.params.customerId },
+    { $set: { tastePreferences } }
+  );
+  res.json(tastePreferences);
+}));
+
 // --- Firebase Auth (Giữ nguyên cho các chức năng khác) ---
 
 router.get('/firebase/:firebaseUid', asyncHandler(async (req, res) => {
@@ -165,7 +194,7 @@ router.post('/sync', asyncHandler(async (req, res) => {
   const { firebaseUid, name, email, phone, avatarUrl } = req.body;
   const user = await User.findOneAndUpdate(
     { firebaseUid },
-    { firebaseUid, name, email, phone, avatarUrl },
+    { $set: { firebaseUid, name, email, phone, avatarUrl }, $setOnInsert: { tastePreferences: defaultTastePreferences() } },
     { new: true, upsert: true }
   );
   res.json(user);
@@ -237,5 +266,75 @@ router.use((error, req, res, next) => {
   }
   return next(error);
 });
+
+function defaultTastePreferences() {
+  return {
+    dietMode: 'vegan',
+    catalogBehavior: 'hide',
+    suggestMenu: true,
+    alertIngredients: [],
+    replacementSuggestions: [],
+    tags: [
+      { label: 'ca cao', action: 'Không ăn', keywords: ['ca cao', 'cacao', 'socola', 'chocolate'], enabled: true },
+      { label: 'trái cây nhiệt đới', action: 'Không ăn', keywords: ['xoài', 'dưa hấu', 'đu đủ', 'sầu riêng', 'thanh long', 'chuối', 'dứa', 'thơm'], enabled: true },
+      { label: 'đào', action: 'Dị ứng', keywords: ['đào', 'peach'], enabled: true },
+      { label: 'đậu phộng', action: 'Dị ứng', keywords: ['đậu phộng', 'lạc'], enabled: true },
+      { label: 'cà chua', action: 'Cảnh báo', keywords: ['cà chua', 'cà chua bi'], enabled: true }
+    ]
+  };
+}
+
+function normalizeTastePreferences(body = {}, existing = {}) {
+  const fallback = defaultTastePreferences();
+  const catalogBehavior = body.catalogBehavior === 'badge' || body.badgeCatalog === true
+    ? 'badge'
+    : 'hide';
+  const tags = Array.isArray(body.tags)
+    ? body.tags.map(normalizeTasteTag).filter(Boolean)
+    : fallback.tags;
+
+  return {
+    dietMode: typeof body.dietMode === 'string' && body.dietMode.trim()
+      ? body.dietMode.trim()
+      : fallback.dietMode,
+    catalogBehavior,
+    suggestMenu: body.suggestMenu !== false,
+    tags,
+    alertIngredients: Array.isArray(body.alertIngredients)
+      ? body.alertIngredients.map(normalizeTasteAlertItem).filter(Boolean)
+      : (Array.isArray(existing.alertIngredients) ? existing.alertIngredients : []),
+    replacementSuggestions: Array.isArray(body.replacementSuggestions)
+      ? body.replacementSuggestions.map(item => String(item).trim()).filter(Boolean)
+      : (Array.isArray(existing.replacementSuggestions) ? existing.replacementSuggestions : [])
+  };
+}
+
+function normalizeTasteTag(tag) {
+  if (!tag || typeof tag.label !== 'string' || typeof tag.action !== 'string') {
+    return null;
+  }
+  const keywords = Array.isArray(tag.keywords)
+    ? tag.keywords
+    : String(tag.keywords || '').split(',');
+
+  return {
+    label: tag.label.trim(),
+    action: tag.action.trim(),
+    keywords: keywords.map(item => String(item).trim()).filter(Boolean),
+    enabled: tag.enabled !== false
+  };
+}
+
+function normalizeTasteAlertItem(item) {
+  if (!item || typeof item.label !== 'string') {
+    return null;
+  }
+  return {
+    label: item.label.trim(),
+    action: typeof item.action === 'string' ? item.action.trim() : '',
+    status: typeof item.status === 'string' ? item.status.trim() : '',
+    description: typeof item.description === 'string' ? item.description.trim() : ''
+  };
+}
 
 module.exports = router;

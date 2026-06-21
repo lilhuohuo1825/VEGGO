@@ -65,7 +65,7 @@
             <LinearLayout
                 android:id="@+id/profileStats"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="60dp"
                 android:layout_marginStart="44dp"
                 android:layout_marginTop="20dp"
                 android:layout_marginEnd="44dp"
@@ -149,54 +149,117 @@
                         android:textColor="@color/neutral_100"
                         android:textSize="11sp" />
                 </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/profileFollowActions"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:orientation="horizontal">
 
                 <FrameLayout
-
-
                     android:id="@+id/profileFollowButton"
-
-
-                    android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_community_circle"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-
-
+                    android:layout_width="148dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_follow_button_green"
+                    android:clickable="true"
                     android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
 
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:orientation="horizontal">
 
-                    android:clipToPadding="false">
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/profileFollowIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_userplus"
+                            app:tint="@color/neutral_10" />
 
+                        <TextView
+                            android:id="@+id/profileFollowText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Theo dõi"
+                            android:textColor="@color/neutral_10"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </FrameLayout>
 
+                <FrameLayout
+                    android:id="@+id/profileSuggestToggleButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_community_circle"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
 
                     <androidx.appcompat.widget.AppCompatImageView
-
-
-                        android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_gravity="center"
-                android:scaleType="centerInside"
-
-
-                        android:src="@drawable/ic_userplus"
-
-
-                        app:tint="@color/primary_main"
-
-
-                        android:contentDescription="" />
-
-
+                        android:id="@+id/profileSuggestToggleIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_chevron_down"
+                        app:tint="@color/neutral_100" />
                 </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/profileSuggestionsSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:text="Gợi ý tài khoản"
+                    android:textColor="@color/neutral_70"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="196dp"
+                    android:layout_marginTop="10dp"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/profileSuggestionsRow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/profileTabs"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="2dp"
                 android:gravity="center"
                 android:orientation="horizontal">
 
@@ -321,28 +384,7 @@
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:background="@drawable/bg_community_circle_green"
-            android:clipChildren="false"
-            android:clipToPadding="false">
-            <androidx.appcompat.widget.AppCompatImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_plus"
-                app:tint="@color/neutral_10"
-                android:contentDescription="" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/profileEditButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
             android:background="@drawable/bg_community_circle"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginStart="8dp"
             android:clipChildren="false"
             android:clipToPadding="false">
             <androidx.appcompat.widget.AppCompatImageView
@@ -350,7 +392,7 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_edit"
+                android:src="@drawable/icon_plus"
                 app:tint="@color/primary_main"
                 android:contentDescription="" />
         </FrameLayout>

@@ -52,6 +52,9 @@
             android:name=".presentation.chatbot.ChatbotActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.chatbot.ChatbotActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
@@ -77,6 +80,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.profile.TastePreferencesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.TasteMenuSuggestionsActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.profile.TasteSetupActivity"
@@ -182,6 +188,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.blog.BlogDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.blog.BlogSearchActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.blog.BlogAllPostsActivity"

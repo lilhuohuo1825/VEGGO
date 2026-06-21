@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/blogBackButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:adjustViewBounds="false"
+        android:background="@android:color/transparent"
+        android:contentDescription="Quay lại"
+        android:padding="6dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_left"
+        android:tint="@color/primary_hover" />
+
+    <TextView
+        android:id="@+id/blogHeaderTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="true"
+        android:textColor="@color/neutral_100"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <ImageButton
+        android:id="@+id/blogSearchButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:adjustViewBounds="false"
+        android:background="@drawable/bg_category_circle"
+        android:contentDescription="Tìm kiếm blog"
+        android:padding="12dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_search"
+        android:tint="@color/primary_main" />
+</LinearLayout>

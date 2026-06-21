@@ -25,6 +25,7 @@ import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.CategoryRepository;
 import com.veggo.app.domain.repository.ProductRepository;
 import com.veggo.app.presentation.product.ProductDetailActivity;
+import com.veggo.app.presentation.profile.TastePreferenceStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class CategoryDetailFragment extends Fragment {
 
     private CategoryAdapter categoryAdapter;
     private ProductAdapter productAdapter;
+    private TastePreferenceStore tasteStore;
 
     private List<AssetModels.Category> allCategories = new ArrayList<>();
     private List<Product> currentProducts = new ArrayList<>();
@@ -67,6 +69,7 @@ public class CategoryDetailFragment extends Fragment {
 
         categoryRepository = AppModule.provideCategoryRepository(requireContext());
         productRepository = AppModule.provideProductRepository(requireContext());
+        tasteStore = new TastePreferenceStore(requireContext());
 
         if (getArguments() != null) {
             selectedCategoryId = getArguments().getString(ARG_CATEGORY_ID, "");
@@ -75,6 +78,11 @@ public class CategoryDetailFragment extends Fragment {
 
         setupViews();
         observeData();
+        tasteStore.syncFromMongo(() -> {
+            if (binding != null) {
+                applyFiltersAndSort();
+            }
+        });
     }
 
     private void setupViews() {
@@ -370,12 +378,12 @@ public class CategoryDetailFragment extends Fragment {
         
         // 1. Filter by Price and Search Query
         String query = binding.layoutSearch.edtSearch.getText().toString().toLowerCase();
-        
+
         for (Product product : currentProducts) {
             boolean matchesSearch = query.isEmpty() || product.getName().toLowerCase().contains(query);
             boolean matchesPrice = product.getPrice() >= selectedMinPrice && product.getPrice() <= selectedMaxPrice;
-            
-            if (matchesSearch && matchesPrice) {
+
+            if (matchesSearch && matchesPrice && !tasteStore.shouldHide(product)) {
                 if ("discount".equals(selectedSort)) {
                     if (product.hasActiveDiscount()) {
                         filtered.add(product);

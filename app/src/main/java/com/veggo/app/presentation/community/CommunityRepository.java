@@ -2,11 +2,8 @@ package com.veggo.app.presentation.community;
 
 import android.content.Context;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.veggo.app.core.database.VeggoDatabase;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.local.entity.CommunityCategoryEntity;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityCookbookEntity;
@@ -18,25 +15,30 @@ import com.veggo.app.data.local.entity.CommunityRecipeEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
+import com.veggo.app.data.remote.api.CommunityApi;
+import com.veggo.app.data.remote.api.ProductApi;
+import com.veggo.app.data.remote.dto.ProductDto;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import retrofit2.Call;
+import retrofit2.Response;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 
 public class CommunityRepository {
     public interface Callback<T> {
         void onResult(T result);
     }
 
-    private static final String ASSET_FILE = "community_cooking.json";
-    private static final String POSTS_ASSET_FILE = "community_posts.json";
     public static final String RELATION_FOLLOWING = "following";
     public static final String RELATION_FOLLOWER = "follower";
     public static final String ACCOUNT_ID = "account-thuc-quyen";
@@ -46,254 +48,221 @@ public class CommunityRepository {
     public static final String ACCOUNT_HERO_URL = "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?auto=format&fit=crop&w=1200&q=80";
     public static final String ACCOUNT_RECIPE_CHEF_ID = "santana";
 
-    private final Context context;
-    private final VeggoDatabase database;
+    private final CommunityApi api;
+    private final ProductApi productApi;
+    private final AppPreferences preferences;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public CommunityRepository(Context context) {
-        this.context = context.getApplicationContext();
-        this.database = VeggoDatabase.getInstance(this.context);
+        this.api = ApiClient.createService(CommunityApi.class);
+        this.productApi = ApiClient.createService(ProductApi.class);
+        this.preferences = new AppPreferences(context);
     }
 
     public void loadHome(Callback<CommunityData> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(new CommunityData(
-                    database.communityDao().getCategories(),
-                    database.communityDao().getChefs(4),
-                    database.communityDao().getRecipes(4)
-            ));
-        });
+        request(api.getHome(), emptyCommunityData(), callback);
     }
 
     public void loadCategories(Callback<List<CommunityCategoryEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getCategories());
-        });
+        request(api.getCategories(), new ArrayList<>(), callback);
+    }
+
+    public void loadProducts(Callback<List<ProductDto>> callback) {
+        request(productApi.getProducts(), new ArrayList<>(), callback);
     }
 
     public void loadChefs(Callback<List<CommunityChefEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getChefs());
-        });
+        request(api.getChefs(), new ArrayList<>(), callback);
+    }
+
+    public void loadUser(String customerId, Callback<CommunityChefEntity> callback) {
+        request(api.getUser(customerId), null, callback);
     }
 
     public void loadRecipes(Callback<List<CommunityRecipeEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getRecipes());
-        });
+        request(api.getRecipes(null, null, null), new ArrayList<>(), callback);
     }
 
     public void loadRecipesByCategory(String categoryId, Callback<List<CommunityRecipeEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getRecipesByCategory(categoryId));
-        });
+        request(api.getRecipes(categoryId, null, null), new ArrayList<>(), callback);
     }
 
     public void loadRecipesByChef(String chefId, Callback<List<CommunityRecipeEntity>> callback) {
+        request(api.getRecipes(null, chefId, null), new ArrayList<>(), callback);
+    }
+
+    public void loadDraft(Callback<DraftResponse> callback) {
+        request(api.getRecipeDraft(currentCustomerId()), new DraftResponse(), callback);
+    }
+
+    public void saveDraft(RecipeDraft draft, Callback<Boolean> callback) {
+        draft.customerId = currentCustomerId();
+        request(api.saveRecipeDraft(draft), null, saved -> callback.onResult(saved != null));
+    }
+
+    public void deleteDraft(String draftId, Callback<Boolean> callback) {
         executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getRecipesByChef(chefId));
+            OkResponse response = execute(api.deleteRecipeDraft(draftId, currentCustomerId()));
+            callback.onResult(response != null && response.ok);
+        });
+    }
+
+    public void publishRecipe(RecipeDraft draft, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            draft.customerId = currentCustomerId();
+            preparePublicImageUrls(draft);
+            CommunityRecipeEntity recipe = execute(api.publishRecipe(draft));
+            callback.onResult(recipe != null);
+        });
+    }
+
+    public void updateRecipe(String recipeId, RecipeDraft draft, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            draft.customerId = currentCustomerId();
+            preparePublicImageUrls(draft);
+            CommunityRecipeEntity recipe = execute(api.updateRecipe(recipeId, draft));
+            callback.onResult(recipe != null);
+        });
+    }
+
+    public void deleteRecipe(String recipeId, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            OkResponse response = execute(api.deleteRecipe(recipeId, currentCustomerId()));
+            callback.onResult(response != null && response.ok);
         });
     }
 
     public void loadAccountRecipes(Callback<List<CommunityRecipeEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getRecipesByChef(ACCOUNT_RECIPE_CHEF_ID));
-        });
+        loadRecipesByChef(currentCustomerId(), callback);
     }
 
     public void loadCookbooks(String accountId, Callback<List<CommunityCookbookEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getCookbooks(accountId));
-        });
+        request(api.getCookbooks(firstNonBlank(accountId, currentCustomerId())), new ArrayList<>(), callback);
     }
 
     public void loadCookbookRecipes(String cookbookId, Callback<CookbookData> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(new CookbookData(
-                    database.communityDao().getCookbook(cookbookId),
-                    database.communityDao().getRecipesByCookbook(cookbookId)
-            ));
-        });
+        request(api.getCookbook(cookbookId), new CookbookData(), callback);
     }
 
     public void addRecipeToCookbook(String cookbookId, String recipeId, Callback<Boolean> callback) {
         executor.execute(() -> {
-            ensureSeeded();
-            boolean existed = database.communityDao().countCookbookRecipe(cookbookId, recipeId) > 0;
-            database.runInTransaction(() -> {
-                database.communityDao().insertCookbookRecipe(new CommunityCookbookRecipeEntity(cookbookId, recipeId, 999));
-                if (!existed) {
-                    database.communityDao().incrementCookbookRecipeCount(cookbookId);
-                }
-            });
+            boolean success = execute(api.addRecipeToCookbook(cookbookId, new AddRecipeToCookbookRequest(recipeId))) != null;
             if (callback != null) {
-                callback.onResult(true);
+                callback.onResult(success);
             }
         });
     }
 
     public void createCookbook(String title, String description, String recipeId, Callback<Boolean> callback) {
         executor.execute(() -> {
-            ensureSeeded();
-            CommunityRecipeEntity recipe = database.communityDao().getRecipe(recipeId);
-            String id = "cookbook-" + UUID.randomUUID().toString();
-            String imageUrl = recipe == null ? CommunityRepository.ACCOUNT_HERO_URL : recipe.getImageUrl();
-            database.runInTransaction(() -> {
-                database.communityDao().insertCookbook(new CommunityCookbookEntity(
-                        id,
-                        ACCOUNT_ID,
-                        title,
-                        1,
-                        imageUrl
-                ));
-                database.communityDao().insertCookbookRecipe(new CommunityCookbookRecipeEntity(id, recipeId, 0));
-            });
+            CreateCookbookRequest request = new CreateCookbookRequest(currentCustomerId(), title, description, recipeId);
+            boolean success = execute(api.createCookbook(request)) != null;
             if (callback != null) {
-                callback.onResult(true);
+                callback.onResult(success);
             }
         });
     }
 
     public void loadFollows(String chefId, String relationType, Callback<List<CommunityFollowEntity>> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(database.communityDao().getFollows(chefId, relationType));
-        });
+        request(api.getFollows(chefId, relationType), new ArrayList<>(), callback);
     }
 
     public void loadFollowCounts(String chefId, Callback<FollowCounts> callback) {
-        executor.execute(() -> {
-            ensureSeeded();
-            callback.onResult(new FollowCounts(
-                    database.communityDao().countFollows(chefId, RELATION_FOLLOWING),
-                    database.communityDao().countFollows(chefId, RELATION_FOLLOWER)
-            ));
-        });
+        request(api.getFollowCounts(chefId, currentCustomerId()), new FollowCounts(), callback);
+    }
+
+    public void toggleFollow(String chefId, Callback<FollowCounts> callback) {
+        request(api.toggleFollow(new ToggleFollowRequest(currentCustomerId(), chefId)), new FollowCounts(), callback);
+    }
+
+    public void isRecipeSaved(String recipeId, Callback<Boolean> callback) {
+        request(api.getRecipeSavedStatus(recipeId, currentCustomerId()), new SavedStatus(), status ->
+                callback.onResult(status != null && status.saved));
     }
 
     public void loadRecipeDetail(String recipeId, Callback<RecipeDetailData> callback) {
+        request(api.getRecipeDetail(recipeId, currentCustomerId()), new RecipeDetailData(), callback);
+    }
+
+    public void createComment(String recipeId, String content, Callback<CommunityRecipeCommentEntity> callback) {
+        request(api.createComment(new CreateCommentRequest(recipeId, currentCustomerId(), content)), null, callback);
+    }
+
+    public void toggleCommentLike(String commentId, Callback<CommunityRecipeCommentEntity> callback) {
+        request(api.toggleCommentLike(commentId, new ToggleCommentLikeRequest(currentCustomerId())), null, callback);
+    }
+
+    private <T> void request(Call<T> call, T fallback, Callback<T> callback) {
         executor.execute(() -> {
-            ensureSeeded();
-            CommunityRecipeEntity recipe = database.communityDao().getRecipe(recipeId);
-            CommunityChefEntity chef = recipe == null ? null : database.communityDao().getChef(recipe.getChefId());
-            CommunityRecipeDetailEntity detail = database.communityDao().getRecipeDetail(recipeId);
-            List<CommunityRecipeIngredientEntity> ingredients = database.communityDao().getRecipeIngredients(recipeId);
-            List<String> productIds = new ArrayList<>();
-            for (CommunityRecipeIngredientEntity ingredient : ingredients) {
-                productIds.add(ingredient.getProductId());
-            }
-            Map<String, ProductEntity> productsById = new HashMap<>();
-            if (!productIds.isEmpty()) {
-                for (ProductEntity product : database.productDao().getProductsByIds(productIds)) {
-                    productsById.put(product.getId(), product);
-                }
-            }
-            callback.onResult(new RecipeDetailData(
-                    recipe,
-                    chef,
-                    detail,
-                    ingredients,
-                    productsById,
-                    database.communityDao().getRecipeGallery(recipeId),
-                    database.communityDao().getRecipeComments(recipeId)
-            ));
+            T result = execute(call);
+            callback.onResult(result == null ? fallback : result);
         });
     }
 
-    private void ensureSeeded() {
-        if (database.communityDao().countCategories() > 0) {
+    private <T> T execute(Call<T> call) {
+        try {
+            Response<T> response = call.execute();
+            if (response.isSuccessful()) {
+                return response.body();
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    private void preparePublicImageUrls(RecipeDraft draft) {
+        if (draft.imageUrls == null || draft.imageUrls.isEmpty()) {
             return;
         }
-        try (InputStream inputStream = context.getAssets().open(ASSET_FILE);
-             InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            CommunityData data = new Gson().fromJson(reader, CommunityData.class);
-            database.runInTransaction(() -> {
-                database.communityDao().insertCategories(data.categories);
-                database.communityDao().insertChefs(data.chefs);
-                database.communityDao().insertRecipes(data.recipes);
-                if (data.cookbooks != null) {
-                    database.communityDao().insertCookbooks(data.cookbooks);
-                }
-                if (data.cookbookRecipes != null) {
-                    database.communityDao().insertCookbookRecipes(data.cookbookRecipes);
-                }
-                if (data.follows != null) {
-                    database.communityDao().insertFollows(data.follows);
-                }
-                if (data.recipeDetails != null) {
-                    database.communityDao().insertRecipeDetails(data.recipeDetails);
-                }
-                if (data.recipeIngredients != null) {
-                    database.communityDao().insertRecipeIngredients(data.recipeIngredients);
-                }
-                if (data.recipeGalleries != null) {
-                    database.communityDao().insertRecipeGalleries(data.recipeGalleries);
-                }
-                database.communityDao().insertRecipeComments(readComments(data.recipes));
-            });
-        } catch (Exception ignored) {
-        }
-    }
-
-    private List<CommunityRecipeCommentEntity> readComments(List<CommunityRecipeEntity> recipes) {
-        List<CommunityRecipeCommentEntity> comments = new ArrayList<>();
-        if (recipes == null || recipes.isEmpty()) {
-            return comments;
-        }
-        String[] names = {"Melanie Rose", "Jonathan Jose", "Nicky", "Moon Star", "Melanie", "Amelia Melanes"};
-        String[] avatars = {
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&h=160&fit=crop&crop=faces",
-                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&h=160&fit=crop&crop=faces",
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&h=160&fit=crop&crop=faces",
-                "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&h=160&fit=crop&crop=faces",
-                "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces",
-                "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=160&h=160&fit=crop&crop=faces"
-        };
-        try (InputStream inputStream = context.getAssets().open(POSTS_ASSET_FILE);
-             InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            JsonArray posts = new Gson().fromJson(reader, JsonArray.class);
-            int index = 0;
-            for (JsonElement postElement : posts) {
-                JsonObject post = postElement.getAsJsonObject();
-                JsonArray postComments = post.getAsJsonArray("CommentsDetail");
-                if (postComments == null) {
-                    continue;
-                }
-                for (JsonElement commentElement : postComments) {
-                    JsonObject comment = commentElement.getAsJsonObject();
-                    String recipeId = recipes.get(index % recipes.size()).getId();
-                    String id = stringValue(comment, "CommunityCommentID");
-                    comments.add(new CommunityRecipeCommentEntity(
-                            recipeId + "-" + id,
-                            recipeId,
-                            names[index % names.length],
-                            avatars[index % avatars.length],
-                            stringValue(comment, "Content"),
-                            120 + (index * 31 % 360),
-                            index
-                    ));
-                    index++;
-                }
+        List<String> publicUrls = new ArrayList<>();
+        List<MultipartBody.Part> uploadParts = new ArrayList<>();
+        for (String imageUrl : draft.imageUrls) {
+            if (isBlank(imageUrl)) {
+                continue;
             }
-        } catch (Exception ignored) {
+            if (isPublicUrl(imageUrl)) {
+                publicUrls.add(imageUrl);
+                continue;
+            }
+            File file = new File(imageUrl);
+            if (!file.exists()) {
+                continue;
+            }
+            RequestBody body = RequestBody.create(file, MediaType.parse("image/jpeg"));
+            uploadParts.add(MultipartBody.Part.createFormData("images", file.getName(), body));
         }
-        return comments;
+        if (!uploadParts.isEmpty()) {
+            ImageUploadResponse response = execute(api.uploadImages(uploadParts));
+            if (response != null && response.images != null) {
+                publicUrls.addAll(response.images);
+            }
+        }
+        draft.imageUrls = publicUrls;
+        draft.imageUrl = publicUrls.isEmpty() ? "" : publicUrls.get(0);
     }
 
-    private String stringValue(JsonObject object, String key) {
-        if (object == null || !object.has(key) || object.get(key).isJsonNull()) {
-            return "";
-        }
-        return object.get(key).getAsString();
+    private boolean isPublicUrl(String value) {
+        return value != null && (value.startsWith("http://") || value.startsWith("https://"));
+    }
+
+    public String currentCustomerId() {
+        return firstNonBlank(preferences.getCustomerId(), ACCOUNT_ID);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        return isBlank(first) ? second : first;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private CommunityData emptyCommunityData() {
+        CommunityData data = new CommunityData();
+        data.categories = new ArrayList<>();
+        data.chefs = new ArrayList<>();
+        data.recipes = new ArrayList<>();
+        return data;
     }
 
     public static class CommunityData {
@@ -307,6 +276,9 @@ public class CommunityRepository {
         public List<CommunityRecipeIngredientEntity> recipeIngredients;
         public List<CommunityRecipeGalleryEntity> recipeGalleries;
 
+        public CommunityData() {
+        }
+
         public CommunityData(
                 List<CommunityCategoryEntity> categories,
                 List<CommunityChefEntity> chefs,
@@ -319,13 +291,16 @@ public class CommunityRepository {
     }
 
     public static class RecipeDetailData {
-        public final CommunityRecipeEntity recipe;
-        public final CommunityChefEntity chef;
-        public final CommunityRecipeDetailEntity detail;
-        public final List<CommunityRecipeIngredientEntity> ingredients;
-        public final Map<String, ProductEntity> productsById;
-        public final List<CommunityRecipeGalleryEntity> galleries;
-        public final List<CommunityRecipeCommentEntity> comments;
+        public CommunityRecipeEntity recipe;
+        public CommunityChefEntity chef;
+        public CommunityRecipeDetailEntity detail;
+        public List<CommunityRecipeIngredientEntity> ingredients = new ArrayList<>();
+        public Map<String, ProductEntity> productsById = new HashMap<>();
+        public List<CommunityRecipeGalleryEntity> galleries = new ArrayList<>();
+        public List<CommunityRecipeCommentEntity> comments = new ArrayList<>();
+
+        public RecipeDetailData() {
+        }
 
         public RecipeDetailData(
                 CommunityRecipeEntity recipe,
@@ -347,8 +322,12 @@ public class CommunityRepository {
     }
 
     public static class FollowCounts {
-        public final int following;
-        public final int followers;
+        public int following;
+        public int followers;
+        public boolean isFollowing;
+
+        public FollowCounts() {
+        }
 
         public FollowCounts(int following, int followers) {
             this.following = following;
@@ -356,13 +335,114 @@ public class CommunityRepository {
         }
     }
 
+    public static class SavedStatus {
+        public boolean saved;
+    }
+
     public static class CookbookData {
-        public final CommunityCookbookEntity cookbook;
-        public final List<CommunityRecipeEntity> recipes;
+        public CommunityCookbookEntity cookbook;
+        public List<CommunityRecipeEntity> recipes = new ArrayList<>();
+
+        public CookbookData() {
+        }
 
         public CookbookData(CommunityCookbookEntity cookbook, List<CommunityRecipeEntity> recipes) {
             this.cookbook = cookbook;
             this.recipes = recipes;
         }
+    }
+
+    public static class DraftResponse {
+        public boolean hasDraft;
+        public RecipeDraft draft;
+        public List<RecipeDraft> drafts = new ArrayList<>();
+    }
+
+    public static class RecipeDraft {
+        public String draftId;
+        public String customerId;
+        public String title;
+        public String categoryId;
+        public String imageUrl;
+        public List<String> imageUrls;
+        public String videoUrl;
+        public String ingredientsText;
+        public List<RecipeIngredientDraft> ingredientItems;
+        public String steps;
+        public int calories;
+        public String saltLevel;
+        public String sugarLevel;
+        public String createdAt;
+        public String updatedAt;
+    }
+
+    public static class ImageUploadResponse {
+        public List<String> images;
+    }
+
+    public static class RecipeIngredientDraft {
+        public String productId;
+        public String productSku;
+        public String displayName;
+        public String imageUrl;
+        public String quantity;
+    }
+
+    public static class CreateCookbookRequest {
+        public String customerId;
+        public String accountId;
+        public String title;
+        public String description;
+        public String recipeId;
+
+        public CreateCookbookRequest(String customerId, String title, String description, String recipeId) {
+            this.customerId = customerId;
+            this.accountId = customerId;
+            this.title = title;
+            this.description = description;
+            this.recipeId = recipeId;
+        }
+    }
+
+    public static class AddRecipeToCookbookRequest {
+        public String recipeId;
+
+        public AddRecipeToCookbookRequest(String recipeId) {
+            this.recipeId = recipeId;
+        }
+    }
+
+    public static class ToggleFollowRequest {
+        public String followerCustomerId;
+        public String followingCustomerId;
+
+        public ToggleFollowRequest(String followerCustomerId, String followingCustomerId) {
+            this.followerCustomerId = followerCustomerId;
+            this.followingCustomerId = followingCustomerId;
+        }
+    }
+
+    public static class CreateCommentRequest {
+        public String recipeId;
+        public String customerId;
+        public String content;
+
+        public CreateCommentRequest(String recipeId, String customerId, String content) {
+            this.recipeId = recipeId;
+            this.customerId = customerId;
+            this.content = content;
+        }
+    }
+
+    public static class ToggleCommentLikeRequest {
+        public String customerId;
+
+        public ToggleCommentLikeRequest(String customerId) {
+            this.customerId = customerId;
+        }
+    }
+
+    public static class OkResponse {
+        public boolean ok;
     }
 }

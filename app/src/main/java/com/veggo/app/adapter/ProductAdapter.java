@@ -12,6 +12,7 @@ import com.veggo.app.R;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.databinding.ItemProductGridBinding;
 import com.veggo.app.domain.model.Product;
+import com.veggo.app.presentation.profile.TastePreferenceStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +85,16 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 binding.tvDiscountBadge.setVisibility(View.GONE);
                 binding.tvOriginalPrice.setVisibility(View.GONE);
             }
-            
+
+            TastePreferenceStore tasteStore = new TastePreferenceStore(binding.getRoot().getContext());
+            String tasteWarning = tasteStore.productWarning(product);
+            if (tasteWarning.isEmpty()) {
+                binding.tvTasteTag.setVisibility(android.view.View.GONE);
+            } else {
+                binding.tvTasteTag.setVisibility(android.view.View.VISIBLE);
+                binding.tvTasteTag.setText(tasteWarning);
+            }
+
             Glide.with(binding.getRoot().getContext())
                     .load(product.getImageUrl())
                     .placeholder(R.drawable.ic_leaf)

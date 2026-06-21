@@ -15,6 +15,15 @@ import com.veggo.app.R;
 import com.veggo.app.domain.model.Utility;
 
 public class UtilityAdapter extends ListAdapter<Utility, UtilityAdapter.UtilityViewHolder> {
+    private OnUtilityClickListener listener;
+
+    public interface OnUtilityClickListener {
+        void onUtilityClick(Utility utility);
+    }
+
+    public void setOnUtilityClickListener(OnUtilityClickListener listener) {
+        this.listener = listener;
+    }
 
     private OnUtilityClickListener listener;
 
