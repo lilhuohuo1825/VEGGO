@@ -1,10 +1,11 @@
 package com.veggo.app.data.remote.dto;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CartDto {
+public class CartDto implements Serializable {
     @SerializedName("_id")
     private String id;
 
@@ -21,7 +22,7 @@ public class CartDto {
     public List<CartItemDto> getItems() { return items; }
     public void setItems(List<CartItemDto> items) { this.items = items; }
 
-    public static class CartItemDto {
+    public static class CartItemDto implements Serializable {
         @SerializedName("sku")
         private String sku;
 

@@ -146,9 +146,9 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         public final String name;
         public final String selectedWeight;
         public final double carbonSavingPoint;
-        public final long price;
+        public long price;
         public final long oldPrice;
-        public final String priceText;
+        public String priceText;
         public final String oldPriceText;
         public final String imageUrl;
         public boolean isChecked;
@@ -166,6 +166,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             this.imageUrl = imageUrl;
             this.quantity = quantity;
             this.isChecked = true;
+        }
+
+        public void updatePrice(long newPrice) {
+            this.price = newPrice;
+            this.priceText = formatCurrency(newPrice);
         }
 
         public long getLineTotal() {

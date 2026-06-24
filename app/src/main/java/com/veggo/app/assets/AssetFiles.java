@@ -13,9 +13,6 @@ public final class AssetFiles {
     public static final String ORDERS = "orders.json";
     public static final String ORDER_DETAILS = "order_details.json";
     public static final String PRODUCTS = "products.json";
-    public static final String PROMOTIONS = "promotions.json";
-    public static final String PROMOTION_TARGETS = "promotion_targets.json";
-    public static final String PROMOTION_USAGES = "promotion_usages.json";
     public static final String REMINDERS = "reminders.json";
     public static final String TREE_COMPLETES = "tree-completes.json";
     public static final String USERS = "users.json";
@@ -34,9 +31,6 @@ public final class AssetFiles {
             ORDERS,
             ORDER_DETAILS,
             PRODUCTS,
-            PROMOTIONS,
-            PROMOTION_TARGETS,
-            PROMOTION_USAGES,
             REMINDERS,
             TREE_COMPLETES,
             USERS,
@@ -55,9 +49,6 @@ public final class AssetFiles {
     public static final String COLLECTION_ORDERS = "orders";
     public static final String COLLECTION_ORDER_DETAILS = "order_details";
     public static final String COLLECTION_PRODUCTS = "products";
-    public static final String COLLECTION_PROMOTIONS = "promotions";
-    public static final String COLLECTION_PROMOTION_TARGETS = "promotion_targets";
-    public static final String COLLECTION_PROMOTION_USAGES = "promotion_usages";
     public static final String COLLECTION_REMINDERS = "reminders";
     public static final String COLLECTION_TREE_COMPLETES = "tree-completes";
     public static final String COLLECTION_USERS = "users";
@@ -76,9 +67,6 @@ public final class AssetFiles {
             COLLECTION_ORDERS,
             COLLECTION_ORDER_DETAILS,
             COLLECTION_PRODUCTS,
-            COLLECTION_PROMOTIONS,
-            COLLECTION_PROMOTION_TARGETS,
-            COLLECTION_PROMOTION_USAGES,
             COLLECTION_REMINDERS,
             COLLECTION_TREE_COMPLETES,
             COLLECTION_USERS,

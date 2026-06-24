@@ -68,18 +68,6 @@ public final class AssetRepository {
         return getAll(AssetFiles.COLLECTION_PRODUCTS, AssetModels.Product.class);
     }
 
-    public List<AssetModels.Promotion> getPromotions() {
-        return getAll(AssetFiles.COLLECTION_PROMOTIONS, AssetModels.Promotion.class);
-    }
-
-    public List<AssetModels.PromotionTarget> getPromotionTargets() {
-        return getAll(AssetFiles.COLLECTION_PROMOTION_TARGETS, AssetModels.PromotionTarget.class);
-    }
-
-    public List<AssetModels.PromotionUsage> getPromotionUsages() {
-        return getAll(AssetFiles.COLLECTION_PROMOTION_USAGES, AssetModels.PromotionUsage.class);
-    }
-
     public List<AssetModels.Reminder> getReminders() {
         return getAll(AssetFiles.COLLECTION_REMINDERS, AssetModels.Reminder.class);
     }

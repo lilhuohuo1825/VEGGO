@@ -20,8 +20,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.veggo.app.R;
 import com.veggo.app.adapter.CartAdapter;
 import com.veggo.app.adapter.VoucherOptionAdapter;
@@ -31,6 +29,7 @@ import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.presentation.checkout.CheckoutActivity;
 
@@ -81,10 +80,12 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         android.util.Log.d("VEGGO_DEBUG", "CartFragment is using CustomerId: " + customerId);
         
         setupViewModel();
+        viewModel.setCustomerId(customerId);
         setupCartList();
         observeViewModel();
         
         viewModel.fetchCart(customerId);
+        viewModel.fetchPromotions();
 
         layoutVoucher.setOnClickListener(v -> showPopupAboveAnchor(R.layout.dialog_voucher, layoutVoucher));
         layoutPaymentDetail.setOnClickListener(v -> showPopupAboveAnchor(R.layout.dialog_payment_detail, layoutBottomSummaryRow));
@@ -92,6 +93,14 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         imgCbAll.setOnClickListener(v -> toggleAllCheckbox(imgCbAll));
         btnCheckout.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), CheckoutActivity.class);
+            PromotionDto selectedPromo = viewModel.getSelectedPromotion().getValue();
+            if (selectedPromo != null) {
+                intent.putExtra("SELECTED_PROMOTION", selectedPromo);
+            }
+            CartDto cartData = viewModel.getCartData().getValue();
+            if (cartData != null) {
+                intent.putExtra("CART_DATA", cartData);
+            }
             startActivity(intent);
         });
 
@@ -99,7 +108,10 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     }
 
     private void setupViewModel() {
-        ViewModelFactory factory = new ViewModelFactory(AppModule.provideCartRepository(requireContext()));
+        ViewModelFactory factory = new ViewModelFactory(
+                AppModule.provideCartRepository(requireContext()),
+                AppModule.providePromotionRepository(requireContext())
+        );
         viewModel = new ViewModelProvider(this, factory).get(CartViewModel.class);
     }
 
@@ -110,6 +122,11 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
             }
         });
 
+        viewModel.getCartSummary().observe(getViewLifecycleOwner(), summary -> {
+            updateCartSummary();
+            updateItemDiscounts(summary);
+        });
+
         viewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
                 Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
@@ -117,12 +134,34 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         });
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            // Có thể thêm loading state UI ở đây
+            // Loading state UI could be added here
         });
     }
 
+    private void updateItemDiscounts(CartViewModel.CartSummary summary) {
+        if (summary == null || summary.itemDiscounts == null) return;
+        boolean changed = false;
+        for (CartAdapter.CartItemUiModel item : cartItems) {
+            Long discount = summary.itemDiscounts.get(item.sku);
+            if (discount != null && discount > 0) {
+                long discountedPrice = (item.oldPrice * item.quantity - discount) / item.quantity;
+                if (item.price != discountedPrice) {
+                    item.updatePrice(discountedPrice);
+                    changed = true;
+                }
+            } else {
+                if (item.price != item.oldPrice) {
+                    item.updatePrice(item.oldPrice);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            cartAdapter.notifyDataSetChanged();
+        }
+    }
+
     private void mapDtoToUiModel(CartDto cartDto) {
-        // Lưu lại trạng thái checkbox hiện tại theo SKU
         java.util.Map<String, Boolean> checkStates = new java.util.HashMap<>();
         for (CartAdapter.CartItemUiModel item : cartItems) {
             checkStates.put(item.sku, item.isChecked);
@@ -159,7 +198,6 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
                         itemDto.getQuantity()
                 );
 
-                // Khôi phục trạng thái checkbox nếu SKU này đã có trước đó
                 if (checkStates.containsKey(sku)) {
                     uiModel.isChecked = Boolean.TRUE.equals(checkStates.get(sku));
                 }
@@ -223,6 +261,8 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         View dialogView = inflater.inflate(layoutResId, null, false);
         if (layoutResId == R.layout.dialog_voucher) {
             setupVoucherPopup(dialogView);
+        } else if (layoutResId == R.layout.dialog_payment_detail) {
+            setupPaymentDetailPopup(dialogView);
         }
 
         int popupWidth = rootView.getWidth();
@@ -270,22 +310,72 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         activePopup.showAtLocation(rootView, Gravity.TOP | Gravity.START, x, y);
     }
 
+    private void setupPaymentDetailPopup(View dialogView) {
+        TextView tvSubtotal = dialogView.findViewById(R.id.tvDialogSubtotal);
+        TextView tvShipping = dialogView.findViewById(R.id.tvDialogShipping);
+        TextView tvDiscount = dialogView.findViewById(R.id.tvDialogDiscount);
+        TextView tvTotal = dialogView.findViewById(R.id.tvDialogTotal);
+
+        CartViewModel.CartSummary summary = viewModel.getCartSummary().getValue();
+        if (summary != null) {
+            tvSubtotal.setText(formatCurrency(summary.subtotal));
+            tvShipping.setText(formatCurrency(summary.shippingFee));
+            tvDiscount.setText("-" + formatCurrency(summary.discount));
+            tvTotal.setText(formatCurrency(summary.total));
+        }
+    }
+
     private void setupVoucherPopup(View dialogView) {
         RecyclerView recyclerView = dialogView.findViewById(R.id.rvVoucherOptions);
         TextView tvSelectedCount = dialogView.findViewById(R.id.tvVoucherSelectedCount);
         TextView tvSelectedTitle = dialogView.findViewById(R.id.tvVoucherSelectedTitle);
         TextView btnApplyVoucher = dialogView.findViewById(R.id.btnApplyVoucher);
 
-        // Dummy vouchers for UI
-        List<VoucherOptionAdapter.VoucherItemUiModel> vouchers = new ArrayList<>();
-        vouchers.add(new VoucherOptionAdapter.VoucherItemUiModel("V1", "Giảm 10k cho đơn từ 100k", "HSD: 30/06/2024", R.drawable.ic_voucher));
-        vouchers.add(new VoucherOptionAdapter.VoucherItemUiModel("V2", "Miễn phí vận chuyển", "HSD: 15/07/2024", R.drawable.ic_voucher));
+        List<PromotionDto> promotions = viewModel.getAvailablePromotions().getValue();
+        if (promotions == null) promotions = new ArrayList<>();
+        
+        List<VoucherOptionAdapter.VoucherItemUiModel> voucherUiModels = new ArrayList<>();
+        
+        long currentTotal = 0;
+        for (CartAdapter.CartItemUiModel item : cartItems) {
+            if (item.isChecked) currentTotal += item.getLineTotal();
+        }
 
-        tvSelectedCount.setText("1 mã đã được chọn");
-        tvSelectedTitle.setText(vouchers.get(0).title);
+        PromotionDto currentSelection = viewModel.getSelectedPromotion().getValue();
+        int selectedIndex = -1;
+
+        for (int i = 0; i < promotions.size(); i++) {
+            PromotionDto p = promotions.get(i);
+            VoucherOptionAdapter.VoucherItemUiModel uiModel = new VoucherOptionAdapter.VoucherItemUiModel(
+                    p.getPromotionId(),
+                    p.getName(),
+                    p.getDescription(),
+                    "HSD: " + (p.getEndDate() != null ? p.getEndDate() : "N/A"),
+                    R.drawable.ic_voucher
+            );
+            
+            if (currentTotal < p.getMinOrderValue()) {
+                uiModel.isEligible = false;
+                uiModel.reasonLabel = "Chưa đủ ĐK: tối thiểu " + formatCurrency(p.getMinOrderValue());
+            }
+
+            if (currentSelection != null && p.getPromotionId().equals(currentSelection.getPromotionId())) {
+                selectedIndex = i;
+                tvSelectedCount.setText("1 mã đã được chọn");
+                tvSelectedTitle.setText(p.getName());
+            }
+            
+            voucherUiModels.add(uiModel);
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerView.setAdapter(new VoucherOptionAdapter(vouchers, 0, item -> {
+        List<PromotionDto> finalPromotions = promotions;
+        recyclerView.setAdapter(new VoucherOptionAdapter(voucherUiModels, selectedIndex, item -> {
+            PromotionDto selected = finalPromotions.stream()
+                    .filter(p -> p.getPromotionId().equals(item.id))
+                    .findFirst()
+                    .orElse(null);
+            viewModel.selectPromotion(selected);
             tvSelectedCount.setText("1 mã đã được chọn");
             tvSelectedTitle.setText(item.title);
         }));
@@ -320,13 +410,14 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
     private void updateCartSummary() {
         int selectedCount = 0;
-        long total = 0;
         for (CartAdapter.CartItemUiModel item : cartItems) {
             if (item.isChecked) {
                 selectedCount++;
-                total += item.getLineTotal();
             }
         }
+
+        CartViewModel.CartSummary summary = viewModel.getCartSummary().getValue();
+        long total = (summary != null) ? summary.total : 0;
 
         if (tvCartTitle != null) {
             tvCartTitle.setText(getString(R.string.cart_title_format, cartItems.size()));
@@ -355,7 +446,6 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         if (activePopup != null && activePopup.isShowing()) {
             activePopup.dismiss();
         }
-        // Đảm bảo ẩn scrim ngay lập tức khi yêu cầu đóng popup
         if (scrimView != null) {
             scrimView.setVisibility(View.GONE);
         }

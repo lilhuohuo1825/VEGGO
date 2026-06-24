@@ -1,9 +1,10 @@
 package com.veggo.app.data.remote.dto;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 import java.util.List;
 
-public class ProductDto {
+public class ProductDto implements Serializable {
     @SerializedName("_id")
     private String id;
 

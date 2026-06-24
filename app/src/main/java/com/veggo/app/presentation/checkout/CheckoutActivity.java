@@ -23,6 +23,8 @@ import com.veggo.app.adapter.LocationOptionAdapter;
 import com.veggo.app.adapter.PaymentItemAdapter;
 import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.data.remote.dto.CartDto;
+import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.presentation.profile.AddressFormActivity;
 
 import java.util.ArrayList;
@@ -45,10 +47,13 @@ public class CheckoutActivity extends BaseActivity {
     private View layoutFastDelivery;
     private View layoutScheduleDelivery;
     private PaymentItemAdapter paymentItemAdapter;
+    private TextView tvCheckoutSubtotal, tvCheckoutVoucherDiscount, tvCheckoutProductDiscount, tvCheckoutShippingFee, tvCheckoutShippingDiscount, tvCheckoutTotal, tvCheckoutBottomTotal;
     private final List<PaymentItemAdapter.PaymentItemUiModel> previewItems = new ArrayList<>();
     private final List<LocationOptionAdapter.LocationItemUiModel> locationItems = new ArrayList<>();
     private boolean isProductsExpanded;
     private int selectedLocationIndex;
+    private PromotionDto selectedPromotion;
+    private CartDto cartData;
     private final ActivityResultLauncher<Intent> addAddressLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() != RESULT_OK || result.getData() == null) {
@@ -86,6 +91,22 @@ public class CheckoutActivity extends BaseActivity {
         tvAddressDefaultBadge = findViewById(R.id.tvAddressDefaultBadge);
         layoutFastDelivery = findViewById(R.id.layoutFastDelivery);
         layoutScheduleDelivery = findViewById(R.id.layoutScheduleDelivery);
+
+        tvCheckoutSubtotal = findViewById(R.id.tvCheckoutSubtotal);
+        tvCheckoutVoucherDiscount = findViewById(R.id.tvCheckoutVoucherDiscount);
+        tvCheckoutProductDiscount = findViewById(R.id.tvCheckoutProductDiscount);
+        tvCheckoutShippingFee = findViewById(R.id.tvCheckoutShippingFee);
+        tvCheckoutShippingDiscount = findViewById(R.id.tvCheckoutShippingDiscount);
+        tvCheckoutTotal = findViewById(R.id.tvCheckoutTotal);
+        tvCheckoutBottomTotal = findViewById(R.id.tvCheckoutBottomTotal);
+
+        if (getIntent().hasExtra("SELECTED_PROMOTION")) {
+            selectedPromotion = (PromotionDto) getIntent().getSerializableExtra("SELECTED_PROMOTION");
+        }
+        if (getIntent().hasExtra("CART_DATA")) {
+            cartData = (CartDto) getIntent().getSerializableExtra("CART_DATA");
+        }
+
         tvCheckoutNote.setText("");
         tvCheckoutNote.setHint("Nhap ghi chu");
 
@@ -93,6 +114,7 @@ public class CheckoutActivity extends BaseActivity {
         ensureLocationItems();
         applySelectedLocationToAddressCard();
         selectDeliveryMode(true);
+        updateSummary();
         layoutToggleProducts.setOnClickListener(v -> toggleProducts());
 
         layoutAddress.setOnClickListener(v -> showPopup(R.layout.dialog_location));
@@ -118,49 +140,69 @@ public class CheckoutActivity extends BaseActivity {
 
     private List<PaymentItemAdapter.PaymentItemUiModel> buildPreviewItems() {
         List<PaymentItemAdapter.PaymentItemUiModel> items = new ArrayList<>();
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                getString(R.string.orders_sample_product_name),
-                "200gr",
-                45000,
-                1,
-                R.drawable.ic_vegetable
-        ));
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                "Ca chua bi huu co",
-                "500gr",
-                32000,
-                2,
-                R.drawable.ic_fruit
-        ));
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                "Ca chua bi huu co",
-                "500gr",
-                32000,
-                2,
-                R.drawable.ic_fruit
-        ));
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                getString(R.string.orders_sample_product_name),
-                "200gr",
-                45000,
-                1,
-                R.drawable.ic_vegetable
-        ));
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                "Ca chua bi huu co",
-                "500gr",
-                32000,
-                2,
-                R.drawable.ic_fruit
-        ));
-        items.add(new PaymentItemAdapter.PaymentItemUiModel(
-                "Rau chan vit baby",
-                "250gr",
-                28000,
-                1,
-                R.drawable.ic_leaf
-        ));
+        if (cartData != null && cartData.getItems() != null) {
+            for (CartDto.CartItemDto item : cartData.getItems()) {
+                if (item.getProduct() != null) {
+                    items.add(new PaymentItemAdapter.PaymentItemUiModel(
+                            item.getProduct().getProductName(),
+                            String.valueOf(item.getSelectedWeight()) + item.getProduct().getUnit(),
+                            (int) item.getProduct().getPrice(),
+                            item.getQuantity(),
+                            R.drawable.ic_vegetable // Placeholder or map from DTO
+                    ));
+                }
+            }
+        } else {
+            // Fallback for legacy/testing
+            items.add(new PaymentItemAdapter.PaymentItemUiModel(
+                    getString(R.string.orders_sample_product_name),
+                    "200gr",
+                    45000,
+                    1,
+                    R.drawable.ic_vegetable
+            ));
+        }
         return items;
+    }
+
+    private void updateSummary() {
+        long subtotal = 0;
+        if (cartData != null && cartData.getItems() != null) {
+            for (CartDto.CartItemDto item : cartData.getItems()) {
+                if (item.getProduct() != null) {
+                    subtotal += item.getProduct().getPrice() * item.getQuantity();
+                }
+            }
+        }
+
+        long shippingFee = 18000; // Default or from logic
+        long voucherDiscount = 0;
+        if (selectedPromotion != null && subtotal >= selectedPromotion.getMinOrderValue()) {
+            if ("percentage".equalsIgnoreCase(selectedPromotion.getDiscountType())) {
+                voucherDiscount = (subtotal * selectedPromotion.getDiscountValue()) / 100;
+                if (selectedPromotion.getMaxDiscountValue() > 0) {
+                    voucherDiscount = Math.min(voucherDiscount, selectedPromotion.getMaxDiscountValue());
+                }
+            } else {
+                voucherDiscount = selectedPromotion.getDiscountValue();
+            }
+        }
+
+        long productDiscount = 0; // Can be calculated from DTO if needed
+        long shippingDiscount = 0; // Can be calculated from DTO if needed
+        long total = Math.max(0, subtotal + shippingFee - voucherDiscount - productDiscount - shippingDiscount);
+
+        tvCheckoutSubtotal.setText(formatCurrency(subtotal));
+        tvCheckoutVoucherDiscount.setText("-" + formatCurrency(voucherDiscount));
+        tvCheckoutProductDiscount.setText("-" + formatCurrency(productDiscount));
+        tvCheckoutShippingFee.setText(formatCurrency(shippingFee));
+        tvCheckoutShippingDiscount.setText("-" + formatCurrency(shippingDiscount));
+        tvCheckoutTotal.setText(formatCurrency(total));
+        tvCheckoutBottomTotal.setText(formatCurrency(total));
+    }
+
+    private String formatCurrency(long value) {
+        return String.format(Locale.getDefault(), "%,dđ", value).replace(",", ".");
     }
 
     private void toggleProducts() {

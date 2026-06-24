@@ -81,6 +81,23 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
             conditionView.setText(item.condition);
             expiryView.setText(item.expiry);
             radioButton.setChecked(isSelected);
+            
+            if (item.isEligible) {
+                itemView.setAlpha(1.0f);
+                radioButton.setEnabled(true);
+                itemView.setEnabled(true);
+                conditionView.setText(item.condition);
+                conditionView.setTextColor(itemView.getContext().getColor(R.color.veggo_text_secondary));
+            } else {
+                itemView.setAlpha(0.5f);
+                radioButton.setEnabled(false);
+                itemView.setEnabled(false);
+                if (item.reasonLabel != null && !item.reasonLabel.isEmpty()) {
+                    conditionView.setText(item.reasonLabel);
+                    conditionView.setTextColor(itemView.getContext().getColor(R.color.danger_main));
+                }
+            }
+            
             itemView.setBackgroundResource(isSelected ? R.drawable.bg_selected : R.drawable.bg_normal);
         }
     }
@@ -90,16 +107,24 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
     }
 
     public static final class VoucherItemUiModel {
+        public final String id;
         public final String title;
         public final String condition;
         public final String expiry;
         public final int iconResId;
+        public boolean isEligible = true;
+        public String reasonLabel = "";
 
-        public VoucherItemUiModel(String title, String condition, String expiry, int iconResId) {
+        public VoucherItemUiModel(String id, String title, String condition, String expiry, int iconResId) {
+            this.id = id;
             this.title = title;
             this.condition = condition;
             this.expiry = expiry;
             this.iconResId = iconResId;
+        }
+
+        public VoucherItemUiModel(String title, String condition, String expiry, int iconResId) {
+            this(title, title, condition, expiry, iconResId);
         }
     }
 }

@@ -394,7 +394,6 @@ public class ProductDetailActivity extends BaseActivity {
     private void setupViewModel() {
         ViewModelFactory factory = new ViewModelFactory(
                 AppModule.provideProductRepository(this),
-                null,
                 AppModule.provideCartRepository(this)
         );
         viewModel = new ViewModelProvider(this, factory).get(ProductViewModel.class);
