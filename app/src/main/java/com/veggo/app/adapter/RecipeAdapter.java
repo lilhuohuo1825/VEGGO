@@ -1,5 +1,6 @@
 package com.veggo.app.adapter;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,10 +9,12 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.domain.model.Recipe;
 
 import java.util.ArrayList;
@@ -78,7 +81,19 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
                 .placeholder(R.drawable.logo)
                 .into(holder.ivRecipeImage);
 
-        holder.ivBookmark.setImageResource(recipe.isBookmarked() ? R.drawable.ic_save : R.drawable.ic_save);
+        FavoriteStore favoriteStore = new FavoriteStore(holder.itemView.getContext());
+        boolean selected = favoriteStore.isFavorite(FavoriteStore.TYPE_RECIPE, recipe.getId());
+        renderFavoriteIcon(holder, selected);
+        holder.ivBookmark.setOnClickListener(v -> {
+            boolean nowSelected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
+                    FavoriteStore.TYPE_RECIPE,
+                    recipe.getId(),
+                    recipe.getName(),
+                    favoriteSubtitle(recipe),
+                    recipe.getImageUrl()
+            ));
+            renderFavoriteIcon(holder, nowSelected);
+        });
 
         holder.itemView.setOnClickListener(v -> {
             if (onRecipeClickListener != null) {
@@ -90,6 +105,29 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     @Override
     public int getItemCount() {
         return recipes.size();
+    }
+
+    private String favoriteSubtitle(Recipe recipe) {
+        StringBuilder subtitle = new StringBuilder();
+        if (recipe.getCookingTime() != null && !recipe.getCookingTime().trim().isEmpty()) {
+            subtitle.append(recipe.getCookingTime().trim());
+        }
+        if (recipe.getIngredientCount() > 0) {
+            if (subtitle.length() > 0) {
+                subtitle.append(" • ");
+            }
+            subtitle.append(recipe.getIngredientCount()).append(" nguyên liệu");
+        }
+        return subtitle.toString();
+    }
+
+    private void renderFavoriteIcon(ViewHolder holder, boolean selected) {
+        holder.ivBookmark.setImageResource(selected
+                ? R.drawable.ic_profile_menu_heart_filled
+                : R.drawable.ic_heart_outline_green);
+        int color = ContextCompat.getColor(holder.itemView.getContext(),
+                selected ? R.color.primary_main : R.color.white);
+        holder.ivBookmark.setImageTintList(ColorStateList.valueOf(color));
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

@@ -238,6 +238,66 @@ const normalizePromotionPayload = (payload = {}, existing = {}) => {
   return normalized;
 };
 
+const matchesUserPromotionTarget = (target, user) => {
+  if (!target) return true;
+  const userGroups = getPromotionTargetGroups(target).filter(group => group.target_type === 'User');
+  if (!userGroups.length) return true;
+  if (!user) return false;
+
+  return userGroups.every((group) => matchesUserTargetRefs(group.target_ref, user));
+};
+
+const getPromotionTargetGroups = (target) => {
+  if (!target) return [];
+  if (Array.isArray(target.target_groups) && target.target_groups.length) {
+    return target.target_groups
+      .map(group => ({
+        target_type: group?.target_type,
+        target_ref: Array.isArray(group?.target_ref) ? group.target_ref : []
+      }))
+      .filter(group => group.target_type);
+  }
+  if (target.target_type) {
+    return [{
+      target_type: target.target_type,
+      target_ref: Array.isArray(target.target_ref) ? target.target_ref : []
+    }];
+  }
+  return [];
+};
+
+const hasTargetGroupType = (target, targetType) => {
+  return getPromotionTargetGroups(target).some(group => group.target_type === targetType);
+};
+
+const getTargetRefsByType = (target, targetTypes) => {
+  const types = Array.isArray(targetTypes) ? targetTypes : [targetTypes];
+  return getPromotionTargetGroups(target)
+    .filter(group => types.includes(group.target_type))
+    .flatMap(group => Array.isArray(group.target_ref) ? group.target_ref : []);
+};
+
+const matchesUserTargetRefs = (refs, user) => {
+  if (!refs.length) return true;
+
+  return refs.some((ref) => {
+    const value = String(ref || '').trim();
+    if (value.startsWith('tier:')) {
+      const tier = value.slice('tier:'.length).toLowerCase();
+      const tiering = String(user.CustomerTiering || user.CustomerType || '').trim().toLowerCase();
+      return (
+        (tier === 'bronze' && ['đồng', 'dong', 'bronze', 'regular'].includes(tiering)) ||
+        (tier === 'silver' && ['bạc', 'bac', 'silver', 'premium'].includes(tiering)) ||
+        (tier === 'gold' && ['vàng', 'vang', 'gold', 'vip'].includes(tiering))
+      );
+    }
+    if (value.startsWith('certificate:')) {
+      return String(user.CertificateID || '').trim() === value.slice('certificate:'.length);
+    }
+    return false;
+  });
+};
+
 router.get('/', asyncHandler(async (req, res) => {
   const serverRoot = getServerRoot(req);
   const promos = await Promotion.find({
@@ -245,7 +305,36 @@ router.get('/', asyncHandler(async (req, res) => {
     status: { $ne: 'Inactive' },
   }).sort({ promotion_id: 1 });
 
-  res.json(promos.map((promo) => normalizePromotionBanner(normalizePromotionPayload(promo.toObject()), serverRoot)));
+  const promotionIds = promos.map((promo) => promo.promotion_id).filter(Boolean);
+  const targets = promotionIds.length
+    ? await PromotionTarget.find({
+      promotion_id: { $in: promotionIds },
+      $or: [
+        { target_type: 'User' },
+        { 'target_groups.target_type': 'User' }
+      ]
+    }).lean()
+    : [];
+  const userTargets = new Map(targets.map((target) => [target.promotion_id, target]));
+  const customerId = String(req.query.customerId || '').trim();
+  const surface = String(req.query.surface || '').trim().toLowerCase();
+  const user = customerId
+    ? await mongoose.connection.db.collection('users').findOne({ CustomerID: customerId })
+    : null;
+
+  const filtered = promos.filter((promo) => {
+    const target = userTargets.get(promo.promotion_id);
+    if (surface === 'home' && target) return false;
+    if (surface === 'carbon') {
+      const refs = getTargetRefsByType(target, 'User');
+      const hasCertificateTarget = refs.some((ref) => String(ref || '').startsWith('certificate:'));
+      return hasCertificateTarget;
+    }
+    if (!customerId) return true;
+    return !target || matchesUserPromotionTarget(target, user);
+  });
+
+  res.json(filtered.map((promo) => normalizePromotionBanner(normalizePromotionPayload(promo.toObject()), serverRoot)));
 }));
 
 router.post('/upload-banner-image', upload.single('file'), asyncHandler(async (req, res) => {
@@ -280,18 +369,39 @@ router.post('/upload-banner-image', upload.single('file'), asyncHandler(async (r
   }
 }));
 
+const parsePromotionDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'object' && value.$date) return new Date(value.$date);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const isPromotionCurrentlyActive = (promo, now = new Date()) => {
+  const status = String(promo.status || '').trim().toLowerCase();
+  if (status === 'inactive' || status === 'expired') return false;
+
+  const startDate = parsePromotionDate(promo.start_date);
+  const endDate = parsePromotionDate(promo.end_date);
+  if (startDate && startDate > now) return false;
+  if (endDate && endDate < now) return false;
+  return promo.isActive !== false && promo.show_on_app !== false;
+};
+
+const isFlashSalePromotion = (promo) => {
+  return String(promo.promotion_kind || '').trim().toLowerCase() === 'flashsale';
+};
+
 router.get('/flash-sales', asyncHandler(async (_req, res) => {
   const now = new Date();
-  const promos = await mongoose.connection.db
+  const allPromos = await mongoose.connection.db
     .collection('promotions')
     .find({
-      promotion_kind: 'FlashSale',
       show_on_app: { $ne: false },
-      status: { $ne: 'Inactive' },
-      start_date: { $lte: now },
-      end_date: { $gte: now }
+      status: { $ne: 'Inactive' }
     })
     .toArray();
+  const promos = allPromos.filter((promo) => isPromotionCurrentlyActive(promo, now) && isFlashSalePromotion(promo));
 
   if (!promos.length) {
     return res.json({ success: true, data: [] });
@@ -300,10 +410,16 @@ router.get('/flash-sales', asyncHandler(async (_req, res) => {
   const promotionIds = promos.map(promo => promo.promotion_id).filter(Boolean);
   const targets = await mongoose.connection.db
     .collection('promotion_targets')
-    .find({ promotion_id: { $in: promotionIds }, target_type: 'Product' })
+    .find({
+      promotion_id: { $in: promotionIds },
+      $or: [
+        { target_type: 'Product' },
+        { 'target_groups.target_type': 'Product' }
+      ]
+    })
     .toArray();
 
-  const skus = [...new Set(targets.flatMap(target => Array.isArray(target.target_ref) ? target.target_ref : []))];
+  const skus = [...new Set(targets.flatMap(target => getTargetRefsByType(target, 'Product')))];
   const products = await mongoose.connection.db
     .collection('products')
     .find({ sku: { $in: skus } })
@@ -316,7 +432,7 @@ router.get('/flash-sales', asyncHandler(async (_req, res) => {
     const promo = promoMap.get(target.promotion_id);
     if (!promo) return;
 
-    (target.target_ref || []).forEach(sku => {
+    getTargetRefsByType(target, 'Product').forEach(sku => {
       const product = productMap.get(sku);
       if (!product) return;
 
@@ -324,7 +440,9 @@ router.get('/flash-sales', asyncHandler(async (_req, res) => {
       const discountValue = Number(promo.discount_value || promo.discount || 0);
       const salePrice = promo.discount_type === 'fixed'
         ? Math.max(0, originalPrice - discountValue)
-        : Math.max(0, Math.round(originalPrice * (100 - discountValue) / 100));
+        : promo.discount_type === 'buy1get1'
+          ? originalPrice
+          : Math.max(0, Math.round(originalPrice * (100 - discountValue) / 100));
 
       data.push({
         id: product._id?.toString() || product.sku,
@@ -333,7 +451,11 @@ router.get('/flash-sales', asyncHandler(async (_req, res) => {
         price: salePrice,
         originalPrice,
         unit: product.unit || '',
-        discount: promo.discount_type === 'fixed' ? `-${discountValue.toLocaleString('vi-VN')}đ` : `-${discountValue}%`,
+        discount: promo.discount_type === 'fixed'
+          ? `-${discountValue.toLocaleString('vi-VN')}đ`
+          : promo.discount_type === 'buy1get1'
+            ? 'Mua 1 tặng 1'
+            : `-${discountValue}%`,
         imageUrl: Array.isArray(product.image) ? product.image[0] : product.image || '',
         rating: Number(product.rating || 0),
         promotionId: promo.promotion_id,
@@ -364,17 +486,23 @@ router.get('/:id/products', asyncHandler(async (req, res) => {
     return res.json({ success: true, count: 0, data: [] });
   }
 
-  const { target_type, target_ref } = target;
   let query = { status: 'Active' };
+  const productRefs = getTargetRefsByType(target, 'Product');
+  const brandRefs = getTargetRefsByType(target, 'Brand');
+  const subcategoryRefs = getTargetRefsByType(target, 'Subcategory');
+  const categoryRefs = getTargetRefsByType(target, 'Category');
 
-  if (target_type === 'Brand') {
-    query.brand = { $in: target_ref };
-  } else if (target_type === 'Subcategory') {
-    query.SubcategoryID = { $in: target_ref };
-  } else if (target_type === 'Category') {
-    query.CategoryID = { $in: target_ref };
-  } else if (target_type === 'Product') {
-    query.sku = { $in: target_ref };
+  if (brandRefs.length) {
+    query.brand = { $in: brandRefs };
+  }
+  if (subcategoryRefs.length) {
+    query.SubcategoryID = { $in: subcategoryRefs };
+  }
+  if (categoryRefs.length) {
+    query.CategoryID = { $in: categoryRefs };
+  }
+  if (productRefs.length) {
+    query.sku = { $in: productRefs };
   }
 
   let dbQuery = Product.find(query);
@@ -387,6 +515,40 @@ router.get('/:id/products', asyncHandler(async (req, res) => {
 
   const products = await dbQuery;
   res.json({ success: true, count: products.length, data: products });
+}));
+
+router.get('/:id/banner-image', asyncHandler(async (req, res) => {
+  const promotion = await Promotion.findOne({
+    $or: [{ promotion_id: req.params.id }, { code: req.params.id }],
+    isActive: { $ne: false },
+    status: { $ne: 'Inactive' }
+  });
+
+  if (!promotion) {
+    return res.status(404).send('Promotion not found');
+  }
+
+  const imageUrl = promotion.banner_data?.src
+    || promotion.banner_data?.imageUrl
+    || promotion.imageUrl;
+  if (!imageUrl) {
+    return res.status(404).send('Promotion banner not found');
+  }
+
+  if (!/^https?:\/\//i.test(imageUrl)) {
+    return res.redirect(buildPublicUrl(imageUrl, getServerRoot(req)));
+  }
+
+  const upstream = await fetch(imageUrl);
+  if (!upstream.ok) {
+    return res.status(upstream.status).send('Unable to load promotion banner');
+  }
+
+  const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+  const arrayBuffer = await upstream.arrayBuffer();
+  res.set('Content-Type', contentType);
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(Buffer.from(arrayBuffer));
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
@@ -450,8 +612,28 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     query = { $or: [{ promotion_id: req.params.id }, { code: req.params.id }] };
   }
 
-  await mongoose.connection.db.collection('promotions').updateOne(query, { $set: { status: 'Inactive' } });
-  res.json({ success: true });
+  const promotion = await mongoose.connection.db.collection('promotions').findOne(query);
+  if (!promotion) {
+    return res.status(404).json({ success: false, message: 'Promotion not found' });
+  }
+
+  const targetIds = [
+    promotion.promotion_id,
+    promotion.code,
+    promotion._id?.toString(),
+    req.params.id
+  ].filter(Boolean);
+
+  const deletePromotionResult = await mongoose.connection.db.collection('promotions').deleteOne({ _id: promotion._id });
+  const deleteTargetsResult = targetIds.length
+    ? await mongoose.connection.db.collection('promotion_targets').deleteMany({ promotion_id: { $in: targetIds } })
+    : { deletedCount: 0 };
+
+  res.json({
+    success: true,
+    deletedPromotionCount: deletePromotionResult.deletedCount || 0,
+    deletedPromotionTargetCount: deleteTargetsResult.deletedCount || 0
+  });
 }));
 
 module.exports = router;

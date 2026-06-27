@@ -21,13 +21,22 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     private List<Product> products = new ArrayList<>();
     private OnProductClickListener listener;
+    private OnAddProductClickListener addProductClickListener;
 
     public interface OnProductClickListener {
         void onProductClick(Product product);
     }
 
+    public interface OnAddProductClickListener {
+        void onAddProductClick(Product product);
+    }
+
     public void setOnProductClickListener(OnProductClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnAddProductClickListener(OnAddProductClickListener listener) {
+        this.addProductClickListener = listener;
     }
 
     public void setProducts(List<Product> products) {
@@ -54,7 +63,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     @Override
     public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
         Product product = products.get(position);
-        holder.bind(product, listener);
+        holder.bind(product, listener, addProductClickListener);
     }
 
     @Override
@@ -70,7 +79,11 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             this.binding = binding;
         }
 
-        public void bind(final Product product, final OnProductClickListener listener) {
+        public void bind(
+                final Product product,
+                final OnProductClickListener listener,
+                final OnAddProductClickListener addProductClickListener
+        ) {
             binding.tvProductName.setText(product.getName());
             binding.tvProductPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
             binding.tvRating.setText(String.valueOf(product.getRating() == 0 ? 5.0f : product.getRating()));
@@ -103,6 +116,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
             binding.getRoot().setOnClickListener(v -> {
                 if (listener != null) {
+                    listener.onProductClick(product);
+                }
+            });
+            binding.btnAddProduct.setOnClickListener(v -> {
+                if (addProductClickListener != null) {
+                    addProductClickListener.onAddProductClick(product);
+                } else if (listener != null) {
                     listener.onProductClick(product);
                 }
             });

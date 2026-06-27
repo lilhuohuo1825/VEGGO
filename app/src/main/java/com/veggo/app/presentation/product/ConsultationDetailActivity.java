@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.snackbar.Snackbar;
 import com.veggo.app.R;
 import com.veggo.app.adapter.ConsultationAdapter;
-import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.core.network.ApiHttpException;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
@@ -28,10 +28,8 @@ public class ConsultationDetailActivity extends BaseActivity {
     public static final String EXTRA_PRODUCT_ID = "extra_product_id";
     private ProductViewModel viewModel;
     private ConsultationAdapter adapter;
-    private ProductAdapter relatedProductAdapter;
     private TextView tvQuestionCount;
     private RecyclerView rvQuestions;
-    private RecyclerView rvRelatedProducts;
     private EditText edtQuestion;
     private ImageView btnSendQuestion;
     private ProgressBar progressSendQuestion;
@@ -73,21 +71,6 @@ public class ConsultationDetailActivity extends BaseActivity {
         if (btnSendQuestion != null) {
             btnSendQuestion.setOnClickListener(v -> submitQuestion());
         }
-
-        rvRelatedProducts = findViewById(R.id.rvRelatedProducts);
-        if (rvRelatedProducts != null) {
-            relatedProductAdapter = new ProductAdapter();
-            rvRelatedProducts.setLayoutManager(
-                    new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false));
-            rvRelatedProducts.setAdapter(relatedProductAdapter);
-
-            relatedProductAdapter.setOnProductClickListener(product -> {
-                android.content.Intent intent = new android.content.Intent(
-                        this, ProductDetailActivity.class);
-                intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
-                startActivity(intent);
-            });
-        }
     }
 
     private void submitQuestion() {
@@ -105,10 +88,12 @@ public class ConsultationDetailActivity extends BaseActivity {
             return;
         }
 
+        AppPreferences appPreferences = new AppPreferences(this);
         viewModel.submitQuestion(
                 product.getSku(),
                 questionText,
-                null,
+                appPreferences.getCustomerId(),
+                appPreferences.getFullName(),
                 product.getName(),
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
@@ -202,11 +187,5 @@ public class ConsultationDetailActivity extends BaseActivity {
         });
 
         viewModel.isSubmittingQuestion().observe(this, this::setSubmittingUi);
-
-        viewModel.getRelatedProducts().observe(this, products -> {
-            if (products != null && !products.isEmpty() && relatedProductAdapter != null) {
-                relatedProductAdapter.setProducts(products);
-            }
-        });
     }
 }

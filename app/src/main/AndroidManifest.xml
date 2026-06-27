@@ -14,7 +14,6 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
@@ -41,7 +40,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="com.veggo.app.FRIDGE_EXPIRY_CHECK" />
             </intent-filter>
         </receiver>
 
@@ -94,6 +92,9 @@
             android:name=".presentation.profile.PostNotificationsActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.profile.LoginRequiredActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.profile.CreatePostActivity"
             android:exported="false" />
         <activity
@@ -127,6 +128,12 @@
             android:name=".presentation.order.ReviewsActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.order.RecurringOrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringProductPickerActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.order.RecurringDayEmptyActivity"
             android:exported="false" />
         <activity
@@ -140,6 +147,15 @@
             android:exported="false" />
         <activity
             android:name=".presentation.order.OrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReceivedOrderSuccessActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReviewOrderActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.ReturnRequestActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.order.OrderHistoryActivity"
@@ -164,6 +180,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.community.CommunityRecipeDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.community.InstructionRecipeDetailActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.community.CommunityIngredientsActivity"

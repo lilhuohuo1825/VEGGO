@@ -11,6 +11,7 @@ import androidx.appcompat.widget.AppCompatRadioButton;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.veggo.app.R;
+import com.veggo.app.data.remote.dto.PromotionDto;
 
 import java.util.List;
 
@@ -34,7 +35,8 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
 
     @Override
     public void onBindViewHolder(@NonNull VoucherViewHolder holder, int position) {
-        holder.bind(items.get(position), position == selectedPosition);
+        VoucherItemUiModel item = items.get(position);
+        holder.bind(item, position == selectedPosition);
         holder.itemView.setOnClickListener(v -> select(position));
         holder.radioButton.setOnClickListener(v -> select(position));
     }
@@ -45,7 +47,7 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
     }
 
     private void select(int position) {
-        if (position == RecyclerView.NO_POSITION || position == selectedPosition) {
+        if (position == RecyclerView.NO_POSITION || position == selectedPosition || !items.get(position).enabled) {
             return;
         }
         int previous = selectedPosition;
@@ -81,7 +83,10 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
             conditionView.setText(item.condition);
             expiryView.setText(item.expiry);
             radioButton.setChecked(isSelected);
+            radioButton.setEnabled(item.enabled);
             itemView.setBackgroundResource(isSelected ? R.drawable.bg_selected : R.drawable.bg_normal);
+            itemView.setEnabled(item.enabled);
+            itemView.setAlpha(item.enabled ? 1f : 0.45f);
         }
     }
 
@@ -94,12 +99,28 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
         public final String condition;
         public final String expiry;
         public final int iconResId;
+        public final String promotionId;
+        public final boolean enabled;
+        public final PromotionDto promotion;
 
         public VoucherItemUiModel(String title, String condition, String expiry, int iconResId) {
+            this(title, condition, expiry, iconResId, null, true, null);
+        }
+
+        public VoucherItemUiModel(String title, String condition, String expiry, int iconResId,
+                                  String promotionId, boolean enabled) {
+            this(title, condition, expiry, iconResId, promotionId, enabled, null);
+        }
+
+        public VoucherItemUiModel(String title, String condition, String expiry, int iconResId,
+                                  String promotionId, boolean enabled, PromotionDto promotion) {
             this.title = title;
             this.condition = condition;
             this.expiry = expiry;
             this.iconResId = iconResId;
+            this.promotionId = promotionId;
+            this.enabled = enabled;
+            this.promotion = promotion;
         }
     }
 }

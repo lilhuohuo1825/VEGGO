@@ -26,6 +26,9 @@ public class TasteSetupActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "khẩu vị của tôi")) {
+            return;
+        }
         setContentView(R.layout.activity_taste_setup);
         tasteStore = new TastePreferenceStore(this);
         dynamicTags = findViewById(R.id.tasteSetupDynamicTags);

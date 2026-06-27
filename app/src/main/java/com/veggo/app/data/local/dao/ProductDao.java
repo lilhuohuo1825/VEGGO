@@ -69,4 +69,7 @@ public interface ProductDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertReviews(List<com.veggo.app.data.local.entity.ReviewEntity> reviews);
+
+    @Query("UPDATE products SET rating = COALESCE((SELECT AVG(rating) FROM reviews WHERE productId = :productId), 0), reviewCount = (SELECT COUNT(*) FROM reviews WHERE productId = :productId) WHERE id = :productId")
+    void updateProductReviewStats(String productId);
 }

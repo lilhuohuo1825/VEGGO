@@ -9,13 +9,20 @@ import { NotificationService } from '../services/notification.service';
 
 interface BlogJSON {
   id: string;
+  _id?: string;
   img: string;
+  imageUrl?: string;
   title: string;
   excerpt: string;
-  pubDate: string;
+  pubDate?: string;
+  publishedAt?: string;
+  updatedAt?: string;
+  UpdatedAt?: string;
+  createdAt?: string;
   author: string;
   categoryTag: string;
   content: string;
+  views?: number;
 }
 
 interface BlogPost {
@@ -508,32 +515,11 @@ export class Blog implements OnInit, AfterViewInit {
     // Get views from data or generate random
     const views = blogJSON.views || Math.floor(Math.random() * 5000) + 500;
     
-    // Convert pubDate (Date object or string) to DD/MM/YYYY format
-    let created_date = '';
-    if (blogJSON.pubDate) {
-      const pubDate = blogJSON.pubDate instanceof Date 
-        ? blogJSON.pubDate 
-        : new Date(blogJSON.pubDate);
-      const day = String(pubDate.getDate()).padStart(2, '0');
-      const month = String(pubDate.getMonth() + 1).padStart(2, '0');
-      const year = pubDate.getFullYear();
-      created_date = `${day}/${month}/${year}`;
-    }
-    
-    // Convert updatedAt to DD/MM/YYYY format (ngày cập nhật mới nhất)
-    let updated_date = '';
-    if (blogJSON.updatedAt) {
-      const updatedAt = blogJSON.updatedAt instanceof Date 
-        ? blogJSON.updatedAt 
-        : new Date(blogJSON.updatedAt);
-      const day = String(updatedAt.getDate()).padStart(2, '0');
-      const month = String(updatedAt.getMonth() + 1).padStart(2, '0');
-      const year = updatedAt.getFullYear();
-      updated_date = `${day}/${month}/${year}`;
-    } else if (created_date) {
-      // Nếu không có updatedAt, dùng created_date
-      updated_date = created_date;
-    }
+    const createdDateValue = this.getBlogDateValue(blogJSON, ['pubDate', 'publishedAt', 'PublishedAt', 'createdAt', 'CreatedAt']);
+    const updatedDateValue = this.getBlogDateValue(blogJSON, ['updatedAt', 'UpdatedAt', 'updated_at', 'ModifiedAt', 'modifiedAt'])
+      || createdDateValue;
+    const created_date = this.formatDate(createdDateValue);
+    const updated_date = this.formatDate(updatedDateValue);
     
     // IMPORTANT: Use MongoDB 'id' field directly - this is the source of truth
     // Do NOT generate fallback IDs - if MongoDB doesn't have 'id', log warning
@@ -607,15 +593,44 @@ export class Blog implements OnInit, AfterViewInit {
   /**
    * Format date to Vietnamese format
    */
-  formatDate(dateStr: string): string {
-    if (dateStr.includes('/')) {
+  formatDate(dateStr: any): string {
+    if (!dateStr) {
+      return '---';
+    }
+    if (dateStr instanceof Date && !isNaN(dateStr.getTime())) {
+      const day = String(dateStr.getDate()).padStart(2, '0');
+      const month = String(dateStr.getMonth() + 1).padStart(2, '0');
+      const year = dateStr.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+    if (typeof dateStr === 'object' && dateStr.$date) {
+      return this.formatDate(dateStr.$date);
+    }
+    const rawDate = String(dateStr).trim();
+    if (!rawDate) {
+      return '---';
+    }
+    if (rawDate.includes('/') && !rawDate.includes('NaN')) {
       return dateStr; // Already formatted
     }
-    const date = new Date(dateStr);
+    const date = new Date(rawDate);
+    if (isNaN(date.getTime())) {
+      return '---';
+    }
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+  }
+
+  private getBlogDateValue(blogJSON: any, keys: string[]): any {
+    for (const key of keys) {
+      const value = blogJSON?.[key];
+      if (value !== undefined && value !== null && value !== '') {
+        return value;
+      }
+    }
+    return '';
   }
 
   /**
@@ -903,13 +918,12 @@ export class Blog implements OnInit, AfterViewInit {
     // Load blog from API
     this.http.get<any>(`${environment.apiUrl}/blogs/${blogId}`).subscribe({
       next: (response: any) => {
-        if (response.success && response.data) {
-          console.log('✅ Reloaded blog from MongoDB:', response.data);
+        const updatedBlog = response?.success && response?.data ? response.data : response;
+        if (updatedBlog) {
+          console.log('✅ Reloaded blog from MongoDB:', updatedBlog);
           
           // Update currentBlog with fresh data from MongoDB
           if (this.currentBlog) {
-            const updatedBlog = response.data;
-            
             // Update all fields from MongoDB
             // CRITICAL: Update _id, id, and blog_id correctly
             // MongoDB _id is the ObjectId
@@ -924,8 +938,10 @@ export class Blog implements OnInit, AfterViewInit {
             this.currentBlog.email = updatedBlog.email || this.currentBlog.email || '';
             this.currentBlog.category = updatedBlog.categoryTag || this.currentBlog.category;
             this.currentBlog.content = updatedBlog.content || this.currentBlog.content;
-            this.currentBlog.created_date = updatedBlog.pubDate ? this.formatDateFromMongoDB(updatedBlog.pubDate) : this.currentBlog.created_date;
-            this.currentBlog.updated_date = updatedBlog.updatedAt ? this.formatDateFromMongoDB(updatedBlog.updatedAt) : this.currentBlog.updated_date;
+            const createdDateValue = this.getBlogDateValue(updatedBlog, ['pubDate', 'publishedAt', 'PublishedAt', 'createdAt', 'CreatedAt']);
+            const updatedDateValue = this.getBlogDateValue(updatedBlog, ['updatedAt', 'UpdatedAt', 'updated_at', 'ModifiedAt', 'modifiedAt']) || createdDateValue;
+            this.currentBlog.created_date = createdDateValue ? this.formatDate(createdDateValue) : this.currentBlog.created_date;
+            this.currentBlog.updated_date = updatedDateValue ? this.formatDate(updatedDateValue) : this.currentBlog.updated_date;
             this.currentBlog.views = updatedBlog.views || this.currentBlog.views || 0;
             
             
@@ -1464,8 +1480,8 @@ export class Blog implements OnInit, AfterViewInit {
     this.currentSortOrder = order;
     
     this.blogs.sort((a, b) => {
-      const dateA = a.created_date ? this.parseDate(a.created_date) : 0;
-      const dateB = b.created_date ? this.parseDate(b.created_date) : 0;
+      const dateA = a.updated_date ? this.parseDate(a.updated_date) : 0;
+      const dateB = b.updated_date ? this.parseDate(b.updated_date) : 0;
       
       return order === 'asc' ? dateA - dateB : dateB - dateA;
     });

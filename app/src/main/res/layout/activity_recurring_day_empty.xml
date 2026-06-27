@@ -34,6 +34,7 @@
     android:tint="@color/primary_hover" />
 
             <TextView
+                android:id="@+id/recurringDayEmptyTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -41,7 +42,7 @@
                 android:gravity="center"
                 android:text="28/05/2026"
                 android:textColor="@color/neutral_100"
-                android:textSize="@dimen/text_xl"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <Space

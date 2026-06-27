@@ -707,13 +707,39 @@ router.post('/comments/:commentId/like', asyncHandler(async (req, res) => {
 }));
 
 async function getCommunityCooking() {
-  const data = await communityCollection().findOne({});
-  if (!data) {
-    const error = new Error('community_cooking data is missing in MongoDB Atlas');
-    error.status = 503;
-    throw error;
+  const collection = communityCollection();
+  const data = await collection.findOne({});
+  if (data && Array.isArray(data.recipes) && data.recipes.length > 0) {
+    return data;
   }
-  return data;
+
+  const seedPath = path.join(__dirname, '..', '..', '..', 'app', 'src', 'main', 'assets', 'community_cooking.json');
+  const seed = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+  if (data) {
+    await collection.updateOne(
+      { _id: data._id },
+      {
+        $set: {
+          categories: Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : seed.categories,
+          chefs: Array.isArray(data.chefs) && data.chefs.length > 0 ? data.chefs : seed.chefs,
+          recipes: seed.recipes,
+          recipeDetails: Array.isArray(data.recipeDetails) && data.recipeDetails.length > 0 ? data.recipeDetails : seed.recipeDetails,
+          recipeIngredients: Array.isArray(data.recipeIngredients) && data.recipeIngredients.length > 0 ? data.recipeIngredients : seed.recipeIngredients,
+          recipeGalleries: Array.isArray(data.recipeGalleries) && data.recipeGalleries.length > 0 ? data.recipeGalleries : seed.recipeGalleries,
+          cookbooks: Array.isArray(data.cookbooks) && data.cookbooks.length > 0 ? data.cookbooks : seed.cookbooks,
+          cookbookRecipes: Array.isArray(data.cookbookRecipes) && data.cookbookRecipes.length > 0 ? data.cookbookRecipes : seed.cookbookRecipes,
+          SeededFromAsset: true,
+          UpdatedAt: new Date(),
+        },
+      }
+    );
+    return collection.findOne({ _id: data._id });
+  }
+
+  seed.SeededFromAsset = true;
+  seed.CreatedAt = new Date();
+  await collection.insertOne(seed);
+  return collection.findOne({});
 }
 
 function communityCollection() {

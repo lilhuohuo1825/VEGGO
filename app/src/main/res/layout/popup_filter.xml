@@ -28,9 +28,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="Filters"
+                android:text="Bộ lọc"
                 android:textStyle="bold"
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textColor="#222222"/>
 
             <TextView
@@ -38,10 +38,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:text="Clear all"
+                android:text="Xóa tất cả"
                 android:textStyle="bold"
                 android:textColor="#57AF37"
-                android:textSize="18sp"/>
+                android:textSize="15sp"/>
 
         </RelativeLayout>
 
@@ -51,39 +51,44 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
-            android:text="Sort"
+            android:text="Sắp xếp"
             android:textStyle="bold"
-            android:textSize="22sp"/>
+            android:textSize="18sp"/>
 
         <CheckBox
             android:id="@+id/chkPopular"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Mức phổ biến"/>
+            android:text="Mức phổ biến"
+            android:textSize="15sp"/>
 
         <CheckBox
             android:id="@+id/chkDiscount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Discounted"/>
+            android:text="Đang giảm giá"
+            android:textSize="15sp"/>
 
         <CheckBox
             android:id="@+id/chkLowHigh"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Price: Low to High"/>
+            android:text="Giá: thấp đến cao"
+            android:textSize="15sp"/>
 
         <CheckBox
             android:id="@+id/chkHighLow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Price: High to Low"/>
+            android:text="Giá: cao đến thấp"
+            android:textSize="15sp"/>
 
         <CheckBox
             android:id="@+id/chkOrganic"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Organic"/>
+            android:text="Hữu cơ"
+            android:textSize="15sp"/>
 
         <View
             android:layout_width="match_parent"
@@ -98,7 +103,7 @@
             android:layout_height="wrap_content"
             android:text="Danh mục"
             android:textStyle="bold"
-            android:textSize="22sp"/>
+            android:textSize="18sp"/>
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/cgCategories"
@@ -121,7 +126,7 @@
             android:layout_height="wrap_content"
             android:text="Danh mục con"
             android:textStyle="bold"
-            android:textSize="22sp"/>
+            android:textSize="18sp"/>
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/cgSubcategories"
@@ -144,7 +149,7 @@
             android:layout_height="wrap_content"
             android:text="Khoảng giá"
             android:textStyle="bold"
-            android:textSize="22sp"/>
+            android:textSize="18sp"/>
 
         <TextView
             android:id="@+id/txtPrice"
@@ -152,7 +157,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:text="0đ - 100đ"
-            android:textSize="18sp"
+            android:textSize="15sp"
             android:textColor="#999999"/>
 
         <com.google.android.material.slider.RangeSlider
@@ -176,12 +181,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="0đ"/>
+                android:text="0đ"
+                android:textSize="14sp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1,000,000đ"/>
+                android:text="1,000,000đ"
+                android:textSize="14sp"/>
 
         </LinearLayout>
 
@@ -198,7 +205,7 @@
             android:layout_height="wrap_content"
             android:text="Thương hiệu"
             android:textStyle="bold"
-            android:textSize="22sp"/>
+            android:textSize="18sp"/>
 
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -216,7 +223,8 @@
                     android:layout_height="wrap_content"
                     android:background="#F2F2F2"
                     android:text="VinEco"
-                    android:padding="10dp"/>
+                    android:padding="10dp"
+                    android:textSize="14sp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -224,15 +232,17 @@
                     android:layout_marginStart="8dp"
                     android:background="#F2F2F2"
                     android:text="Dalat Farm"
-                    android:padding="10dp"/>
+                    android:padding="10dp"
+                    android:textSize="14sp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:background="#F2F2F2"
-                    android:text="Organic"
-                    android:padding="10dp"/>
+                    android:text="Hữu cơ"
+                    android:padding="10dp"
+                    android:textSize="14sp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -240,7 +250,8 @@
                     android:layout_marginStart="8dp"
                     android:background="#F2F2F2"
                     android:text="Fresh Garden"
-                    android:padding="10dp"/>
+                    android:padding="10dp"
+                    android:textSize="14sp"/>
 
             </LinearLayout>
 
@@ -253,9 +264,10 @@
             android:layout_marginTop="30dp"
             android:layout_marginBottom="20dp"
             android:backgroundTint="#57AF37"
-            android:text="Apply Filters"
+            android:text="Áp dụng bộ lọc"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
+            android:textSize="15sp"
             android:textStyle="bold"/>
 
     </LinearLayout>

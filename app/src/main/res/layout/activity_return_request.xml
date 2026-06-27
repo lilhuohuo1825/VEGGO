@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <ImageView
+            android:id="@+id/returnRequestBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/orders_back"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/inter_bold"
+            android:gravity="center"
+            android:text="Yêu cầu trả hàng/hoàn tiền"
+            android:textColor="@color/neutral_100"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="96dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/returnRequestProductCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_detail_summary_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:id="@+id/returnRequestOrderCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/neutral_70"
+                    android:textSize="@dimen/text_sm" />
+
+                <include layout="@layout/order_item_product_block" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="@font/inter_semibold"
+                android:text="Lý do trả hàng *"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md" />
+
+            <RadioGroup
+                android:id="@+id/returnReasonGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/reasonDefective"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Sản phẩm bị lỗi / hỏng"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/reasonWrongDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Sản phẩm không đúng mô tả"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/reasonWrongProduct"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Giao nhầm sản phẩm"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/reasonQuality"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Không hài lòng với chất lượng"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/reasonOther"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Khác"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:fontFamily="@font/inter_semibold"
+                android:text="Mô tả chi tiết *"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md" />
+
+            <EditText
+                android:id="@+id/returnDescriptionInput"
+                android:layout_width="match_parent"
+                android:layout_height="116dp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_normal"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="top"
+                android:hint="Mô tả chi tiết vấn đề..."
+                android:inputType="textMultiLine"
+                android:maxLines="5"
+                android:padding="12dp"
+                android:textColor="@color/neutral_100"
+                android:textColorHint="@color/neutral_50"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:fontFamily="@font/inter_semibold"
+                android:text="Ảnh/Video minh chứng (tối đa 5) *"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="92dp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:overScrollMode="never"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/returnEvidenceContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:id="@+id/returnEvidenceButton"
+                        android:layout_width="96dp"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_promotion_code_dashed"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_gallery"
+                                android:tint="@color/primary_main" />
+
+                            <TextView
+                                android:id="@+id/returnEvidenceCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:text="0/5"
+                                android:textColor="@color/neutral_80"
+                                android:textSize="@dimen/text_sm" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/returnSubmitButton"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginStart="@dimen/spacing_md"
+        android:layout_marginEnd="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_md"
+        android:background="@drawable/bg_order_primary_button"
+        android:fontFamily="@font/inter_semibold"
+        android:gravity="center"
+        android:text="Gửi yêu cầu"
+        android:textColor="@color/background_main"
+        android:textSize="@dimen/text_md"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -14,6 +14,7 @@
         android:padding="24dp">
 
         <FrameLayout
+            android:id="@+id/iconContainer"
             android:layout_width="65dp"
             android:layout_height="65dp"
             android:background="@drawable/bg_dialog_icon_circle">
@@ -23,8 +24,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_trash"
-                app:tint="@color/primary_main" />
+                android:src="@drawable/ic_trash" />
         </FrameLayout>
 
         <TextView
@@ -47,6 +47,14 @@
             android:text="@string/dialog_delete_message"
             android:textColor="@color/neutral_60"
             android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/customContentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
     </LinearLayout>
 
     <View

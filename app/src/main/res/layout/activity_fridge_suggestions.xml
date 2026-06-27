@@ -34,7 +34,7 @@
             android:gravity="center"
             android:text="@string/fridge_suggestion_title"
             android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_xl"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <Space android:layout_width="40dp" android:layout_height="40dp" />

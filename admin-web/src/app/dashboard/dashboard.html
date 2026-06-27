@@ -328,7 +328,11 @@
 
           <div class="inventory-row" *ngFor="let product of inventoryWatchProducts">
             <div class="inventory-product">
-              <img [src]="getProductImage(product)" [alt]="getProductName(product)" class="inventory-product-image">
+              <img
+                [src]="getProductImage(product)"
+                [alt]="getProductName(product)"
+                class="inventory-product-image"
+                onerror="this.src='/assets/icons/image.png'">
               <div class="inventory-product-info">
                 <div class="inventory-product-name">{{ getProductName(product) }}</div>
                 <div class="inventory-product-sku" *ngIf="product.sku">SKU: {{ product.sku }}</div>

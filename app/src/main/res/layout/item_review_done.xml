@@ -53,6 +53,7 @@
         android:gravity="end|center_vertical">
 
         <TextView
+            android:id="@+id/reviewBuyAgainButton"
             android:layout_width="wrap_content"
             android:layout_height="34dp"
             android:background="@drawable/bg_order_primary_button"

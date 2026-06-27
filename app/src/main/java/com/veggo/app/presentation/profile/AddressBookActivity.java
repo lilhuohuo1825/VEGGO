@@ -11,7 +11,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -20,6 +19,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Address;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +31,12 @@ public class AddressBookActivity extends BaseActivity {
 
     private View rootView;
     private LinearLayout addressListContainer;
+    private View headerView;
     private View defaultContainer;
     private View secondaryContainer;
     private View addAddressButton;
     @Nullable
-    private TextView emptyStateView;
+    private View emptyStateView;
 
     private final List<Address> boundAddresses = new ArrayList<>();
 
@@ -49,6 +50,9 @@ public class AddressBookActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "sổ địa chỉ")) {
+            return;
+        }
         setContentView(R.layout.activity_address_book);
 
         appPreferences = new AppPreferences(this);
@@ -62,9 +66,11 @@ public class AddressBookActivity extends BaseActivity {
 
     private void bindViews() {
         rootView = findViewById(android.R.id.content);
+        headerView = findViewById(R.id.addressBookHeader);
         defaultContainer = findViewById(R.id.addressDefaultContainer);
         secondaryContainer = findViewById(R.id.addressSecondaryContainer);
         addAddressButton = findViewById(R.id.addAddressButton);
+        emptyStateView = findViewById(R.id.addressEmptyState);
         if (secondaryContainer != null && secondaryContainer.getParent() instanceof LinearLayout) {
             addressListContainer = (LinearLayout) secondaryContainer.getParent();
         }
@@ -153,7 +159,7 @@ public class AddressBookActivity extends BaseActivity {
 
         Address defaultAddress = findDefaultAddress();
         LayoutInflater inflater = LayoutInflater.from(this);
-        int insertIndex = addressListContainer.indexOfChild(secondaryContainer);
+        int insertIndex = addressListContainer.indexOfChild(secondaryContainer) + 1;
         Address secondaryAddress = findSecondaryAddress(defaultAddress);
 
         for (Address address : boundAddresses) {
@@ -163,9 +169,24 @@ public class AddressBookActivity extends BaseActivity {
             }
             View itemView = inflater.inflate(R.layout.item_address, addressListContainer, false);
             bindRegularAddressItem(itemView, address);
+            applyDynamicAddressSpacing(itemView);
             addressListContainer.addView(itemView, insertIndex);
             insertIndex++;
         }
+    }
+
+    private void applyDynamicAddressSpacing(View itemView) {
+        LinearLayout.LayoutParams params;
+        if (itemView.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+            params = (LinearLayout.LayoutParams) itemView.getLayoutParams();
+        } else {
+            params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+        }
+        params.topMargin = getResources().getDimensionPixelSize(R.dimen.spacing_md);
+        itemView.setLayoutParams(params);
     }
 
     private void clearDynamicAddressViews() {
@@ -174,7 +195,10 @@ public class AddressBookActivity extends BaseActivity {
         }
         for (int index = addressListContainer.getChildCount() - 1; index >= 0; index--) {
             View child = addressListContainer.getChildAt(index);
-            if (child != defaultContainer && child != secondaryContainer && child != emptyStateView) {
+            if (child != headerView
+                    && child != defaultContainer
+                    && child != secondaryContainer
+                    && child != emptyStateView) {
                 addressListContainer.removeViewAt(index);
             }
         }
@@ -208,17 +232,9 @@ public class AddressBookActivity extends BaseActivity {
                 address
         );
         View card = defaultContainer.findViewById(R.id.addressDefaultItemCard);
-        View editButton = defaultContainer.findViewById(R.id.addressDefaultEditButton);
-        View deleteButton = defaultContainer.findViewById(R.id.addressDefaultDeleteButton);
 
         if (card != null) {
             card.setOnClickListener(v -> openAddressForm(address));
-        }
-        if (editButton != null) {
-            editButton.setOnClickListener(v -> openAddressForm(address));
-        }
-        if (deleteButton != null) {
-            deleteButton.setOnClickListener(v -> confirmDelete(address));
         }
     }
 
@@ -235,22 +251,14 @@ public class AddressBookActivity extends BaseActivity {
 
     private void bindRegularAddressItem(View container, Address address) {
         View card = container.findViewById(R.id.addressItemCard);
-        View editButton = container.findViewById(R.id.addressEditButton);
-        View deleteButton = container.findViewById(R.id.addressDeleteButton);
         View defaultButton = container.findViewById(R.id.addressDefaultButton);
 
         if (card != null) {
             card.setOnClickListener(v -> openAddressForm(address));
         }
-        if (editButton != null) {
-            editButton.setOnClickListener(v -> openAddressForm(address));
-        }
-        if (deleteButton != null) {
-            deleteButton.setOnClickListener(v -> confirmDelete(address));
-        }
         if (defaultButton != null) {
             defaultButton.setVisibility(address.isDefault() ? View.GONE : View.VISIBLE);
-            defaultButton.setOnClickListener(v -> viewModel.setDefaultAddress(address.getId(), userId));
+            defaultButton.setOnClickListener(v -> confirmSetDefault(address));
         }
     }
 
@@ -274,36 +282,15 @@ public class AddressBookActivity extends BaseActivity {
     }
 
     private void showEmptyState(boolean show) {
-        if (addressListContainer == null) {
-            return;
-        }
-        if (show) {
-            if (emptyStateView == null) {
-                emptyStateView = new TextView(this);
-                emptyStateView.setText(R.string.address_empty);
-                emptyStateView.setTextColor(getColor(R.color.neutral_70));
-                emptyStateView.setTextSize(16f);
-                emptyStateView.setPadding(
-                        getResources().getDimensionPixelSize(R.dimen.spacing_md),
-                        getResources().getDimensionPixelSize(R.dimen.spacing_lg),
-                        getResources().getDimensionPixelSize(R.dimen.spacing_md),
-                        getResources().getDimensionPixelSize(R.dimen.spacing_md)
-                );
-            }
-            if (emptyStateView.getParent() == null) {
-                addressListContainer.addView(emptyStateView, 0);
-            }
-            emptyStateView.setVisibility(View.VISIBLE);
-            return;
-        }
         if (emptyStateView != null) {
-            emptyStateView.setVisibility(View.GONE);
+            emptyStateView.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
 
     private void openAddressForm(@Nullable Address address) {
         Intent intent = new Intent(this, AddressFormActivity.class);
         if (address != null) {
+            AddressSelectionStore.put(address);
             intent.putExtra(AddressFormActivity.EXTRA_ADDRESS_ID, address.getId());
             intent.putExtra(AddressFormActivity.EXTRA_NAME, address.getName());
             intent.putExtra(AddressFormActivity.EXTRA_PHONE, address.getPhone());
@@ -319,11 +306,36 @@ public class AddressBookActivity extends BaseActivity {
     }
 
     private void confirmDelete(Address address) {
-        new AlertDialog.Builder(this)
-                .setMessage(R.string.address_delete_confirm)
-                .setNegativeButton(R.string.address_cancel, null)
-                .setPositiveButton(R.string.address_delete, (dialog, which) ->
-                        viewModel.deleteAddress(address.getId(), userId))
-                .show();
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_trash,
+                "Xoá địa chỉ?",
+                getString(R.string.address_delete_confirm),
+                getString(R.string.address_delete),
+                getString(R.string.address_cancel),
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        viewModel.deleteAddress(address.getId(), userId);
+                    }
+                }
+        );
+    }
+
+    private void confirmSetDefault(Address address) {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_profile_location,
+                "Đặt làm mặc định?",
+                "Đổi địa chỉ này thành địa chỉ mặc định?",
+                getString(R.string.address_default),
+                getString(R.string.address_cancel),
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        viewModel.setDefaultAddress(address.getId(), userId);
+                    }
+                }
+        );
     }
 }

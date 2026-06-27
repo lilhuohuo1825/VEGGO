@@ -45,7 +45,7 @@
                     android:gravity="center"
                     android:text="@string/address_add_title"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_xl"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <Space
@@ -66,7 +66,7 @@
                     android:fontFamily="@font/encodesans_bold"
                     android:text="@string/address_personal_info"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_lg"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -87,7 +87,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/address_full_name"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
 
                         <EditText
                             android:id="@+id/addressNameInput"
@@ -99,7 +99,7 @@
                             android:paddingStart="@dimen/spacing_md"
                             android:paddingEnd="@dimen/spacing_md"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -115,7 +115,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/address_phone"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
 
                         <EditText
                             android:id="@+id/addressPhoneInput"
@@ -127,7 +127,7 @@
                             android:paddingStart="@dimen/spacing_md"
                             android:paddingEnd="@dimen/spacing_md"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -137,7 +137,7 @@
                     android:layout_marginTop="@dimen/spacing_sm"
                     android:text="@string/address_email"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
 
                 <EditText
                     android:id="@+id/addressEmailInput"
@@ -149,7 +149,7 @@
                     android:paddingStart="@dimen/spacing_md"
                     android:paddingEnd="@dimen/spacing_md"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -166,7 +166,7 @@
                     android:fontFamily="@font/encodesans_bold"
                     android:text="@string/address_shipping_info"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_lg"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -187,7 +187,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/address_city"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
 
                         <TextView
                             android:id="@+id/addressCityInput"
@@ -200,7 +200,7 @@
                             android:paddingEnd="@dimen/spacing_md"
                             android:text="@string/address_city_hint"
                             android:textColor="@color/neutral_60"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -216,7 +216,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/address_district"
                             android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
 
                         <TextView
                             android:id="@+id/addressDistrictInput"
@@ -229,7 +229,7 @@
                             android:paddingEnd="@dimen/spacing_md"
                             android:text="@string/address_district_hint"
                             android:textColor="@color/neutral_60"
-                            android:textSize="@dimen/text_sm" />
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -240,7 +240,7 @@
                     android:layout_marginTop="@dimen/spacing_sm"
                     android:text="@string/address_ward"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/addressWardInput"
@@ -253,7 +253,7 @@
                     android:paddingEnd="@dimen/spacing_md"
                     android:text="@string/address_ward_hint"
                     android:textColor="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/addressDetailLabel"
@@ -262,7 +262,7 @@
                     android:layout_marginTop="@dimen/spacing_sm"
                     android:text="@string/address_detail"
                     android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
 
                 <EditText
                     android:id="@+id/addressDetailInput"
@@ -276,7 +276,7 @@
                     android:paddingEnd="@dimen/spacing_md"
                     android:textColor="@color/neutral_100"
                     android:textColorHint="@color/neutral_60"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="13sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -298,7 +298,7 @@
                         android:layout_weight="1"
                         android:text="@string/address_make_default"
                         android:textColor="@color/neutral_70"
-                        android:textSize="@dimen/text_sm" />
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -317,14 +317,15 @@
 
         <TextView
             android:id="@+id/addressCancelButton"
-            android:layout_width="96dp"
+            android:layout_width="130dp"
             android:layout_height="46dp"
             android:background="@drawable/bg_order_cancel_button"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
             android:text="@string/address_cancel"
             android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm" />
+            android:textSize="@dimen/text_sm"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/addressDoneButton"
@@ -336,6 +337,7 @@
             android:gravity="center"
             android:text="@string/address_done"
             android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm" />
+            android:textSize="@dimen/text_sm"
+            android:textStyle="bold" />
     </LinearLayout>
 </FrameLayout>

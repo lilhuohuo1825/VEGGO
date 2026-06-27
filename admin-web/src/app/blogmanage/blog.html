@@ -150,7 +150,7 @@
           </td>
           <td class="col-id">{{ blog.blog_id }}</td>
           <td class="col-title clickable" (click)="viewBlogDetail(blog)">{{ blog.title }}</td>
-          <td class="col-date">{{ blog.updated_date || formatDate(blog.created_date) }}</td>
+          <td class="col-date">{{ blog.updated_date || '---' }}</td>
           <td class="col-author">{{ blog.author }}</td>
           <td class="col-category">
             <span class="category-badge">{{ blog.category }}</span>

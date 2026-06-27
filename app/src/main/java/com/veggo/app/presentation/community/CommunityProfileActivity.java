@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -73,6 +74,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
 
         bindHeader(chefName, accountSubtitle, chefImageUrl, recipeCount, likes);
         bindFollowNavigation(chefId);
+        bindRecipeNavigation();
         bindFollowAction(chefId);
         bindTabs();
 
@@ -104,13 +106,6 @@ public class CommunityProfileActivity extends AppCompatActivity {
             chefRecipes.clear();
             chefRecipes.addAll(recipes);
             ((TextView) findViewById(R.id.profileRecipeCount)).setText(String.valueOf(recipes.size()));
-            if (!recipes.isEmpty()) {
-                ImageView hero = findViewById(R.id.profileHeroImage);
-                Glide.with(this)
-                        .load(recipes.get(0).getImageUrl())
-                        .transform(new CenterCrop(), bottomRoundedCorners(18))
-                        .into(hero);
-            }
             showRecipes();
         });
         if (accountProfile) {
@@ -205,6 +200,15 @@ public class CommunityProfileActivity extends AppCompatActivity {
                 openFollowList(chefId, CommunityRepository.RELATION_FOLLOWING));
         findViewById(R.id.profileFollowerStat).setOnClickListener(v ->
                 openFollowList(chefId, CommunityRepository.RELATION_FOLLOWER));
+    }
+
+    private void bindRecipeNavigation() {
+        findViewById(R.id.profileRecipeStat).setOnClickListener(v -> {
+            showRecipes();
+            View tabs = findViewById(R.id.profileTabs);
+            ScrollView scroll = findViewById(R.id.profileScroll);
+            scroll.post(() -> scroll.smoothScrollTo(0, tabs.getTop()));
+        });
     }
 
     private void bindFollowAction(String chefId) {
@@ -306,8 +310,8 @@ public class CommunityProfileActivity extends AppCompatActivity {
 
     private void bindTabs() {
         if (accountProfile) {
-            recipesTab.setText("Posts");
-            galleriesTab.setText("Saved");
+            recipesTab.setText("Bài viết");
+            galleriesTab.setText("Đã lưu");
         }
         recipesTab.setOnClickListener(v -> showRecipes());
         galleriesTab.setOnClickListener(v -> {

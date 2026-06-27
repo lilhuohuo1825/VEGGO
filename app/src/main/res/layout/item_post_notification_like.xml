@@ -3,35 +3,36 @@
     android:id="@+id/postNotificationCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="@dimen/spacing_md"
-    android:background="@drawable/bg_order_card"
+    android:layout_marginTop="@dimen/spacing_sm"
+    android:background="@drawable/bg_post_notification_order_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="@dimen/spacing_lg">
+    android:minHeight="92dp"
+    android:paddingStart="14dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="12dp">
 
     <FrameLayout
         android:id="@+id/postNotificationIconCircle"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
         android:background="@drawable/bg_carbon_icon_circle">
 
-        <TextView
-            android:id="@+id/postNotificationIconText"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+        <ImageView
+            android:id="@+id/postNotificationIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_gravity="center"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="?"
-            android:textColor="@color/primary_hover"
-            android:textSize="@dimen/text_lg"
-            android:textStyle="bold" />
+            android:contentDescription="@string/posts_filter_orders"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_order_pending_box" />
     </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/spacing_lg"
+        android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -42,14 +43,15 @@
             android:fontFamily="@font/inter_semibold"
             android:text="12 người vừa thả tym"
             android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_md"
+            android:textSize="@dimen/text_sm"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/postNotificationBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_sm"
+            android:layout_marginTop="4dp"
+            android:lineSpacingExtra="0dp"
             android:text="Bài “Canh cải kale nấu tôm” đang được quan tâm."
             android:textColor="@color/neutral_70"
             android:textSize="@dimen/text_sm" />
@@ -57,7 +59,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_lg"
+            android:layout_marginTop="8dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 

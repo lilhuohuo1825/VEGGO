@@ -29,6 +29,9 @@ public class AuthViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _forgotPasswordSuccess = new MutableLiveData<>();
     public LiveData<Boolean> getForgotPasswordSuccess() { return _forgotPasswordSuccess; }
 
+    private final MutableLiveData<String> _forgotOtp = new MutableLiveData<>();
+    public LiveData<String> getForgotOtp() { return _forgotOtp; }
+
     private final MutableLiveData<Boolean> _resetPasswordSuccess = new MutableLiveData<>();
     public LiveData<Boolean> getResetPasswordSuccess() { return _resetPasswordSuccess; }
 
@@ -103,6 +106,9 @@ public class AuthViewModel extends ViewModel {
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                 _loading.setValue(false);
                 if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        _forgotOtp.setValue(response.body().get("otp"));
+                    }
                     _forgotPasswordSuccess.setValue(true);
                 } else {
                     _error.setValue("Số điện thoại chưa được đăng ký");

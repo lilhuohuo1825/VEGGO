@@ -2,6 +2,7 @@ package com.veggo.app.presentation.community;
 
 import android.content.Context;
 
+import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.local.entity.CommunityCategoryEntity;
@@ -47,24 +48,33 @@ public class CommunityRepository {
     public static final String ACCOUNT_AVATAR_URL = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80";
     public static final String ACCOUNT_HERO_URL = "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?auto=format&fit=crop&w=1200&q=80";
     public static final String ACCOUNT_RECIPE_CHEF_ID = "santana";
+    private static final String COMMUNITY_ASSET_FILE = "community_cooking.json";
 
     private final CommunityApi api;
     private final ProductApi productApi;
     private final AppPreferences preferences;
+    private final AssetJsonLoader assetLoader;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public CommunityRepository(Context context) {
         this.api = ApiClient.createService(CommunityApi.class);
         this.productApi = ApiClient.createService(ProductApi.class);
         this.preferences = new AppPreferences(context);
+        this.assetLoader = new AssetJsonLoader(context);
     }
 
     public void loadHome(Callback<CommunityData> callback) {
-        request(api.getHome(), emptyCommunityData(), callback);
+        executor.execute(() -> {
+            CommunityData remote = execute(api.getHome());
+            callback.onResult(withAssetFallback(remote));
+        });
     }
 
     public void loadCategories(Callback<List<CommunityCategoryEntity>> callback) {
-        request(api.getCategories(), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<CommunityCategoryEntity> remote = execute(api.getCategories());
+            callback.onResult(isEmpty(remote) ? assetCommunityData().categories : remote);
+        });
     }
 
     public void loadProducts(Callback<List<ProductDto>> callback) {
@@ -72,7 +82,10 @@ public class CommunityRepository {
     }
 
     public void loadChefs(Callback<List<CommunityChefEntity>> callback) {
-        request(api.getChefs(), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<CommunityChefEntity> remote = execute(api.getChefs());
+            callback.onResult(isEmpty(remote) ? assetCommunityData().chefs : remote);
+        });
     }
 
     public void loadUser(String customerId, Callback<CommunityChefEntity> callback) {
@@ -80,15 +93,24 @@ public class CommunityRepository {
     }
 
     public void loadRecipes(Callback<List<CommunityRecipeEntity>> callback) {
-        request(api.getRecipes(null, null, null), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<CommunityRecipeEntity> remote = execute(api.getRecipes(null, null, null));
+            callback.onResult(isEmpty(remote) ? assetCommunityData().recipes : remote);
+        });
     }
 
     public void loadRecipesByCategory(String categoryId, Callback<List<CommunityRecipeEntity>> callback) {
-        request(api.getRecipes(categoryId, null, null), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<CommunityRecipeEntity> remote = execute(api.getRecipes(categoryId, null, null));
+            callback.onResult(isEmpty(remote) ? filterAssetRecipes(categoryId, null) : remote);
+        });
     }
 
     public void loadRecipesByChef(String chefId, Callback<List<CommunityRecipeEntity>> callback) {
-        request(api.getRecipes(null, chefId, null), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<CommunityRecipeEntity> remote = execute(api.getRecipes(null, chefId, null));
+            callback.onResult(isEmpty(remote) ? filterAssetRecipes(null, chefId) : remote);
+        });
     }
 
     public void loadDraft(Callback<DraftResponse> callback) {
@@ -137,11 +159,18 @@ public class CommunityRepository {
     }
 
     public void loadCookbooks(String accountId, Callback<List<CommunityCookbookEntity>> callback) {
-        request(api.getCookbooks(firstNonBlank(accountId, currentCustomerId())), new ArrayList<>(), callback);
+        String customerId = firstNonBlank(accountId, currentCustomerId());
+        executor.execute(() -> {
+            List<CommunityCookbookEntity> remote = execute(api.getCookbooks(customerId));
+            callback.onResult(isEmpty(remote) ? filterAssetCookbooks(customerId) : remote);
+        });
     }
 
     public void loadCookbookRecipes(String cookbookId, Callback<CookbookData> callback) {
-        request(api.getCookbook(cookbookId), new CookbookData(), callback);
+        executor.execute(() -> {
+            CookbookData remote = execute(api.getCookbook(cookbookId));
+            callback.onResult(remote == null || remote.cookbook == null ? assetCookbookData(cookbookId) : remote);
+        });
     }
 
     public void addRecipeToCookbook(String cookbookId, String recipeId, Callback<Boolean> callback) {
@@ -176,8 +205,8 @@ public class CommunityRepository {
     }
 
     public void isRecipeSaved(String recipeId, Callback<Boolean> callback) {
-        request(api.getRecipeSavedStatus(recipeId, currentCustomerId()), new SavedStatus(), status ->
-                callback.onResult(status != null && status.saved));
+        request(api.getRecipeSavedStatus(recipeId, currentCustomerId()), null, status ->
+                callback.onResult(status == null ? isRecipeSavedInAsset(recipeId, currentCustomerId()) : status.saved));
     }
 
     public void loadRecipeDetail(String recipeId, Callback<RecipeDetailData> callback) {
@@ -263,6 +292,127 @@ public class CommunityRepository {
         data.chefs = new ArrayList<>();
         data.recipes = new ArrayList<>();
         return data;
+    }
+
+    private CommunityData withAssetFallback(CommunityData remote) {
+        CommunityData data = remote == null ? emptyCommunityData() : remote;
+        CommunityData asset = null;
+        if (isEmpty(data.categories)) {
+            asset = assetCommunityData();
+            data.categories = asset.categories;
+        }
+        if (isEmpty(data.chefs)) {
+            asset = asset == null ? assetCommunityData() : asset;
+            data.chefs = asset.chefs;
+        }
+        if (isEmpty(data.recipes)) {
+            asset = asset == null ? assetCommunityData() : asset;
+            data.recipes = asset.recipes;
+        }
+        return data;
+    }
+
+    private CommunityData assetCommunityData() {
+        try {
+            CommunityData data = assetLoader.readObject(COMMUNITY_ASSET_FILE, CommunityData.class);
+            return data == null ? emptyCommunityData() : withNonNullLists(data);
+        } catch (IOException ignored) {
+            return emptyCommunityData();
+        }
+    }
+
+    private CommunityData withNonNullLists(CommunityData data) {
+        if (data.categories == null) {
+            data.categories = new ArrayList<>();
+        }
+        if (data.chefs == null) {
+            data.chefs = new ArrayList<>();
+        }
+        if (data.recipes == null) {
+            data.recipes = new ArrayList<>();
+        }
+        if (data.cookbooks == null) {
+            data.cookbooks = new ArrayList<>();
+        }
+        if (data.cookbookRecipes == null) {
+            data.cookbookRecipes = new ArrayList<>();
+        }
+        return data;
+    }
+
+    private List<CommunityRecipeEntity> filterAssetRecipes(String categoryId, String chefId) {
+        List<CommunityRecipeEntity> recipes = assetCommunityData().recipes;
+        if (isBlank(categoryId) && isBlank(chefId)) {
+            return recipes;
+        }
+        List<CommunityRecipeEntity> filtered = new ArrayList<>();
+        for (CommunityRecipeEntity recipe : recipes) {
+            boolean matchesCategory = isBlank(categoryId) || categoryId.equals(recipe.getCategoryId());
+            boolean matchesChef = isBlank(chefId) || chefId.equals(recipe.getChefId());
+            if (matchesCategory && matchesChef) {
+                filtered.add(recipe);
+            }
+        }
+        return filtered;
+    }
+
+    private List<CommunityCookbookEntity> filterAssetCookbooks(String customerId) {
+        List<CommunityCookbookEntity> result = new ArrayList<>();
+        for (CommunityCookbookEntity cookbook : assetCommunityData().cookbooks) {
+            String ownerId = firstNonBlank(cookbook.getCustomerId(), cookbook.getAccountId());
+            if (customerId.equals(ownerId)) {
+                result.add(cookbook);
+            }
+        }
+        return result;
+    }
+
+    private CookbookData assetCookbookData(String cookbookId) {
+        CommunityData data = assetCommunityData();
+        CommunityCookbookEntity selected = null;
+        for (CommunityCookbookEntity cookbook : data.cookbooks) {
+            if (cookbook.getId().equals(cookbookId)) {
+                selected = cookbook;
+                break;
+            }
+        }
+        List<CommunityRecipeEntity> recipes = new ArrayList<>();
+        if (selected != null) {
+            for (CommunityCookbookRecipeEntity link : data.cookbookRecipes) {
+                if (!cookbookId.equals(link.getCookbookId())) {
+                    continue;
+                }
+                for (CommunityRecipeEntity recipe : data.recipes) {
+                    if (recipe.getId().equals(link.getRecipeId())) {
+                        recipes.add(recipe);
+                        break;
+                    }
+                }
+            }
+        }
+        return new CookbookData(selected, recipes);
+    }
+
+    private boolean isRecipeSavedInAsset(String recipeId, String customerId) {
+        List<CommunityCookbookEntity> cookbooks = filterAssetCookbooks(customerId);
+        if (cookbooks.isEmpty()) {
+            return false;
+        }
+        for (CommunityCookbookRecipeEntity link : assetCommunityData().cookbookRecipes) {
+            if (!recipeId.equals(link.getRecipeId())) {
+                continue;
+            }
+            for (CommunityCookbookEntity cookbook : cookbooks) {
+                if (cookbook.getId().equals(link.getCookbookId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isEmpty(List<?> list) {
+        return list == null || list.isEmpty();
     }
 
     public static class CommunityData {

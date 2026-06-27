@@ -262,6 +262,7 @@ public final class AssetModels {
         public String consultantCode;
         public String cancelReason;
         public String returnReason;
+        public String rejectReason;
         public String status;
         public OrderRoutes routes;
         public MongoDate createdAt;
@@ -388,6 +389,10 @@ public final class AssetModels {
         public String description;
         public String type;
         public String scope;
+        @SerializedName("promotion_kind")
+        public String promotionKind;
+        @SerializedName("display_section")
+        public String displaySection;
         @SerializedName("discount_type")
         public String discountType;
         @SerializedName("discount_value")

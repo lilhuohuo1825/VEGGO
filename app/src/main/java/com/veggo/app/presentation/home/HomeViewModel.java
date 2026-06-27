@@ -9,6 +9,7 @@ import com.google.gson.reflect.TypeToken;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.utils.JsonUtils;
+import com.veggo.app.core.database.AssetRepository;
 import com.veggo.app.data.remote.api.ProductApi;
 import com.veggo.app.data.remote.api.PromotionApi;
 import com.veggo.app.data.remote.dto.FlashSaleResponseDto;
@@ -28,9 +29,12 @@ import com.veggo.app.data.remote.dto.CategoryDto;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -107,7 +111,7 @@ public class HomeViewModel extends ViewModel {
 
         loadUtilities();
         loadBannersFromApi();
-        loadFlashSales();
+        loadFlashSales(context);
         loadRecipes(context);
         loadCategories(context);
 
@@ -187,6 +191,7 @@ public class HomeViewModel extends ViewModel {
                 dto.getPrice(),
                 dto.getOriginalPrice(),
                 dto.getImageUrl(),
+                dto.getWeightOptions(),
                 dto.getWeight(),
                 dto.getRating(),
                 dto.getReviewCount(),
@@ -196,7 +201,8 @@ public class HomeViewModel extends ViewModel {
                 dto.getCondition(),
                 dto.getFatContent(),
                 dto.getCategoryId(),
-                dto.getSubcategoryId()
+                dto.getSubcategoryId(),
+                dto.getCarbonSavingPoint()
         );
     }
 
@@ -214,7 +220,7 @@ public class HomeViewModel extends ViewModel {
         promotionRepository.refreshBanners();
     }
 
-    private void loadFlashSales() {
+    private void loadFlashSales(Context context) {
         PromotionApi promotionApi = ApiClient.createService(PromotionApi.class);
         promotionApi.getFlashSales().enqueue(new Callback<FlashSaleResponseDto>() {
             @Override
@@ -227,6 +233,7 @@ public class HomeViewModel extends ViewModel {
                                 item.getId(),
                                 item.getName(),
                                 item.getPrice(),
+                                item.getOriginalPrice(),
                                 item.getUnit(),
                                 item.getDiscount(),
                                 0,
@@ -236,26 +243,130 @@ public class HomeViewModel extends ViewModel {
                     }
                     _flashSales.setValue(flashSaleList);
                 } else {
-                    loadFallbackFlashSales();
+                    loadFallbackFlashSales(context);
                 }
             }
 
             @Override
             public void onFailure(Call<FlashSaleResponseDto> call, Throwable t) {
-                loadFallbackFlashSales();
+                loadFallbackFlashSales(context);
             }
         });
     }
 
-    private void loadFallbackFlashSales() {
+    private void loadFallbackFlashSales(Context context) {
+        new Thread(() -> {
+            List<FlashSale> flashSaleList = buildAssetFlashSales(context);
+            _flashSales.postValue(flashSaleList);
+        }).start();
+    }
+
+    private List<FlashSale> buildAssetFlashSales(Context context) {
+        AssetRepository repository = new AssetRepository(context);
+        List<AssetModels.Promotion> promotions = repository.getPromotions();
+        List<AssetModels.PromotionTarget> targets = repository.getPromotionTargets();
+        List<AssetModels.Product> products = repository.getProducts();
+
+        Map<String, AssetModels.Promotion> activeFlashPromoById = new HashMap<>();
+        for (AssetModels.Promotion promotion : promotions) {
+            if (isAssetFlashSalePromotion(promotion)) {
+                activeFlashPromoById.put(promotion.promotionId, promotion);
+            }
+        }
+
+        Map<String, AssetModels.Product> productBySku = new HashMap<>();
+        for (AssetModels.Product product : products) {
+            if (product.sku != null && !product.sku.trim().isEmpty()) {
+                productBySku.put(product.sku, product);
+            }
+        }
+
         List<FlashSale> flashSaleList = new ArrayList<>();
-        flashSaleList.add(new FlashSale("68d1501b1108dd931e9631a6", "Táo Envy Mỹ", 120000, "1.5kg", "-20%", 0,
-                "https://lh3.googleusercontent.com/voEE3B_IhofqhrkoWMN05xl_FqpvHnGOc0NoTCvD1A9IeGtCE0E8X_BAeAb4Y136YmxkUOCR0nGJSXW-KtekoNy38c6_sWurnQ=rw", 4.5f));
-        flashSaleList.add(new FlashSale("68d150221108dd931e9631d4", "Bơ Sáp Đắk Lắk", 45000, "1kg", "-15%", 0,
-                "https://lh3.googleusercontent.com/PKppN4rs6zjbBlbMk_AXcwjTk-40oORwBRW9njwjANV5gFgme2ioKCV4nKuTUNYck_V41-pBPfSeoSTu5rE9KQxSFKICMDWkYg=rw", 4.2f));
-        flashSaleList.add(new FlashSale("68d150401108dd931e963284", "Nho đỏ Candy Mỹ", 350000, "450g", "-10%", 0,
-                "https://lh3.googleusercontent.com/8P3BtXVPs972GoFMXDzALWkU7LnqpsnsLDwTfPgHa_MZQceIWsV9Lkvn10J-vzS9ChlFYiOOu4lyIYmUKzC9tlStOVr6gXVP=rw", 4.8f));
-        _flashSales.setValue(flashSaleList);
+        Set<String> addedSkus = new HashSet<>();
+        for (AssetModels.PromotionTarget target : targets) {
+            AssetModels.Promotion promotion = activeFlashPromoById.get(target.promotionId);
+            if (promotion == null || !"Product".equalsIgnoreCase(target.targetType) || target.targetRef == null) {
+                continue;
+            }
+            for (String sku : target.targetRef) {
+                if (sku == null || addedSkus.contains(sku)) continue;
+                AssetModels.Product product = productBySku.get(sku);
+                if (product == null || product.status != null && !"Active".equalsIgnoreCase(product.status)) {
+                    continue;
+                }
+                flashSaleList.add(new FlashSale(
+                        assetProductId(product),
+                        product.productName,
+                        calculateAssetSalePrice(product.price, promotion),
+                        product.price,
+                        product.weight != null ? product.weight : product.unit,
+                        formatAssetDiscount(promotion),
+                        0,
+                        firstImage(product.image),
+                        (float) product.rating
+                ));
+                addedSkus.add(sku);
+            }
+        }
+        return flashSaleList;
+    }
+
+    private boolean isAssetFlashSalePromotion(AssetModels.Promotion promotion) {
+        if (!isActiveAssetPromotion(promotion)) return false;
+        return "flashsale".equalsIgnoreCase(promotion.promotionKind == null ? "" : promotion.promotionKind.trim());
+    }
+
+    private boolean isActiveAssetPromotion(AssetModels.Promotion promotion) {
+        if (promotion == null || promotion.promotionId == null || promotion.promotionId.trim().isEmpty()) return false;
+        if (promotion.status != null && ("inactive".equalsIgnoreCase(promotion.status) || "expired".equalsIgnoreCase(promotion.status))) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        Long start = parseAssetDateMillis(promotion.startDate);
+        Long end = parseAssetDateMillis(promotion.endDate);
+        return (start == null || start <= now) && (end == null || end >= now);
+    }
+
+    private long calculateAssetSalePrice(long originalPrice, AssetModels.Promotion promotion) {
+        int discountValue = Math.max(0, promotion.discountValue);
+        if ("fixed".equalsIgnoreCase(promotion.discountType)) {
+            return Math.max(0, originalPrice - discountValue);
+        }
+        if ("percent".equalsIgnoreCase(promotion.discountType) || discountValue > 0 && !"buy1get1".equalsIgnoreCase(promotion.discountType)) {
+            return Math.max(0, Math.round(originalPrice * (100 - Math.min(100, discountValue)) / 100f));
+        }
+        return originalPrice;
+    }
+
+    private String formatAssetDiscount(AssetModels.Promotion promotion) {
+        int discountValue = Math.max(0, promotion.discountValue);
+        if ("fixed".equalsIgnoreCase(promotion.discountType)) {
+            return "-" + String.format(java.util.Locale.US, "%,d", discountValue).replace(',', '.') + "đ";
+        }
+        if ("buy1get1".equalsIgnoreCase(promotion.discountType)) {
+            return "Mua 1 tặng 1";
+        }
+        return "-" + discountValue + "%";
+    }
+
+    private Long parseAssetDateMillis(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+            format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date date = format.parse(value);
+            return date != null ? date.getTime() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String assetProductId(AssetModels.Product product) {
+        return product.objectId != null && !product.objectId.trim().isEmpty() ? product.objectId : product.sku;
+    }
+
+    private String firstImage(List<String> images) {
+        return images == null || images.isEmpty() ? "" : images.get(0);
     }
 
     private void loadRecipes(Context context) {
@@ -291,10 +402,14 @@ public class HomeViewModel extends ViewModel {
                     String videoId = extractYoutubeId(dish.video);
                     String thumbnailUrl = videoId != null
                             ? "https://img.youtube.com/vi/" + videoId + "/0.jpg" : null;
-                    recipeList.add(new Recipe(dish.id, inst.dishName, inst.cookingTime, 0, thumbnailUrl));
+                    recipeList.add(new Recipe(dish.id, inst.dishName, inst.cookingTime,
+                            0, thumbnailUrl, countIngredients(dish.ingredients)));
                 }
-                if (recipeList.size() >= 10) break;
             }
+        }
+        Collections.shuffle(recipeList);
+        if (recipeList.size() > 10) {
+            recipeList = new ArrayList<>(recipeList.subList(0, 10));
         }
         _recipes.setValue(recipeList);
     }
@@ -311,6 +426,24 @@ public class HomeViewModel extends ViewModel {
             return null;
         }
         return null;
+    }
+
+    private int countIngredients(String ingredients) {
+        if (ingredients == null || ingredients.trim().isEmpty()) {
+            return 0;
+        }
+        String normalized = ingredients
+                .replace("\r", "\n")
+                .replace(";", ",")
+                .replace("•", ",");
+        String[] parts = normalized.split(",|\\n");
+        int count = 0;
+        for (String part : parts) {
+            if (part != null && !part.trim().isEmpty()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void loadCategories(Context context) {

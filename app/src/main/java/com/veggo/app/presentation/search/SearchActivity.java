@@ -14,7 +14,9 @@ import com.veggo.app.databinding.ActivitySearchBinding;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.ProductRepository;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.ViewModelFactory;
+import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 
 import java.util.ArrayList;
@@ -36,7 +38,7 @@ public class SearchActivity extends AppCompatActivity {
 
         productRepository = AppModule.provideProductRepository(this);
         categoryRepository = AppModule.provideCategoryRepository(this);
-        ViewModelFactory factory = new ViewModelFactory(productRepository, categoryRepository, null);
+        ViewModelFactory factory = new ViewModelFactory(productRepository, categoryRepository, null, null, null, null);
         viewModel = new ViewModelProvider(this, factory).get(SearchViewModel.class);
 
         setupViews();
@@ -123,15 +125,27 @@ public class SearchActivity extends AppCompatActivity {
         Intent intent = null;
         switch (feature.getType()) {
             case "refrigerator":
+                if (!new AppPreferences(this).isLoggedIn()) {
+                    LoginRequiredActivity.open(this, "tủ lạnh thông minh");
+                    return;
+                }
                 intent = new Intent(this, com.veggo.app.presentation.profile.SmartFridgeActivity.class);
                 break;
             case "ai_assistant":
                 intent = new Intent(this, com.veggo.app.presentation.chatbot.ChatbotActivity.class);
                 break;
             case "taste_profile":
+                if (!new AppPreferences(this).isLoggedIn()) {
+                    LoginRequiredActivity.open(this, "khẩu vị của tôi");
+                    return;
+                }
                 intent = new Intent(this, com.veggo.app.presentation.profile.TastePreferencesActivity.class);
                 break;
             case "green_points":
+                if (!new AppPreferences(this).isLoggedIn()) {
+                    LoginRequiredActivity.open(this, "điểm carbon");
+                    return;
+                }
                 intent = new Intent(this, com.veggo.app.presentation.profile.CarbonPointsActivity.class);
                 break;
             case "articles":

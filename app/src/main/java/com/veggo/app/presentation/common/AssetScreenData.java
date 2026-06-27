@@ -34,6 +34,8 @@ public final class AssetScreenData {
     private static final NumberFormat VND_FORMAT = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private static final SimpleDateFormat ISO_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd/MM/yyyy, HH:mm", new Locale("vi", "VN"));
+    private static final List<AssetModels.Order> guestOrderCache = new ArrayList<>();
+    private static final Map<String, AssetModels.OrderDetail> guestOrderDetailCache = new HashMap<>();
 
     static {
         ISO_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -138,70 +140,9 @@ public final class AssetScreenData {
                 retrofit2.Response<List<com.veggo.app.data.remote.dto.OrderDto>> ordersResponse = orderApi.getOrders(customerId).execute();
                 if (ordersResponse.isSuccessful() && ordersResponse.body() != null) {
                     for (com.veggo.app.data.remote.dto.OrderDto orderDto : ordersResponse.body()) {
-                        AssetModels.Order order = new AssetModels.Order();
-                        // Backend trả về orderId (ORD...) trong field "orderId", _id trong "_id"
-                        order.orderId = hasText(orderDto.getOrderId()) ? orderDto.getOrderId() : orderDto.getId();
-                        order.customerId = orderDto.getUserId(); // CustomerID (CUS000XXX)
-                        order.paymentMethod = orderDto.getPaymentMethod();
-                        order.subtotal = orderDto.getSubtotal();
-                        order.shippingFee = orderDto.getShippingFee();
-                        order.shippingDiscount = orderDto.getShippingDiscount();
-                        order.discount = orderDto.getDiscount();
-                        order.totalAmount = orderDto.getTotal();
-                        order.status = orderDto.getStatus();
-
-                        order.createdAt = new AssetModels.MongoDate();
-                        order.createdAt.date = orderDto.getCreatedAt();
-
+                        AssetModels.Order order = mapOrder(orderDto);
                         customerOrders.add(order);
-
-                        // Detail
-                        AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
-                        detail.orderId = order.orderId;
-                        detail.carbonPointEarned = orderDto.getCarbonPointEarned();
-                        detail.totalCarbonEmission = orderDto.getTotalCarbonEmission();
-                        detail.items = new ArrayList<>();
-                        if (orderDto.getItems() != null) {
-                            for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
-                                AssetModels.OrderDetailItem item = new AssetModels.OrderDetailItem();
-                                item.productName = itemDto.getName();
-                                item.price = itemDto.getPrice();
-                                item.originalPrice = itemDto.getOriginalPrice() > 0
-                                        ? itemDto.getOriginalPrice() : itemDto.getPrice();
-                                item.quantity = itemDto.getQuantity();
-                                item.image = itemDto.getImageUrl();
-                                item.sku = itemDto.getSku();
-                                item.unit = hasText(itemDto.getUnit()) ? itemDto.getUnit() : "kg";
-                                item.carbonPointEarned = itemDto.getCarbonPointEarned();
-                                item.totalCarbonEmission = itemDto.getTotalCarbonEmission();
-                                detail.items.add(item);
-                            }
-                        }
-
-                        Map<String, Object> addrMap = orderDto.getShippingAddress();
-                        if (addrMap != null && !addrMap.isEmpty()) {
-                            AssetModels.ShippingInfo info = new AssetModels.ShippingInfo();
-                            info.fullName = getMapString(addrMap, "receiverName");
-                            if (!hasText(info.fullName)) {
-                                info.fullName = getMapString(addrMap, "fullName");
-                            }
-                            info.phone = getMapString(addrMap, "phone");
-                            info.email = getMapString(addrMap, "email");
-                            info.warehouseId = orderDto.getWarehouseId();
-
-                            AssetModels.ShippingAddress addr = new AssetModels.ShippingAddress();
-                            addr.detail = getMapString(addrMap, "line1");
-                            if (!hasText(addr.detail)) {
-                                addr.detail = getMapString(addrMap, "detail");
-                            }
-                            addr.ward = getMapString(addrMap, "ward");
-                            addr.district = getMapString(addrMap, "district");
-                            addr.city = getMapString(addrMap, "city");
-
-                            info.address = addr;
-                            detail.shippingInfo = info;
-                        }
-                        detailByOrderId.put(order.orderId, detail);
+                        detailByOrderId.put(order.orderId, mapOrderDetail(orderDto, order.orderId));
                     }
                 }
             } catch (Exception e) {
@@ -210,6 +151,16 @@ public final class AssetScreenData {
 
             customerOrders.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
         }
+
+        synchronized (AssetScreenData.class) {
+            for (AssetModels.Order guestOrder : guestOrderCache) {
+                if (!containsOrder(customerOrders, guestOrder.orderId)) {
+                    customerOrders.add(guestOrder);
+                }
+            }
+            detailByOrderId.putAll(guestOrderDetailCache);
+        }
+        customerOrders.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
 
         Map<String, AssetModels.Warehouse> warehouseById = new HashMap<>();
         for (AssetModels.Warehouse warehouse : warehouses) {
@@ -250,6 +201,154 @@ public final class AssetScreenData {
             e.printStackTrace();
         }
         return repository.getCertificates();
+    }
+
+    public static synchronized AssetModels.Order cacheGuestOrder(
+            @NonNull com.veggo.app.data.remote.dto.OrderDto orderDto
+    ) {
+        AssetModels.Order order = mapOrder(orderDto);
+        AssetModels.OrderDetail detail = mapOrderDetail(orderDto, order.orderId);
+        removeCachedGuestOrder(order.orderId);
+        guestOrderCache.add(order);
+        guestOrderDetailCache.put(order.orderId, detail);
+        guestOrderCache.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
+        return order;
+    }
+
+    private static void removeCachedGuestOrder(@Nullable String orderId) {
+        if (!hasText(orderId)) {
+            return;
+        }
+        for (int index = guestOrderCache.size() - 1; index >= 0; index--) {
+            AssetModels.Order cachedOrder = guestOrderCache.get(index);
+            if (equals(cachedOrder.orderId, orderId)) {
+                guestOrderCache.remove(index);
+            }
+        }
+        guestOrderDetailCache.remove(orderId);
+    }
+
+    private static boolean containsOrder(@NonNull List<AssetModels.Order> orders, @Nullable String orderId) {
+        if (!hasText(orderId)) {
+            return false;
+        }
+        for (AssetModels.Order order : orders) {
+            if (equals(order.orderId, orderId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static AssetModels.Order mapOrder(
+            @NonNull com.veggo.app.data.remote.dto.OrderDto orderDto
+    ) {
+        AssetModels.Order order = new AssetModels.Order();
+        order.orderId = hasText(orderDto.getOrderId()) ? orderDto.getOrderId() : orderDto.getId();
+        order.customerId = orderDto.getUserId();
+        order.paymentMethod = orderDto.getPaymentMethod();
+        order.subtotal = orderDto.getSubtotal();
+        order.shippingFee = orderDto.getShippingFee();
+        order.shippingDiscount = orderDto.getShippingDiscount();
+        order.discount = orderDto.getDiscount();
+        order.totalAmount = orderDto.getTotal();
+        order.status = orderDto.getStatus();
+        order.rejectReason = orderDto.getRejectReason();
+        order.createdAt = new AssetModels.MongoDate();
+        order.createdAt.date = hasText(orderDto.getCreatedAt())
+                ? orderDto.getCreatedAt()
+                : ISO_FORMAT.format(new java.util.Date());
+        return order;
+    }
+
+    private static AssetModels.OrderDetail mapOrderDetail(
+            @NonNull com.veggo.app.data.remote.dto.OrderDto orderDto,
+            @NonNull String orderId
+    ) {
+        AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
+        detail.orderId = orderId;
+        detail.carbonPointEarned = orderDto.getCarbonPointEarned();
+        detail.totalCarbonEmission = orderDto.getTotalCarbonEmission();
+        detail.items = new ArrayList<>();
+        if (orderDto.getItems() != null) {
+            for (com.veggo.app.data.remote.dto.OrderDto.OrderItemDto itemDto : orderDto.getItems()) {
+                AssetModels.OrderDetailItem item = new AssetModels.OrderDetailItem();
+                item.productName = itemDto.getName();
+                item.price = itemDto.getPrice();
+                item.originalPrice = itemDto.getOriginalPrice() > 0
+                        ? itemDto.getOriginalPrice() : itemDto.getPrice();
+                item.quantity = itemDto.getQuantity();
+                item.image = itemDto.getImageUrl();
+                item.sku = itemDto.getSku();
+                item.unit = hasText(itemDto.getUnit()) ? itemDto.getUnit() : "kg";
+                item.carbonPointEarned = itemDto.getCarbonPointEarned();
+                item.totalCarbonEmission = itemDto.getTotalCarbonEmission();
+                detail.items.add(item);
+            }
+        }
+
+        Map<String, Object> infoMap = orderDto.getShippingInfo();
+        Map<String, Object> addrMap = orderDto.getShippingAddress();
+        if (infoMap != null && !infoMap.isEmpty()) {
+            AssetModels.ShippingInfo info = new AssetModels.ShippingInfo();
+            info.fullName = getMapString(infoMap, "fullName");
+            if (!hasText(info.fullName)) {
+                info.fullName = getMapString(infoMap, "receiverName");
+            }
+            info.phone = getMapString(infoMap, "phone");
+            info.email = getMapString(infoMap, "email");
+            info.warehouseId = getMapString(infoMap, "warehouse_id");
+            if (!hasText(info.warehouseId)) {
+                info.warehouseId = orderDto.getWarehouseId();
+            }
+
+            AssetModels.ShippingAddress addr = new AssetModels.ShippingAddress();
+            Object nestedAddress = infoMap.get("address");
+            if (nestedAddress instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> nestedMap = (Map<String, Object>) nestedAddress;
+                addr.detail = getMapString(nestedMap, "detail");
+                if (!hasText(addr.detail)) {
+                    addr.detail = getMapString(nestedMap, "line1");
+                }
+                addr.ward = getMapString(nestedMap, "ward");
+                addr.district = getMapString(nestedMap, "district");
+                addr.city = getMapString(nestedMap, "city");
+            } else {
+                addr.detail = getMapString(infoMap, "line1");
+                if (!hasText(addr.detail)) {
+                    addr.detail = getMapString(infoMap, "detail");
+                }
+                addr.ward = getMapString(infoMap, "ward");
+                addr.district = getMapString(infoMap, "district");
+                addr.city = getMapString(infoMap, "city");
+            }
+
+            info.address = addr;
+            detail.shippingInfo = info;
+        } else if (addrMap != null && !addrMap.isEmpty()) {
+            AssetModels.ShippingInfo info = new AssetModels.ShippingInfo();
+            info.fullName = getMapString(addrMap, "receiverName");
+            if (!hasText(info.fullName)) {
+                info.fullName = getMapString(addrMap, "fullName");
+            }
+            info.phone = getMapString(addrMap, "phone");
+            info.email = getMapString(addrMap, "email");
+            info.warehouseId = orderDto.getWarehouseId();
+
+            AssetModels.ShippingAddress addr = new AssetModels.ShippingAddress();
+            addr.detail = getMapString(addrMap, "line1");
+            if (!hasText(addr.detail)) {
+                addr.detail = getMapString(addrMap, "detail");
+            }
+            addr.ward = getMapString(addrMap, "ward");
+            addr.district = getMapString(addrMap, "district");
+            addr.city = getMapString(addrMap, "city");
+
+            info.address = addr;
+            detail.shippingInfo = info;
+        }
+        return detail;
     }
 
     @NonNull
@@ -371,7 +470,14 @@ public final class AssetScreenData {
         }
         List<AssetModels.Order> filtered = new ArrayList<>();
         for (AssetModels.Order order : snapshot.orders) {
-            if (equals(order.status, status)) {
+            String orderStatus = safe(order.status);
+            if (equals(orderStatus, status)
+                    || ("shipping".equals(status) && "delivered".equals(orderStatus))
+                    || ("delivered".equals(status) && (
+                    "unreview".equals(orderStatus)
+                            || "reviewed".equals(orderStatus)
+                            || "completed".equals(orderStatus)
+                            || "rejected".equals(orderStatus)))) {
                 filtered.add(order);
             }
         }
@@ -385,13 +491,13 @@ public final class AssetScreenData {
         List<AssetModels.Order> filtered = new ArrayList<>();
         for (AssetModels.Order order : snapshot.orders) {
             String status = safe(order.status);
-            if ("pending".equals(bucket) && hasText(order.returnReason) && "completed".equals(status)) {
+            if ("pending".equals(bucket) && "processing_return".equals(status)) {
                 filtered.add(order);
-            } else if ("processing".equals(bucket) && ("processing_return".equals(status) || "returning".equals(status))) {
+            } else if ("processing".equals(bucket) && "returning".equals(status)) {
                 filtered.add(order);
             } else if ("completed".equals(bucket) && "returned".equals(status)) {
                 filtered.add(order);
-            } else if ("rejected".equals(bucket) && "cancelled".equals(status)) {
+            } else if ("rejected".equals(bucket) && "rejected".equals(status)) {
                 filtered.add(order);
             }
         }
@@ -402,11 +508,13 @@ public final class AssetScreenData {
             @NonNull Snapshot snapshot,
             boolean done
     ) {
-        List<AssetModels.Order> source = filterOrders(snapshot, "completed");
         List<AssetModels.Order> filtered = new ArrayList<>();
-        for (int i = 0; i < source.size(); i++) {
-            if (done == (i % 2 == 1)) {
-                filtered.add(source.get(i));
+        for (AssetModels.Order order : snapshot.orders) {
+            String status = safe(order.status);
+            if (!done && "unreview".equals(status)) {
+                filtered.add(order);
+            } else if (done && "reviewed".equals(status)) {
+                filtered.add(order);
             }
         }
         return filtered;
@@ -463,10 +571,15 @@ public final class AssetScreenData {
             @NonNull Snapshot snapshot,
             @NonNull AssetModels.Order order
     ) {
-        setText(card, R.id.orderPendingItemCode, order.orderId);
-        setText(card, R.id.orderShippingItemCode, order.orderId);
-        setText(card, R.id.orderDeliveredItemCode, order.orderId);
-        setText(card, R.id.orderCancelledItemCode, order.orderId);
+        String orderTitle = orderTitle(order);
+        setText(card, R.id.orderPendingItemCode, orderTitle);
+        setText(card, R.id.orderShippingItemCode, orderTitle);
+        setText(card, R.id.orderDeliveredItemCode, orderTitle);
+        setText(card, R.id.orderCancelledItemCode, orderTitle);
+        setText(card, R.id.orderPendingItemId, order.orderId);
+        setText(card, R.id.orderShippingItemId, order.orderId);
+        setText(card, R.id.orderDeliveredItemId, order.orderId);
+        setText(card, R.id.orderCancelledItemId, order.orderId);
         setText(card, R.id.returnOrderCode, order.orderId);
         setText(card, R.id.reviewOrderCode, order.orderId);
 
@@ -476,9 +589,62 @@ public final class AssetScreenData {
         setText(card, R.id.orderCancelledItemStatus, statusLabel(order.status));
         setText(card, R.id.returnOrderStatus, statusLabel(order.status));
         setText(card, R.id.reviewOrderStatus, statusLabel(order.status));
+        applyStatusChipStyle(context, card, R.id.orderPendingItemStatus, order.status);
+        applyStatusChipStyle(context, card, R.id.orderShippingItemStatus, order.status);
+        applyStatusChipStyle(context, card, R.id.orderDeliveredItemStatus, order.status);
+        applyStatusChipStyle(context, card, R.id.orderCancelledItemStatus, order.status);
+        applyStatusChipStyle(context, card, R.id.returnOrderStatus, order.status);
+        applyStatusChipStyle(context, card, R.id.reviewOrderStatus, order.status);
 
         AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(order.orderId);
         bindProductBlock(context, card, detail, order);
+    }
+
+    private static void applyStatusChipStyle(
+            @NonNull Context context,
+            @NonNull View root,
+            int statusViewId,
+            @Nullable String status
+    ) {
+        TextView view = root.findViewById(statusViewId);
+        if (view == null) {
+            return;
+        }
+        String cleanStatus = safe(status);
+        int backgroundRes;
+        int textColorRes;
+        if (isReturnStatus(cleanStatus) || "cancelled".equals(cleanStatus)) {
+            backgroundRes = R.drawable.bg_order_cancelled_chip;
+            textColorRes = R.color.order_status_cancelled;
+        } else if ("pending".equals(cleanStatus)) {
+            backgroundRes = R.drawable.bg_order_pending_chip;
+            textColorRes = R.color.order_status_pending;
+        } else if ("shipping".equals(cleanStatus)) {
+            backgroundRes = R.drawable.bg_order_shipping_chip;
+            textColorRes = R.color.order_status_shipping;
+        } else {
+            backgroundRes = R.drawable.bg_order_delivered_chip;
+            textColorRes = R.color.order_status_delivered;
+        }
+        view.setBackgroundResource(backgroundRes);
+        view.setTextColor(context.getColor(textColorRes));
+    }
+
+    private static boolean isReturnStatus(@Nullable String status) {
+        String cleanStatus = safe(status);
+        return "processing_return".equals(cleanStatus)
+                || "returning".equals(cleanStatus)
+                || "returned".equals(cleanStatus)
+                || "rejected".equals(cleanStatus);
+    }
+
+    private static String orderTitle(@NonNull AssetModels.Order order) {
+        String orderDate = date(order.createdAt);
+        int commaIndex = orderDate.indexOf(',');
+        if (commaIndex >= 0) {
+            orderDate = orderDate.substring(0, commaIndex).trim();
+        }
+        return hasText(orderDate) ? "Đơn hàng ngày " + orderDate : "Đơn hàng";
     }
 
     public static void bindProductBlock(
@@ -497,6 +663,7 @@ public final class AssetScreenData {
         setText(root, R.id.orderItemQuantity, "x" + item.quantity);
         setText(root, R.id.orderItemOldPrice, item.originalPrice > item.price ? money(item.originalPrice) : "");
         setText(root, R.id.orderItemPrice, money(item.price));
+        setText(root, R.id.orderItemTotalLabel, "Thành tiền (" + orderProductCount(detail) + " sản phẩm):");
         setText(root, R.id.orderItemTotal, money(Math.round(order.totalAmount)));
         ImageView image = root.findViewById(R.id.orderItemProductImage);
         if (image != null && hasText(item.image)) {
@@ -510,7 +677,19 @@ public final class AssetScreenData {
         setText(root, R.id.orderItemQuantity, "");
         setText(root, R.id.orderItemOldPrice, "");
         setText(root, R.id.orderItemPrice, "");
+        setText(root, R.id.orderItemTotalLabel, "Thành tiền (0 sản phẩm):");
         setText(root, R.id.orderItemTotal, "");
+    }
+
+    private static int orderProductCount(@NonNull AssetModels.OrderDetail detail) {
+        if (detail.items == null || detail.items.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (AssetModels.OrderDetailItem detailItem : detail.items) {
+            count += Math.max(1, detailItem.quantity);
+        }
+        return count;
     }
 
     public static void bindDetailProduct(
@@ -570,15 +749,22 @@ public final class AssetScreenData {
                 return "Đang giao";
             case "delivered":
                 return "Đã giao";
+            case "unreview":
+                return "Chưa đánh giá";
+            case "reviewed":
+                return "Đã đánh giá";
             case "completed":
                 return "Hoàn tất";
             case "cancelled":
                 return "Đã hủy";
             case "returned":
                 return "Đã hoàn trả";
+            case "rejected":
+                return "Từ chối hoàn/trả";
             case "returning":
+                return "Đang hoàn/trả";
             case "processing_return":
-                return "Đang đổi trả";
+                return "Đang xử lý hoàn/trả";
             default:
                 return safe(status);
         }
@@ -587,6 +773,14 @@ public final class AssetScreenData {
     public static String paymentLabel(@Nullable String paymentMethod) {
         if ("cod".equalsIgnoreCase(paymentMethod)) {
             return "Thanh toán khi nhận hàng";
+        }
+        if ("bank".equalsIgnoreCase(paymentMethod)
+                || "card".equalsIgnoreCase(paymentMethod)
+                || "bank_transfer".equalsIgnoreCase(paymentMethod)) {
+            return "Chuyển khoản qua ngân hàng";
+        }
+        if ("momo".equalsIgnoreCase(paymentMethod)) {
+            return "Ví MoMo";
         }
         return hasText(paymentMethod) ? paymentMethod : "Chưa cập nhật";
     }

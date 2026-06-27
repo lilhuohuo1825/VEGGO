@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { Subscription, filter } from 'rxjs';
+import { Subscription, filter, interval } from 'rxjs';
 
 @Component({
   selector: 'app-ordersmanage',
@@ -19,6 +19,9 @@ export class OrdersManage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private apiService = inject(ApiService);
   private routerSubscription?: Subscription;
+  private dataRefreshSubscription?: Subscription;
+  private isLoadingOrders = false;
+  private readonly REFRESH_INTERVAL = 5000;
 
   // Statistics
   statistics = {
@@ -91,6 +94,7 @@ export class OrdersManage implements OnInit, OnDestroy {
     });
 
     this.loadData();
+    this.startAutoRefresh();
 
     // Track previous URL and reload orders when navigating back from order detail
     this.previousUrl = this.router.url;
@@ -153,6 +157,15 @@ export class OrdersManage implements OnInit, OnDestroy {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
     }
+    if (this.dataRefreshSubscription) {
+      this.dataRefreshSubscription.unsubscribe();
+    }
+  }
+
+  private startAutoRefresh(): void {
+    this.dataRefreshSubscription = interval(this.REFRESH_INTERVAL).subscribe(() => {
+      this.loadOrders(true);
+    });
   }
 
   /**
@@ -165,12 +178,21 @@ export class OrdersManage implements OnInit, OnDestroy {
   /**
    * Load orders data from MongoDB via API
    */
-  loadOrders(): void {
-    console.log('🔄 Loading orders from MongoDB...');
+  loadOrders(silent = false): void {
+    if (this.isLoadingOrders) {
+      return;
+    }
+
+    this.isLoadingOrders = true;
+    if (!silent) {
+      console.log('🔄 Loading orders from MongoDB...');
+    }
     // Try MongoDB first
     this.apiService.getOrders().subscribe({
       next: (ordersData) => {
-        console.log('📦 [OrdersManage] Raw orders data:', ordersData);
+        if (!silent) {
+          console.log('📦 [OrdersManage] Raw orders data:', ordersData);
+        }
 
         // Đảm bảo ordersData là array
         if (!Array.isArray(ordersData)) {
@@ -179,35 +201,38 @@ export class OrdersManage implements OnInit, OnDestroy {
           this.orders = [];
           this.updateStatistics();
           this.loadError = 'Dữ liệu đơn hàng không hợp lệ';
+          this.isLoadingOrders = false;
           return;
         }
 
-        console.log(`✅ Loaded ${ordersData.length} orders from MongoDB`);
+        if (!silent) {
+          console.log(`✅ Loaded ${ordersData.length} orders from MongoDB`);
+        }
 
         // Load users to map CustomerID to customer name
         this.apiService.getUsers().subscribe({
           next: (usersData) => {
-            console.log(`✅ Loaded ${usersData.length} users from MongoDB`);
+            if (!silent) {
+              console.log(`✅ Loaded ${usersData.length} users from MongoDB`);
+            }
             this.users = Array.isArray(usersData) ? usersData : [];
 
             // Transform orders with user mapping - use transformOrderFromTemp for MongoDB format
             this.allOrders = ordersData.map((order) => this.transformOrderFromTemp(order));
 
-            // Sort by date - newest first (default)
-            this.sortOrdersByDate();
-
-            this.orders = [...this.allOrders];
+            this.applySort();
             this.updateStatistics();
             this.loadError = '';
+            this.isLoadingOrders = false;
           },
           error: (error: any) => {
             console.error('❌ Error loading users from MongoDB:', error);
             // Still transform orders without user mapping
             this.allOrders = ordersData.map((order) => this.transformOrderFromTemp(order));
-            this.sortOrdersByDate();
-            this.orders = [...this.allOrders];
+            this.applySort();
             this.updateStatistics();
             this.loadError = '';
+            this.isLoadingOrders = false;
           },
         });
       },
@@ -218,6 +243,7 @@ export class OrdersManage implements OnInit, OnDestroy {
         this.allOrders = [];
         this.orders = [];
         this.updateStatistics();
+        this.isLoadingOrders = false;
       },
     });
   }
@@ -358,12 +384,18 @@ export class OrdersManage implements OnInit, OnDestroy {
     // Logic này phải giống hệt với transformOrderDataFromMongoDB() trong orderdetail.ts
     const orderStatus = orderData.status?.toLowerCase() || 'pending';
 
-    if (orderStatus === 'completed' || orderStatus === 'delivered') {
-      // Both completed and delivered are considered the same final status
+    if (orderStatus === 'delivered') {
+      // Admin has marked the order as delivered; user still needs to confirm receipt.
       status = 'confirmed';
       delivery = 'delivered';
       payment =
         orderData.paymentMethod === 'cod' ? 'paid' : orderData.paymentMethod ? 'paid' : 'unpaid';
+      refund = 'none';
+    } else if (orderStatus === 'unreview' || orderStatus === 'reviewed' || orderStatus === 'completed') {
+      // User has confirmed receipt; order is now in post-delivery/review flow.
+      status = 'completed';
+      delivery = 'delivered';
+      payment = 'paid';
       refund = 'none';
     } else if (orderStatus === 'pending') {
       status = 'pending';
@@ -392,6 +424,11 @@ export class OrdersManage implements OnInit, OnDestroy {
       delivery = 'delivered'; // Luôn hiển thị "Đã giao hàng" khi đã trả hàng
       payment = 'paid'; // Luôn hiển thị "Đã thanh toán" khi đã trả hàng
       refund = 'refunded';
+    } else if (orderStatus === 'rejected') {
+      status = 'rejected';
+      delivery = 'delivered';
+      payment = 'paid';
+      refund = 'rejected';
     } else if (orderStatus === 'processing') {
       status = 'confirmed';
       delivery = 'delivering';
@@ -473,9 +510,13 @@ export class OrdersManage implements OnInit, OnDestroy {
         o.status === 'returning' ||
         o.refund === 'requested'
     ).length;
-    // Đếm cả 'cancelled', 'refunded', và 'returned' cho ô "TRẢ HÀNG/HOÀN TIỀN"
+    // Đếm các đơn đã đi tới trạng thái cuối của luồng hủy/hoàn/trả.
     this.statistics.refunded = this.allOrders.filter(
-      (o) => o.status === 'cancelled' || o.status === 'refunded' || o.status === 'returned'
+      (o) =>
+        o.status === 'cancelled' ||
+        o.status === 'refunded' ||
+        o.status === 'returned' ||
+        o.status === 'rejected'
     ).length;
   }
 
@@ -899,9 +940,13 @@ export class OrdersManage implements OnInit, OnDestroy {
         return orders.filter((o) => o.status === 'cancelled');
 
       case 'refunded':
-        // Lọc cả 'cancelled', 'refunded', và 'returned' cho ô "TRẢ HÀNG/HOÀN TIỀN"
+        // Lọc các đơn đã đi tới trạng thái cuối của luồng hủy/hoàn/trả
         return orders.filter(
-          (o) => o.status === 'refunded' || o.status === 'cancelled' || o.status === 'returned'
+          (o) =>
+            o.status === 'refunded' ||
+            o.status === 'cancelled' ||
+            o.status === 'returned' ||
+            o.status === 'rejected'
         );
 
       case 'delivering':
@@ -955,6 +1000,7 @@ export class OrdersManage implements OnInit, OnDestroy {
       cancelled: 'Đã hủy',
       refunded: 'Đã hoàn tiền',
       returned: 'Đã hoàn tiền',
+      rejected: 'Từ chối hoàn/trả',
       processing: 'Đang xử lý',
       shipping: 'Đang giao hàng',
       delivered: 'Đã giao hàng',
@@ -991,7 +1037,7 @@ export class OrdersManage implements OnInit, OnDestroy {
     const labels: any = {
       pending: 'Chờ giao',
       delivering: 'Đang giao',
-      delivered: 'Hoàn thành',
+      delivered: 'Đã giao',
       none: '',
     };
     return labels[delivery] || delivery;

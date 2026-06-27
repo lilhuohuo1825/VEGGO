@@ -15,6 +15,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
+import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.data.local.entity.BlogCommentEntity;
 import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.databinding.ActivityBlogDetailBinding;
@@ -26,6 +27,7 @@ public class BlogDetailActivity extends AppCompatActivity {
 
     private ActivityBlogDetailBinding binding;
     private BlogRepository repository;
+    private FavoriteStore favoriteStore;
     private String blogId;
     private BlogEntity currentBlog;
 
@@ -36,11 +38,13 @@ public class BlogDetailActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         setupFixedBackButton();
         repository = new BlogRepository(this);
+        favoriteStore = new FavoriteStore(this);
 
         blogId = getIntent().getStringExtra(EXTRA_BLOG_ID);
         binding.blogCommentSend.setOnClickListener(v -> submitComment());
         binding.blogDetailCommentIcon.setOnClickListener(v -> binding.blogDetailScroll.post(() ->
                 binding.blogDetailScroll.smoothScrollTo(0, binding.blogCommentsTitle.getTop())));
+        binding.blogDetailCommentIcon.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary_main)));
 
         if (blogId == null) {
             renderMissing();
@@ -79,9 +83,12 @@ public class BlogDetailActivity extends AppCompatActivity {
     }
 
     private void bindBlogLike(BlogEntity blog) {
+        boolean selected = favoriteStore != null
+                && favoriteStore.isFavorite(FavoriteStore.TYPE_BLOG, blog.getId());
         binding.blogDetailLikeIcon.setImageTintList(ColorStateList.valueOf(
-                getColor(blog.isLikedByCurrentUser() ? R.color.danger_main : R.color.neutral_70)
+                getColor(R.color.primary_main)
         ));
+        binding.blogDetailLikeIcon.setAlpha(selected || blog.isLikedByCurrentUser() ? 1f : 0.45f);
         binding.blogDetailLikeIcon.setOnClickListener(v -> toggleBlogLike());
     }
 
@@ -90,14 +97,22 @@ public class BlogDetailActivity extends AppCompatActivity {
             return;
         }
         binding.blogDetailLikeIcon.setEnabled(false);
+        boolean selected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
+                FavoriteStore.TYPE_BLOG,
+                currentBlog.getId(),
+                BlogText.clean(currentBlog.getTitle()),
+                BlogText.clean(currentBlog.getAuthor()),
+                currentBlog.getImageUrl()
+        ));
+        currentBlog.setLikedByCurrentUser(selected);
+        bindBlogLike(currentBlog);
         repository.toggleBlogLike(blogId, updated -> runOnUiThread(() -> {
             binding.blogDetailLikeIcon.setEnabled(true);
             if (updated == null) {
-                Toast.makeText(this, "Chưa thả tim được bài viết", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, selected ? "Đã lưu bài viết" : "Đã xoá khỏi yêu thích", Toast.LENGTH_SHORT).show();
                 return;
             }
             currentBlog.setLikeCount(updated.getLikeCount());
-            currentBlog.setLikedByCurrentUser(updated.isLikedByCurrentUser());
             bindBlogLike(currentBlog);
         }));
     }
@@ -157,7 +172,8 @@ public class BlogDetailActivity extends AppCompatActivity {
 
     private void bindCommentLike(TextView likeView, BlogCommentEntity comment) {
         likeView.setText("♥ " + comment.getLikeCount());
-        likeView.setTextColor(getColor(comment.isLikedByCurrentUser() ? R.color.danger_main : R.color.neutral_60));
+        likeView.setTextColor(getColor(R.color.primary_main));
+        likeView.setAlpha(comment.isLikedByCurrentUser() ? 1f : 0.65f);
         likeView.setOnClickListener(v -> {
             likeView.setEnabled(false);
             repository.toggleCommentLike(comment.getId(), updated -> runOnUiThread(() -> {

@@ -16,16 +16,17 @@
         android:paddingEnd="16dp">
 
         <ImageView
-    android:layout_width="40dp"
-    android:layout_height="40dp"
-    android:layout_gravity="center_vertical"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="6dp"
-    android:scaleType="centerInside"
-    android:src="@drawable/ic_left"
-    android:tint="@color/primary_hover" />
+            android:id="@+id/checkoutBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
 
         <TextView
             android:layout_width="0dp"
@@ -36,7 +37,7 @@
             android:gravity="center"
             android:text="Thanh toán"
             android:textColor="#1E1E1E"
-            android:textSize="24sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <ImageView
@@ -55,7 +56,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#F5F5F5"
+        android:background="#FFFFFF"
         android:fillViewport="true">
 
         <LinearLayout
@@ -68,7 +69,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
 
@@ -106,6 +107,7 @@
                 </LinearLayout>
 
                 <EditText
+                    android:id="@+id/edtGuestName"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
@@ -143,6 +145,7 @@
                 </LinearLayout>
 
                 <EditText
+                    android:id="@+id/edtGuestPhone"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
@@ -181,16 +184,20 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/layoutGuestCity"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_normal"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="18dp"
                     android:paddingEnd="14dp">
 
                     <TextView
+                        android:id="@+id/tvGuestCity"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -205,20 +212,85 @@
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/layoutGuestDistrict"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_normal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        android:id="@+id/tvGuestDistrict"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Quận/Huyện"
+                        android:textColor="#777777"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layoutGuestWard"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_normal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        android:id="@+id/tvGuestWard"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Phường/Xã"
+                        android:textColor="#777777"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
                 <EditText
+                    android:id="@+id/edtGuestAddressDetail"
                     android:layout_width="match_parent"
                     android:layout_height="66dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/bg_normal"
                     android:fontFamily="@font/inter_regular"
                     android:gravity="top"
-                    android:hint="Số nhà, tên đường, phường/xã, quận/huyện"
+                    android:hint="Số nhà, tên đường"
                     android:paddingStart="18dp"
                     android:paddingTop="14dp"
                     android:paddingEnd="18dp"
                     android:textColor="#1E1E1E"
                     android:textColorHint="#777777"
                     android:textSize="14sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.3dp"
+                    android:layout_marginTop="14dp"
+                    android:background="#616161" />
 
                 <LinearLayout
                     android:id="@+id/layoutDeliveryOrigin"
@@ -228,8 +300,7 @@
                     android:focusable="true"
                     android:orientation="horizontal"
                     android:gravity="top"
-                    android:layout_marginTop="14dp"
-                    >
+                    android:layout_marginTop="14dp">
 
                     <ImageView
                         android:layout_width="20dp"
@@ -284,7 +355,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
 
@@ -371,7 +442,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
 
@@ -421,14 +492,6 @@
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter_medium"
-                        android:text="18.000 đ"
-                        android:textColor="#167728"
-                        android:textSize="14sp" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -469,13 +532,6 @@
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter_medium"
-                        android:text="20.000 đ"
-                        android:textColor="#167728"
-                        android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -484,7 +540,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
 
@@ -497,36 +553,103 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/radioPaymentMomo"
+                <LinearLayout
+                    android:id="@+id/layoutPaymentMomo"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:buttonTint="#57AF37"
-                    android:checked="true"
-                    android:fontFamily="@font/inter_medium"
-                    android:text="Ví MoMo\n ******4567"
-                    android:textColor="#1E1E1E"
-                    android:textSize="14sp" />
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/radioPaymentCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:buttonTint="#57AF37"
-                    android:fontFamily="@font/inter_medium"
-                    android:text="Thẻ tín dụng/ghi nợ"
-                    android:textColor="#1E1E1E"
-                    android:textSize="14sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_payment_momo" />
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/radioPaymentCod"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Ví MoMo"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/radioPaymentMomo"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:buttonTint="#57AF37"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layoutPaymentCod"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:buttonTint="#57AF37"
-                    android:fontFamily="@font/inter_medium"
-                    android:text="Thanh toán khi nhận hàng (COD)"
-                    android:textColor="#1E1E1E"
-                    android:textSize="14sp" />
+                    android:layout_height="44dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_payment_cod" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Thanh toán khi nhận hàng (COD)"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/radioPaymentCod"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:buttonTint="#57AF37" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layoutPaymentBank"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_payment_bank_transfer" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Chuyển khoản qua ngân hàng"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/radioPaymentCard"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:buttonTint="#57AF37" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Voucher -->
@@ -535,7 +658,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="43dp"
                 android:layout_marginTop="15dp"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="10dp"
@@ -558,6 +681,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvCheckoutSelectedVoucher"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter_regular"
@@ -577,7 +701,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:background="@drawable/bg_white_radius_10"
+                android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
 
@@ -611,6 +735,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutSubtotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
@@ -635,6 +760,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutVoucherDiscount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
@@ -659,6 +785,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutProductDiscount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
@@ -683,6 +810,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutShippingFee"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
@@ -707,6 +835,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutShippingDiscount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
@@ -737,6 +866,7 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutPaymentTotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_semibold"
@@ -757,8 +887,9 @@
                 android:gravity="center"
                 android:lineSpacingExtra="2dp"
                 android:text="Bằng việc đặt hàng, bạn đồng ý với Điều khoản dịch vụ của chúng tôi"
-                android:textColor="#1E1E1E"
-                android:textSize="14sp" />
+                android:textColor="#616161"
+                android:textSize="11sp"
+                android:textStyle="italic" />
 
         </LinearLayout>
     </ScrollView>
@@ -784,20 +915,24 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/tvCheckoutCarbonPoints"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_profile_leaf"
+                android:drawablePadding="4dp"
                 android:fontFamily="@font/inter_regular"
-                android:text="Tổng cộng"
+                android:text="Nhận 0 điểm carbon"
                 android:textColor="#616161"
                 android:textSize="12sp" />
 
             <TextView
+                android:id="@+id/tvCheckoutBottomTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter_semibold"
                 android:text="325.000 đ"
                 android:textColor="#167728"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
         </LinearLayout>
 

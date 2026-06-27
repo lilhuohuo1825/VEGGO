@@ -31,12 +31,12 @@
             android:id="@+id/returnOrderStatus"
             android:layout_width="wrap_content"
             android:layout_height="24dp"
-            android:background="@drawable/bg_order_pending_chip"
+            android:background="@drawable/bg_order_cancelled_chip"
             android:fontFamily="@font/inter_regular"
             android:gravity="center"
             android:minWidth="90dp"
             android:text="@string/returns_status_pending"
-            android:textColor="@color/order_status_pending"
+            android:textColor="@color/order_status_cancelled"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
 
@@ -53,6 +53,7 @@
         android:gravity="end|center_vertical">
 
         <TextView
+            android:id="@+id/returnCancelRequestButton"
             android:layout_width="wrap_content"
             android:layout_height="34dp"
             android:background="@drawable/bg_order_cancel_button"

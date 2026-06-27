@@ -30,21 +30,21 @@ public class ProfileFragment extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Các mục cá nhân (khi click vào sẽ mở các Activity tương ứng nhưng không có data do chưa đăng nhập)
+        // Các mục cá nhân cần tài khoản để đồng bộ dữ liệu.
         view.findViewById(R.id.profileAddressRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), AddressBookActivity.class))
+                LoginRequiredActivity.open(requireContext(), "sổ địa chỉ")
         );
         view.findViewById(R.id.profileCarbonRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), CarbonPointsActivity.class))
+                LoginRequiredActivity.open(requireContext(), "điểm carbon")
         );
         view.findViewById(R.id.profileFavoritesRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), FavoritesActivity.class))
+                LoginRequiredActivity.open(requireContext(), "yêu thích")
         );
         view.findViewById(R.id.profileSmartFridgeRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), SmartFridgeActivity.class))
+                LoginRequiredActivity.open(requireContext(), "tủ lạnh thông minh")
         );
         view.findViewById(R.id.profileTasteRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), TastePreferencesActivity.class))
+                LoginRequiredActivity.open(requireContext(), "khẩu vị của tôi")
         );
         view.findViewById(R.id.profileNotificationsRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PostNotificationsActivity.class))

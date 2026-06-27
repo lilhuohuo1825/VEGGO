@@ -12,6 +12,7 @@ import retrofit2.http.GET;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface CartApi {
     @GET("cart/{customerId}")
@@ -24,11 +25,15 @@ public interface CartApi {
     Call<CartDto> updateItemQuantity(
             @Path("customerId") String customerId,
             @Path("sku") String sku,
-            @Body Map<String, Integer> body
+            @Body Map<String, Object> body
     );
 
     @DELETE("cart/{customerId}/items/{sku}")
-    Call<CartDto> removeItem(@Path("customerId") String customerId, @Path("sku") String sku);
+    Call<CartDto> removeItem(
+            @Path("customerId") String customerId,
+            @Path("sku") String sku,
+            @Query("selectedWeight") double selectedWeight
+    );
 
     @DELETE("cart/{customerId}")
     Call<CartDto> clearCart(@Path("customerId") String customerId);

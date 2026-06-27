@@ -335,8 +335,8 @@ export class Layout implements OnInit, OnDestroy {
 
     // Điều hướng dựa trên loại notification
     if (notification.type === 'consultation') {
-      // Điều hướng đến trang quản lý tư vấn
-      this.router.navigate(['/consultations']);
+      // Điều hướng đến trang chi tiết tư vấn nếu notification có SKU
+      this.router.navigate(notification.sku ? ['/consultations', notification.sku] : ['/consultations']);
     } else if (notification.orderId) {
       // Điều hướng đến trang chi tiết đơn hàng
       this.router.navigate(['/orders', notification.orderId]);
@@ -497,8 +497,8 @@ export class Layout implements OnInit, OnDestroy {
       return;
     }
 
-    // Fetch order to check status - try OrderID first (from routes/orders.js)
-    this.http.get<any>(`${environment.apiUrl}/orders/${notification.orderId}`).subscribe({
+    // Fetch order by OrderID so the popup is based on the exact order status.
+    this.http.get<any>(`${environment.apiUrl}/orders/id/${notification.orderId}`).subscribe({
       next: (response: any) => {
         let order: any = null;
         let orderStatus: string | null = null;

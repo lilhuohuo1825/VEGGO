@@ -1,5 +1,6 @@
 package com.veggo.app.presentation.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -19,6 +20,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Address;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 
 import java.util.List;
 
@@ -47,6 +49,7 @@ public class AddressFormActivity extends BaseActivity {
     private TextView districtView;
     private TextView wardView;
     private TextView defaultCheckbox;
+    private TextView cancelButton;
     private TextView doneButton;
 
     @Nullable
@@ -61,6 +64,9 @@ public class AddressFormActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "sổ địa chỉ")) {
+            return;
+        }
         setContentView(R.layout.activity_address_form);
 
         appPreferences = new AppPreferences(this);
@@ -90,12 +96,20 @@ public class AddressFormActivity extends BaseActivity {
         districtView = findViewById(R.id.addressDistrictInput);
         wardView = findViewById(R.id.addressWardInput);
         defaultCheckbox = findViewById(R.id.addressDefaultCheckbox);
+        cancelButton = findViewById(R.id.addressCancelButton);
         doneButton = findViewById(R.id.addressDoneButton);
+        configureBottomActions();
     }
 
     private void setupActions() {
         findViewById(R.id.addressFormBackButton).setOnClickListener(v -> finish());
-        findViewById(R.id.addressCancelButton).setOnClickListener(v -> finish());
+        cancelButton.setOnClickListener(v -> {
+            if (isExistingAddressEdit()) {
+                confirmDeleteAddress();
+            } else {
+                finish();
+            }
+        });
         doneButton.setOnClickListener(v -> submitForm());
 
         provinceView.setOnClickListener(v -> showProvincePicker());
@@ -136,6 +150,15 @@ public class AddressFormActivity extends BaseActivity {
         });
 
         viewModel.getSavedAddress().observe(this, this::onAddressSaved);
+        viewModel.getDeletedAddress().observe(this, deleted -> {
+            if (!Boolean.TRUE.equals(deleted)) {
+                return;
+            }
+            Toast.makeText(this, "Đã xóa địa chỉ", Toast.LENGTH_SHORT).show();
+            AddressSelectionStore.remove(addressId);
+            setResult(RESULT_OK);
+            finish();
+        });
 
         viewModel.getError().observe(this, message -> {
             if (message == null || message.isEmpty()) {
@@ -165,6 +188,12 @@ public class AddressFormActivity extends BaseActivity {
     }
 
     private void fillAddressDataFromIntent() {
+        Address selectedAddress = AddressSelectionStore.get(addressId);
+        if (selectedAddress != null) {
+            fillAddressData(selectedAddress);
+            return;
+        }
+
         setEditText(R.id.addressNameInput, getIntent().getStringExtra(EXTRA_NAME));
         setEditText(R.id.addressPhoneInput, getIntent().getStringExtra(EXTRA_PHONE));
         setEditText(R.id.addressEmailInput, getIntent().getStringExtra(EXTRA_EMAIL));
@@ -173,6 +202,19 @@ public class AddressFormActivity extends BaseActivity {
         selectedProvince = getIntent().getStringExtra(EXTRA_CITY);
         selectedDistrict = getIntent().getStringExtra(EXTRA_DISTRICT);
         selectedWard = getIntent().getStringExtra(EXTRA_WARD);
+        updateLocationViews();
+    }
+
+    private void fillAddressData(Address address) {
+        setEditText(R.id.addressNameInput, address.getName());
+        setEditText(R.id.addressPhoneInput, address.getPhone());
+        setEditText(R.id.addressEmailInput, address.getEmail());
+        setEditText(R.id.addressDetailInput, address.getDetail());
+        selectedProvince = address.getProvince();
+        selectedDistrict = address.getDistrict();
+        selectedWard = address.getWard();
+        isDefaultSelected = address.isDefault();
+        updateDefaultCheckboxUi();
         updateLocationViews();
     }
 
@@ -311,13 +353,70 @@ public class AddressFormActivity extends BaseActivity {
         );
     }
 
+    private void configureBottomActions() {
+        if (!isExistingAddressEdit()) {
+            return;
+        }
+        cancelButton.setText(R.string.address_delete);
+        cancelButton.setBackgroundResource(R.drawable.bg_button_outline_red);
+        cancelButton.setTextColor(getColor(R.color.danger_main));
+        doneButton.setText("Lưu");
+    }
+
+    private boolean isExistingAddressEdit() {
+        return isEditMode && addressId != null && !addressId.trim().isEmpty();
+    }
+
+    private void confirmDeleteAddress() {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_trash,
+                "Xoá địa chỉ?",
+                getString(R.string.address_delete_confirm),
+                getString(R.string.address_delete),
+                getString(R.string.address_cancel),
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        viewModel.deleteAddress(addressId);
+                    }
+                }
+        );
+    }
+
     private void onAddressSaved(Address address) {
         String message = isEditMode
                 ? getString(R.string.address_update_success)
                 : getString(R.string.address_add_success);
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        setResult(RESULT_OK);
+        AddressSelectionStore.remove(addressId);
+        setResult(RESULT_OK, buildSavedAddressResult(address));
         finish();
+    }
+
+    private Intent buildSavedAddressResult(Address address) {
+        Intent data = new Intent();
+        if (address == null) {
+            data.putExtra(EXTRA_NAME, textOf(R.id.addressNameInput));
+            data.putExtra(EXTRA_PHONE, textOf(R.id.addressPhoneInput));
+            data.putExtra(EXTRA_EMAIL, textOf(R.id.addressEmailInput));
+            data.putExtra(EXTRA_DETAIL, textOf(R.id.addressDetailInput));
+            data.putExtra(EXTRA_WARD, selectedWard == null ? "" : selectedWard);
+            data.putExtra(EXTRA_DISTRICT, selectedDistrict == null ? "" : selectedDistrict);
+            data.putExtra(EXTRA_CITY, selectedProvince == null ? "" : selectedProvince);
+            data.putExtra(EXTRA_IS_DEFAULT, isDefaultSelected);
+            return data;
+        }
+
+        data.putExtra(EXTRA_NAME, address.getName());
+        data.putExtra(EXTRA_PHONE, address.getPhone());
+        data.putExtra(EXTRA_EMAIL, address.getEmail());
+        data.putExtra(EXTRA_DETAIL, address.getDetail());
+        data.putExtra(EXTRA_WARD, address.getWard());
+        data.putExtra(EXTRA_DISTRICT, address.getDistrict());
+        data.putExtra(EXTRA_CITY, address.getProvince());
+        data.putExtra(EXTRA_IS_DEFAULT, address.isDefault());
+        return data;
     }
 
     private void setEditText(int viewId, @Nullable String value) {

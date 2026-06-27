@@ -1,5 +1,6 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
 
 function normalizeWeightOptions(weightOptions) {
   if (!Array.isArray(weightOptions)) {
@@ -19,6 +20,89 @@ function getPrimaryImage(image) {
   return [];
 }
 
+function parsePromotionDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'object' && value.$date) return new Date(value.$date);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isPromotionCurrentlyActive(promo, now = new Date()) {
+  const status = String(promo.status || '').trim().toLowerCase();
+  if (status === 'inactive' || status === 'expired') return false;
+  if (promo.isActive === false || promo.show_on_app === false) return false;
+
+  const startDate = parsePromotionDate(promo.start_date);
+  const endDate = parsePromotionDate(promo.end_date);
+  if (startDate && startDate > now) return false;
+  if (endDate && endDate < now) return false;
+  return true;
+}
+
+function isFlashSalePromotion(promo) {
+  return String(promo.promotion_kind || '').trim().toLowerCase() === 'flashsale';
+}
+
+function calculateFlashSalePrice(originalPrice, promo) {
+  const discountValue = Number(promo.discount_value || promo.discount || 0);
+  if (promo.discount_type === 'fixed') {
+    return Math.max(0, originalPrice - discountValue);
+  }
+  if (promo.discount_type === 'buy1get1') {
+    return originalPrice;
+  }
+  return Math.max(0, Math.round(originalPrice * (100 - discountValue) / 100));
+}
+
+async function getActiveFlashSaleBySku(skus) {
+  const cleanSkus = [...new Set((skus || []).map(sku => String(sku || '').trim()).filter(Boolean))];
+  const result = new Map();
+  if (!cleanSkus.length) return result;
+
+  const db = mongoose.connection.db;
+  const targets = await db.collection('promotion_targets')
+    .find({ target_type: 'Product', target_ref: { $in: cleanSkus } })
+    .toArray();
+  const promotionIds = [...new Set(targets.map(target => target.promotion_id).filter(Boolean))];
+  if (!promotionIds.length) return result;
+
+  const now = new Date();
+  const promos = await db.collection('promotions')
+    .find({ promotion_id: { $in: promotionIds }, show_on_app: { $ne: false }, status: { $ne: 'Inactive' } })
+    .toArray();
+  const activePromoById = new Map(
+    promos
+      .filter(promo => isPromotionCurrentlyActive(promo, now) && isFlashSalePromotion(promo))
+      .map(promo => [promo.promotion_id, promo])
+  );
+
+  targets.forEach(target => {
+    const promo = activePromoById.get(target.promotion_id);
+    if (!promo || !Array.isArray(target.target_ref)) return;
+    target.target_ref.forEach(sku => {
+      if (cleanSkus.includes(String(sku)) && !result.has(String(sku))) {
+        result.set(String(sku), promo);
+      }
+    });
+  });
+
+  return result;
+}
+
+function applyFlashSalePricing(product, promo) {
+  if (!product || !promo) return product;
+  const originalPrice = Number(product.price || 0);
+  return {
+    ...product,
+    price: calculateFlashSalePrice(originalPrice, promo),
+    originalPrice,
+    base_price: originalPrice,
+    activePromotionId: promo.promotion_id,
+    activePromotionKind: promo.promotion_kind,
+  };
+}
+
 function buildProductSnapshot(product) {
   if (!product) {
     return null;
@@ -28,8 +112,13 @@ function buildProductSnapshot(product) {
     product_name: product.product_name,
     image: getPrimaryImage(product.image),
     price: product.price,
+    originalPrice: product.originalPrice || product.base_price || product.price,
+    base_price: product.base_price || product.originalPrice || product.price,
+    unit: product.unit || '',
+    weight: product.weight || product.unit || '',
     WeightOptions: normalizeWeightOptions(product.WeightOptions),
     CarbonSavingPoint: product.CarbonSavingPoint,
+    EmissionFactor: product.EmissionFactor,
   };
 }
 
@@ -41,7 +130,11 @@ async function populateCart(cart) {
   const cartObject = cart.toObject();
   const skus = cartObject.items.map((item) => item.sku);
   const products = await Product.find({ sku: { $in: skus } }).lean();
-  const productBySku = new Map(products.map((product) => [product.sku, product]));
+  const flashSaleBySku = await getActiveFlashSaleBySku(skus);
+  const productBySku = new Map(products.map((product) => [
+    product.sku,
+    applyFlashSalePricing(product, flashSaleBySku.get(String(product.sku)))
+  ]));
 
   cartObject.items = cartObject.items.map((item) => {
     const product = productBySku.get(item.sku) || null;
@@ -84,6 +177,18 @@ function parseWeight(selectedWeight, fallbackWeight) {
   return fallbackWeight;
 }
 
+function weightsEqual(left, right) {
+  return Math.abs(Number(left || 0) - Number(right || 0)) < 0.0001;
+}
+
+function findCartItemIndex(items, sku, selectedWeight) {
+  return items.findIndex((item) => item.sku === sku && weightsEqual(item.selectedWeight, selectedWeight));
+}
+
+function findCartItem(items, sku, selectedWeight) {
+  return items.find((item) => item.sku === sku && weightsEqual(item.selectedWeight, selectedWeight));
+}
+
 exports.getCart = async (req, res) => {
   const { customerId } = req.params;
   const cart = await Cart.findOne({ customerId });
@@ -113,10 +218,9 @@ exports.addItem = async (req, res) => {
     cart = new Cart({ customerId, items: [] });
   }
 
-  const itemIndex = cart.items.findIndex((item) => item.sku === sku);
+  const itemIndex = findCartItemIndex(cart.items, sku, resolvedWeight);
   if (itemIndex > -1) {
     cart.items[itemIndex].quantity += resolvedQuantity;
-    cart.items[itemIndex].selectedWeight = resolvedWeight;
   } else {
     cart.items.push({
       sku,
@@ -133,13 +237,14 @@ exports.addItem = async (req, res) => {
 exports.updateItemQuantity = async (req, res) => {
   const { customerId, sku } = req.params;
   const quantity = parseQuantity(req.body.quantity);
+  const selectedWeight = parseWeight(req.body.selectedWeight || req.query.selectedWeight, 1);
 
   const cart = await Cart.findOne({ customerId });
   if (!cart) {
     return res.status(404).json({ message: 'Cart not found' });
   }
 
-  const item = cart.items.find((entry) => entry.sku === sku);
+  const item = findCartItem(cart.items, sku, selectedWeight);
   if (!item) {
     return res.status(404).json({ message: 'Cart item not found' });
   }
@@ -153,10 +258,11 @@ exports.updateItemQuantity = async (req, res) => {
 
 exports.removeItem = async (req, res) => {
   const { customerId, sku } = req.params;
+  const selectedWeight = parseWeight(req.query.selectedWeight || req.body?.selectedWeight, 1);
 
   const cart = await Cart.findOneAndUpdate(
     { customerId },
-    { $pull: { items: { sku } } },
+    { $pull: { items: { sku, selectedWeight } } },
     { new: true }
   );
 

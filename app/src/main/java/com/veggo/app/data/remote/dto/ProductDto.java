@@ -39,7 +39,27 @@ public class ProductDto {
     @SerializedName(value = "CarbonSavingPoint", alternate = {"carbonSavingPoint"})
     private double carbonSavingPoint;
 
+    @SerializedName(value = "EmissionFactor", alternate = {"emissionFactor"})
+    private double emissionFactor;
+
     private String description;
+    private String ingredients;
+    private String usage;
+    private String storage;
+    private String producer;
+
+    @SerializedName("responsible_org")
+    private String responsibleOrg;
+
+    @SerializedName("safety_warning")
+    private String safetyWarning;
+
+    @SerializedName("manufacture_date")
+    private String manufactureDate;
+
+    @SerializedName("expiry_date")
+    private String expiryDate;
+
     private int stock;
 
     @SerializedName(value = "isActive", alternate = {"active"})
@@ -116,8 +136,35 @@ public class ProductDto {
     public double getCarbonSavingPoint() { return carbonSavingPoint; }
     public void setCarbonSavingPoint(double carbonSavingPoint) { this.carbonSavingPoint = carbonSavingPoint; }
 
+    public double getEmissionFactor() { return emissionFactor; }
+    public void setEmissionFactor(double emissionFactor) { this.emissionFactor = emissionFactor; }
+
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getIngredients() { return ingredients; }
+    public void setIngredients(String ingredients) { this.ingredients = ingredients; }
+
+    public String getUsage() { return usage; }
+    public void setUsage(String usage) { this.usage = usage; }
+
+    public String getStorage() { return storage; }
+    public void setStorage(String storage) { this.storage = storage; }
+
+    public String getProducer() { return producer; }
+    public void setProducer(String producer) { this.producer = producer; }
+
+    public String getResponsibleOrg() { return responsibleOrg; }
+    public void setResponsibleOrg(String responsibleOrg) { this.responsibleOrg = responsibleOrg; }
+
+    public String getSafetyWarning() { return safetyWarning; }
+    public void setSafetyWarning(String safetyWarning) { this.safetyWarning = safetyWarning; }
+
+    public String getManufactureDate() { return manufactureDate; }
+    public void setManufactureDate(String manufactureDate) { this.manufactureDate = manufactureDate; }
+
+    public String getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(String expiryDate) { this.expiryDate = expiryDate; }
 
     public int getStock() { return stock; }
     public void setStock(int stock) { this.stock = stock; }

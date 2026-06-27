@@ -192,18 +192,18 @@
             </div>
           </div>
 
-          <!-- Sort by Member Tier -->
+          <!-- Sort by Carbon Certificate -->
           <div class="sort-option" 
-               [class.active]="currentSortField === 'memberTier'" 
-               (click)="sortBy('memberTier')">
+               [class.active]="currentSortField === 'carbonCertificate'" 
+               (click)="sortBy('carbonCertificate')">
             <div class="sort-option-icon">
               <img src="/assets/icons/star_dark.png" alt="Rating" style="width: 24px; height: 24px;">
             </div>
             <div class="sort-option-content">
-              <div class="sort-option-label">Hạng thành viên</div>
+              <div class="sort-option-label">Chứng nhận carbon</div>
               <div class="sort-option-desc">Cao đến thấp / Thấp đến cao</div>
             </div>
-            <div class="sort-option-indicator" *ngIf="currentSortField === 'memberTier'">
+            <div class="sort-option-indicator" *ngIf="currentSortField === 'carbonCertificate'">
               <div class="indicator-badge" [class.asc]="currentSortOrder === 'asc'" [class.desc]="currentSortOrder === 'desc'">
                 {{currentSortOrder === 'asc' ? '↑' : '↓'}}
               </div>
@@ -226,7 +226,7 @@
           <th class="col-join-date">Thời gian tham gia</th>
           <th class="col-name">Khách hàng</th>
           <th class="col-address">Địa chỉ</th>
-          <th class="col-tier">Hạng thành viên</th>
+          <th class="col-tier">Chứng nhận carbon</th>
           <th class="col-total">Tổng đơn</th>
         </tr>
       </thead>
@@ -241,8 +241,8 @@
           <td class="col-name">{{customer.name}}</td>
           <td class="col-address">{{customer.address}}</td>
           <td class="col-tier">
-            <span class="tier-badge" [ngClass]="getMemberTierClass(customer.memberTier)">
-              {{getMemberTierLabel(customer.memberTier)}}
+            <span class="certificate-badge" [ngClass]="getCarbonCertificateClass(customer.carbonCertificate)">
+              {{getCarbonCertificateLabel(customer.carbonCertificate)}}
             </span>
           </td>
           <td class="col-total">{{customer.totalOrders}}</td>
@@ -254,13 +254,16 @@
 
   <!-- REQUESTS TAB -->
   <div *ngIf="currentTab === 'requests'" class="requests-container">
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-      <button (click)="evaluateCertificateRequests()" style="background: var(--primary-main); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-        Quét lại đơn đã giao
-      </button>
-    </div>
     <div class="customers-table-container">
-      <table class="customers-table">
+      <table class="customers-table cer-requests-table">
+        <colgroup>
+          <col class="cer-col-id">
+          <col class="cer-col-user">
+          <col class="cer-col-name">
+          <col class="cer-col-point">
+          <col class="cer-col-date">
+          <col class="cer-col-action">
+        </colgroup>
         <thead>
           <tr>
             <th>Mã YC</th>
@@ -279,9 +282,9 @@
             <td>{{req.id}}</td>
             <td>{{req.userId}}</td>
             <td><strong>{{req.requestedCer}}</strong></td>
-            <td>{{req.totalPoints}}</td>
+            <td class="text-center">{{req.totalPoints}}</td>
             <td>{{formatCertificateDate(req.createdAt)}}</td>
-            <td>
+            <td class="cer-actions-cell">
               <button (click)="approveRequest(req)" style="background: var(--primary-main); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 8px;">Duyệt</button>
               <button (click)="rejectRequest(req)" style="background: var(--danger-main); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Từ chối</button>
             </td>

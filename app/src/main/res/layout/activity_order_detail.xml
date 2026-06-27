@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/orderDetailRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -37,7 +38,7 @@
             android:gravity="center"
             android:text="@string/order_detail_title"
             android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_xl"
+            android:textSize="@dimen/text_lg"
             android:textStyle="bold" />
 
         <Space
@@ -45,29 +46,34 @@
             android:layout_height="40dp" />
     </LinearLayout>
 
-    <ScrollView
-        android:id="@+id/orderDetailScroll"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/orderDetailSwipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:overScrollMode="never"
-        android:paddingStart="@dimen/spacing_md"
-        android:paddingEnd="@dimen/spacing_md"
-        android:paddingBottom="@dimen/spacing_lg">
+        android:layout_weight="1">
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/orderDetailScroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:paddingStart="@dimen/spacing_md"
+            android:paddingEnd="@dimen/spacing_md"
+            android:paddingBottom="@dimen/spacing_lg">
 
             <LinearLayout
-                android:id="@+id/orderDetailInfoCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_order_detail_summary_card"
-                android:orientation="vertical"
-                android:padding="@dimen/spacing_md">
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/orderDetailInfoCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_order_detail_summary_card"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_md">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -197,6 +203,137 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="@font/encodesans_bold"
+                android:text="Thông tin giao hàng"
+                android:textColor="@color/primary_hover"
+                android:textSize="@dimen/text_md"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/orderDetailShippingCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_detail_summary_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Người nhận"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderDetailReceiverName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.4"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="end"
+                        android:maxLines="1"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Số điện thoại"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderDetailReceiverPhone"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.4"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="end"
+                        android:maxLines="1"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Email"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderDetailReceiverEmail"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.4"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="end"
+                        android:maxLines="1"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="32dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Địa chỉ"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderDetailReceiverAddress"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.4"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="end"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -209,7 +346,7 @@
                     android:fontFamily="@font/encodesans_bold"
                     android:text="@string/order_detail_products"
                     android:textColor="@color/primary_hover"
-                    android:textSize="@dimen/text_lg"
+                    android:textSize="@dimen/text_md"
                     android:textStyle="bold" />
 
                 <CheckBox
@@ -217,11 +354,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
+                    android:button="@null"
+                    android:drawableStart="@drawable/selector_checkbox"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
                     android:text="Chọn tất cả"
                     android:fontFamily="@font/inter_medium"
                     android:textColor="@color/neutral_80"
                     android:textSize="@dimen/text_sm"
-                    android:buttonTint="@color/primary_main"
                     android:visibility="gone" />
             </LinearLayout>
 
@@ -236,22 +376,23 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/encodesans_bold"
+                android:text="Tổng đơn hàng"
+                android:textColor="@color/primary_hover"
+                android:textSize="@dimen/text_md"
+                android:textStyle="bold" />
+
             <LinearLayout
                 android:id="@+id/orderDetailPaymentCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:background="@drawable/bg_order_detail_summary_card"
                 android:orientation="vertical"
                 android:padding="@dimen/spacing_md">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/encodesans_bold"
-                    android:text="@string/order_detail_payment_total_title"
-                    android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_lg"
-                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -349,6 +490,31 @@
                         android:textSize="@dimen/text_sm" />
                 </LinearLayout>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="28dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="Điểm carbon nhận được"
+                        android:textColor="@color/neutral_90"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:id="@+id/orderDetailCarbonPointsValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:textColor="@color/primary_main"
+                        android:textSize="@dimen/text_sm"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -376,13 +542,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_semibold"
-                        android:textColor="@color/danger_main"
+                        android:textColor="@color/primary_main"
                         android:textSize="@dimen/text_lg"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <LinearLayout
         android:id="@+id/orderDetailBottomActions"
@@ -421,20 +588,6 @@
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/orderDetailAddToFridgeButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="140dp"
-            android:layout_marginStart="@dimen/spacing_sm"
-            android:background="@drawable/bg_order_primary_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="Thêm vào tủ lạnh"
-            android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm"
-            android:visibility="gone" />
-
-        <TextView
             android:id="@+id/orderDetailReceivedButton"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
@@ -453,10 +606,38 @@
             android:layout_width="wrap_content"
             android:layout_height="40dp"
             android:minWidth="96dp"
-            android:background="@drawable/bg_order_primary_button"
+            android:background="@drawable/bg_button_outline_green"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
             android:text="@string/orders_buy_again"
+            android:textColor="@color/primary_main"
+            android:textSize="@dimen/text_sm"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/orderDetailReviewButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="92dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/reviews_action"
+            android:textColor="@color/background_main"
+            android:textSize="@dimen/text_sm"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/orderDetailAddToFridgeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="104dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Thêm vào tủ"
             android:textColor="@color/background_main"
             android:textSize="@dimen/text_sm"
             android:visibility="gone" />

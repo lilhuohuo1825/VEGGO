@@ -19,6 +19,7 @@ public class FlashSaleResponseDto {
         private String sku;
         private String name;
         private long price;
+        private long originalPrice;
         private String unit;
         private String discount;
         private String imageUrl;
@@ -28,6 +29,7 @@ public class FlashSaleResponseDto {
         public String getSku() { return sku; }
         public String getName() { return name; }
         public long getPrice() { return price; }
+        public long getOriginalPrice() { return originalPrice; }
         public String getUnit() { return unit; }
         public String getDiscount() { return discount; }
         public String getImageUrl() { return imageUrl; }

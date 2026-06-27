@@ -342,6 +342,17 @@ public final class CommunityUi {
         CommunityRepository repository = new CommunityRepository(activity);
         repository.loadCookbooks(null, cookbooks -> activity.runOnUiThread(() -> {
             optionList.removeAllViews();
+            if (cookbooks.isEmpty()) {
+                TextView empty = new TextView(activity);
+                empty.setText("Bạn chưa có cookbook. Bấm Tạo mới để tạo cookbook đầu tiên.");
+                empty.setTextColor(Color.DKGRAY);
+                empty.setTextSize(13);
+                empty.setGravity(Gravity.CENTER);
+                empty.setPadding(dp(activity, 12), dp(activity, 14), dp(activity, 12), dp(activity, 14));
+                empty.setBackgroundResource(R.drawable.bg_community_chip);
+                optionList.addView(empty, optionParams(activity, 0));
+                return;
+            }
             int limit = Math.min(cookbooks.size(), 4);
             for (int index = 0; index < limit; index++) {
                 CommunityCookbookEntity cookbook = cookbooks.get(index);
@@ -372,13 +383,15 @@ public final class CommunityUi {
         });
         dialog.findViewById(R.id.cookbookSaveButton).setOnClickListener(v -> {
             if (selectedCookbookId[0] == null) {
-                showCreateCookbook(activity, recipeId, callback);
-                dialog.dismiss();
+                Toast.makeText(activity, "Chọn cookbook hoặc bấm Tạo mới", Toast.LENGTH_SHORT).show();
                 return;
             }
             repository.addRecipeToCookbook(selectedCookbookId[0], recipeId, done -> activity.runOnUiThread(() -> {
-                Toast.makeText(activity, "\u0110\u00e3 l\u01b0u v\u00e0o cookbook", Toast.LENGTH_SHORT).show();
-                if (done && callback != null) {
+                Toast.makeText(activity, done ? "Đã lưu vào cookbook" : "Chưa lưu được vào cookbook", Toast.LENGTH_SHORT).show();
+                if (!done) {
+                    return;
+                }
+                if (callback != null) {
                     callback.onSaved();
                 }
                 dialog.dismiss();
@@ -404,8 +417,11 @@ public final class CommunityUi {
                 return;
             }
             repository.createCookbook(title, descriptionInput.getText().toString().trim(), recipeId, done -> activity.runOnUiThread(() -> {
-                Toast.makeText(activity, "\u0110\u00e3 t\u1ea1o cookbook", Toast.LENGTH_SHORT).show();
-                if (done && callback != null) {
+                Toast.makeText(activity, done ? "Đã tạo cookbook" : "Chưa tạo được cookbook", Toast.LENGTH_SHORT).show();
+                if (!done) {
+                    return;
+                }
+                if (callback != null) {
                     callback.onSaved();
                 }
                 dialog.dismiss();

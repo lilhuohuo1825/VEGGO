@@ -93,7 +93,8 @@ public final class AssetDatabaseSeeder {
         List<UserEntity> users = readUsers(loader);
         List<AssetRecordEntity> assetRecords = readAssetRecords(loader);
         List<RecipeEntity> recipes = readRecipes(loader, products);
-        List<ReviewEntity> reviews = generateSampleReviews(products);
+        List<ReviewEntity> reviews = new ArrayList<>();
+        applyReviewStats(products, reviews);
 
         database.runInTransaction(() -> {
             database.assetRecordDao().clearAll();
@@ -108,6 +109,9 @@ public final class AssetDatabaseSeeder {
             }
             if (!reviews.isEmpty()) {
                 database.productDao().insertReviews(reviews);
+                for (ProductEntity product : products) {
+                    database.productDao().updateProductReviewStats(product.getId());
+                }
             }
             for (UserEntity user : users) {
                 database.userDao().upsert(user);
@@ -128,7 +132,7 @@ public final class AssetDatabaseSeeder {
                 continue;
             }
 
-            // Xây dựng phần mô tả chi tiết từ nhiều nguồn
+            // Xây dựng phần mô tả chi tiết từ nhiều nguồn để Product Detail render thành bảng.
             StringBuilder description = new StringBuilder();
             if (assetProduct.ingredients != null && !assetProduct.ingredients.isEmpty()) {
                 description.append("Thành phần: ").append(assetProduct.ingredients).append("\n\n");
@@ -137,7 +141,18 @@ public final class AssetDatabaseSeeder {
                 description.append("Cách dùng: ").append(assetProduct.usage).append("\n\n");
             }
             if (assetProduct.storage != null && !assetProduct.storage.isEmpty()) {
-                description.append("Bảo quản: ").append(assetProduct.storage);
+                description.append("Cách bảo quản: ").append(assetProduct.storage).append("\n\n");
+            }
+            if (assetProduct.safetyWarning != null && !assetProduct.safetyWarning.isEmpty()) {
+                description.append("Lưu ý khi sử dụng: ").append(assetProduct.safetyWarning).append("\n\n");
+            }
+            if (assetProduct.brand != null && !assetProduct.brand.isEmpty()) {
+                description.append("Hãng: ").append(assetProduct.brand).append("\n\n");
+            }
+            if (assetProduct.producer != null && !assetProduct.producer.isEmpty()) {
+                description.append("Nơi sản xuất: ").append(assetProduct.producer).append("\n\n");
+            } else if (assetProduct.origin != null && !assetProduct.origin.isEmpty()) {
+                description.append("Nơi sản xuất: ").append(assetProduct.origin).append("\n\n");
             }
             
             String finalDescription = description.toString().trim();
@@ -169,6 +184,21 @@ public final class AssetDatabaseSeeder {
             ));
         }
         return products;
+    }
+
+    private static void applyReviewStats(List<ProductEntity> products, List<ReviewEntity> reviews) {
+        for (ProductEntity product : products) {
+            float total = 0f;
+            int count = 0;
+            for (ReviewEntity review : reviews) {
+                if (product.getId().equals(review.getProductId())) {
+                    total += review.getRating();
+                    count++;
+                }
+            }
+            product.setRating(count > 0 ? total / count : 0f);
+            product.setReviewCount(count);
+        }
     }
 
     private static List<Double> parseWeightOptions(List<String> source) {

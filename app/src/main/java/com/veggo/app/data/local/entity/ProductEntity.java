@@ -21,6 +21,14 @@ public class ProductEntity {
     private int reviewCount;
     private int soldCount;
     private String description;
+    private String ingredients;
+    private String usage;
+    private String storage;
+    private String producer;
+    private String responsibleOrg;
+    private String safetyWarning;
+    private String manufactureDate;
+    private String expiryDate;
     private String origin;
     private String condition;
     private String fatContent;
@@ -33,12 +41,26 @@ public class ProductEntity {
                          String sku, String imageUrl, String weight, float rating, int reviewCount, 
                          int soldCount, String description, String origin, 
                          String condition, String fatContent, String categoryId, String subcategoryId) {
-        this(id, name, price, originalPrice, sku, imageUrl, null, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+        this(id, name, price, originalPrice, sku, imageUrl, null, weight, rating, reviewCount, soldCount,
+                description, null, null, null, null, null, null, null, null,
+                origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+    }
+
+    @Ignore
+    public ProductEntity(@NonNull String id, String name, long price, long originalPrice,
+                         String sku, String imageUrl, String weightOptionsJson, String weight, float rating, int reviewCount,
+                         int soldCount, String description, String origin,
+                         String condition, String fatContent, String categoryId, String subcategoryId, double carbonSavingPoint) {
+        this(id, name, price, originalPrice, sku, imageUrl, weightOptionsJson, weight, rating, reviewCount, soldCount,
+                description, null, null, null, null, null, null, null, null,
+                origin, condition, fatContent, categoryId, subcategoryId, carbonSavingPoint);
     }
 
     public ProductEntity(@NonNull String id, String name, long price, long originalPrice,
                          String sku, String imageUrl, String weightOptionsJson, String weight, float rating, int reviewCount,
-                         int soldCount, String description, String origin,
+                         int soldCount, String description, String ingredients, String usage, String storage,
+                         String producer, String responsibleOrg, String safetyWarning,
+                         String manufactureDate, String expiryDate, String origin,
                          String condition, String fatContent, String categoryId, String subcategoryId, double carbonSavingPoint) {
         this.id = id;
         this.name = name;
@@ -52,6 +74,14 @@ public class ProductEntity {
         this.reviewCount = reviewCount;
         this.soldCount = soldCount;
         this.description = description;
+        this.ingredients = ingredients;
+        this.usage = usage;
+        this.storage = storage;
+        this.producer = producer;
+        this.responsibleOrg = responsibleOrg;
+        this.safetyWarning = safetyWarning;
+        this.manufactureDate = manufactureDate;
+        this.expiryDate = expiryDate;
         this.origin = origin;
         this.condition = condition;
         this.fatContent = fatContent;
@@ -84,6 +114,22 @@ public class ProductEntity {
     public void setSoldCount(int soldCount) { this.soldCount = soldCount; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getIngredients() { return ingredients; }
+    public void setIngredients(String ingredients) { this.ingredients = ingredients; }
+    public String getUsage() { return usage; }
+    public void setUsage(String usage) { this.usage = usage; }
+    public String getStorage() { return storage; }
+    public void setStorage(String storage) { this.storage = storage; }
+    public String getProducer() { return producer; }
+    public void setProducer(String producer) { this.producer = producer; }
+    public String getResponsibleOrg() { return responsibleOrg; }
+    public void setResponsibleOrg(String responsibleOrg) { this.responsibleOrg = responsibleOrg; }
+    public String getSafetyWarning() { return safetyWarning; }
+    public void setSafetyWarning(String safetyWarning) { this.safetyWarning = safetyWarning; }
+    public String getManufactureDate() { return manufactureDate; }
+    public void setManufactureDate(String manufactureDate) { this.manufactureDate = manufactureDate; }
+    public String getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(String expiryDate) { this.expiryDate = expiryDate; }
     public String getOrigin() { return origin; }
     public void setOrigin(String origin) { this.origin = origin; }
     public String getCondition() { return condition; }

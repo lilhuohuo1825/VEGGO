@@ -19,13 +19,22 @@ import com.veggo.app.domain.model.FlashSale;
 public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.FlashSaleViewHolder> {
 
     private OnFlashSaleClickListener listener;
+    private OnFlashSaleAddClickListener addListener;
 
     public interface OnFlashSaleClickListener {
         void onFlashSaleClick(FlashSale flashSale);
     }
 
+    public interface OnFlashSaleAddClickListener {
+        void onFlashSaleAddClick(FlashSale flashSale);
+    }
+
     public void setOnFlashSaleClickListener(OnFlashSaleClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnFlashSaleAddClickListener(OnFlashSaleAddClickListener listener) {
+        this.addListener = listener;
     }
 
     public FlashSaleAdapter() {
@@ -51,7 +60,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
 
     @Override
     public void onBindViewHolder(@NonNull FlashSaleViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+        holder.bind(getItem(position), listener, addListener);
     }
 
     static class FlashSaleViewHolder extends RecyclerView.ViewHolder {
@@ -60,6 +69,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
         private final TextView tvProductName;
         private final TextView tvRating;
         private final TextView tvProductPrice;
+        private final TextView btnAddFlashSale;
 
         FlashSaleViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -68,9 +78,10 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
             tvProductName = itemView.findViewById(R.id.tvProductName);
             tvRating = itemView.findViewById(R.id.tvRating);
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
+            btnAddFlashSale = itemView.findViewById(R.id.btnAddFlashSale);
         }
 
-        void bind(FlashSale flashSale, OnFlashSaleClickListener listener) {
+        void bind(FlashSale flashSale, OnFlashSaleClickListener listener, OnFlashSaleAddClickListener addListener) {
             tvProductName.setText(flashSale.getName());
             tvProductPrice.setText(CurrencyFormatter.formatVnd(flashSale.getPrice()));
             tvRating.setText(String.valueOf(flashSale.getRating()));
@@ -94,6 +105,13 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
+                    listener.onFlashSaleClick(flashSale);
+                }
+            });
+            btnAddFlashSale.setOnClickListener(v -> {
+                if (addListener != null) {
+                    addListener.onFlashSaleAddClick(flashSale);
+                } else if (listener != null) {
                     listener.onFlashSaleClick(flashSale);
                 }
             });

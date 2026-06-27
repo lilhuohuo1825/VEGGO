@@ -1,5 +1,6 @@
 package com.veggo.app.presentation.category;
 
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -127,6 +128,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             binding.rootView.setBackgroundResource(isSelected ? R.color.background_main : android.R.color.transparent);
             binding.tvCategoryName.setTextColor(binding.getRoot().getContext().getColor(
                     isSelected ? R.color.primary_main : R.color.neutral_80));
+            binding.tvCategoryName.setTypeface(
+                    binding.tvCategoryName.getTypeface(),
+                    isSelected ? Typeface.BOLD : Typeface.NORMAL
+            );
 
             binding.ivCategoryIcon.setImageResource(getCategoryIcon(category.categoryId));
             binding.ivCategoryIcon.setColorFilter(binding.getRoot().getContext().getColor(

@@ -100,15 +100,18 @@
                     android:alpha="0.9" />
             </LinearLayout>
 
-            <ImageView
+            <TextView
                 android:id="@+id/btnAddRelated"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:paddingTop="4dp"
-                android:paddingRight="1dp"
-                android:paddingBottom="1dp"
-                android:src="@drawable/ic_add"
-                tools:ignore="ContentDescription" />
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_circle_light_green"
+                android:contentDescription="Thêm vào giỏ"
+                android:fontFamily="@font/inter_semibold"
+                android:gravity="center"
+                android:text="+"
+                android:textColor="@color/primary_main"
+                android:textSize="24sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

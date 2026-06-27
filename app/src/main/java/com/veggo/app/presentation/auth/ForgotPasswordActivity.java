@@ -2,7 +2,10 @@ package com.veggo.app.presentation.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -15,13 +18,16 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.veggo.app.R;
+import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.MainActivity;
+import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 
 public class ForgotPasswordActivity extends BaseActivity {
+    public static final String EXTRA_SCREEN_TITLE = "forgot_password_screen_title";
+
     private static final String TAG = "ForgotPasswordActivity";
-    private static final String PHONE_REGEX = "^0\\d{9}$";
-    private static final String PASSWORD_REGEX = "^(?=.*[A-Z]).{8,}$";
-    private static final String DEMO_OTP = "123456";
 
     private AuthViewModel authViewModel;
     private LinearLayout layoutForgotForm;
@@ -40,6 +46,11 @@ public class ForgotPasswordActivity extends BaseActivity {
     private boolean isConfirmNewPasswordVisible;
     private String verifiedPhone;
     private String verifiedOtp;
+    private String currentOtp;
+    private long otpExpiresAt;
+    private int otpFailedAttempts;
+    private CountDownTimer otpTimer;
+    private String newPasswordToAutoLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,9 +60,24 @@ public class ForgotPasswordActivity extends BaseActivity {
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
 
         initViews();
+        applyScreenTitle();
         setupActions();
         observeViewModel();
         showForgotForm();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EmulatorSmsSender.handlePermissionResult(this, requestCode, grantResults);
     }
 
     private void initViews() {
@@ -73,18 +99,45 @@ public class ForgotPasswordActivity extends BaseActivity {
         tvConfirmNewPasswordError.setVisibility(View.GONE);
     }
 
+    private void applyScreenTitle() {
+        String title = getIntent().getStringExtra(EXTRA_SCREEN_TITLE);
+        if (title == null || title.trim().isEmpty()) {
+            return;
+        }
+        ((TextView) findViewById(R.id.tvForgotTitle)).setText(title);
+        ((TextView) findViewById(R.id.tvForgotVerifyTitle)).setText(title);
+        ((TextView) findViewById(R.id.tvResetTitle)).setText(title);
+    }
+
     private void setupActions() {
         findViewById(R.id.imgBackForgot).setOnClickListener(v -> finish());
         findViewById(R.id.imgBackVerifyForgot).setOnClickListener(v -> showForgotForm());
         findViewById(R.id.imgBackReset).setOnClickListener(v -> showForgotVerifyForm());
         findViewById(R.id.btnSendOtp).setOnClickListener(v -> handleSendOtp());
         findViewById(R.id.btnVerifyForgot).setOnClickListener(v -> handleVerifyOtp());
-        findViewById(R.id.tvResendForgotCode).setOnClickListener(v ->
-                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show()
-        );
+        findViewById(R.id.tvResendForgotCode).setOnClickListener(v -> handleSendOtp());
         findViewById(R.id.btnResetPassword).setOnClickListener(v -> handleResetPassword());
         imgEyeNewPassword.setOnClickListener(v -> togglePasswordVisibility(edtNewPassword, imgEyeNewPassword, true));
         imgEyeConfirmNewPassword.setOnClickListener(v -> togglePasswordVisibility(edtConfirmNewPassword, imgEyeConfirmNewPassword, false));
+        edtForgotPhone.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) validatePhone(edtForgotPhone.getText().toString().trim());
+        });
+        edtNewPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                validatePassword(s.toString());
+                validateConfirmPassword(s.toString(), edtConfirmNewPassword.getText().toString());
+            }
+        });
+        edtConfirmNewPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                validateConfirmPassword(edtNewPassword.getText().toString(), s.toString());
+            }
+        });
+        AuthFormUtils.wireOtpFields(getForgotOtpFields(), this::handleVerifyOtp);
     }
 
     private void handleSendOtp() {
@@ -99,8 +152,22 @@ public class ForgotPasswordActivity extends BaseActivity {
 
     private void handleVerifyOtp() {
         String otp = getOtpValue(getForgotOtpFields());
-        if (!DEMO_OTP.equals(otp)) {
-            Toast.makeText(this, "Mã xác thực không đúng", Toast.LENGTH_SHORT).show();
+        if (otp.length() < 6) {
+            return;
+        }
+        if (System.currentTimeMillis() > otpExpiresAt) {
+            Toast.makeText(this, "Mã xác thực đã hết hạn. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (otpFailedAttempts >= AuthFormUtils.MAX_OTP_ATTEMPTS) {
+            Toast.makeText(this, "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!otp.equals(currentOtp)) {
+            otpFailedAttempts++;
+            Toast.makeText(this,
+                    "Mã xác thực không đúng (" + otpFailedAttempts + "/" + AuthFormUtils.MAX_OTP_ATTEMPTS + ")",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
         verifiedOtp = otp;
@@ -117,6 +184,7 @@ public class ForgotPasswordActivity extends BaseActivity {
             return;
         }
 
+        newPasswordToAutoLogin = newPassword;
         authViewModel.resetPassword(verifiedPhone, verifiedOtp, newPassword);
     }
 
@@ -129,24 +197,91 @@ public class ForgotPasswordActivity extends BaseActivity {
 
         authViewModel.getForgotPasswordSuccess().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
-                tvForgotVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại " + maskPhone(verifiedPhone));
-                clearOtpFields(getForgotOtpFields());
-                showForgotVerifyForm();
-                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show();
+                sendForgotOtpUi();
+            }
+        });
+
+        authViewModel.getForgotOtp().observe(this, otp -> {
+            if (otp != null && !otp.trim().isEmpty()) {
+                currentOtp = otp.trim();
             }
         });
 
         authViewModel.getResetPasswordSuccess().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
-                Toast.makeText(this, "Đặt lại mật khẩu thành công", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, LoginActivity.class));
-                finish();
+                Toast.makeText(this, "Đặt lại mật khẩu thành công. Đang tự động đăng nhập...", Toast.LENGTH_SHORT).show();
+                if (verifiedPhone != null && newPasswordToAutoLogin != null) {
+                    authViewModel.login(verifiedPhone, newPasswordToAutoLogin);
+                } else {
+                    startActivity(new Intent(this, LoginActivity.class));
+                    finish();
+                }
             }
+        });
+
+        authViewModel.getUser().observe(this, userDto -> {
+            new AppPreferences(this).saveLoginSession(
+                    userDto.getPhone(),
+                    userDto.getCustomerId(),
+                    userDto.getFullName(),
+                    userDto.getEmail(),
+                    userDto.getAvatarUrl()
+            );
+            Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
+
+            PendingCheckoutStore pendingCheckoutStore = new PendingCheckoutStore(this);
+            if (pendingCheckoutStore.hasPending()) {
+                pendingCheckoutStore.openAfterAuth(this, userDto.getCustomerId());
+            } else {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
+            finish();
         });
 
         authViewModel.getError().observe(this, errorMessage -> {
             Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void sendForgotOtpUi() {
+        if (currentOtp == null || currentOtp.trim().isEmpty()) {
+            currentOtp = AuthFormUtils.randomOtp();
+        }
+        otpExpiresAt = System.currentTimeMillis() + AuthFormUtils.OTP_TTL_MS;
+        otpFailedAttempts = 0;
+        tvForgotVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
+                + maskPhone(verifiedPhone) + ". Mã có hiệu lực trong 60 giây.");
+        clearOtpFields(getForgotOtpFields());
+        showForgotVerifyForm();
+        getForgotOtpFields()[0].requestFocus();
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
+        otpTimer = new CountDownTimer(AuthFormUtils.OTP_TTL_MS, 1000) {
+            @Override public void onTick(long millisUntilFinished) {
+                updateForgotOtpDescription(millisUntilFinished);
+            }
+            @Override public void onFinish() {
+                updateForgotOtpDescription(0);
+                Toast.makeText(ForgotPasswordActivity.this, "Mã xác thực đã hết hạn", Toast.LENGTH_SHORT).show();
+            }
+        }.start();
+        EmulatorSmsSender.send(
+                this,
+                "VEGGO: Ma OTP dat lai mat khau cua ban la " + currentOtp + ". Ma co hieu luc trong 60 giay."
+        );
+    }
+
+    private void updateForgotOtpDescription(long millisUntilFinished) {
+        long seconds = Math.max(0, millisUntilFinished / 1000);
+        String suffix = seconds > 0
+                ? "Mã còn hiệu lực trong " + seconds + " giây."
+                : "Mã xác thực đã hết hạn. Vui lòng gửi lại mã.";
+        tvForgotVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
+                + maskPhone(verifiedPhone) + ". " + suffix);
     }
 
     private void togglePasswordVisibility(EditText editText, ImageView imageView, boolean isMainPassword) {
@@ -170,33 +305,15 @@ public class ForgotPasswordActivity extends BaseActivity {
     }
 
     private boolean validatePhone(String phone) {
-        if (phone.isEmpty()) {
-            tvForgotPhoneError.setText("Vui lòng nhập số điện thoại");
-            tvForgotPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        if (!phone.matches(PHONE_REGEX)) {
-            tvForgotPhoneError.setText("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
-            tvForgotPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvForgotPhoneError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvForgotPhoneError, AuthFormUtils.phoneError(phone));
     }
 
     private boolean validatePassword(String password) {
-        if (password.isEmpty()) {
-            tvNewPasswordError.setText("Vui lòng nhập mật khẩu mới");
-            tvNewPasswordError.setVisibility(View.VISIBLE);
-            return false;
+        String error = AuthFormUtils.passwordError(password);
+        if ("Vui lòng nhập mật khẩu".equals(error)) {
+            error = "Vui lòng nhập mật khẩu mới";
         }
-        if (!password.matches(PASSWORD_REGEX)) {
-            tvNewPasswordError.setText("Mật khẩu phải có ít nhất 8 ký tự và chứa ít nhất 1 chữ in hoa");
-            tvNewPasswordError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvNewPasswordError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvNewPasswordError, error);
     }
 
     private boolean validateConfirmPassword(String password, String confirmPassword) {

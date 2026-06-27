@@ -32,11 +32,13 @@ public class ProductViewModel extends ViewModel {
     private final CartRepository cartRepository;
     private final MutableLiveData<String> productId = new MutableLiveData<>();
     private final LiveData<Product> product;
+    private final LiveData<List<Review>> localProductReviews;
     private final MutableLiveData<List<Recipe>> relatedRecipes = new MutableLiveData<>();
     private final MutableLiveData<List<Review>> productReviews = new MutableLiveData<>();
     private final MutableLiveData<List<Consultation>> consultations = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isSubmittingQuestion = new MutableLiveData<>(false);
     private final LiveData<List<Product>> relatedProducts;
+    private String activeReviewSku;
 
     private final MutableLiveData<Boolean> isAddingToCart = new MutableLiveData<>(false);
     private final MutableLiveData<String> cartError = new MutableLiveData<>();
@@ -53,6 +55,7 @@ public class ProductViewModel extends ViewModel {
         this.recipeRepository = recipeRepository;
         this.cartRepository = cartRepository;
         this.product = Transformations.switchMap(productId, productRepository::observeProductById);
+        this.localProductReviews = Transformations.switchMap(productId, productRepository::getProductReviews);
         this.relatedProducts = Transformations.switchMap(this.product, p -> {
             if (p != null) {
                 return productRepository.observeRelatedProducts(
@@ -94,8 +97,13 @@ public class ProductViewModel extends ViewModel {
 
     public void triggerReviewFetch(Product product) {
         if (product == null) return;
-        if (product.getSku() != null && !product.getSku().isEmpty()) {
-            fetchRemoteReviews(product.getSku());
+        String sku = product.getSku();
+        if (sku != null && !sku.isEmpty()) {
+            if (sku.equals(activeReviewSku)) {
+                return;
+            }
+            activeReviewSku = sku;
+            fetchRemoteReviews(sku);
         } else {
             productReviews.postValue(new ArrayList<>());
         }
@@ -132,7 +140,7 @@ public class ProductViewModel extends ViewModel {
         });
     }
 
-    public void submitQuestion(String sku, String question, String customerName, String productName,
+    public void submitQuestion(String sku, String question, String customerId, String customerName, String productName,
                                ConsultationRepository.Callback<List<Consultation>> callback) {
         if (consultationRepository == null) {
             callback.onError(new IllegalStateException("ConsultationRepository not available"));
@@ -148,8 +156,11 @@ public class ProductViewModel extends ViewModel {
         String resolvedName = customerName != null && !customerName.trim().isEmpty()
                 ? customerName.trim()
                 : null;
+        String resolvedCustomerId = customerId != null && !customerId.trim().isEmpty()
+                ? customerId.trim()
+                : null;
 
-        consultationRepository.submitQuestion(sku, trimmedQuestion, resolvedName, productName,
+        consultationRepository.submitQuestion(sku, trimmedQuestion, resolvedCustomerId, resolvedName, productName,
                 new ConsultationRepository.Callback<List<Consultation>>() {
                     @Override
                     public void onSuccess(List<Consultation> result) {
@@ -215,6 +226,10 @@ public class ProductViewModel extends ViewModel {
 
     public LiveData<List<Review>> getProductReviews() {
         return productReviews;
+    }
+
+    public LiveData<List<Review>> getLocalProductReviews() {
+        return localProductReviews;
     }
 
     public LiveData<List<Consultation>> getConsultations() {

@@ -34,6 +34,12 @@ public class CartDto {
         @SerializedName("selectedWeight")
         private double selectedWeight;
 
+        @SerializedName("price")
+        private long price;
+
+        @SerializedName(value = "originalPrice", alternate = {"base_price"})
+        private long originalPrice;
+
         public String getSku() { return sku; }
         public void setSku(String sku) { this.sku = sku; }
         public ProductDto getProduct() { return product; }
@@ -42,5 +48,9 @@ public class CartDto {
         public void setQuantity(int quantity) { this.quantity = quantity; }
         public double getSelectedWeight() { return selectedWeight; }
         public void setSelectedWeight(double selectedWeight) { this.selectedWeight = selectedWeight; }
+        public long getPrice() { return price; }
+        public void setPrice(long price) { this.price = price; }
+        public long getOriginalPrice() { return originalPrice; }
+        public void setOriginalPrice(long originalPrice) { this.originalPrice = originalPrice; }
     }
 }

@@ -48,7 +48,7 @@
               class="notification-item"
               [class.unread]="!notification.read"
               [class.read]="notification.read"
-              [class.clickable]="notification.orderId"
+              [class.clickable]="notification.orderId || notification.type === 'consultation'"
             >
               <div
                 class="notification-item-content"

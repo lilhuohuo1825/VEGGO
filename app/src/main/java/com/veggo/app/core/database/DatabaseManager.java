@@ -9,8 +9,8 @@ import com.veggo.app.assets.AssetFiles;
 
 public final class DatabaseManager {
     public static final String DATABASE_NAME = "veggo.db";
-    public static final int DATABASE_VERSION = 36;
-    public static final int ASSET_SEED_VERSION = 36;
+    public static final int DATABASE_VERSION = 37;
+    public static final int ASSET_SEED_VERSION = 39;
 
     private DatabaseManager() {
     }
@@ -73,6 +73,14 @@ public final class DatabaseManager {
         public static final String REVIEW_COUNT = "reviewCount";
         public static final String SOLD_COUNT = "soldCount";
         public static final String DESCRIPTION = "description";
+        public static final String INGREDIENTS = "ingredients";
+        public static final String USAGE = "usage";
+        public static final String STORAGE = "storage";
+        public static final String PRODUCER = "producer";
+        public static final String RESPONSIBLE_ORG = "responsibleOrg";
+        public static final String SAFETY_WARNING = "safetyWarning";
+        public static final String MANUFACTURE_DATE = "manufactureDate";
+        public static final String EXPIRY_DATE = "expiryDate";
         public static final String ORIGIN = "origin";
         public static final String CONDITION = "condition";
         public static final String FAT_CONTENT = "fatContent";
@@ -143,6 +151,14 @@ public final class DatabaseManager {
                         + ProductColumns.REVIEW_COUNT + " INTEGER NOT NULL, "
                         + ProductColumns.SOLD_COUNT + " INTEGER NOT NULL, "
                         + ProductColumns.DESCRIPTION + " TEXT, "
+                        + ProductColumns.INGREDIENTS + " TEXT, "
+                        + ProductColumns.USAGE + " TEXT, "
+                        + ProductColumns.STORAGE + " TEXT, "
+                        + ProductColumns.PRODUCER + " TEXT, "
+                        + ProductColumns.RESPONSIBLE_ORG + " TEXT, "
+                        + ProductColumns.SAFETY_WARNING + " TEXT, "
+                        + ProductColumns.MANUFACTURE_DATE + " TEXT, "
+                        + ProductColumns.EXPIRY_DATE + " TEXT, "
                         + ProductColumns.ORIGIN + " TEXT, "
                         + ProductColumns.CONDITION + " TEXT, "
                         + ProductColumns.FAT_CONTENT + " TEXT, "

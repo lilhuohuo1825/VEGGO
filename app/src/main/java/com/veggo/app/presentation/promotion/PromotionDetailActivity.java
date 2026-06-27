@@ -12,8 +12,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.request.RequestOptions;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.ui.BaseActivity;
@@ -648,7 +646,7 @@ public class PromotionDetailActivity extends BaseActivity {
         } else {
             tvMinOrder.setVisibility(View.VISIBLE);
             if (dto.getDiscountValue() != null) {
-                tvDiscount.setText("Giảm " + currencyFormat.format(dto.getDiscountValue()));
+                tvDiscount.setText(formatDiscount(dto, currencyFormat));
             } else {
                 tvDiscount.setText("");
             }
@@ -661,20 +659,64 @@ public class PromotionDetailActivity extends BaseActivity {
 
         String timeStr = formatTime(dto.getStartDate(), dto.getEndDate());
         tvTime.setText(timeStr.isEmpty() ? "Không giới hạn" : timeStr);
-        tvUsage.setText(dto.getUsageLimit() != null ? String.valueOf(dto.getUsageLimit()) : "Không giới hạn");
-        tvLimitPerUser.setText(dto.getUserLimit() != null ? String.valueOf(dto.getUserLimit()) : "Không giới hạn");
+        tvUsage.setText(formatLimit(dto.getUsageLimit()));
+        tvLimitPerUser.setText(formatLimit(dto.getUserLimit()));
 
         String imageUrl = getPromotionImageUrl(dto);
-        String fullImageUrl = buildFullImageUrl(imageUrl);
+        String fullImageUrl = imageUrl == null || imageUrl.trim().isEmpty()
+                ? null
+                : buildPromotionBannerProxyUrl(dto);
         if (fullImageUrl != null && !fullImageUrl.isEmpty()) {
+            if (promotionId != null && promotionId.matches("PROMO01[7-9]|PROMO02[0-1]")) {
+                imgBanner.post(() -> {
+                    int w = imgBanner.getWidth();
+                    if (w > 0) {
+                        int h = (int) (w / 1.414);
+                        android.view.ViewGroup.LayoutParams params = imgBanner.getLayoutParams();
+                        params.height = h;
+                        imgBanner.setLayoutParams(params);
+                        imgBanner.setScaleType(ImageView.ScaleType.FIT_XY);
+                    }
+                });
+            } else {
+                imgBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            }
             Glide.with(this)
                     .load(fullImageUrl)
-                    .apply(RequestOptions.bitmapTransform(new RoundedCorners(24)))
+                    .fitCenter()
+                    .placeholder(R.drawable.banner_nam_rom)
+                    .error(R.drawable.banner_nam_rom)
                     .into(imgBanner);
         }
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
+
+    private String formatDiscount(PromotionDto dto, NumberFormat currencyFormat) {
+        double value = dto.getDiscountValue() == null ? 0 : dto.getDiscountValue();
+        String type = dto.getDiscountType() == null ? "" : dto.getDiscountType().trim().toLowerCase(Locale.US);
+        if ("percent".equals(type) || "percentage".equals(type)) {
+            return "Giảm " + formatPlainNumber(value) + "%";
+        }
+        if ("buy1get1".equals(type)) {
+            return "Mua 1 tặng 1";
+        }
+        return "Giảm " + currencyFormat.format(value);
+    }
+
+    private String formatPlainNumber(double value) {
+        if (value == Math.rint(value)) {
+            return String.valueOf((long) value);
+        }
+        return String.valueOf(value);
+    }
+
+    private String formatLimit(Integer limit) {
+        if (limit == null || limit <= 0) {
+            return "Không giới hạn";
+        }
+        return String.valueOf(limit);
+    }
 
     private String formatTime(String startStr, String endStr) {
         if (startStr == null && endStr == null) return "";
@@ -698,6 +740,16 @@ public class PromotionDetailActivity extends BaseActivity {
             if (bd.getImageUrl() != null && !bd.getImageUrl().isEmpty()) return bd.getImageUrl();
         }
         return p.getImageUrl();
+    }
+
+    private String buildPromotionBannerProxyUrl(PromotionDto dto) {
+        String id = dto.getPromotionId() != null && !dto.getPromotionId().trim().isEmpty()
+                ? dto.getPromotionId()
+                : dto.getCode();
+        if (id == null || id.trim().isEmpty()) {
+            return buildFullImageUrl(getPromotionImageUrl(dto));
+        }
+        return removeTrailingSlash(Constants.API_BASE_URL) + "/promotions/" + id.trim() + "/banner-image";
     }
 
     private String buildFullImageUrl(String imageUrl) {

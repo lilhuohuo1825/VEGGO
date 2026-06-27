@@ -69,7 +69,7 @@ export interface Promotion {
   name: string;
   description?: string;
   type?: 'User' | 'Admin';
-  scope?: 'Order' | 'Shipping' | 'Category' | 'Brand' | 'Product';
+  scope?: 'Order' | 'Shipping' | 'Category' | 'Brand' | 'Product' | 'User';
   discountType: 'percentage' | 'fixed' | 'buy1get1';
   discountValue: number;
   minPurchase?: number;
@@ -78,6 +78,7 @@ export interface Promotion {
   startTime?: string;
   endDate: string;
   endTime?: string;
+  noEndDate?: boolean;
   usageLimit?: number;
   userLimit?: number;
   usageCount: number;
@@ -121,6 +122,9 @@ interface TargetOption {
   rating?: number;
   stock?: number;
 }
+
+type PromotionScope = 'Order' | 'Shipping' | 'Category' | 'Brand' | 'Product' | 'User';
+type TargetType = PromotionScope | 'Subcategory';
 
 /**
  * ============================================================================
@@ -189,21 +193,38 @@ export class PromotionManage implements OnInit {
   private isUpdatingStatuses: boolean = false;
   
   // Target selection data (for add/edit modal)
-  targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category';
+  targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category';
   selectedTargets: string[] = [];
   availableCategories: TargetOption[] = [];
   availableSubcategories: TargetOption[] = [];
   availableBrands: string[] = [];
   availableProducts: any[] = [];
+  availableUserTargets: TargetOption[] = [
+    { id: 'tier:bronze', name: 'Thành viên Đồng (Regular)' },
+    { id: 'tier:silver', name: 'Thành viên Bạc (Premium)' },
+    { id: 'tier:gold', name: 'Thành viên Vàng (VIP)' },
+    { id: 'certificate:CER001', name: 'Chứng nhận Green Starter' },
+    { id: 'certificate:CER002', name: 'Chứng nhận Eco Shopper' },
+    { id: 'certificate:CER003', name: 'Chứng nhận Carbon Saver' },
+    { id: 'certificate:CER004', name: 'Chứng nhận Green Hero' },
+    { id: 'certificate:CER005', name: 'Chứng nhận Earth Guardian' },
+  ];
   isLoadingTargets: boolean = false;
   targetSearchTerm: string = '';
   targetDetailNames: Record<string, string> = {};
+  readonly availableScopes: PromotionScope[] = ['Order', 'Shipping', 'Category', 'Brand', 'Product', 'User'];
+  selectedScopes: PromotionScope[] = ['Order'];
+  selectedTargetsByScope: Record<string, string[]> = {};
+  targetTypeByScope: Record<string, TargetType> = { Category: 'Category' };
 
   // Target selection data (for detail modal)
-  detailTargetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category';
+  detailTargetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category';
   detailSelectedTargets: string[] = [];
   detailTargetSearchTerm: string = '';
   detailTargetDetailNames: Record<string, string> = {};
+  detailSelectedScopes: PromotionScope[] = ['Order'];
+  detailSelectedTargetsByScope: Record<string, string[]> = {};
+  detailTargetTypeByScope: Record<string, TargetType> = { Category: 'Category' };
 
   readonly timeHours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
   readonly timeMinutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
@@ -299,6 +320,8 @@ export class PromotionManage implements OnInit {
       return this.availableBrands;
     } else if (this.currentPromotion.scope === 'Product') {
       return this.availableProducts;
+    } else if (this.currentPromotion.scope === 'User') {
+      return this.availableUserTargets;
     } else if (this.currentPromotion.scope === 'Category') {
       // Use targetType to determine Category or Subcategory
       return this.targetType === 'Subcategory' ? this.availableSubcategories : this.availableCategories;
@@ -326,10 +349,129 @@ export class PromotionManage implements OnInit {
       const stock = option.stock !== undefined ? ` - Tồn: ${option.stock}` : '';
       return `${option.name} (${option.sku})${price}${stock}`;
     }
+    if (this.currentPromotion?.scope === 'User' && typeof option === 'object') {
+      return option.name || option.id || '';
+    }
     if (typeof option === 'object') {
       return option.name || option.id || '';
     }
     return option;
+  }
+
+  getScopeLabel(scope: string): string {
+    const labels: Record<string, string> = {
+      Order: 'Đơn hàng',
+      Shipping: 'Vận chuyển',
+      Category: 'Danh mục',
+      Brand: 'Thương hiệu',
+      Product: 'Sản phẩm',
+      User: 'Người dùng / chứng nhận'
+    };
+    return labels[scope] || scope;
+  }
+
+  isScopeSelected(scope: PromotionScope, mode: 'current' | 'detail' = 'current'): boolean {
+    return (mode === 'detail' ? this.detailSelectedScopes : this.selectedScopes).includes(scope);
+  }
+
+  setScopeSelected(scope: PromotionScope, checked: boolean, mode: 'current' | 'detail' = 'current'): void {
+    const scopes = mode === 'detail' ? this.detailSelectedScopes : this.selectedScopes;
+    const index = scopes.indexOf(scope);
+    if (checked && index === -1) scopes.push(scope);
+    if (!checked && index > -1 && scopes.length > 1) scopes.splice(index, 1);
+
+    if (mode === 'detail') {
+      this.detailSelectedScopes = [...scopes];
+      if (this.selectedPromotion) this.selectedPromotion.scope = this.primaryScope('detail');
+    } else {
+      this.selectedScopes = [...scopes];
+      if (this.currentPromotion) this.currentPromotion.scope = this.primaryScope('current');
+    }
+  }
+
+  private primaryScope(mode: 'current' | 'detail' = 'current'): PromotionScope {
+    const scopes = mode === 'detail' ? this.detailSelectedScopes : this.selectedScopes;
+    if (scopes.includes('Shipping')) return 'Shipping';
+    return scopes[0] || 'Order';
+  }
+
+  getSelectedTargetScopes(mode: 'current' | 'detail' = 'current'): PromotionScope[] {
+    const scopes = mode === 'detail' ? this.detailSelectedScopes : this.selectedScopes;
+    return scopes.filter(scope => scope !== 'Order' && scope !== 'Shipping');
+  }
+
+  getTargetTypeForScope(scope: PromotionScope, mode: 'current' | 'detail' = 'current'): TargetType {
+    if (scope !== 'Category') return scope;
+    const map = mode === 'detail' ? this.detailTargetTypeByScope : this.targetTypeByScope;
+    return map[scope] || 'Category';
+  }
+
+  setTargetTypeForScope(scope: PromotionScope, targetType: TargetType, mode: 'current' | 'detail' = 'current'): void {
+    const map = mode === 'detail' ? this.detailTargetTypeByScope : this.targetTypeByScope;
+    const selectedMap = mode === 'detail' ? this.detailSelectedTargetsByScope : this.selectedTargetsByScope;
+    map[scope] = targetType;
+    selectedMap[scope] = [];
+  }
+
+  getAvailableTargetOptionsForScope(scope: PromotionScope, mode: 'current' | 'detail' = 'current'): Array<string | TargetOption> {
+    const targetType = this.getTargetTypeForScope(scope, mode);
+    if (targetType === 'Product') return this.availableProducts;
+    if (targetType === 'Brand') return this.availableBrands;
+    if (targetType === 'User') return this.availableUserTargets;
+    if (targetType === 'Subcategory') return this.availableSubcategories;
+    if (targetType === 'Category') return this.availableCategories;
+    return [];
+  }
+
+  getTargetLabelForScope(scope: PromotionScope, option: string | TargetOption, mode: 'current' | 'detail' = 'current'): string {
+    const targetType = this.getTargetTypeForScope(scope, mode);
+    if (targetType === 'Product' && typeof option === 'object') {
+      const price = option.price ? ` - ${Number(option.price).toLocaleString('vi-VN')}đ` : '';
+      const stock = option.stock !== undefined ? ` - Tồn: ${option.stock}` : '';
+      return `${option.name} (${option.sku})${price}${stock}`;
+    }
+    if (typeof option === 'object') return option.name || option.id || option.sku || '';
+    return option;
+  }
+
+  getFilteredTargetOptionsForScope(scope: PromotionScope, mode: 'current' | 'detail' = 'current'): Array<string | TargetOption> {
+    const options = this.getAvailableTargetOptionsForScope(scope, mode);
+    const searchTerm = (mode === 'detail' ? this.detailTargetSearchTerm : this.targetSearchTerm).toLowerCase().trim();
+    if (!searchTerm) return options;
+    return options.filter(option => {
+      const label = this.getTargetLabelForScope(scope, option, mode).toLowerCase();
+      const value = this.getTargetValue(option).toLowerCase();
+      return label.includes(searchTerm) || value.includes(searchTerm);
+    });
+  }
+
+  getSelectedTargetsForScope(scope: PromotionScope, mode: 'current' | 'detail' = 'current'): string[] {
+    const selectedMap = mode === 'detail' ? this.detailSelectedTargetsByScope : this.selectedTargetsByScope;
+    return selectedMap[scope] || [];
+  }
+
+  isGroupTargetSelected(scope: PromotionScope, target: string, mode: 'current' | 'detail' = 'current'): boolean {
+    return this.getSelectedTargetsForScope(scope, mode)
+      .some(selected => this.isSameTarget(selected, target, scope, this.getTargetTypeForScope(scope, mode) as any));
+  }
+
+  setGroupTargetSelected(scope: PromotionScope, target: string, checked: boolean, mode: 'current' | 'detail' = 'current'): void {
+    const selectedMap = mode === 'detail' ? this.detailSelectedTargetsByScope : this.selectedTargetsByScope;
+    const list = selectedMap[scope] || [];
+    const index = list.findIndex(selected => this.isSameTarget(selected, target, scope, this.getTargetTypeForScope(scope, mode) as any));
+    if (checked && index === -1) list.push(target);
+    if (!checked && index > -1) list.splice(index, 1);
+    selectedMap[scope] = [...list];
+  }
+
+  getGroupTargetDisplayName(scope: PromotionScope, targetValue: string, mode: 'current' | 'detail' = 'current'): string {
+    const option = this.findTargetOption(targetValue, scope, this.getTargetTypeForScope(scope, mode) as any);
+    const detailNames = mode === 'detail' ? this.detailTargetDetailNames : this.targetDetailNames;
+    return option ? this.getTargetLabelForScope(scope, option, mode) : detailNames[targetValue] || targetValue;
+  }
+
+  removeGroupTarget(scope: PromotionScope, targetValue: string, mode: 'current' | 'detail' = 'current'): void {
+    this.setGroupTargetSelected(scope, targetValue, false, mode);
   }
 
   /**
@@ -398,6 +540,8 @@ export class PromotionManage implements OnInit {
       return this.targetType === 'Subcategory' 
         ? 'Tìm kiếm danh mục phụ...' 
         : 'Tìm kiếm danh mục chính...';
+    } else if (scope === 'User') {
+      return 'Tìm kiếm hạng thành viên hoặc chứng nhận xanh...';
     }
     return 'Tìm kiếm...';
   }
@@ -441,7 +585,7 @@ export class PromotionManage implements OnInit {
   private findTargetOption(
     targetValue: string,
     scope?: Promotion['scope'],
-    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category'
   ): string | TargetOption | undefined {
     let options: Array<string | TargetOption> = [];
 
@@ -451,6 +595,8 @@ export class PromotionManage implements OnInit {
       options = this.availableBrands;
     } else if (scope === 'Category') {
       options = targetType === 'Subcategory' ? this.availableSubcategories : this.availableCategories;
+    } else if (scope === 'User') {
+      options = this.availableUserTargets;
     }
 
     return options.find(option => {
@@ -469,7 +615,7 @@ export class PromotionManage implements OnInit {
   private getCanonicalTargetValue(
     targetValue: string,
     scope?: Promotion['scope'],
-    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category'
   ): string {
     const option = this.findTargetOption(targetValue, scope, targetType);
     if (!option) return String(targetValue || '').trim();
@@ -480,7 +626,7 @@ export class PromotionManage implements OnInit {
     first: string,
     second: string,
     scope?: Promotion['scope'],
-    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category'
   ): boolean {
     return this.normalizeTargetKey(this.getCanonicalTargetValue(first, scope, targetType))
       === this.normalizeTargetKey(this.getCanonicalTargetValue(second, scope, targetType));
@@ -489,12 +635,53 @@ export class PromotionManage implements OnInit {
   private normalizeTargetRefs(
     refs: string[],
     scope?: Promotion['scope'],
-    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' = 'Category'
+    targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product' | 'User' = 'Category'
   ): string[] {
     return refs.map(ref => {
       const option = this.findTargetOption(ref, scope, targetType);
       return option ? this.getTargetValue(option) : ref;
     });
+  }
+
+  private buildTargetGroups(mode: 'current' | 'detail' = 'current'): Array<{ target_type: string; target_ref: string[] }> {
+    const scopes = mode === 'detail' ? this.detailSelectedScopes : this.selectedScopes;
+    const selectedMap = mode === 'detail' ? this.detailSelectedTargetsByScope : this.selectedTargetsByScope;
+    return scopes.map(scope => ({
+      target_type: this.getTargetTypeForScope(scope, mode),
+      target_ref: scope === 'Order' || scope === 'Shipping' ? [] : (selectedMap[scope] || [])
+    }));
+  }
+
+  private applyTargetDataToScopeState(targetData: any, mode: 'current' | 'detail' = 'current'): void {
+    const baseScope = mode === 'detail' ? this.selectedPromotion?.scope : this.currentPromotion?.scope;
+    const groups = Array.isArray(targetData?.target_groups) && targetData.target_groups.length
+      ? targetData.target_groups
+      : targetData?.target_type
+        ? [{ target_type: targetData.target_type, target_ref: targetData.target_ref || [] }]
+        : [];
+    const scopes: PromotionScope[] = [];
+    const selectedMap: Record<string, string[]> = {};
+    const typeMap: Record<string, TargetType> = { Category: 'Category' };
+
+    if (baseScope && !scopes.includes(baseScope)) scopes.push(baseScope);
+    groups.forEach((group: any) => {
+      const targetType = group.target_type as TargetType;
+      const scope = targetType === 'Subcategory' ? 'Category' : targetType as PromotionScope;
+      if (!this.availableScopes.includes(scope)) return;
+      if (!scopes.includes(scope)) scopes.push(scope);
+      typeMap[scope] = targetType;
+      selectedMap[scope] = Array.isArray(group.target_ref) ? group.target_ref : [];
+    });
+
+    if (mode === 'detail') {
+      this.detailSelectedScopes = scopes.length ? scopes : [baseScope || 'Order'];
+      this.detailSelectedTargetsByScope = selectedMap;
+      this.detailTargetTypeByScope = typeMap;
+    } else {
+      this.selectedScopes = scopes.length ? scopes : [baseScope || 'Order'];
+      this.selectedTargetsByScope = selectedMap;
+      this.targetTypeByScope = typeMap;
+    }
   }
 
   /**
@@ -564,11 +751,14 @@ export class PromotionManage implements OnInit {
             // For Category scope, target_type can be 'Category' or 'Subcategory'
             if (this.currentPromotion?.scope === 'Category') {
               this.targetType = targetData.target_type as any;
+            } else if (this.currentPromotion?.scope === 'User') {
+              this.targetType = 'User';
             } else {
               // For Brand and Product, target_type matches scope
               this.targetType = targetData.target_type as any;
             }
           }
+          this.applyTargetDataToScopeState(targetData, 'current');
           // Set selected targets from promotion_targets, resolving legacy names to IDs where possible
           this.selectedTargets = this.normalizeTargetRefs(
             targetData.target_ref || [],
@@ -583,6 +773,7 @@ export class PromotionManage implements OnInit {
         } else {
           console.log('No target found for promotion:', promotionId);
           this.selectedTargets = [];
+          this.selectedTargetsByScope = {};
           this.targetDetailNames = {};
         }
       },
@@ -590,6 +781,7 @@ export class PromotionManage implements OnInit {
         // Target doesn't exist, that's okay (promotion might not have target)
         console.log('No target found for promotion (error):', promotionId, error);
         this.selectedTargets = [];
+        this.selectedTargetsByScope = {};
         this.targetDetailNames = {};
       }
     });
@@ -615,6 +807,8 @@ export class PromotionManage implements OnInit {
       this.targetType = 'Brand';
     } else if (scope === 'Product') {
       this.targetType = 'Product';
+    } else if (scope === 'User') {
+      this.targetType = 'User';
     }
   }
 
@@ -638,6 +832,8 @@ export class PromotionManage implements OnInit {
       this.detailTargetType = 'Brand';
     } else if (scope === 'Product') {
       this.detailTargetType = 'Product';
+    } else if (scope === 'User') {
+      this.detailTargetType = 'User';
     }
   }
 
@@ -659,6 +855,7 @@ export class PromotionManage implements OnInit {
               this.detailTargetType = targetData.target_type as any;
             }
           }
+          this.applyTargetDataToScopeState(targetData, 'detail');
           // Set selected targets from promotion_targets, resolving legacy names to IDs where possible
           this.detailSelectedTargets = this.normalizeTargetRefs(
             targetData.target_ref || [],
@@ -673,6 +870,7 @@ export class PromotionManage implements OnInit {
         } else {
           console.log('No target found for promotion:', promotionId);
           this.detailSelectedTargets = [];
+          this.detailSelectedTargetsByScope = {};
           this.detailTargetDetailNames = {};
         }
         this.cdr.detectChanges();
@@ -681,6 +879,7 @@ export class PromotionManage implements OnInit {
         // Target doesn't exist, that's okay (promotion might not have target)
         console.log('No target found for promotion (error):', promotionId, error);
         this.detailSelectedTargets = [];
+        this.detailSelectedTargetsByScope = {};
         this.detailTargetDetailNames = {};
         this.cdr.detectChanges();
       }
@@ -711,6 +910,8 @@ export class PromotionManage implements OnInit {
       return this.detailTargetType === 'Subcategory' 
         ? 'Tìm kiếm danh mục phụ...' 
         : 'Tìm kiếm danh mục chính...';
+    } else if (scope === 'User') {
+      return 'Tìm kiếm hạng thành viên hoặc chứng nhận xanh...';
     }
     return 'Tìm kiếm...';
   }
@@ -731,6 +932,8 @@ export class PromotionManage implements OnInit {
       return this.availableBrands;
     } else if (scope === 'Product') {
       return this.availableProducts;
+    } else if (scope === 'User') {
+      return this.availableUserTargets;
     }
     
     return [];
@@ -773,6 +976,9 @@ export class PromotionManage implements OnInit {
       const price = option.price ? ` - ${Number(option.price).toLocaleString('vi-VN')}đ` : '';
       const stock = option.stock !== undefined ? ` - Tồn: ${option.stock}` : '';
       return `${option.name} (${option.sku})${price}${stock}`;
+    }
+    if (this.selectedPromotion?.scope === 'User' && typeof option === 'object') {
+      return option.name || option.id || '';
     }
     if (typeof option === 'object') {
       return option.name || option.id || '';
@@ -1008,6 +1214,7 @@ export class PromotionManage implements OnInit {
         startTime: (item as any).startTime || (item as any).start_time || this.extractTime(item.startDate || item.start_date, '00:00'),
         endDate: endDateFormatted || endDate, // Use formatted date for input
         endTime: (item as any).endTime || (item as any).end_time || this.extractTime(item.endDate || item.end_date, '23:59'),
+        noEndDate: !endDate,
         usageLimit: finalUsageLimit,
         userLimit: finalUserLimit,
         usageCount: usageCount,
@@ -1087,9 +1294,9 @@ export class PromotionManage implements OnInit {
    * @param endDate - Ngày kết thúc
    * @returns Status string cho MongoDB: "đang diễn ra" | "sắp diễn ra" | "đã kết thúc"
    */
-  calculateStatusByRealTime(startDate: string, endDate: string): string {
-    if (!startDate || !endDate) {
-      console.warn(`⚠️ [calculateStatusByRealTime] Missing dates: start=${startDate}, end=${endDate}`);
+  calculateStatusByRealTime(startDate: string, endDate?: string | null): string {
+    if (!startDate) {
+      console.warn(`⚠️ [calculateStatusByRealTime] Missing start date: start=${startDate}`);
       return 'đang diễn ra';
     }
     
@@ -1099,17 +1306,19 @@ export class PromotionManage implements OnInit {
     
     // Parse dates
     const start = new Date(startDate);
-    const end = new Date(endDate);
+    const end = endDate ? new Date(endDate) : null;
     
     // Kiểm tra nếu dates không hợp lệ
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    if (isNaN(start.getTime()) || (end && isNaN(end.getTime()))) {
       console.warn(`⚠️ [calculateStatusByRealTime] Invalid dates: start=${startDate}, end=${endDate}`);
       return 'đang diễn ra';
     }
     
     // Normalize dates để so sánh chính xác
     start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999); // End date là cuối ngày
+    if (end) {
+      end.setHours(23, 59, 59, 999); // End date là cuối ngày
+    }
     
     // Logic tính toán status:
     // - Nếu now < start: sắp diễn ra (chưa đến ngày bắt đầu)
@@ -1118,7 +1327,7 @@ export class PromotionManage implements OnInit {
     let status: string;
     if (now < start) {
       status = 'sắp diễn ra';
-    } else if (now > end) {
+    } else if (end && now > end) {
       status = 'đã kết thúc';
     } else {
       status = 'đang diễn ra';
@@ -1128,9 +1337,9 @@ export class PromotionManage implements OnInit {
     console.log(`🔍 [calculateStatusByRealTime]`, {
       now: now.toISOString().split('T')[0],
       start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0],
+      end: end ? end.toISOString().split('T')[0] : null,
       nowLessThanStart: now < start,
-      nowGreaterThanEnd: now > end,
+      nowGreaterThanEnd: end ? now > end : false,
       calculatedStatus: status
     });
     
@@ -1295,13 +1504,13 @@ export class PromotionManage implements OnInit {
     }
   }
 
-  getPromotionStatus(startDate: string, endDate: string, jsonStatus?: string): 'active' | 'upcoming' | 'expired' {
+  getPromotionStatus(startDate: string, endDate?: string | null, jsonStatus?: string): 'active' | 'upcoming' | 'expired' {
     // If status is Draft, treat as upcoming regardless of dates
     if (jsonStatus === 'Draft' || jsonStatus === 'draft') {
       return 'upcoming';
     }
     
-    if (!startDate || !endDate) {
+    if (!startDate) {
       return 'active'; // Default if dates are missing
     }
     
@@ -1310,21 +1519,23 @@ export class PromotionManage implements OnInit {
     now.setHours(0, 0, 0, 0);
     
     const start = new Date(startDate);
-    const end = new Date(endDate);
+    const end = endDate ? new Date(endDate) : null;
     
     // Normalize dates để so sánh chính xác
     start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999); // End date là cuối ngày
+    if (end) {
+      end.setHours(23, 59, 59, 999); // End date là cuối ngày
+    }
     
     // Check if dates are valid
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    if (isNaN(start.getTime()) || (end && isNaN(end.getTime()))) {
       return 'active'; // Default if dates are invalid
     }
 
     // Tính toán status dựa trên thời gian thực
     if (now < start) {
       return 'upcoming';
-    } else if (now > end) {
+    } else if (end && now > end) {
       return 'expired';
     } else {
       return 'active';
@@ -1504,6 +1715,7 @@ export class PromotionManage implements OnInit {
       startTime: '00:00',
       endDate: new Date().toISOString().split('T')[0],
       endTime: '23:59',
+      noEndDate: false,
       usageLimit: 0,
       userLimit: 1,
       usageCount: 0,
@@ -1517,6 +1729,9 @@ export class PromotionManage implements OnInit {
     };
 
     this.selectedTargets = [];
+    this.selectedScopes = ['Order'];
+    this.selectedTargetsByScope = {};
+    this.targetTypeByScope = { Category: 'Category' };
     this.targetType = 'Category';
     this.targetSearchTerm = '';
     this.targetDetailNames = {};
@@ -1562,6 +1777,9 @@ export class PromotionManage implements OnInit {
     
     // Reset target selection
     this.selectedTargets = [];
+    this.selectedScopes = ['Product'];
+    this.selectedTargetsByScope = { Product: [] };
+    this.targetTypeByScope = { Category: 'Category' };
     this.targetType = 'Product';
     this.targetSearchTerm = '';
     this.targetDetailNames = {};
@@ -1593,6 +1811,9 @@ export class PromotionManage implements OnInit {
       
       // Reset target selection before loading
       this.selectedTargets = [];
+      this.selectedScopes = [selectedPromotion.scope || 'Order'];
+      this.selectedTargetsByScope = {};
+      this.targetTypeByScope = { Category: 'Category' };
       this.targetSearchTerm = '';
       this.targetType = 'Category'; // Default, will be updated by loadPromotionTarget
       
@@ -1649,12 +1870,29 @@ export class PromotionManage implements OnInit {
         if (failedCount > 0) {
           console.warn(`⚠️ Failed to delete ${failedCount} promotions`);
         }
+
+        const deletedIds = new Set(selected.map(promotion => String((promotion as any).promotion_id || promotion.id || promotion.code)));
+        this.allPromotions = this.allPromotions.filter(promotion => {
+          const identifiers = [
+            (promotion as any).promotion_id,
+            promotion.id,
+            promotion.code
+          ].map(value => String(value || ''));
+          return !identifiers.some(identifier => deletedIds.has(identifier));
+        });
+        this.promotions = this.promotions.filter(promotion => {
+          const identifiers = [
+            (promotion as any).promotion_id,
+            promotion.id,
+            promotion.code
+          ].map(value => String(value || ''));
+          return !identifiers.some(identifier => deletedIds.has(identifier));
+        });
+        this.applySearch();
+        this.calculateStats();
         
         // Reload promotions from MongoDB to get updated list
         this.loadPromotions();
-        
-        this.applySearch();
-        this.calculateStats();
         
         if (failedCount > 0) {
           this.displayPopup(`Đã xóa ${successCount} khuyến mãi, ${failedCount} khuyến mãi lỗi`, 'error');
@@ -1812,7 +2050,7 @@ export class PromotionManage implements OnInit {
   private prepareFlashSaleData(): any | null {
     if (!this.currentPromotion) return null;
 
-    if (!this.selectedTargets.length) {
+    if (!this.getSelectedTargetsForScope('Product').length) {
       this.notificationService.showWarning('Vui lòng chọn ít nhất một sản phẩm để chạy Flash Sale');
       return null;
     }
@@ -1877,15 +2115,15 @@ export class PromotionManage implements OnInit {
     }
     
     // Validate required fields
-    if (!this.currentPromotion.code || !this.currentPromotion.name || 
-        !this.currentPromotion.discountValue || !this.currentPromotion.startDate || 
-        !this.currentPromotion.endDate) {
+    if (!this.currentPromotion.code || !this.currentPromotion.name ||
+        !this.currentPromotion.discountValue || !this.currentPromotion.startDate ||
+        (!this.currentPromotion.noEndDate && !this.currentPromotion.endDate)) {
       this.notificationService.showWarning('Vui lòng điền đầy đủ các trường bắt buộc (*)');
       return;
     }
 
     // Validate date range: end date must be >= start date
-    if (this.currentPromotion.startDate && this.currentPromotion.endDate) {
+    if (!this.currentPromotion.noEndDate && this.currentPromotion.startDate && this.currentPromotion.endDate) {
       const startDate = new Date(this.currentPromotion.startDate);
       const endDate = new Date(this.currentPromotion.endDate);
       
@@ -1895,14 +2133,15 @@ export class PromotionManage implements OnInit {
       }
     }
 
-    // Validate target selection for Category/Product/Brand scope
-    if ((this.currentPromotion.scope === 'Category' || 
-         this.currentPromotion.scope === 'Product' || 
-         this.currentPromotion.scope === 'Brand') && 
-        (!this.selectedTargets || this.selectedTargets.length === 0)) {
-      this.notificationService.showWarning('Vui lòng chọn ít nhất một ' + 
-        (this.currentPromotion.scope === 'Category' ? 'danh mục' : 
-         this.currentPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm'));
+    if (!this.selectedScopes.length) {
+      this.notificationService.showWarning('Vui lòng chọn ít nhất một phạm vi áp dụng');
+      return;
+    }
+
+    const missingScope = this.getSelectedTargetScopes()
+      .find(scope => !this.getSelectedTargetsForScope(scope).length);
+    if (missingScope) {
+      this.notificationService.showWarning(`Vui lòng chọn ít nhất một mục cho phạm vi ${this.getScopeLabel(missingScope)}`);
       return;
     }
 
@@ -1912,7 +2151,7 @@ export class PromotionManage implements OnInit {
       name: this.currentPromotion.name.trim(),
       description: this.currentPromotion.description || '',
       type: this.currentPromotion.type || 'User',
-      scope: this.currentPromotion.scope || 'Order',
+      scope: this.primaryScope('current'),
       discount_type: this.currentPromotion.discountType === 'percentage' ? 'percent' : 
                      this.currentPromotion.discountType || 'fixed',
       discount_value: Number(this.currentPromotion.discountValue) || 0,
@@ -1922,7 +2161,7 @@ export class PromotionManage implements OnInit {
       user_limit: Number(this.currentPromotion.userLimit) || 1,
       is_first_order_only: this.currentPromotion.isFirstOrderOnly || false,
       start_date: new Date(this.currentPromotion.startDate),
-      end_date: new Date(this.currentPromotion.endDate),
+      end_date: this.currentPromotion.noEndDate ? null : new Date(this.currentPromotion.endDate),
       status: this.mapStatusToBackend(this.currentPromotion.status || 'active'),
       promotion_kind: 'Promotion',
       display_section: 'promotion',
@@ -1961,35 +2200,14 @@ export class PromotionManage implements OnInit {
    * Create promotion target if needed
    */
   async createPromotionTarget(promotionId: string): Promise<void> {
-    // Only create target if scope is Category, Product, or Brand
-    const scope = this.currentPromotion?.scope;
-    if (scope !== 'Category' && scope !== 'Product' && scope !== 'Brand') {
-      return;
-    }
-
-    // Check if targets are selected
-    if (!this.selectedTargets || this.selectedTargets.length === 0) {
-      console.log('⚠️ No targets selected, skipping promotion_target creation');
-      return;
-    }
-
-    // Map scope to target_type
-    let targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product';
-    if (scope === 'Category') {
-      targetType = this.targetType === 'Subcategory' ? 'Subcategory' : 'Category';
-    } else if (scope === 'Brand') {
-      targetType = 'Brand';
-    } else if (scope === 'Product') {
-      targetType = 'Product';
-    } else {
-      return;
-    }
-
-    // Prepare target data
+    const targetGroups = this.buildTargetGroups('current');
+    if (!targetGroups.length) return;
+    const primaryGroup = targetGroups.find(group => group.target_type !== 'Order' && group.target_type !== 'Shipping') || targetGroups[0];
     const targetData = {
       promotion_id: promotionId,
-      target_type: targetType,
-      target_ref: this.selectedTargets
+      target_type: primaryGroup.target_type,
+      target_ref: primaryGroup.target_ref,
+      target_groups: targetGroups
     };
 
     // Create promotion target
@@ -2019,7 +2237,7 @@ export class PromotionManage implements OnInit {
           const promotionId = response.data.promotion_id || response.data._id?.toString();
           
           // Create promotion target if needed
-          if (promotionId && (promotionData.scope === 'Category' || promotionData.scope === 'Product' || promotionData.scope === 'Brand')) {
+          if (promotionId) {
             this.createPromotionTarget(promotionId);
           }
           
@@ -2111,22 +2329,10 @@ export class PromotionManage implements OnInit {
           // Update promotion target if needed
           // Wait a bit to ensure promotion is updated first
           setTimeout(() => {
-            if (promotionId && (promotionData.scope === 'Category' || promotionData.scope === 'Product' || promotionData.scope === 'Brand')) {
+            if (promotionId) {
               // Use POST which will create or update
               console.log('🔄 [Update Promotion] Updating promotion target...');
               this.createPromotionTarget(promotionId);
-            } else if (promotionId && (promotionData.scope === 'Order' || promotionData.scope === 'Shipping')) {
-              // Delete target if scope changed to Order/Shipping
-              console.log('🔄 [Update Promotion] Deleting promotion target...');
-              this.http.delete(`${environment.apiUrl}/promotion-targets/${promotionId}`).subscribe({
-                next: () => console.log('✅ Promotion target deleted'),
-                error: (err) => {
-                  // 404 is okay - target might not exist
-                  if (err.status !== 404) {
-                    console.log('⚠️ Could not delete target:', err);
-                  }
-                }
-              });
             }
           }, 100);
           
@@ -2293,6 +2499,11 @@ export class PromotionManage implements OnInit {
       return;
     }
 
+    if (this.currentPromotion?.noEndDate) {
+      this.dateRangeError = false;
+      return;
+    }
+
     if (this.currentPromotion?.startDate && this.currentPromotion?.endDate) {
       const startDate = new Date(this.currentPromotion.startDate);
       const endDate = new Date(this.currentPromotion.endDate);
@@ -2312,6 +2523,10 @@ export class PromotionManage implements OnInit {
    * Handle end date change in add/edit modal
    */
   onEndDateChange(): void {
+    if (this.currentPromotion?.noEndDate) {
+      this.dateRangeError = false;
+      return;
+    }
     if (this.currentPromotion?.startDate && this.currentPromotion?.endDate) {
       const startDate = new Date(this.currentPromotion.startDate);
       const endDate = new Date(this.currentPromotion.endDate);
@@ -2327,6 +2542,11 @@ export class PromotionManage implements OnInit {
   onDetailStartDateChange(): void {
     if (this.isFlashSaleDetailMode() && this.selectedPromotion?.startDate) {
       this.selectedPromotion.endDate = this.selectedPromotion.startDate;
+      this.detailDateRangeError = false;
+      return;
+    }
+
+    if (this.selectedPromotion?.noEndDate) {
       this.detailDateRangeError = false;
       return;
     }
@@ -2350,6 +2570,10 @@ export class PromotionManage implements OnInit {
    * Handle end date change in detail modal
    */
   onDetailEndDateChange(): void {
+    if (this.selectedPromotion?.noEndDate) {
+      this.detailDateRangeError = false;
+      return;
+    }
     if (this.selectedPromotion?.startDate && this.selectedPromotion?.endDate) {
       const startDate = new Date(this.selectedPromotion.startDate);
       const endDate = new Date(this.selectedPromotion.endDate);
@@ -2372,6 +2596,9 @@ export class PromotionManage implements OnInit {
     
     // Reset detail target selection
     this.detailSelectedTargets = [];
+    this.detailSelectedScopes = [this.selectedPromotion.scope || 'Order'];
+    this.detailSelectedTargetsByScope = {};
+    this.detailTargetTypeByScope = { Category: 'Category' };
     this.detailTargetSearchTerm = '';
     this.detailTargetType = this.isFlashSaleDetailMode() ? 'Product' : 'Category';
     
@@ -2402,6 +2629,9 @@ export class PromotionManage implements OnInit {
     this.selectedPromotion = null;
     // Reset detail target selection
     this.detailSelectedTargets = [];
+    this.detailSelectedScopes = ['Order'];
+    this.detailSelectedTargetsByScope = {};
+    this.detailTargetTypeByScope = { Category: 'Category' };
     this.detailTargetSearchTerm = '';
     this.detailTargetType = 'Category';
     this.detailDateRangeError = false;
@@ -2419,7 +2649,7 @@ export class PromotionManage implements OnInit {
       this.selectedPromotion.endDate = this.selectedPromotion.startDate;
       this.detailTargetType = 'Product';
 
-      if (!this.detailSelectedTargets || this.detailSelectedTargets.length === 0) {
+      if (!this.getSelectedTargetsForScope('Product', 'detail').length) {
         this.notificationService.showWarning('Vui lòng chọn ít nhất một sản phẩm để chạy Flash Sale');
         return;
       }
@@ -2445,13 +2675,13 @@ export class PromotionManage implements OnInit {
     // Validate required fields
     if (!this.selectedPromotion.code || !this.selectedPromotion.name || 
         !this.selectedPromotion.discountValue || !this.selectedPromotion.startDate || 
-        !this.selectedPromotion.endDate) {
+        (!this.selectedPromotion.noEndDate && !this.selectedPromotion.endDate)) {
       this.notificationService.showWarning('Vui lòng điền đầy đủ các trường bắt buộc (*)');
       return;
     }
 
     // Validate date range: end date must be >= start date
-    if (this.selectedPromotion.startDate && this.selectedPromotion.endDate) {
+    if (!this.selectedPromotion.noEndDate && this.selectedPromotion.startDate && this.selectedPromotion.endDate) {
       const startDate = new Date(this.selectedPromotion.startDate);
       const endDate = new Date(this.selectedPromotion.endDate);
       
@@ -2461,14 +2691,16 @@ export class PromotionManage implements OnInit {
       }
     }
 
-    // Validate target selection for Category/Product/Brand scope
-    if ((this.selectedPromotion.scope === 'Category' || 
-         this.selectedPromotion.scope === 'Product' || 
-         this.selectedPromotion.scope === 'Brand') && 
-        (!this.detailSelectedTargets || this.detailSelectedTargets.length === 0)) {
-      this.notificationService.showWarning('Vui lòng chọn ít nhất một ' + 
-        (this.selectedPromotion.scope === 'Category' ? 'danh mục' : 
-         this.selectedPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm'));
+    if (!isFlashSale && !this.detailSelectedScopes.length) {
+      this.notificationService.showWarning('Vui lòng chọn ít nhất một phạm vi áp dụng');
+      return;
+    }
+
+    const missingDetailScope = !isFlashSale
+      ? this.getSelectedTargetScopes('detail').find(scope => !this.getSelectedTargetsForScope(scope, 'detail').length)
+      : null;
+    if (missingDetailScope) {
+      this.notificationService.showWarning(`Vui lòng chọn ít nhất một mục cho phạm vi ${this.getScopeLabel(missingDetailScope)}`);
       return;
     }
 
@@ -2478,7 +2710,7 @@ export class PromotionManage implements OnInit {
       name: this.selectedPromotion.name.trim(),
       description: this.selectedPromotion.description || '',
       type: isFlashSale ? 'Admin' : (this.selectedPromotion.type || 'User'),
-      scope: isFlashSale ? 'Product' : (this.selectedPromotion.scope || 'Order'),
+      scope: isFlashSale ? 'Product' : this.primaryScope('detail'),
       discount_type: this.selectedPromotion.discountType === 'percentage' ? 'percent' : 
                      this.selectedPromotion.discountType || 'fixed',
       discount_value: Number(this.selectedPromotion.discountValue) || 0,
@@ -2492,7 +2724,7 @@ export class PromotionManage implements OnInit {
         : new Date(this.selectedPromotion.startDate),
       end_date: isFlashSale
         ? this.buildDateTime(this.selectedPromotion.startDate, this.selectedPromotion.endTime)
-        : new Date(this.selectedPromotion.endDate),
+        : this.selectedPromotion.noEndDate ? null : new Date(this.selectedPromotion.endDate),
       status: isFlashSale ? 'Active' : this.mapStatusToBackend(this.selectedPromotion.status || 'active'),
       promotion_kind: isFlashSale ? 'FlashSale' : 'Promotion',
       display_section: isFlashSale ? 'flash_sale' : 'promotion',
@@ -2543,45 +2775,14 @@ export class PromotionManage implements OnInit {
    * Update promotion target for detail modal
    */
   updateDetailPromotionTarget(promotionId: string): void {
-    // Only update target if scope is Category, Product, or Brand
-    const scope = this.selectedPromotion?.scope;
-    if (scope !== 'Category' && scope !== 'Product' && scope !== 'Brand') {
-      // If scope changed to non-target, try to delete existing target
-      this.http.delete(`${environment.apiUrl}/promotion-targets/${promotionId}`).subscribe({
-        next: () => {
-          console.log('✅ Deleted promotion target (scope changed to non-target)');
-        },
-        error: (error: any) => {
-          // Target doesn't exist, that's okay
-          console.log('No target to delete');
-        }
-      });
-      return;
-    }
-
-    // Check if targets are selected
-    if (!this.detailSelectedTargets || this.detailSelectedTargets.length === 0) {
-      console.log('⚠️ No targets selected, skipping promotion_target update');
-      return;
-    }
-
-    // Map scope to target_type
-    let targetType: 'Category' | 'Subcategory' | 'Brand' | 'Product';
-    if (scope === 'Category') {
-      targetType = this.detailTargetType === 'Subcategory' ? 'Subcategory' : 'Category';
-    } else if (scope === 'Brand') {
-      targetType = 'Brand';
-    } else if (scope === 'Product') {
-      targetType = 'Product';
-    } else {
-      return;
-    }
-
-    // Prepare target data
+    const targetGroups = this.buildTargetGroups('detail');
+    if (!targetGroups.length) return;
+    const primaryGroup = targetGroups.find(group => group.target_type !== 'Order' && group.target_type !== 'Shipping') || targetGroups[0];
     const targetData = {
       promotion_id: promotionId,
-      target_type: targetType,
-      target_ref: this.detailSelectedTargets
+      target_type: primaryGroup.target_type,
+      target_ref: primaryGroup.target_ref,
+      target_groups: targetGroups
     };
 
     // Update promotion target

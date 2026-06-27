@@ -1,7 +1,9 @@
 package com.veggo.app.presentation.community;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -28,6 +30,7 @@ import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
@@ -54,6 +57,7 @@ public class CommunityPostActivity extends AppCompatActivity {
 
     private ActivityResultLauncher<PickVisualMediaRequest> galleryPicker;
     private ActivityResultLauncher<Uri> cameraPicker;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
     private CommunityRepository repository;
     private LinearLayout imagePreviewRow;
     private LinearLayout ingredientsList;
@@ -100,6 +104,16 @@ public class CommunityPostActivity extends AppCompatActivity {
                 this::addSelectedImages
         );
         cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicture(), this::handleCameraResult);
+        cameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (Boolean.TRUE.equals(granted)) {
+                        launchCameraCapture();
+                    } else {
+                        Toast.makeText(this, "Cần quyền camera để chụp ảnh món ăn", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
 
         findViewById(R.id.communityPostBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.communityPostImagePickerButton).setOnClickListener(v -> showImageSourceDialog());
@@ -117,6 +131,8 @@ public class CommunityPostActivity extends AppCompatActivity {
 
         loadDraftState();
         setStepTexts(new ArrayList<>());
+        setupDraftButtonVisibilityTracking();
+        updateDraftButtonState();
         loadCategories();
         loadProducts();
         loadRecipeForEdit();
@@ -149,7 +165,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         }
         latestDraft = null;
         savedDrafts.clear();
-        draftViewButton.setVisibility(View.GONE);
+        updateDraftButtonState();
         repository.loadDraft(response -> runOnUiThread(() -> {
             boolean hasDraft = response != null && response.hasDraft;
             if (response != null && response.drafts != null) {
@@ -222,7 +238,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_veggo);
-        ((ImageView) dialog.findViewById(R.id.imgIcon)).setImageResource(editing ? R.drawable.ic_edit : R.drawable.ic_plus);
+        ((ImageView) dialog.findViewById(R.id.imgIcon)).setImageResource(editing ? R.drawable.ic_edit : R.drawable.ic_community_publish);
         ((TextView) dialog.findViewById(R.id.tvTitle)).setText(editing ? "Lưu thay đổi?" : "Đăng công thức?");
         ((TextView) dialog.findViewById(R.id.tvMessage)).setText(editing
                 ? "Công thức sẽ được cập nhật và hiển thị cho cộng đồng."
@@ -644,8 +660,12 @@ public class CommunityPostActivity extends AppCompatActivity {
     }
 
     private void updateDraftButtonState() {
+        if (!TextUtils.isEmpty(editRecipeId)) {
+            draftViewButton.setVisibility(View.GONE);
+            return;
+        }
         draftViewButton.setText(savedDrafts.size() > 1 ? "Nháp (" + savedDrafts.size() + ")" : "Xem nháp");
-        draftViewButton.setVisibility(savedDrafts.isEmpty() ? View.GONE : View.VISIBLE);
+        draftViewButton.setVisibility((savedDrafts.isEmpty() && !hasDraftContent()) ? View.GONE : View.VISIBLE);
     }
 
     private ProductDto productFromDraft(CommunityRepository.RecipeIngredientDraft item) {
@@ -682,6 +702,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         }
         selectedCategoryId = category.getId();
         updateCategoryLabel();
+        updateDraftButtonState();
     }
 
     private void updateCategoryLabel() {
@@ -735,6 +756,7 @@ public class CommunityPostActivity extends AppCompatActivity {
             list.addView(productRow(product, v -> {
                 selectedIngredients.add(new IngredientSelection(product));
                 renderIngredients();
+                updateDraftButtonState();
                 dialog.dismiss();
             }));
         }
@@ -785,6 +807,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         quantity.addTextChangedListener(new SimpleWatcher() {
             @Override public void afterTextChanged(Editable editable) {
                 selection.quantity = editable.toString().trim();
+                updateDraftButtonState();
             }
         });
         row.addView(quantity, new LinearLayout.LayoutParams(dp(76), dp(38)));
@@ -797,6 +820,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         remove.setOnClickListener(v -> {
             selectedIngredients.remove(selection);
             renderIngredients();
+            updateDraftButtonState();
         });
         LinearLayout.LayoutParams removeParams = new LinearLayout.LayoutParams(dp(32), dp(38));
         removeParams.setMarginStart(dp(4));
@@ -947,6 +971,14 @@ public class CommunityPostActivity extends AppCompatActivity {
             Toast.makeText(this, "Chỉ chụp tối đa 6 ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+            return;
+        }
+        launchCameraCapture();
+    }
+
+    private void launchCameraCapture() {
         try {
             pendingCameraUri = createImageUri();
             cameraPicker.launch(pendingCameraUri);
@@ -1029,6 +1061,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         for (String imageUri : selectedImageUris) {
             addPreviewImage(imageUri);
         }
+        updateDraftButtonState();
     }
 
     private void addPreviewImage(String imageUri) {
@@ -1096,7 +1129,16 @@ public class CommunityPostActivity extends AppCompatActivity {
 
     private boolean validateDraftHasContent() {
         clearValidationErrors();
-        boolean hasContent = !TextUtils.isEmpty(text(titleInput))
+        if (hasDraftContent()) {
+            return true;
+        }
+        showValidationError(formError, "Vui lòng nhập ít nhất 1 thông tin để lưu bản nháp");
+        scrollToView(formError);
+        return false;
+    }
+
+    private boolean hasDraftContent() {
+        return !TextUtils.isEmpty(text(titleInput))
                 || !TextUtils.isEmpty(selectedCategoryId)
                 || !selectedImageUris.isEmpty()
                 || !TextUtils.isEmpty(text(videoInput))
@@ -1105,12 +1147,19 @@ public class CommunityPostActivity extends AppCompatActivity {
                 || !TextUtils.isEmpty(text(caloriesInput))
                 || !TextUtils.isEmpty(text(saltInput))
                 || !TextUtils.isEmpty(text(sugarInput));
-        if (hasContent) {
-            return true;
-        }
-        showValidationError(formError, "Vui lòng nhập ít nhất 1 thông tin để lưu bản nháp");
-        scrollToView(formError);
-        return false;
+    }
+
+    private void setupDraftButtonVisibilityTracking() {
+        TextWatcher watcher = new SimpleWatcher() {
+            @Override public void afterTextChanged(Editable editable) {
+                updateDraftButtonState();
+            }
+        };
+        titleInput.addTextChangedListener(watcher);
+        videoInput.addTextChangedListener(watcher);
+        caloriesInput.addTextChangedListener(watcher);
+        saltInput.addTextChangedListener(watcher);
+        sugarInput.addTextChangedListener(watcher);
     }
 
     private void setStepTexts(List<String> steps) {
@@ -1161,6 +1210,11 @@ public class CommunityPostActivity extends AppCompatActivity {
         input.setTextColor(getColor(R.color.neutral_100));
         input.setHintTextColor(getColor(R.color.neutral_60));
         input.setTextSize(12);
+        input.addTextChangedListener(new SimpleWatcher() {
+            @Override public void afterTextChanged(Editable editable) {
+                updateDraftButtonState();
+            }
+        });
         LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         inputParams.setMarginStart(dp(8));
         row.addView(input, inputParams);

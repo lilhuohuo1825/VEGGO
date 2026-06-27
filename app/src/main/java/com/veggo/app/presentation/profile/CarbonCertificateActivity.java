@@ -15,6 +15,7 @@ import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.bumptech.glide.Glide;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -26,8 +27,17 @@ public class CarbonCertificateActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "điểm carbon")) {
+            return;
+        }
         setContentView(R.layout.activity_carbon_certificate);
         findViewById(R.id.carbonCertificateBackButton).setOnClickListener(v -> finish());
+        loadCertificate();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadCertificate();
     }
 
@@ -48,41 +58,94 @@ public class CarbonCertificateActivity extends BaseActivity {
 
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificatePoints,
                 formatPoints(points) + " C");
+
+        View placeholder = findViewById(R.id.myCertificatePlaceholder);
+        View content = findViewById(R.id.myCertificateContent);
+        ImageView banner = findViewById(R.id.myCertificateBanner);
+        TextView rewardDetails = findViewById(R.id.myCertificateRewardDetails);
+        TextView statusView = findViewById(R.id.carbonCertificateStatus);
+        TextView descView = findViewById(R.id.carbonCertificateDescription);
+
         if (current != null) {
             AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, current.certificateName);
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateStatus, "Đã được quản trị viên duyệt");
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
-                    current.certificateDescription + "\n\nƯu đãi: " + current.rewardDescription);
+            if (statusView != null) statusView.setVisibility(View.GONE);
+            if (descView != null) descView.setVisibility(View.GONE);
             View shareBtn = findViewById(R.id.carbonShareButton);
             if (shareBtn != null) {
                 shareBtn.setVisibility(View.VISIBLE);
             }
-        } else if (eligible != null) {
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName,
-                    eligibilityTitle(request, eligible));
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateStatus,
-                    eligibilityStatus(request, eligible));
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
-                    eligibilityDescription(request, eligible, points));
-            View shareBtn = findViewById(R.id.carbonShareButton);
-            if (shareBtn != null) {
-                shareBtn.setVisibility(View.GONE);
+
+            if (placeholder != null) placeholder.setVisibility(View.GONE);
+            if (content != null) content.setVisibility(View.VISIBLE);
+            if (banner != null) {
+                String promoId = getPromotionIdForCertificate(current.certificateId);
+                String bannerUrl = buildPromotionBannerProxyUrl(promoId);
+                if (bannerUrl != null) {
+                    Glide.with(this)
+                            .load(bannerUrl)
+                            .fitCenter()
+                            .placeholder(R.drawable.banner_nam_rom)
+                            .error(R.drawable.banner_nam_rom)
+                            .into(banner);
+                }
+            }
+            if (rewardDetails != null) {
+                rewardDetails.setText("• Chi tiết ưu đãi: " + current.certificateDescription + "\n• Quà tặng đi kèm: " + current.rewardDescription);
             }
         } else {
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, "Chưa có chứng nhận");
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateStatus,
-                    next == null ? "Chưa có dữ liệu mốc chứng nhận" : "Cần thêm " + formatPoints(next.requiredCarbonPoint - points) + " C");
-            AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
-                    next == null
-                            ? "Danh sách chứng nhận chưa sẵn sàng. Vui lòng thử lại sau."
-                            : "Tích lũy điểm carbon từ các đơn hàng xanh để mở mốc " + next.certificateName + ".");
-            View shareBtn = findViewById(R.id.carbonShareButton);
-            if (shareBtn != null) {
-                shareBtn.setVisibility(View.GONE);
+            if (placeholder != null) placeholder.setVisibility(View.VISIBLE);
+            if (content != null) content.setVisibility(View.GONE);
+            if (statusView != null) statusView.setVisibility(View.VISIBLE);
+            if (descView != null) descView.setVisibility(View.VISIBLE);
+
+            if (eligible != null) {
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName,
+                        eligibilityTitle(request, eligible));
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateStatus,
+                        eligibilityStatus(request, eligible));
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
+                        eligibilityDescription(request, eligible, points));
+                View shareBtn = findViewById(R.id.carbonShareButton);
+                if (shareBtn != null) {
+                    shareBtn.setVisibility(View.GONE);
+                }
+            } else {
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, "Chưa có chứng nhận");
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateStatus,
+                        next == null ? "Chưa có dữ liệu mốc chứng nhận" : "Cần thêm " + formatPoints(next.requiredCarbonPoint - points) + " C");
+                AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
+                        next == null
+                                ? "Danh sách chứng nhận chưa sẵn sàng. Vui lòng thử lại sau."
+                                : "Tích lũy điểm carbon từ các đơn hàng xanh để mở mốc " + next.certificateName + ".");
+                View shareBtn = findViewById(R.id.carbonShareButton);
+                if (shareBtn != null) {
+                    shareBtn.setVisibility(View.GONE);
+                }
             }
         }
 
         bindCertificatePath(snapshot.certificates, current, eligible, request, points);
+    }
+
+    private String getPromotionIdForCertificate(String certificateId) {
+        if (certificateId == null) return null;
+        switch (certificateId) {
+            case "CER001": return "PROMO017";
+            case "CER002": return "PROMO018";
+            case "CER003": return "PROMO019";
+            case "CER004": return "PROMO020";
+            case "CER005": return "PROMO021";
+            default: return null;
+        }
+    }
+
+    private String buildPromotionBannerProxyUrl(String promotionId) {
+        if (promotionId == null || promotionId.trim().isEmpty()) return null;
+        String baseUrl = com.veggo.app.core.utils.Constants.API_BASE_URL;
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + "/promotions/" + promotionId.trim() + "/banner-image";
     }
 
     private void bindCertificatePath(List<AssetModels.Certificate> certificates,
@@ -127,10 +190,11 @@ public class CarbonCertificateActivity extends BaseActivity {
                 && "rejected".equalsIgnoreCase(request.status);
         boolean reached = points >= certificate.requiredCarbonPoint;
         int activeColor = ContextCompat.getColor(this, R.color.primary_hover);
+        int pendingColor = ContextCompat.getColor(this, R.color.secondary_hover);
         int rejectedColor = ContextCompat.getColor(this, R.color.danger_main);
         int normalColor = ContextCompat.getColor(this, R.color.neutral_80);
         int mutedColor = ContextCompat.getColor(this, R.color.neutral_60);
-        int textColor = rejected ? rejectedColor : (approved || waiting || reached) ? activeColor : normalColor;
+        int textColor = rejected ? rejectedColor : waiting ? pendingColor : (approved || reached) ? activeColor : normalColor;
 
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -198,7 +262,7 @@ public class CarbonCertificateActivity extends BaseActivity {
         TextView status = new TextView(this);
         status.setGravity(Gravity.END);
         status.setText(statusLabel(approved, waiting, rejected, reached));
-        status.setTextColor(rejected ? rejectedColor : approved || waiting ? activeColor : mutedColor);
+        status.setTextColor(rejected ? rejectedColor : waiting ? pendingColor : approved ? activeColor : mutedColor);
         status.setTextSize(12);
         LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -215,7 +279,7 @@ public class CarbonCertificateActivity extends BaseActivity {
     private String statusLabel(boolean approved, boolean waiting, boolean rejected, boolean reached) {
         if (approved) return "Đã duyệt";
         if (waiting) return "Chờ duyệt";
-        if (rejected) return "Từ chối";
+        if (rejected) return "Đã từ chối duyệt";
         if (reached) return "Đủ điểm";
         return "Chưa đạt";
     }

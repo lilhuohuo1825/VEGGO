@@ -108,6 +108,12 @@ public class CategoryDetailFragment extends Fragment {
             intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
             startActivity(intent);
         });
+        productAdapter.setOnAddProductClickListener(product -> {
+            Intent intent = new Intent(requireContext(), ProductDetailActivity.class);
+            intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+            intent.putExtra(ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, true);
+            startActivity(intent);
+        });
 
         // Navigate to SearchActivity when search bar is clicked
         View.OnClickListener openSearchClick = v -> {

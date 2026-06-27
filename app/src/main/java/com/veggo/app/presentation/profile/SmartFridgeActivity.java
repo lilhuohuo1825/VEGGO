@@ -45,6 +45,9 @@ public class SmartFridgeActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "tủ lạnh thông minh")) {
+            return;
+        }
         setContentView(R.layout.activity_smart_fridge);
         findViewById(R.id.smartFridgeBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.smartFridgeHistoryButton).setOnClickListener(v -> {

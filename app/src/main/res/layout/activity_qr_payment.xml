@@ -16,7 +16,7 @@
         <!-- Header giống checkout -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="88dp"
+            android:layout_height="76dp"
             android:gravity="bottom"
             android:orientation="horizontal"
             android:paddingStart="16dp"
@@ -42,9 +42,9 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/encodesans_bold"
                 android:gravity="center"
-                android:text="Thanh toán"
+                android:text="Chuyển khoản"
                 android:textColor="#1E1E1E"
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <ImageView
@@ -59,29 +59,36 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#F5F5F5"
+            android:background="#FFFFFF"
             android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
 
                 <!-- Card thông tin thanh toán -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_white_radius_10"
+                    android:background="@drawable/bg_checkout_card_white"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="16dp">
 
                     <TextView
+                        android:id="@+id/tvPaymentTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="QR THANH TOÁN"
+                        android:text="THÔNG TIN CHUYỂN KHOẢN"
                         android:textColor="#57AF37"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -92,11 +99,12 @@
                         android:layout_marginTop="20dp"
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
-                        android:text="Vui lòng thanh toán để xác nhận đơn hàng"
+                        android:text="Vui lòng chuyển khoản theo thông tin bên dưới để xác nhận đơn hàng"
                         android:textColor="#1E1E1E"
                         android:textSize="13sp" />
 
                     <TextView
+                        android:id="@+id/tvPaymentAmount"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
@@ -108,6 +116,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvPaymentTimer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -118,6 +127,7 @@
                         android:textSize="13sp" />
 
                     <TextView
+                        android:id="@+id/tvPaymentItemCount"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -133,14 +143,33 @@
                         android:layout_marginTop="16dp"
                         android:background="#616161" />
 
-                    <!-- QR nằm dọc phía dưới thông tin -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="18dp"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="Thanh toán bằng QR code"
+                        android:text="Quét mã QR để chuyển khoản"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="190dp"
+                        android:layout_height="190dp"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="10dp"
+                        android:background="#FFFFFF"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/qr_payment" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Ngân hàng"
                         android:textColor="#1E1E1E"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -150,18 +179,88 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:fontFamily="@font/inter_regular"
-                        android:gravity="center"
-                        android:text="Quét QR để chuyển khoản"
+                        android:text="VEGGO Bank - Chi nhánh Hồ Chí Minh"
                         android:textColor="#616161"
                         android:textSize="12sp" />
 
-                    <ImageView
-                        android:layout_width="220dp"
-                        android:layout_height="220dp"
-                        android:layout_gravity="center"
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/qr_payment" />
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Số tài khoản"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="9704 0000 1234 5678"
+                        android:textColor="#616161"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Chủ tài khoản"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="CONG TY VEGGO"
+                        android:textColor="#616161"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Mã thanh toán"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvPaymentCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="VG000000"
+                        android:textColor="#57AF37"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Nội dung chuyển khoản"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTransferContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="VG000000"
+                        android:textColor="#616161"
+                        android:textSize="12sp" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -196,7 +295,7 @@
                 android:fontFamily="@font/inter_semibold"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:text="Xác nhận đã thanh toán"
+                android:text="Xác nhận thanh toán"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -207,7 +306,7 @@
         android:id="@+id/layoutOrderSuccess"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#EDF8E8"
+        android:background="@color/white"
         android:orientation="vertical"
         android:visibility="gone">
 

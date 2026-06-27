@@ -10,6 +10,7 @@ import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.CategoryApi;
 import com.veggo.app.data.remote.api.ConsultationApi;
 import com.veggo.app.data.remote.api.ProductApi;
+import com.veggo.app.data.remote.api.PromotionApi;
 import com.veggo.app.data.remote.api.RecipeApi;
 import com.veggo.app.data.remote.api.ReviewApi;
 import com.veggo.app.data.remote.api.UserApi;
@@ -107,5 +108,9 @@ public final class AppModule {
 
     public static RecipeApi provideRecipeApi() {
         return ApiClient.createService(RecipeApi.class);
+    }
+
+    public static PromotionApi providePromotionApi() {
+        return ApiClient.createService(PromotionApi.class);
     }
 }

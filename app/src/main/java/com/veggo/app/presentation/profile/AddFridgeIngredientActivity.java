@@ -168,6 +168,9 @@ public class AddFridgeIngredientActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "tủ lạnh thông minh")) {
+            return;
+        }
         setContentView(R.layout.activity_add_fridge_ingredient);
 
         blocksContainer = findViewById(R.id.fridgeManualBlocksContainer);

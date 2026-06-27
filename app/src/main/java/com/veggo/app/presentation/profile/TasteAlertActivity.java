@@ -25,6 +25,9 @@ public class TasteAlertActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "khẩu vị của tôi")) {
+            return;
+        }
         setContentView(R.layout.activity_taste_alert);
         tasteStore = new TastePreferenceStore(this);
         findViewById(R.id.tasteAlertBackButton).setOnClickListener(v -> finish());

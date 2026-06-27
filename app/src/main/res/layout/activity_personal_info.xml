@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_main">
@@ -71,22 +72,26 @@
                     android:background="@drawable/bg_profile_avatar">
 
                     <ImageView
+                        android:id="@+id/personalInfoAvatarImage"
                         android:layout_width="74dp"
                         android:layout_height="74dp"
                         android:layout_gravity="center"
                         android:contentDescription="Ảnh đại diện"
                         android:src="@drawable/ic_profile_avatar" />
-                </FrameLayout>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Đổi ảnh đại diện"
-                    android:textColor="@color/primary_main"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/personalInfoChangeAvatarButton"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="end|bottom"
+                        android:background="@drawable/bg_community_circle_green"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="+"
+                        android:textColor="@color/neutral_10"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/personalInfoCarbonBadge"
@@ -99,6 +104,17 @@
                     android:minWidth="142dp"
                     android:textColor="@color/primary_main"
                     android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/personalInfoChangePasswordButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Đổi mật khẩu"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
@@ -115,9 +131,11 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_semibold"
                     android:text="Họ và tên"
-                    android:textColor="@color/neutral_80"
-                    android:textSize="14sp" />
+                    android:textColor="@color/neutral_100"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/personalInfoNameInput"
@@ -125,6 +143,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input"
+                    android:hint="Nhập họ và tên"
                     android:inputType="textPersonName"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
@@ -132,12 +151,47 @@
                     android:textSize="14sp" />
 
                 <TextView
+                    android:id="@+id/personalInfoNameError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/danger_main"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="Số điện thoại"
-                    android:textColor="@color/neutral_80"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="Số điện thoại"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/personalInfoChangePhoneButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_carbon_badge"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:minWidth="122dp"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:text="Đổi số điện thoại"
+                        android:textColor="@color/primary_main"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <EditText
                     android:id="@+id/personalInfoPhoneInput"
@@ -145,19 +199,35 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input"
+                    android:clickable="false"
+                    android:enabled="false"
+                    android:focusable="false"
+                    android:hint="Số điện thoại"
                     android:inputType="phone"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
-                    android:textColor="@color/neutral_100"
+                    android:textColor="@color/neutral_60"
                     android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/personalInfoPhoneError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/danger_main"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:fontFamily="@font/inter_semibold"
                     android:text="Email"
-                    android:textColor="@color/neutral_80"
-                    android:textSize="14sp" />
+                    android:textColor="@color/neutral_100"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/personalInfoEmailInput"
@@ -165,11 +235,22 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input"
+                    android:hint="Nhập email"
                     android:inputType="textEmailAddress"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:textColor="@color/neutral_100"
                     android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/personalInfoEmailError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/danger_main"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -186,9 +267,11 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
                             android:text="Ngày sinh"
-                            android:textColor="@color/neutral_80"
-                            android:textSize="14sp" />
+                            android:textColor="@color/neutral_100"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
                         <FrameLayout
                             android:layout_width="match_parent"
@@ -200,6 +283,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:background="@drawable/bg_input"
+                                android:hint="Ngày sinh"
                                 android:inputType="date"
                                 android:paddingStart="14dp"
                                 android:paddingEnd="40dp"
@@ -216,6 +300,16 @@
                                 android:src="@drawable/ic_calendar"
                                 android:tint="@color/neutral_40" />
                         </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/personalInfoBirthdayError"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:textColor="@color/danger_main"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -228,23 +322,82 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
                             android:text="Giới tính"
-                            android:textColor="@color/neutral_80"
-                            android:textSize="14sp" />
+                            android:textColor="@color/neutral_100"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                        <EditText
-                            android:id="@+id/personalInfoGenderInput"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="50dp"
                             android:layout_marginTop="8dp"
                             android:background="@drawable/bg_input"
-                            android:inputType="text"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
                             android:paddingStart="14dp"
-                            android:paddingEnd="14dp"
-                            android:textColor="@color/neutral_100"
-                            android:textSize="14sp" />
+                            android:paddingEnd="14dp">
+
+                            <LinearLayout
+                                android:id="@+id/layoutGenderMale"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:clickable="true"
+                                android:focusable="true">
+
+                                <CheckBox
+                                    android:id="@+id/personalInfoGenderMaleCheck"
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:button="@null"
+                                    android:background="@drawable/selector_checkbox"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:fontFamily="@font/inter_regular"
+                                    android:text="Nam"
+                                    android:textColor="@color/neutral_100"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/layoutGenderFemale"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="16dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:clickable="true"
+                                android:focusable="true">
+
+                                <CheckBox
+                                    android:id="@+id/personalInfoGenderFemaleCheck"
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:button="@null"
+                                    android:background="@drawable/selector_checkbox"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:fontFamily="@font/inter_regular"
+                                    android:text="Nữ"
+                                    android:textColor="@color/neutral_100"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
+
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
@@ -268,7 +421,7 @@
             android:background="@drawable/bg_logout_outline_button"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:text="ĐĂNG XUẤT"
+            android:text="Đăng xuất"
             android:textColor="@color/danger_main"
             android:textSize="14sp"
             android:textStyle="bold" />

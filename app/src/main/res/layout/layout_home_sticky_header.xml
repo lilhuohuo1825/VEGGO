@@ -75,25 +75,69 @@
         </FrameLayout>
     </LinearLayout>
 
-    <ImageView
+    <FrameLayout
         android:id="@+id/homeStickyCartButton"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
         android:layout_marginEnd="12dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:clickable="true"
         android:focusable="true"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_shopping_cart"
-        app:tint="@color/neutral_100" />
+        android:background="?attr/selectableItemBackgroundBorderless">
 
-    <ImageView
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_shopping_cart"
+            app:tint="@color/neutral_100" />
+
+        <TextView
+            android:id="@+id/homeStickyCartBadge"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_notification_badge_alert"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <FrameLayout
         android:id="@+id/homeStickyNotifyButton"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:clickable="true"
         android:focusable="true"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_notify"
-        app:tint="@color/neutral_100" />
+        android:background="?attr/selectableItemBackgroundBorderless">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_notify"
+            app:tint="@color/neutral_100" />
+
+        <TextView
+            android:id="@+id/homeStickyNotificationBadge"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_notification_badge_alert"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
 
 </LinearLayout>

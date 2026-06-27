@@ -48,6 +48,6 @@ public class Address {
     public boolean isDefault() { return isDefault; }
 
     public String getFullAddressLine() {
-        return detail + ",\n" + ward + ",\n" + district + ",\n" + province;
+        return detail + ", " + ward + ", " + district + ", " + province;
     }
 }

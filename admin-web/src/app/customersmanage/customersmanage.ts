@@ -18,6 +18,12 @@ interface UserJSON {
   RegisterDate?: string | { $date: string };
   customer_type?: string;
   CustomerTiering?: string;
+  CertificateID?: string;
+  CertificateName?: string;
+  CertificateStatus?: string;
+  certificate?: string;
+  certificateName?: string;
+  cer?: string;
   TotalSpent?: number;
   full_name?: string;
   phone?: string;
@@ -35,6 +41,7 @@ interface Customer {
   email: string;
   address: string;
   memberTier: string;
+  carbonCertificate: string;
   totalOrders: string;
   selected: boolean;
   group?: string;
@@ -119,7 +126,7 @@ export class CustomersManage implements OnInit, OnDestroy {
     { field: 'name' as keyof Customer, label: 'Tên khách hàng', icon: '👤' },
     { field: 'joinDate' as keyof Customer, label: 'Ngày tham gia', icon: '📅' },
     { field: 'totalOrders' as keyof Customer, label: 'Tổng đơn hàng', icon: '📦' },
-    { field: 'memberTier' as keyof Customer, label: 'Hạng thành viên', icon: '⭐' },
+    { field: 'carbonCertificate' as keyof Customer, label: 'Chứng nhận carbon', icon: '⭐' },
   ];
 
   // Batch edit modal
@@ -477,6 +484,15 @@ export class CustomersManage implements OnInit, OnDestroy {
       memberTier = 'bronze';
     }
 
+    const carbonCertificate = this.normalizeCarbonCertificate(
+      user.CertificateName ||
+      user.CertificateID ||
+      user.certificateName ||
+      user.certificate ||
+      user.cer ||
+      ''
+    );
+
     // Get customer ID - use CUS format directly
     let customerId = '';
     if (user.CustomerID) {
@@ -509,6 +525,7 @@ export class CustomersManage implements OnInit, OnDestroy {
       email: email,
       address: address,
       memberTier: memberTier,
+      carbonCertificate,
       totalOrders: totalOrdersDisplay,
       selected: false,
       group: undefined,
@@ -1149,6 +1166,28 @@ export class CustomersManage implements OnInit, OnDestroy {
    */
   getMemberTierClass(tier: string): string {
     return `tier-${tier}`;
+  }
+
+  getCarbonCertificateLabel(certificate: string): string {
+    return this.normalizeCarbonCertificate(certificate);
+  }
+
+  getCarbonCertificateClass(certificate: string): string {
+    const normalized = this.normalizeCarbonCertificate(certificate).toLowerCase();
+    if (normalized.includes('kim cương') || normalized.includes('diamond')) return 'cert-diamond';
+    if (normalized.includes('bạch kim') || normalized.includes('platinum')) return 'cert-platinum';
+    if (normalized.includes('vàng') || normalized.includes('gold')) return 'cert-gold';
+    if (normalized.includes('bạc') || normalized.includes('silver')) return 'cert-silver';
+    if (normalized.includes('đồng') || normalized.includes('bronze')) return 'cert-bronze';
+    return 'cert-none';
+  }
+
+  private normalizeCarbonCertificate(value: string): string {
+    const text = String(value || '').trim();
+    if (!text || text === 'null' || text === 'undefined') {
+      return 'Chưa có';
+    }
+    return text;
   }
 
   /**

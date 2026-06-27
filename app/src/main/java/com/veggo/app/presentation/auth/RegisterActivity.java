@@ -2,7 +2,10 @@ package com.veggo.app.presentation.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -16,14 +19,20 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.data.remote.api.UserApi;
+import com.veggo.app.data.remote.dto.UserDto;
+import com.veggo.app.presentation.checkout.PendingCheckoutStore;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends BaseActivity {
     private static final String TAG = "RegisterActivity";
-    private static final String PHONE_REGEX = "^0\\d{9}$";
-    private static final String PASSWORD_REGEX = "^(?=.*[A-Z]).{8,}$";
-    private static final String DEMO_OTP = "123456";
 
     private AuthViewModel authViewModel;
     private LinearLayout layoutRegisterForm;
@@ -43,6 +52,13 @@ public class RegisterActivity extends BaseActivity {
     private boolean isConfirmPasswordVisible;
     private String pendingPhone;
     private String pendingPassword;
+    private String currentOtp;
+    private long otpExpiresAt;
+    private int otpFailedAttempts;
+    private CountDownTimer otpTimer;
+    private String checkedPhone = "";
+    private boolean checkedPhoneExists;
+    private boolean checkingPhone;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +71,20 @@ public class RegisterActivity extends BaseActivity {
         setupActions();
         observeViewModel();
         showRegisterForm();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EmulatorSmsSender.handlePermissionResult(this, requestCode, grantResults);
     }
 
     private void initViews() {
@@ -92,9 +122,28 @@ public class RegisterActivity extends BaseActivity {
         });
         findViewById(R.id.btnRegister).setOnClickListener(v -> handleRegister());
         findViewById(R.id.btnVerify).setOnClickListener(v -> handleVerifyRegister());
-        findViewById(R.id.tvResendCode).setOnClickListener(v ->
-                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show()
-        );
+        findViewById(R.id.tvResendCode).setOnClickListener(v -> sendRegisterOtp());
+        edtPhone.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                checkRegisterPhoneAvailability(edtPhone.getText().toString().trim(), false);
+            }
+        });
+        edtPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                validatePassword(s.toString());
+                validateConfirmPassword(s.toString(), edtConfirmPassword.getText().toString());
+            }
+        });
+        edtConfirmPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                validateConfirmPassword(edtPassword.getText().toString(), s.toString());
+            }
+        });
+        AuthFormUtils.wireOtpFields(getRegisterOtpFields(), this::handleVerifyRegister);
     }
 
     private void handleRegister() {
@@ -110,18 +159,112 @@ public class RegisterActivity extends BaseActivity {
         if (!isPhoneValid || !isPasswordValid || !isConfirmValid || !isPolicyValid) {
             return;
         }
+        if (checkingPhone) {
+            Toast.makeText(this, "Đang kiểm tra số điện thoại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!phone.equals(checkedPhone)) {
+            checkRegisterPhoneAvailability(phone, true);
+            return;
+        }
+        if (checkedPhoneExists) {
+            AuthFormUtils.showError(tvPhoneError, "Số điện thoại này đã được đăng ký");
+            return;
+        }
 
         pendingPhone = phone;
         pendingPassword = password;
-        tvVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại " + maskPhone(phone));
+        sendRegisterOtp();
+    }
+
+    private void checkRegisterPhoneAvailability(String phone, boolean continueAfterAvailable) {
+        if (!validatePhone(phone)) {
+            return;
+        }
+        checkingPhone = true;
+        ApiClient.createService(UserApi.class).getUserByPhone(phone).enqueue(new Callback<UserDto>() {
+            @Override
+            public void onResponse(Call<UserDto> call, Response<UserDto> response) {
+                checkingPhone = false;
+                checkedPhone = phone;
+                checkedPhoneExists = response.isSuccessful() && response.body() != null;
+                if (checkedPhoneExists) {
+                    AuthFormUtils.showError(tvPhoneError, "Số điện thoại này đã được đăng ký");
+                    return;
+                }
+                AuthFormUtils.showError(tvPhoneError, "");
+                if (continueAfterAvailable) {
+                    handleRegister();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserDto> call, Throwable t) {
+                checkingPhone = false;
+                checkedPhone = phone;
+                checkedPhoneExists = false;
+                AuthFormUtils.showError(tvPhoneError, "");
+                if (continueAfterAvailable) {
+                    handleRegister();
+                }
+            }
+        });
+    }
+
+    private void sendRegisterOtp() {
+        currentOtp = AuthFormUtils.randomOtp();
+        otpExpiresAt = System.currentTimeMillis() + AuthFormUtils.OTP_TTL_MS;
+        otpFailedAttempts = 0;
+        tvVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
+                + maskPhone(pendingPhone) + ". Mã có hiệu lực trong 60 giây.");
         clearOtpFields(getRegisterOtpFields());
         showVerifyForm();
-        Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show();
+        getRegisterOtpFields()[0].requestFocus();
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
+        otpTimer = new CountDownTimer(AuthFormUtils.OTP_TTL_MS, 1000) {
+            @Override public void onTick(long millisUntilFinished) {
+                updateRegisterOtpDescription(millisUntilFinished);
+            }
+            @Override public void onFinish() {
+                updateRegisterOtpDescription(0);
+                Toast.makeText(RegisterActivity.this, "Mã xác thực đã hết hạn", Toast.LENGTH_SHORT).show();
+            }
+        }.start();
+        EmulatorSmsSender.send(
+                this,
+                "VEGGO: Ma OTP dang ky cua ban la " + currentOtp + ". Ma co hieu luc trong 60 giay."
+        );
+    }
+
+    private void updateRegisterOtpDescription(long millisUntilFinished) {
+        long seconds = Math.max(0, millisUntilFinished / 1000);
+        String suffix = seconds > 0
+                ? "Mã còn hiệu lực trong " + seconds + " giây."
+                : "Mã xác thực đã hết hạn. Vui lòng gửi lại mã.";
+        tvVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
+                + maskPhone(pendingPhone) + ". " + suffix);
     }
 
     private void handleVerifyRegister() {
-        if (!DEMO_OTP.equals(getOtpValue(getRegisterOtpFields()))) {
-            Toast.makeText(this, "Mã xác thực không đúng", Toast.LENGTH_SHORT).show();
+        String otp = getOtpValue(getRegisterOtpFields());
+        if (otp.length() < 6) {
+            return;
+        }
+        if (System.currentTimeMillis() > otpExpiresAt) {
+            Toast.makeText(this, "Mã xác thực đã hết hạn. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (otpFailedAttempts >= AuthFormUtils.MAX_OTP_ATTEMPTS) {
+            Toast.makeText(this, "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!currentOtp.equals(otp)) {
+            otpFailedAttempts++;
+            Toast.makeText(this,
+                    "Mã xác thực không đúng (" + otpFailedAttempts + "/" + AuthFormUtils.MAX_OTP_ATTEMPTS + ")",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -144,10 +287,15 @@ public class RegisterActivity extends BaseActivity {
 
             Toast.makeText(this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
 
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
+            PendingCheckoutStore pendingCheckoutStore = new PendingCheckoutStore(this);
+            if (pendingCheckoutStore.hasPending()) {
+                pendingCheckoutStore.openAfterAuth(this, userDto.getCustomerId());
+            } else {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
             finish();
         });
 
@@ -186,33 +334,11 @@ public class RegisterActivity extends BaseActivity {
     }
 
     private boolean validatePhone(String phone) {
-        if (phone.isEmpty()) {
-            tvPhoneError.setText("Vui lòng nhập số điện thoại");
-            tvPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        if (!phone.matches(PHONE_REGEX)) {
-            tvPhoneError.setText("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
-            tvPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvPhoneError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvPhoneError, AuthFormUtils.phoneError(phone));
     }
 
     private boolean validatePassword(String password) {
-        if (password.isEmpty()) {
-            tvPasswordError.setText("Vui lòng nhập mật khẩu");
-            tvPasswordError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        if (!password.matches(PASSWORD_REGEX)) {
-            tvPasswordError.setText("Mật khẩu phải có ít nhất 8 ký tự và chứa ít nhất 1 chữ in hoa");
-            tvPasswordError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvPasswordError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvPasswordError, AuthFormUtils.passwordError(password));
     }
 
     private boolean validateConfirmPassword(String password, String confirmPassword) {

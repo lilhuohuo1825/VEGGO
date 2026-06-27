@@ -124,8 +124,8 @@ function getInstructionKey(instruction) {
 function resolveInstructionDisplay(instruction, dishDescription) {
   const title = instruction.title || instruction.DishName || '';
   const image = instruction.image || instruction.Image || '';
-  const description = instruction.description
-    || dishDescription
+  const description = dishDescription
+    || instruction.description
     || instruction.Ingredient
     || '';
   return { title, image, description };
@@ -137,10 +137,16 @@ function buildCookingSteps(dish) {
   const parts = [
     dish.Preparation ? `Sơ chế:\n${dish.Preparation}` : '',
     dish.Cooking ? `Nấu:\n${dish.Cooking}` : '',
-    dish.Serving ? `Trình bày:\n${dish.Serving}` : '',
   ].filter(Boolean);
 
   return parts.join('\n\n');
+}
+
+function buildUsage(dish) {
+  const usage = dish.usage || dish.Usage || dish.Serving || '';
+  return String(usage)
+    .replace(/^Cách\s*Dùng:\s*/i, '')
+    .trim();
 }
 
 function parseIngredientsList(dish) {
@@ -162,6 +168,7 @@ module.exports = {
   getInstructionKey,
   resolveInstructionDisplay,
   buildCookingSteps,
+  buildUsage,
   parseIngredientsList,
   ingredientsToSearchText,
   dishNameText,

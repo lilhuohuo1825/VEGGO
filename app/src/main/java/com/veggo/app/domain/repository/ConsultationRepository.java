@@ -12,6 +12,6 @@ public interface ConsultationRepository {
 
     void getConsultationsBySku(String sku, Callback<List<Consultation>> callback);
 
-    void submitQuestion(String sku, String question, String customerName, String productName,
+    void submitQuestion(String sku, String question, String customerId, String customerName, String productName,
                         Callback<List<Consultation>> callback);
 }

@@ -25,16 +25,6 @@ public class UtilityAdapter extends ListAdapter<Utility, UtilityAdapter.UtilityV
         this.listener = listener;
     }
 
-    private OnUtilityClickListener listener;
-
-    public interface OnUtilityClickListener {
-        void onUtilityClick(Utility utility);
-    }
-
-    public void setOnUtilityClickListener(OnUtilityClickListener listener) {
-        this.listener = listener;
-    }
-
     public UtilityAdapter() {
         super(new DiffUtil.ItemCallback<Utility>() {
             @Override

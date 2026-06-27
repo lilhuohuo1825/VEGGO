@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 
 import java.util.ArrayList;
@@ -64,9 +65,14 @@ public class PaymentItemAdapter extends RecyclerView.Adapter<PaymentItemAdapter.
         }
 
         private void bind(PaymentItemUiModel item, boolean isLastItem) {
-            productView.setImageResource(item.imageResId);
+            Glide.with(productView.getContext())
+                    .load(item.imageUrl)
+                    .placeholder(item.imageResId)
+                    .error(item.imageResId)
+                    .into(productView);
             nameView.setText(item.name);
             weightView.setText(item.weight);
+            weightView.setVisibility(item.weight == null || item.weight.trim().isEmpty() ? View.GONE : View.VISIBLE);
             priceView.setText(formatCurrency(item.price));
             quantityView.setText("x" + item.quantity);
             dividerView.setVisibility(isLastItem ? View.GONE : View.VISIBLE);
@@ -76,20 +82,26 @@ public class PaymentItemAdapter extends RecyclerView.Adapter<PaymentItemAdapter.
     public static final class PaymentItemUiModel {
         public final String name;
         public final String weight;
-        public final int price;
+        public final long price;
         public final int quantity;
         public final int imageResId;
+        public final String imageUrl;
 
-        public PaymentItemUiModel(String name, String weight, int price, int quantity, int imageResId) {
+        public PaymentItemUiModel(String name, String weight, long price, int quantity, int imageResId) {
+            this(name, weight, price, quantity, imageResId, null);
+        }
+
+        public PaymentItemUiModel(String name, String weight, long price, int quantity, int imageResId, String imageUrl) {
             this.name = name;
             this.weight = weight;
             this.price = price;
             this.quantity = quantity;
             this.imageResId = imageResId;
+            this.imageUrl = imageUrl;
         }
     }
 
-    private static String formatCurrency(int amount) {
+    private static String formatCurrency(long amount) {
         return String.format(Locale.US, "%,d", amount).replace(',', '.') + "\u0111";
     }
 }

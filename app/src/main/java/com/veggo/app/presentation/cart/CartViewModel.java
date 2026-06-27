@@ -76,9 +76,9 @@ public class CartViewModel extends ViewModel {
         });
     }
 
-    public void removeItem(String customerId, String sku) {
+    public void removeItem(String customerId, String sku, double selectedWeight) {
         isLoading.setValue(true);
-        cartRepository.removeItem(customerId, sku).enqueue(new Callback<CartDto>() {
+        cartRepository.removeItem(customerId, sku, selectedWeight).enqueue(new Callback<CartDto>() {
             @Override
             public void onResponse(Call<CartDto> call, Response<CartDto> response) {
                 isLoading.setValue(false);
@@ -97,9 +97,9 @@ public class CartViewModel extends ViewModel {
         });
     }
 
-    public void updateQuantity(String customerId, String sku, int quantity) {
+    public void updateQuantity(String customerId, String sku, int quantity, double selectedWeight) {
         isLoading.setValue(true);
-        cartRepository.updateItemQuantity(customerId, sku, quantity).enqueue(new Callback<CartDto>() {
+        cartRepository.updateItemQuantity(customerId, sku, quantity, selectedWeight).enqueue(new Callback<CartDto>() {
             @Override
             public void onResponse(Call<CartDto> call, Response<CartDto> response) {
                 isLoading.setValue(false);

@@ -5,6 +5,10 @@ const promotionTargetSchema = new mongoose.Schema(
     promotion_id: { type: String, required: true },
     target_type: { type: String, required: true },
     target_ref: { type: [String], required: true },
+    target_groups: [{
+      target_type: { type: String, required: true },
+      target_ref: { type: [String], default: [] },
+    }],
   },
   { collection: 'promotion_targets', timestamps: true, strict: false }
 );

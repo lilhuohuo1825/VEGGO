@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.core.splashscreen)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // MVVM
     implementation(libs.lifecycle.viewmodel)

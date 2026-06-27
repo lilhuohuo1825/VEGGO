@@ -41,15 +41,15 @@
             <TextView
                 android:id="@+id/txtWeight"
                 android:layout_width="wrap_content"
-                android:layout_height="18dp"
+                android:layout_height="20dp"
                 android:layout_marginTop="5dp"
                 android:background="@drawable/bg_tag_green"
                 android:fontFamily="@font/inter_medium"
                 android:gravity="center"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
                 android:textColor="#167728"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 tools:text="200gr" />
         </LinearLayout>
 

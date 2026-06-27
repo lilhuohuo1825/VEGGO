@@ -33,24 +33,34 @@ public class ReviewRepositoryImpl implements ReviewRepository {
             public void onResponse(Call<ProductReviewsDto> call, Response<ProductReviewsDto> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Review> reviews = new ArrayList<>();
-                    List<ReviewEntity> entities = new ArrayList<>();
 
                     ProductReviewsDto dto = response.body();
                     if (dto.getReviews() != null) {
                         for (com.veggo.app.data.remote.dto.ReviewDto reviewDto : dto.getReviews()) {
-                            Review review = ReviewMapper.fromDto(reviewDto);
-                            reviews.add(review);
-
-                            // Optionally map to entity to save in local DB
-                            // Note: we need a productId to link to the products table if using foreign keys
-                            // For now, just return the list
+                            reviews.add(ReviewMapper.fromDto(reviewDto));
                         }
                     }
                     callback.onSuccess(reviews);
 
-                    // Update local DB in background if needed
-                    if (!entities.isEmpty()) {
-                        executor.execute(() -> productDao.insertReviews(entities));
+                    if (dto.getReviews() != null && !dto.getReviews().isEmpty()) {
+                        executor.execute(() -> {
+                            String productId = productDao.getProductIdBySku(sku);
+                            if (productId == null || productId.isEmpty()) {
+                                return;
+                            }
+                            List<ReviewEntity> entities = new ArrayList<>();
+                            int index = 0;
+                            for (com.veggo.app.data.remote.dto.ReviewDto reviewDto : dto.getReviews()) {
+                                Review review = ReviewMapper.fromDto(reviewDto);
+                                String reviewId = reviewDto.getId() != null && !reviewDto.getId().isEmpty()
+                                        ? reviewDto.getId()
+                                        : "remote_review_" + sku + "_" + index;
+                                entities.add(ReviewMapper.toEntity(review, productId, reviewId));
+                                index++;
+                            }
+                            productDao.insertReviews(entities);
+                            productDao.updateProductReviewStats(productId);
+                        });
                     }
                 } else {
                     callback.onError(new Exception("Failed to fetch reviews"));

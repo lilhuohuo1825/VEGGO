@@ -52,6 +52,42 @@
             android:src="@drawable/ic_order_list_menu" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/reviewSearchContainer"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginStart="@dimen/spacing_md"
+        android:layout_marginEnd="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_xs"
+        android:background="@drawable/bg_order_search"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp">
+
+        <EditText
+            android:id="@+id/reviewSearchInput"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:fontFamily="@font/inter_regular"
+            android:hint="Tìm theo tên đơn, mã đơn, hoặc tên sản phẩm"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="@color/neutral_100"
+            android:textColorHint="@color/neutral_60"
+            android:textSize="@dimen/text_sm" />
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_search"
+            android:tint="@color/neutral_60" />
+    </LinearLayout>
+
     <HorizontalScrollView
         android:id="@+id/reviewsStatusScroll"
         android:layout_width="match_parent"
@@ -166,87 +202,88 @@
         android:layout_height="1dp"
         android:background="@color/neutral_30" />
 
-    <FrameLayout
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/reviewsSwipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <ScrollView
-            android:id="@+id/reviewListScroll"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:paddingStart="@dimen/spacing_md"
-            android:paddingEnd="@dimen/spacing_md"
-            android:paddingBottom="@dimen/spacing_lg">
+            android:layout_height="match_parent">
 
-            <LinearLayout
+            <ScrollView
+                android:id="@+id/reviewListScroll"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingStart="@dimen/spacing_md"
+                android:paddingEnd="@dimen/spacing_md"
+                android:paddingBottom="@dimen/spacing_lg">
 
                 <LinearLayout
-                    android:id="@+id/reviewWaitingList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_md"
                     android:orientation="vertical">
 
-                    <include layout="@layout/item_review_waiting" />
-                </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/reviewWaitingList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_md"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
 
-                <LinearLayout
-                    android:id="@+id/reviewDoneList"
+                    <LinearLayout
+                        android:id="@+id/reviewDoneList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_md"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </ScrollView>
+
+            <LinearLayout
+                android:id="@+id/reviewsEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/spacing_xl"
+                android:paddingEnd="@dimen/spacing_xl"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
+                    android:contentDescription="@string/reviews_empty_title"
+                    android:src="@drawable/ic_order_empty_mascot" />
+
+                <TextView
+                    android:id="@+id/reviewsEmptyTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_md"
-                    android:orientation="vertical"
-                    android:visibility="gone">
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:gravity="center"
+                    android:text="@string/reviews_empty_title"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
 
-                    <include layout="@layout/item_review_done" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/reviewsEmptyBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="@string/reviews_empty_body"
+                    android:textColor="@color/neutral_70"
+                    android:textSize="@dimen/text_sm" />
             </LinearLayout>
-        </ScrollView>
-
-        <LinearLayout
-            android:id="@+id/reviewsEmptyState"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingStart="@dimen/spacing_xl"
-            android:paddingEnd="@dimen/spacing_xl"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="240dp"
-                android:layout_height="240dp"
-                android:contentDescription="@string/reviews_empty_title"
-                android:src="@drawable/ic_order_empty_mascot" />
-
-            <TextView
-                android:id="@+id/reviewsEmptyTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_lg"
-                android:fontFamily="@font/encodesans_bold"
-                android:gravity="center"
-                android:text="@string/reviews_empty_title"
-                android:textColor="@color/neutral_100"
-                android:textSize="@dimen/text_lg"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/reviewsEmptyBody"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:gravity="center"
-                android:lineSpacingExtra="4dp"
-                android:text="@string/reviews_empty_body"
-                android:textColor="@color/neutral_70"
-                android:textSize="@dimen/text_sm" />
-        </LinearLayout>
-    </FrameLayout>
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </LinearLayout>

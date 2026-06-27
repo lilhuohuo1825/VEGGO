@@ -39,8 +39,7 @@
                 android:layout_alignParentEnd="true"
                 android:layout_marginTop="12dp"
                 android:layout_marginEnd="12dp"
-                android:src="@drawable/ic_save"
-                app:tint="@color/white" />
+                android:src="@drawable/ic_heart_outline_green" />
 
             <LinearLayout
                 android:layout_width="wrap_content"

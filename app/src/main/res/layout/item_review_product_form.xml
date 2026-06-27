@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="12dp"
+    android:background="@drawable/bg_checkout_card_white"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/reviewProductImage"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_order_product_thumb"
+            android:contentDescription="@null"
+            android:padding="4dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_vegetable" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/reviewProductName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_semibold"
+                android:maxLines="1"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_sm"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/reviewProductVariant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_regular"
+                android:maxLines="1"
+                android:textColor="@color/neutral_60"
+                android:textSize="@dimen/text_xs" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/inter_semibold"
+        android:text="Đánh giá sản phẩm"
+        android:textColor="@color/neutral_100"
+        android:textSize="@dimen/text_sm" />
+
+    <RatingBar
+        android:id="@+id/reviewProductRating"
+        style="@android:style/Widget.Material.RatingBar"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginTop="2dp"
+        android:numStars="5"
+        android:progressTint="#FFC107"
+        android:rating="5"
+        android:scaleX="0.78"
+        android:scaleY="0.78"
+        android:transformPivotX="0dp"
+        android:transformPivotY="20dp"
+        android:secondaryProgressTint="#FFC107"
+        android:stepSize="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/inter_semibold"
+        android:text="Thêm ít nhất 1 hình ảnh/video về sản phẩm"
+        android:textColor="@color/neutral_100"
+        android:textSize="@dimen/text_sm" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="82dp"
+        android:layout_marginTop="8dp"
+        android:fillViewport="false"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+    <LinearLayout
+        android:id="@+id/reviewMediaContainer"
+        android:layout_width="match_parent"
+        android:layout_height="82dp"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/reviewPhotoContainer"
+            android:layout_width="96dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_promotion_code_dashed"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_gallery"
+                    android:tint="@color/primary_main" />
+
+                <TextView
+                    android:id="@+id/reviewPhotoPlaceholder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="0/3"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/reviewVideoContainer"
+            android:layout_width="96dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_promotion_code_dashed"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_camera"
+                    android:tint="@color/primary_main" />
+
+                <TextView
+                    android:id="@+id/reviewVideoPlaceholder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="0/1"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+    </HorizontalScrollView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/inter_semibold"
+        android:text="Viết đánh giá từ 50 ký tự"
+        android:textColor="@color/neutral_100"
+        android:textSize="@dimen/text_sm" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp">
+
+        <EditText
+            android:id="@+id/reviewProductContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_normal"
+            android:fontFamily="@font/inter_regular"
+            android:gravity="top"
+            android:hint="Đối tượng sử dụng:\nCông dụng:\n\nHãy chia sẻ nhận xét cho sản phẩm này bạn nhé!"
+            android:inputType="textMultiLine"
+            android:maxLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="28dp"
+            android:textColor="@color/neutral_100"
+            android:textColorHint="@color/neutral_50"
+            android:textSize="@dimen/text_sm" />
+
+        <TextView
+            android:id="@+id/reviewProductCharCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="@font/inter_regular"
+            android:text="0 ký tự"
+            android:textColor="@color/neutral_50"
+            android:textSize="@dimen/text_xs" />
+    </FrameLayout>
+</LinearLayout>

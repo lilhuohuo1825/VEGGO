@@ -74,14 +74,24 @@ public class RecipeDetailDto {
         @SerializedName("dishName")
         private String dishName;
 
+        @SerializedName("description")
+        private String description;
+
         @SerializedName("ingredients")
         private List<String> ingredients;
 
         @SerializedName("steps")
         private String steps;
 
+        @SerializedName("usage")
+        private String usage;
+
         public String getDishName() {
             return dishName;
+        }
+
+        public String getDescription() {
+            return description;
         }
 
         public List<String> getIngredients() {
@@ -90,6 +100,10 @@ public class RecipeDetailDto {
 
         public String getSteps() {
             return steps;
+        }
+
+        public String getUsage() {
+            return usage;
         }
     }
 }

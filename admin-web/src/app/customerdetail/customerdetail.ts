@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-customerdetail',
@@ -17,7 +16,6 @@ export class CustomerDetail implements OnInit {
   private http = inject(HttpClient);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private apiService = inject(ApiService);
 
   customerId: string = '';
   customer: any = null;
@@ -418,11 +416,11 @@ export class CustomerDetail implements OnInit {
       return;
     }
     
-        const customerID = this.customer.CustomerID;
+    const customerID = this.customer.CustomerID;
     console.log(`📍 Loading addresses for customer: ${customerID}`);
     
     // Load from MongoDB API
-    this.http.get<any>(`${environment.apiUrl}/address/${customerID}`).subscribe({
+    this.http.get<any>(`${environment.apiUrl}/address/user/${customerID}`).subscribe({
       next: (response: any) => {
         console.log('📍 Addresses API Response:', response);
         
@@ -440,10 +438,11 @@ export class CustomerDetail implements OnInit {
           // Transform addresses to display format with Vietnamese formatting
           this.addresses = addressesData.map((addr: any) => {
             // Format address parts to Vietnamese
-            const detail = addr.detail || '';
-            const ward = this.formatAddressPart(addr.ward, 'ward', addr.city, addr.district);
-            const district = this.formatAddressPart(addr.district, 'district', addr.city);
-            const city = this.formatAddressPart(addr.city, 'city');
+            const detail = addr.detail || addr.address || '';
+            const province = addr.province || addr.city || '';
+            const ward = this.formatAddressPart(addr.ward, 'ward', province, addr.district);
+            const district = this.formatAddressPart(addr.district, 'district', province);
+            const city = this.formatAddressPart(province, 'city');
             
             // Build full address string
             const addressParts: string[] = [];
@@ -456,10 +455,11 @@ export class CustomerDetail implements OnInit {
               id: addr._id?.toString() || Date.now().toString(),
               fullAddress: addressParts.join(', ') || 'Chưa có địa chỉ',
               isDefault: addr.isDefault || false,
-              fullName: addr.fullName,
+              fullName: addr.fullName || addr.name,
               phone: addr.phone,
               email: addr.email,
-              city: addr.city,
+              city: province,
+              province,
               district: addr.district,
               ward: addr.ward,
               detail: addr.detail
@@ -472,6 +472,10 @@ export class CustomerDetail implements OnInit {
             if (b.isDefault) return 1;
             return 0;
           });
+          const defaultAddress = this.getDefaultAddress();
+          if (defaultAddress && (!this.customerData.address || this.customerData.address === '---')) {
+            this.customerData.address = defaultAddress.fullAddress;
+          }
           
           console.log(`✅ Loaded ${this.addresses.length} addresses for customer ${customerID}`);
         } else {
@@ -568,6 +572,19 @@ export class CustomerDetail implements OnInit {
     return slug;
   }
 
+  private getCustomerField(...keys: string[]): any {
+    if (!this.customer) return undefined;
+
+    for (const key of keys) {
+      const value = this.customer[key];
+      if (value !== undefined && value !== null && value !== '') {
+        return value;
+      }
+    }
+
+    return undefined;
+  }
+
   /**
    * Transform customer data for display
    */
@@ -579,16 +596,17 @@ export class CustomerDetail implements OnInit {
     }
     
     console.log('🔄 Transforming customer data:', {
-      CustomerID: this.customer.CustomerID,
-      FullName: this.customer.FullName,
+      CustomerID: this.getCustomerField('CustomerID'),
+      FullName: this.getCustomerField('FullName', 'fullName', 'name'),
       ordersCount: this.orders.length
     });
     
     // Format RegisterDate from MongoDB date format (support both JSON and MongoDB format)
     // Output format: dd-mm-yyyy
     let formattedDate = '---';
-    if (this.customer.RegisterDate || this.customer.register_date) {
-      const registerDate = this.customer.RegisterDate || this.customer.register_date;
+    const registerDateValue = this.getCustomerField('RegisterDate', 'register_date', 'createdAt', 'created_at');
+    if (registerDateValue) {
+      const registerDate = registerDateValue;
       let dateObj: Date | null = null;
       
       // Try to parse date from various formats
@@ -612,7 +630,7 @@ export class CustomerDetail implements OnInit {
     }
 
     // Get CustomerTiering from customer data (Đồng, Bạc, Vàng)
-    const memberTier = this.customer.CustomerTiering || 'Đồng';
+    const memberTier = this.getCustomerField('CustomerTiering', 'customer_type', 'CustomerType') || 'Đồng';
     
     // Map CustomerTiering to customerType
     let customerType = 'Regular';
@@ -629,8 +647,9 @@ export class CustomerDetail implements OnInit {
 
     // Use TotalSpent from customer data if available and > 0 (from MongoDB), otherwise calculate from orders
     // Note: If TotalSpent is 0, it might be outdated, so we recalculate from orders
-    if (this.customer.TotalSpent !== undefined && this.customer.TotalSpent !== null && this.customer.TotalSpent > 0) {
-      totalSpent = this.formatCurrency(this.customer.TotalSpent);
+    const storedTotalSpent = Number(this.getCustomerField('TotalSpent', 'totalSpent') || 0);
+    if (storedTotalSpent > 0) {
+      totalSpent = this.formatCurrency(storedTotalSpent);
     }
 
     // Calculate order statistics
@@ -640,10 +659,10 @@ export class CustomerDetail implements OnInit {
       totalOrders = allOrdersCount.toString();
       
       // Calculate total spent - prioritize MongoDB TotalSpent, but also calculate from orders for verification
-      if (this.customer.TotalSpent !== undefined && this.customer.TotalSpent !== null && this.customer.TotalSpent > 0) {
+      if (storedTotalSpent > 0) {
         // Use MongoDB TotalSpent if available
-        totalSpent = this.formatCurrency(this.customer.TotalSpent);
-        console.log(`💰 Using TotalSpent from MongoDB: ${this.customer.TotalSpent}`);
+        totalSpent = this.formatCurrency(storedTotalSpent);
+        console.log(`💰 Using TotalSpent from MongoDB: ${storedTotalSpent}`);
       } else {
         // Calculate from orders - include all non-cancelled/returned orders
         const calculatedTotal = this.orders.reduce((sum: number, order: any) => {
@@ -718,8 +737,9 @@ export class CustomerDetail implements OnInit {
     // Format birthdate (support both JSON and MongoDB format)
     // Output format: dd-mm-yyyy
     let birthdate = '---';
-    if (this.customer.BirthDay || this.customer.birthday) {
-      const birthDayData = this.customer.BirthDay || this.customer.birthday;
+    const birthDayValue = this.getCustomerField('BirthDay', 'birthDay', 'birthday', 'dateOfBirth');
+    if (birthDayValue) {
+      const birthDayData = birthDayValue;
       let birthDay: Date | null = null;
       
       if (typeof birthDayData === 'string') {
@@ -743,29 +763,33 @@ export class CustomerDetail implements OnInit {
 
     // Format gender
     let gender = '---';
-    if (this.customer.Gender) {
-      gender = this.customer.Gender === 'male' ? 'Nam' : 
-               this.customer.Gender === 'female' ? 'Nữ' : 
-               this.customer.Gender;
+    const rawGender = this.getCustomerField('Gender', 'gender', 'sex');
+    if (rawGender) {
+      gender = rawGender === 'male' ? 'Nam' : 
+               rawGender === 'female' ? 'Nữ' : 
+               rawGender;
     }
 
     // Determine if customer has account (has email and FullName)
-    const hasAccount = !!(this.customer.Email && this.customer.FullName);
+    const customerName = this.getCustomerField('FullName', 'fullName', 'name');
+    const customerEmail = this.getCustomerField('Email', 'email');
+    const customerPhone = this.getCustomerField('Phone', 'phone');
+    const customerAddress = this.getCustomerField('Address', 'address');
+    const hasAccount = Boolean(this.customer.Password || this.customer.PasswordVersion || customerPhone || customerEmail);
     
-    // Email consent - assume false for now (not in JSON)
-    const emailConsent = false;
+    const emailConsent = Boolean(this.getCustomerField('emailConsent', 'EmailConsent', 'marketingConsent', 'allowMarketingEmail'));
 
     // Normalize customer ID for display
     const normalizedCustomerID = this.normalizeCustomerID(this.customerId);
     
     this.customerData = {
       id: normalizedCustomerID,
-      name: this.customer.FullName || '---',
+      name: customerName || '---',
       gender: gender,
-      email: this.customer.Email || '---',
+      email: customerEmail || '---',
       birthdate: birthdate,
-      phone: this.customer.Phone || '---',
-      address: this.customer.Address || '---',
+      phone: customerPhone || '---',
+      address: customerAddress || this.getDefaultAddress()?.fullAddress || '---',
       memberTier: memberTier,
       customerType: customerType,
       joinDate: formattedDate,
@@ -851,7 +875,7 @@ export class CustomerDetail implements OnInit {
   viewAllOrders(): void {
     // Navigate to orders page with customer filter
     this.router.navigate(['/orders'], { 
-      queryParams: { customer: this.customer.user_id } 
+      queryParams: { customer: this.customerData.id } 
     });
   }
 
@@ -1077,19 +1101,27 @@ export class CustomerDetail implements OnInit {
     
     // Prepare update data - ONLY basic information (NO memberTier)
     const updateData: any = {
+      FullName: this.editableData.name || '',
+      Email: this.editableData.email || '',
+      Phone: this.editableData.phone || '',
+      Gender: this.editableData.gender || '',
+      BirthDay: this.editableData.birthdate || '',
+      Address: this.buildFullAddress() || this.editableData.address || '',
       fullName: this.editableData.name || '',
       email: this.editableData.email || '',
       phone: this.editableData.phone || '',
       gender: this.editableData.gender || '',
       birthDay: this.editableData.birthdate || '',
-      address: this.buildFullAddress() || ''
+      address: this.buildFullAddress() || this.editableData.address || ''
     };
     
     // Map gender to database format
-          if (updateData.gender === 'Nam') {
+    if (updateData.gender === 'Nam') {
       updateData.gender = 'male';
-          } else if (updateData.gender === 'Nữ') {
+      updateData.Gender = 'male';
+    } else if (updateData.gender === 'Nữ') {
       updateData.gender = 'female';
+      updateData.Gender = 'female';
     }
     
     // Format birthdate to ISO string if provided
@@ -1098,10 +1130,10 @@ export class CustomerDetail implements OnInit {
       let dateObj: Date | null = null;
       if (updateData.birthDay.includes('/')) {
         const dateParts = updateData.birthDay.split('/');
-            if (dateParts.length === 3) {
-              const day = parseInt(dateParts[0]);
-              const month = parseInt(dateParts[1]) - 1;
-              const year = parseInt(dateParts[2]);
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1;
+          const year = parseInt(dateParts[2]);
           dateObj = new Date(year, month, day);
         }
       } else if (updateData.birthDay.includes('-')) {
@@ -1116,24 +1148,28 @@ export class CustomerDetail implements OnInit {
       
       if (dateObj && !isNaN(dateObj.getTime())) {
         updateData.birthDay = dateObj.toISOString();
+        updateData.BirthDay = dateObj.toISOString();
       } else {
         // If parsing fails, try direct Date constructor
         dateObj = new Date(updateData.birthDay);
         if (!isNaN(dateObj.getTime())) {
           updateData.birthDay = dateObj.toISOString();
+          updateData.BirthDay = dateObj.toISOString();
         } else {
           delete updateData.birthDay; // Remove invalid date
+          delete updateData.BirthDay;
         }
       }
     } else {
       delete updateData.birthDay; // Remove if empty
+      delete updateData.BirthDay;
     }
     
     console.log('💾 Saving customer data (basic info only, NO member tier):', updateData);
     console.log('📱 CustomerID:', customerID);
     
     // Call API to update customer in MongoDB
-    this.http.put(`${environment.apiUrl}/users/customer/${customerID}`, updateData).subscribe({
+    this.http.put(`${environment.apiUrl}/users/${customerID}`, updateData).subscribe({
       next: (response: any) => {
         console.log('✅ Customer updated successfully in MongoDB:', response);
         

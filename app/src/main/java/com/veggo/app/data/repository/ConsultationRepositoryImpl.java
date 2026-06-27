@@ -44,9 +44,9 @@ public class ConsultationRepositoryImpl implements ConsultationRepository {
     }
 
     @Override
-    public void submitQuestion(String sku, String question, String customerName, String productName,
+    public void submitQuestion(String sku, String question, String customerId, String customerName, String productName,
                                Callback<List<Consultation>> callback) {
-        ConsultationAskRequest request = new ConsultationAskRequest(question, customerName, productName);
+        ConsultationAskRequest request = new ConsultationAskRequest(question, customerId, customerName, productName);
 
         consultationApi.askQuestion(sku, request).enqueue(new retrofit2.Callback<ConsultationDto>() {
             @Override

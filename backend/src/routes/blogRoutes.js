@@ -181,17 +181,23 @@ async function ensureBlogLikeFields() {
 
 function normalizeBlog(blog, viewerId = '') {
   const publishedAt = normalizeDate(blog.pubDate || blog.PubDate || blog.publishedAt || blog.PublishedAt);
+  const updatedAt = normalizeDate(blog.updatedAt || blog.UpdatedAt || blog.updated_at || blog.ModifiedAt || blog.modifiedAt || publishedAt);
   const likedIds = likedCustomerIds(blog);
   return {
     id: blog.id || blog.BlogID || String(blog._id || ''),
+    _id: String(blog._id || ''),
     imageUrl: blog.img || blog.imageUrl || blog.ImageUrl || '',
+    img: blog.img || blog.imageUrl || blog.ImageUrl || '',
     title: blog.title || blog.Title || '',
     excerpt: blog.excerpt || blog.Excerpt || '',
+    pubDate: publishedAt,
     publishedAt,
     publishedAtMillis: blog.publishedAtMillis || (publishedAt ? Date.parse(publishedAt) || 0 : 0),
+    updatedAt,
     author: blog.author || blog.Author || '',
     categoryTag: blog.categoryTag || blog.CategoryTag || '',
     content: blog.content || blog.Content || '',
+    views: blog.views || blog.Views || 0,
     likeCount: blog.LikeCount ?? blog.likeCount ?? likedIds.length,
     likedByCurrentUser: viewerId ? likedIds.includes(viewerId) : false,
   };

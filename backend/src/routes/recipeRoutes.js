@@ -10,6 +10,7 @@ const {
   getInstructionKey,
   resolveInstructionDisplay,
   buildCookingSteps,
+  buildUsage,
   parseIngredientsList,
 } = require('../utils/recipeKeywords');
 
@@ -143,8 +144,10 @@ router.get('/:instructionId', asyncHandler(async (req, res) => {
     },
     dishes: dishes.map((dish) => ({
       dishName: dish.dishName || display.title,
+      description: dish.Description || dish.description || display.description || '',
       ingredients: parseIngredientsList(dish),
       steps: buildCookingSteps(dish),
+      usage: buildUsage(dish),
     })),
   });
 }));

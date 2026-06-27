@@ -20,10 +20,15 @@ interface ProductJSON {
   category: string;
   subcategory: string;
   product_name: string;
+  name?: string;
+  productName?: string;
   brand: string;
   unit: string;
   price: number;
-  image: string[] | string;
+  image?: string[] | string;
+  Image?: string[] | string;
+  images?: string[] | string;
+  imageUrl?: string;
   sku: string;
   origin?: string;
   weight?: string;
@@ -127,13 +132,20 @@ function mapProductFromJSON(json: ProductJSON, index: number): Product {
   // Handle image field - can be array or string
   let imageUrl = '';
   let imageArray: string[] = [];
+  const jsonAny = json as any;
+  const imageSource = [json.image, json.imageUrl, json.images, json.Image].find((source) => {
+    if (Array.isArray(source)) {
+      return source.some((image) => typeof image === 'string' && image.trim() !== '');
+    }
+    return typeof source === 'string' && source.trim() !== '';
+  });
   
-  if (Array.isArray(json.image)) {
-    imageArray = json.image;
-    imageUrl = json.image[0] || '';
-  } else if (typeof json.image === 'string') {
-    imageUrl = json.image;
-    imageArray = [json.image];
+  if (Array.isArray(imageSource)) {
+    imageArray = imageSource.filter((image): image is string => typeof image === 'string' && image.trim() !== '');
+    imageUrl = imageArray[0] || '';
+  } else if (typeof imageSource === 'string' && imageSource.trim()) {
+    imageUrl = imageSource.trim();
+    imageArray = [imageUrl];
   }
   
   // Handle post_date - can be Date object from MongoDB or { $date: ... } from JSON
@@ -155,7 +167,6 @@ function mapProductFromJSON(json: ProductJSON, index: number): Product {
   
   // Tính stock từ MongoDB - ưu tiên trường stock chính thức
   let stock = 0;
-  const jsonAny = json as any;
   // Ưu tiên trường stock từ MongoDB (trường chính thức)
   if (jsonAny.stock !== undefined && jsonAny.stock !== null) {
     stock = Number(jsonAny.stock) || 0;
@@ -208,7 +219,7 @@ function mapProductFromJSON(json: ProductJSON, index: number): Product {
       original_id: json._id,
       original_id_type: typeof json._id,
       mapped_id: productId,
-      name: json.product_name,
+      name: json.product_name || json.name || json.productName,
       sku: json.sku
     });
   }
@@ -216,7 +227,7 @@ function mapProductFromJSON(json: ProductJSON, index: number): Product {
   return {
     id: index + 1,
     _id: productId, // MongoDB _id as string
-    name: json.product_name || '',
+    name: json.product_name || json.name || json.productName || '',
     code: productId || '', // Use _id as product code
     sku: json.sku || undefined,
     brand: json.brand || '',
@@ -950,78 +961,87 @@ export class ProductsManage implements OnInit {
     // Try MongoDB API first
     this.apiService.getProducts().subscribe({
       next: (data) => {
-        console.log(`✅ Loaded ${data.length} products from MongoDB`);
-        console.log('📦 Sample product from API:', data[0]);
-        console.log('📦 Sample product _id type:', typeof data[0]?._id, data[0]?._id);
-        
-        // Map API data to Product interface
-        this.allProducts = data.map((item: any, index: number) => {
-          const mapped = mapProductFromJSON(item, index);
+        try {
+          const productsData = Array.isArray(data) ? data : [];
+          console.log(`✅ Loaded ${productsData.length} products from MongoDB`);
+          console.log('📦 Sample product from API:', productsData[0]);
+          console.log('📦 Sample product _id type:', typeof productsData[0]?._id, productsData[0]?._id);
           
-          // Ensure _id is set correctly
-          if (!mapped._id && item._id) {
-            mapped._id = String(item._id);
-            mapped.code = mapped._id;
+          // Map API data to Product interface
+          this.allProducts = productsData.map((item: any, index: number) => {
+            const mapped = mapProductFromJSON(item, index);
+            
+            // Ensure _id is set correctly
+            if (!mapped._id && item._id) {
+              mapped._id = String(item._id);
+              mapped.code = mapped._id;
+            }
+            
+            // Log first 3 products for debugging
+            if (index < 3) {
+              console.log(`📦 Mapped product ${index + 1}:`, {
+                original_id: item._id,
+                mapped_id: mapped._id,
+                mapped_code: mapped.code,
+                name: mapped.name,
+                sku: mapped.sku,
+                purchase_count: item.purchase_count,
+                liked: item.liked,
+                reviewCount: item.reviewCount,
+                PurchaseCount: mapped.PurchaseCount,
+                liked_mapped: mapped.liked,
+                reviewCount_mapped: mapped.reviewCount
+              });
+            }
+            
+            return mapped;
+          });
+          
+          console.log(`📊 Mapped ${this.allProducts.length} products`);
+          console.log('📦 Sample mapped product:', this.allProducts[0]);
+          
+          // Verify _id is set for all products
+          const productsWithoutId = this.allProducts.filter(p => !p._id || p._id === 'undefined' || p._id === 'null');
+          if (productsWithoutId.length > 0) {
+            console.warn(`⚠️ Found ${productsWithoutId.length} products without valid _id:`, productsWithoutId.slice(0, 3));
           }
           
-          // Log first 3 products for debugging
-          if (index < 3) {
-            console.log(`📦 Mapped product ${index + 1}:`, {
-              original_id: item._id,
-              mapped_id: mapped._id,
-              mapped_code: mapped.code,
-              name: mapped.name,
-              sku: mapped.sku,
-              purchase_count: item.purchase_count,
-              liked: item.liked,
-              reviewCount: item.reviewCount,
-              PurchaseCount: mapped.PurchaseCount,
-              liked_mapped: mapped.liked,
-              reviewCount_mapped: mapped.reviewCount
-            });
-          }
+          // Extract unique categories for filter
+          this.extractCategories();
           
-          return mapped;
-        });
-        
-        console.log(`📊 Mapped ${this.allProducts.length} products`);
-        console.log('📦 Sample mapped product:', this.allProducts[0]);
-        
-        // Verify _id is set for all products
-        const productsWithoutId = this.allProducts.filter(p => !p._id || p._id === 'undefined' || p._id === 'null');
-        if (productsWithoutId.length > 0) {
-          console.warn(`⚠️ Found ${productsWithoutId.length} products without valid _id:`, productsWithoutId.slice(0, 3));
+          // Calculate ratings from reviews for products that don't have rating
+          this.calculateRatingsFromReviews();
+          
+          // Apply default sort (by updated date, descending)
+          this.updateProductsList();
+          
+          // Reset selection state
+          this.selectedCount = 0;
+          this.selectAll = false;
+          this.updateSelectedCount();
+          
+          console.log('✅ Products loaded successfully:', this.products.length);
+          
+          // Extract group names
+          this.extractAllGroupNames();
+          this.openProductFromQueryParams();
+          
+          // Log category distribution
+          const categoryCount = new Map<string, number>();
+          this.products.forEach(p => {
+            const key = `${p.category} > ${p.subcategory}`;
+            categoryCount.set(key, (categoryCount.get(key) || 0) + 1);
+          });
+          console.log('Category distribution:', Array.from(categoryCount.entries()));
+          console.log('Available categories:', this.availableCategories);
+        } catch (error) {
+          console.error('❌ Error mapping products from MongoDB:', error);
+          this.loadError = '❌ Dữ liệu sản phẩm từ MongoDB không hợp lệ';
+          this.allProducts = [];
+          this.products = [];
+        } finally {
+          this.isLoading = false;
         }
-        
-        // Extract unique categories for filter
-        this.extractCategories();
-        
-        // Calculate ratings from reviews for products that don't have rating
-        this.calculateRatingsFromReviews();
-        
-        // Apply default sort (by updated date, descending)
-        this.updateProductsList();
-        
-        // Reset selection state
-        this.selectedCount = 0;
-        this.selectAll = false;
-        this.updateSelectedCount();
-        
-        this.isLoading = false;
-        console.log('✅ Products loaded successfully:', this.products.length);
-        
-        // Extract group names
-        this.extractAllGroupNames();
-        this.openProductFromQueryParams();
-        
-        // Log category distribution
-        const categoryCount = new Map<string, number>();
-        this.products.forEach(p => {
-          const key = `${p.category} > ${p.subcategory}`;
-          categoryCount.set(key, (categoryCount.get(key) || 0) + 1);
-        });
-        console.log('Category distribution:', Array.from(categoryCount.entries()));
-        console.log('Available categories:', this.availableCategories);
       },
       error: (error: any) => {
         console.error('❌ Error loading products from MongoDB:', error);
@@ -1584,20 +1604,7 @@ export class ProductsManage implements OnInit {
   editProducts(): void {
     const selected = getSelectedProducts(this.products);
     if (selected.length === 1) {
-      // Lưu bản sao ban đầu trước khi chỉnh sửa
-      this.originalProduct = JSON.parse(JSON.stringify(selected[0])); // Deep copy
-      this.currentProduct = JSON.parse(JSON.stringify(selected[0])); // Deep copy để chỉnh sửa
-      this.editingProduct = true;
-      this.showProductForm = true;
-      // Extract categories and colors when opening form
-      this.extractCategories();
-      this.extractColors();
-      // Load subcategories for current category
-      if (this.currentProduct.category) {
-        this.onCategoryChange(this.currentProduct.category);
-      } else {
-        this.formSubcategories = [];
-      }
+      this.openFullProductForEditing(selected[0]);
     } else if (selected.length > 1) {
       this.notificationService.showWarning('Vui lòng chọn chỉ 1 sản phẩm để chỉnh sửa');
     } else {
@@ -1609,6 +1616,30 @@ export class ProductsManage implements OnInit {
    * View product detail (click on row)
    */
   viewProductDetail(product: Product): void {
+    this.openFullProductForEditing(product);
+  }
+
+  private openFullProductForEditing(product: Product): void {
+    const productId = product._id || product.code || product.sku || product.id;
+    if (!productId) {
+      this.notificationService.showError('Không tìm thấy mã sản phẩm để tải chi tiết');
+      return;
+    }
+
+    this.apiService.getProductById(String(productId)).subscribe({
+      next: (detail) => {
+        const fullProduct = mapProductFromJSON(detail, Number(product.id || 1) - 1);
+        fullProduct.selected = product.selected;
+        this.openProductForm(fullProduct);
+      },
+      error: (error: any) => {
+        console.error('❌ Error loading product detail:', error);
+        this.notificationService.showError('Không thể tải chi tiết sản phẩm từ MongoDB');
+      }
+    });
+  }
+
+  private openProductForm(product: Product): void {
     // Lưu bản sao ban đầu trước khi chỉnh sửa
     this.originalProduct = JSON.parse(JSON.stringify(product)); // Deep copy
     this.currentProduct = JSON.parse(JSON.stringify(product)); // Deep copy để chỉnh sửa

@@ -19,6 +19,7 @@ public class OrderDto {
     private String userId;
 
     private String paymentMethod;
+    private String paymentStatus;
     private List<OrderItemDto> items = new ArrayList<>();
     private long subtotal;
     private long shippingFee;
@@ -27,7 +28,9 @@ public class OrderDto {
     private long total;
     private long totalAmount;
     private String status;
+    private String rejectReason;
     private Map<String, Object> shippingAddress;
+    private Map<String, Object> shippingInfo;
     private String warehouseId;
     private String createdAt;
     @SerializedName("CarbonPointEarned")
@@ -46,6 +49,9 @@ public class OrderDto {
 
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
 
     public List<OrderItemDto> getItems() { return items; }
     public void setItems(List<OrderItemDto> items) { this.items = items; }
@@ -67,9 +73,13 @@ public class OrderDto {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getRejectReason() { return rejectReason; }
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
 
     public Map<String, Object> getShippingAddress() { return shippingAddress; }
     public void setShippingAddress(Map<String, Object> shippingAddress) { this.shippingAddress = shippingAddress; }
+    public Map<String, Object> getShippingInfo() { return shippingInfo; }
+    public void setShippingInfo(Map<String, Object> shippingInfo) { this.shippingInfo = shippingInfo; }
 
     public String getWarehouseId() { return warehouseId; }
     public void setWarehouseId(String warehouseId) { this.warehouseId = warehouseId; }
@@ -83,10 +93,12 @@ public class OrderDto {
         @SerializedName("sku")
         private String sku;
         private String productId;
+        @SerializedName(value = "name", alternate = {"productName"})
         private String name;
         private long price;
         private long originalPrice;
         private int quantity;
+        @SerializedName(value = "imageUrl", alternate = {"image"})
         private String imageUrl;
         private String unit;
         @SerializedName("CarbonPointEarned")

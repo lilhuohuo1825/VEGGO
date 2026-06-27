@@ -22,12 +22,25 @@ import com.veggo.app.adapter.FlashSaleAdapter;
 import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
+import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.preferences.PreferencesManager;
+import com.veggo.app.data.remote.dto.CartDto;
+import com.veggo.app.data.repository.OrderNotificationRepository;
 import com.veggo.app.databinding.FragmentHomeBinding;
 import com.veggo.app.databinding.LayoutHomeStickyTabsBinding;
+import com.veggo.app.di.AppModule;
 import com.veggo.app.presentation.about.AboutUsActivity;
+import com.veggo.app.presentation.checkout.PendingCheckoutStore;
+import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
@@ -78,6 +91,7 @@ public class HomeFragment extends Fragment {
     private View[] bannerIndicators;
 
     private final Handler bannerHandler = new Handler(Looper.getMainLooper());
+    private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
     private final Runnable bannerRunnable = () -> {
         if (binding != null && binding.vpBanners != null
                 && bannerAdapter != null && bannerAdapter.getRealCount() > 0) {
@@ -110,6 +124,11 @@ public class HomeFragment extends Fragment {
         observeViewModel();
 
         homeViewModel.loadHomeData(requireContext());
+        if (getArguments() != null
+                && getArguments().getBoolean(MainActivity.EXTRA_SCROLL_HOME_PRODUCTS, false)) {
+            binding.homeScrollView.postDelayed(this::scrollToProductsSection, 250);
+            getArguments().putBoolean(MainActivity.EXTRA_SCROLL_HOME_PRODUCTS, false);
+        }
 
         // Phục hồi scroll position đã lưu (khi quay lại từ tab khác)
         if (savedScrollY > 0) {
@@ -139,6 +158,16 @@ public class HomeFragment extends Fragment {
             binding.homeScrollView.smoothScrollTo(0, 0);
         }
         return true;
+    }
+
+    public void scrollToProductsSection() {
+        if (binding == null) return;
+        binding.homeScrollView.post(() -> {
+            if (binding == null) return;
+            int anchorTop = getViewTopInScrollContent(binding.productAnchor);
+            int targetScrollY = Math.max(0, anchorTop - stickyHeaderHeight);
+            binding.homeScrollView.smoothScrollTo(0, targetScrollY);
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -198,10 +227,28 @@ public class HomeFragment extends Fragment {
         utilityAdapter.setOnUtilityClickListener(utility -> {
             Intent intent = null;
             switch (utility.getId()) {
-                case "1": intent = new Intent(requireContext(), com.veggo.app.presentation.profile.SmartFridgeActivity.class); break;
+                case "1":
+                    if (!new AppPreferences(requireContext()).isLoggedIn()) {
+                        LoginRequiredActivity.open(requireContext(), "tủ lạnh thông minh");
+                        return;
+                    }
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.SmartFridgeActivity.class);
+                    break;
                 case "2": intent = new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class); break;
-                case "3": intent = new Intent(requireContext(), com.veggo.app.presentation.profile.TastePreferencesActivity.class); break;
-                case "4": intent = new Intent(requireContext(), com.veggo.app.presentation.profile.CarbonPointsActivity.class); break;
+                case "3":
+                    if (!new AppPreferences(requireContext()).isLoggedIn()) {
+                        LoginRequiredActivity.open(requireContext(), "khẩu vị của tôi");
+                        return;
+                    }
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.TastePreferencesActivity.class);
+                    break;
+                case "4":
+                    if (!new AppPreferences(requireContext()).isLoggedIn()) {
+                        LoginRequiredActivity.open(requireContext(), "điểm carbon");
+                        return;
+                    }
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.CarbonPointsActivity.class);
+                    break;
                 case "5": intent = new Intent(requireContext(), com.veggo.app.presentation.blog.BlogHomeActivity.class); break;
             }
             if (intent != null) startActivity(intent);
@@ -222,15 +269,20 @@ public class HomeFragment extends Fragment {
         // Flash Sale
         flashSaleAdapter = new FlashSaleAdapter();
         binding.rvFlashSale.setAdapter(flashSaleAdapter);
-        flashSaleAdapter.setOnFlashSaleClickListener(flashSale -> {
-            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
-            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, flashSale.getId());
-            startActivity(intent);
-        });
+        flashSaleAdapter.setOnFlashSaleClickListener(flashSale -> openFlashSaleProduct(flashSale, false));
+        flashSaleAdapter.setOnFlashSaleAddClickListener(flashSale -> openFlashSaleProduct(flashSale, true));
 
         // Recipes
         recipeAdapter = new RecipeAdapter();
         binding.rvRecipes.setAdapter(recipeAdapter);
+        recipeAdapter.setOnRecipeClickListener(recipe -> {
+            Intent intent = new Intent(requireContext(),
+                    com.veggo.app.presentation.community.InstructionRecipeDetailActivity.class);
+            intent.putExtra(
+                    com.veggo.app.presentation.community.InstructionRecipeDetailActivity.EXTRA_INSTRUCTION_ID,
+                    recipe.getId());
+            startActivity(intent);
+        });
 
         // Products Grid
         productAdapter = new ProductAdapter();
@@ -240,8 +292,24 @@ public class HomeFragment extends Fragment {
             intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
             startActivity(intent);
         });
+        productAdapter.setOnAddProductClickListener(product -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
+            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, true);
+            startActivity(intent);
+        });
 
         binding.btnLoadMore.setOnClickListener(v -> homeViewModel.loadMoreProducts());
+    }
+
+    private void openFlashSaleProduct(com.veggo.app.domain.model.FlashSale flashSale, boolean openAddToCart) {
+        Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, flashSale.getId());
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_FLASH_SALE_PRICE, flashSale.getPrice());
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_FLASH_SALE_ORIGINAL_PRICE, flashSale.getOriginalPrice());
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_FLASH_SALE_DISCOUNT_LABEL, flashSale.getDiscount());
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, openAddToCart);
+        startActivity(intent);
     }
 
     private void setupBannerIndicators() {
@@ -395,6 +463,93 @@ public class HomeFragment extends Fragment {
         View stickyNotify = binding.stickyHeader.getRoot().findViewById(R.id.homeStickyNotifyButton);
         if (stickyCart != null) stickyCart.setOnClickListener(openCart);
         if (stickyNotify != null) stickyNotify.setOnClickListener(openNotifications);
+    }
+
+    private void refreshCartBadge() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        AppModule.provideCartRepository(requireContext()).getCart(resolveCustomerId()).enqueue(new Callback<CartDto>() {
+            @Override
+            public void onResponse(Call<CartDto> call, Response<CartDto> response) {
+                if (!isAdded() || binding == null) {
+                    return;
+                }
+                int count = response.isSuccessful() && response.body() != null
+                        ? countCartItems(response.body())
+                        : 0;
+                requireActivity().runOnUiThread(() -> updateCartBadges(count));
+            }
+
+            @Override
+            public void onFailure(Call<CartDto> call, Throwable t) {
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> updateCartBadges(0));
+                }
+            }
+        });
+    }
+
+    private String resolveCustomerId() {
+        AppPreferences appPreferences = new AppPreferences(requireContext());
+        String customerId = appPreferences.getCustomerId();
+        if (customerId == null || customerId.trim().isEmpty()) {
+            customerId = new PreferencesManager(requireContext()).getUserId();
+        }
+        if (customerId == null || customerId.trim().isEmpty()) {
+            customerId = new PendingCheckoutStore(requireContext()).guestId();
+        }
+        return customerId;
+    }
+
+    private int countCartItems(CartDto cartDto) {
+        if (cartDto == null || cartDto.getItems() == null) {
+            return 0;
+        }
+        int count = 0;
+        for (CartDto.CartItemDto item : cartDto.getItems()) {
+            count += Math.max(0, item.getQuantity());
+        }
+        return count;
+    }
+
+    private void updateCartBadges(int count) {
+        setCartBadge(binding.getRoot().findViewById(R.id.homeCartBadge), count);
+        setCartBadge(binding.stickyHeader.getRoot().findViewById(R.id.homeStickyCartBadge), count);
+    }
+
+    private void setCartBadge(TextView badge, int count) {
+        if (badge == null) {
+            return;
+        }
+        badge.setText(count > 99 ? "99+" : String.valueOf(count));
+        badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void refreshNotificationState(boolean allowAlert) {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        String customerId = resolveCustomerId();
+        if (customerId == null || customerId.trim().isEmpty()) {
+            updateNotificationBadgesFromMain(0);
+            return;
+        }
+        orderNotificationRepository.getNotifications(customerId, notifications -> {
+            if (!isAdded() || binding == null) {
+                return;
+            }
+            requireActivity().runOnUiThread(() ->
+                    updateNotificationBadgesFromMain(OrderNotificationRepository.countUnread(notifications)));
+        });
+    }
+
+    public void updateNotificationBadgesFromMain(int count) {
+        if (binding == null) {
+            return;
+        }
+        setCartBadge(binding.getRoot().findViewById(R.id.homeNotificationBadge), count);
+        setCartBadge(binding.stickyHeader.getRoot().findViewById(R.id.homeStickyNotificationBadge), count);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -668,6 +823,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        refreshCartBadge();
         if (bannerAdapter != null && bannerAdapter.getRealCount() > 0)
             bannerHandler.postDelayed(bannerRunnable, 10000);
     }

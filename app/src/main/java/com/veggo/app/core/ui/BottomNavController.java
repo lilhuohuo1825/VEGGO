@@ -11,9 +11,11 @@ import androidx.core.content.ContextCompat;
 
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
 import com.veggo.app.presentation.community.CommunityHomeActivity;
 import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
+import com.veggo.app.presentation.profile.LoginRequiredActivity;
 
 public final class BottomNavController {
     private BottomNavController() {
@@ -27,9 +29,13 @@ public final class BottomNavController {
         binding.navCommunityButton.setOnClickListener(v -> openCommunity(activity, selectedItemId));
         binding.navOrdersButton.setOnClickListener(v -> openMainTab(activity, selectedItemId, R.id.nav_orders));
         binding.navAccountButton.setOnClickListener(v -> openMainTab(activity, selectedItemId, R.id.nav_profile));
-        binding.navScanButton.setOnClickListener(v ->
-                activity.startActivity(new Intent(activity, AddFridgeIngredientActivity.class))
-        );
+        binding.navScanButton.setOnClickListener(v -> {
+            if (!new AppPreferences(activity).isLoggedIn()) {
+                LoginRequiredActivity.open(activity, "tủ lạnh thông minh");
+                return;
+            }
+            activity.startActivity(new Intent(activity, AddFridgeIngredientActivity.class));
+        });
         binding.bottomNavCard.setOnClickListener(v -> {
         });
     }

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/neutral_10"
+    android:orientation="vertical"
+    android:padding="22dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/encodesans_bold"
+        android:gravity="center"
+        android:text="Thay đổi số điện thoại"
+        android:textColor="@color/neutral_100"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/changePhoneInputSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nhập số điện thoại mới. Veggo sẽ gửi mã OTP để xác thực trước khi cập nhật."
+            android:textColor="@color/neutral_80"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter_semibold"
+            android:text="Số điện thoại mới"
+            android:textColor="@color/neutral_100"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/changePhoneInput"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_input"
+            android:hint="Nhập số điện thoại của bạn"
+            android:inputType="phone"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/neutral_100"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/changePhoneError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/danger_main"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/changePhoneOtpSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/changePhoneOtpDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Chúng tôi đã gửi mã xác thực đến số điện thoại"
+            android:textColor="@color/neutral_80"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <EditText android:id="@+id/changePhoneOtp1" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+            <EditText android:id="@+id/changePhoneOtp2" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+            <EditText android:id="@+id/changePhoneOtp3" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+            <EditText android:id="@+id/changePhoneOtp4" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+            <EditText android:id="@+id/changePhoneOtp5" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+            <EditText android:id="@+id/changePhoneOtp6" style="@style/OtpBoxStyle" android:inputType="number" android:maxLength="1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/changePhoneResendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/inter_semibold"
+            android:text="Gửi lại mã"
+            android:textColor="@color/primary_main"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/changePhoneCancelButton"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_logout_outline_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Hủy"
+            android:textColor="@color/danger_main"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/changePhonePrimaryButton"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_primary"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Gửi OTP"
+            android:textColor="@color/neutral_10"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

@@ -204,10 +204,11 @@ export class OrderDetail implements OnInit, OnDestroy {
         this.loadAddressData();
         this.loadPromotions();
       } else {
-        // Load existing order
-        this.loadProducts();
+        // Load existing order first; auxiliary data should not block the detail view.
+        this.loadOrderDetail();
         // If in edit mode, also load address data and users for editing
         if (this.isEditMode) {
+          this.loadProducts();
           this.loadUsers();
           this.loadAddressData();
           this.loadPromotions();
@@ -219,7 +220,7 @@ export class OrderDetail implements OnInit, OnDestroy {
   /**
    * Load products from MongoDB via API
    */
-  loadProducts(): void {
+  loadProducts(loadPromotionsAfter: boolean = false): void {
     console.log('Loading products from MongoDB...');
     // Try MongoDB first
     this.apiService.getProducts().subscribe({
@@ -231,14 +232,16 @@ export class OrderDetail implements OnInit, OnDestroy {
         });
         console.log(`📦 Products map has ${this.productsMap.size} items`);
 
-        // Now load promotions
-        this.loadPromotions();
+        if (loadPromotionsAfter) {
+          this.loadPromotions();
+        }
       },
       error: (error: any) => {
         console.error('❌ Error loading products from MongoDB:', error);
-        console.log('⚠️ Falling back to JSON file...');
-        // Fallback to JSON
-        this.loadProductsFromJSON();
+        this.productsMap.clear();
+        if (loadPromotionsAfter) {
+          this.loadPromotions();
+        }
       },
     });
   }
@@ -246,18 +249,22 @@ export class OrderDetail implements OnInit, OnDestroy {
   /**
    * Fallback: Load products from JSON file
    */
-  private loadProductsFromJSON(): void {
+  private loadProductsFromJSON(loadPromotionsAfter: boolean = false): void {
     this.http.get<any[]>('data/product.json').subscribe({
       next: (products) => {
         console.log(`✅ Loaded ${products.length} products from JSON (fallback)`);
         products.forEach((product) => {
           this.productsMap.set(product._id, product);
         });
-        this.loadPromotions();
+        if (loadPromotionsAfter) {
+          this.loadPromotions();
+        }
       },
       error: (error: any) => {
         console.error('❌ Error loading products from JSON:', error);
-        this.loadPromotions();
+        if (loadPromotionsAfter) {
+          this.loadPromotions();
+        }
       },
     });
   }
@@ -329,7 +336,7 @@ export class OrderDetail implements OnInit, OnDestroy {
   /**
    * Load promotions from promotions.json
    */
-  loadPromotions(): void {
+  loadPromotions(loadOrderAfter: boolean = false): void {
     this.apiService.getPromotions().subscribe({
       next: (promotions) => {
         // Create a map of promotions by promotion_id for quick lookup
@@ -370,8 +377,9 @@ export class OrderDetail implements OnInit, OnDestroy {
           `Loaded ${promotions.length} promotions, ${this.activePromotions.length} currently active`
         );
 
-        // Now load order details
-        this.loadOrderDetail();
+        if (loadOrderAfter) {
+          this.loadOrderDetail();
+        }
       },
       error: (error: any) => {
         console.error('Error loading promotions from API:', error);
@@ -414,11 +422,15 @@ export class OrderDetail implements OnInit, OnDestroy {
               `Loaded ${promotions.length} promotions from JSON, ${this.activePromotions.length} currently active`
             );
 
-            this.loadOrderDetail();
+            if (loadOrderAfter) {
+              this.loadOrderDetail();
+            }
           },
           error: (err) => {
             console.error('Error loading promotions from JSON:', err);
-            this.loadOrderDetail();
+            if (loadOrderAfter) {
+              this.loadOrderDetail();
+            }
           },
         });
       },
@@ -564,54 +576,26 @@ export class OrderDetail implements OnInit, OnDestroy {
     console.log('🔄 Loading order detail from MongoDB...');
     console.log('Order ID:', this.orderId);
 
-    // Try MongoDB API first
-    this.apiService.getOrders().subscribe({
-      next: (orders) => {
-        console.log(`✅ Loaded ${orders.length} orders from MongoDB`);
+    const orderIdForApi = this.orderId.replace('VG', '');
 
-        // Find order by OrderID or _id
-        // Support both formats: VG123456 or ORD123456 or just the ID
-        const orderIdClean = this.orderId.replace('VG', '').replace('ORD', '');
-        this.order = orders.find((o: any) => {
-          // Check OrderID field
-          if (o.OrderID && o.OrderID.includes(orderIdClean)) {
-            return true;
-          }
-          // Check _id field
-          if (
-            o._id &&
-            (o._id.toString().includes(orderIdClean) || o._id.$oid?.includes(orderIdClean))
-          ) {
-            return true;
-          }
-          // Check order_id field (old format)
-          if (o.order_id && o.order_id.toString() === orderIdClean) {
-            return true;
-          }
-          return false;
-        });
+    // Fetch only the requested order instead of loading the full order list with details.
+    this.apiService.getOrderById(orderIdForApi).subscribe({
+      next: (order) => {
+        this.order = order;
+        console.log('✅ Loaded order detail from MongoDB:', this.order);
 
-        if (this.order) {
-          console.log('✅ Found order:', this.order);
-          // If in edit mode, load address data first, then load users
-          if (this.isEditMode) {
-            // Load address data first, then load users
-            this.loadAddressData();
-            // Use setTimeout to wait for address data to be loaded
-            setTimeout(() => {
-              this.loadUsersForOrder();
-            }, 500);
-          } else {
-            // Load users to get customer info
+        // If in edit mode, load address data first, then load users
+        if (this.isEditMode) {
+          this.loadAddressData();
+          setTimeout(() => {
             this.loadUsersForOrder();
-          }
+          }, 500);
         } else {
-          console.warn('⚠️ Order not found in MongoDB, trying fallback...');
-          this.loadFromOrdersJsonFallback();
+          this.loadUsersForOrder();
         }
       },
       error: (error: any) => {
-        console.error('❌ Error loading orders from MongoDB:', error);
+        console.error('❌ Error loading order detail from MongoDB:', error);
         console.log('⚠️ Falling back to JSON file...');
         this.loadFromOrdersJsonFallback();
       },
@@ -622,6 +606,23 @@ export class OrderDetail implements OnInit, OnDestroy {
    * Load users for order to get customer info and calculate statistics
    */
   private loadUsersForOrder(): void {
+    if (!this.isEditMode && this.order?.CustomerID) {
+      this.apiService.getUserById(this.order.CustomerID).subscribe({
+        next: (user) => {
+          console.log('✅ Loaded customer for order from MongoDB');
+          const normalizedUser = user?.data || user;
+          this.users = normalizedUser ? [normalizedUser] : [];
+          this.calculateCustomerStatistics();
+        },
+        error: (error: any) => {
+          console.error('❌ Error loading customer from MongoDB:', error);
+          this.users = [];
+          this.calculateCustomerStatistics();
+        },
+      });
+      return;
+    }
+
     this.apiService.getUsers().subscribe({
       next: (users) => {
         console.log(`✅ Loaded ${users.length} users from MongoDB`);
@@ -648,13 +649,10 @@ export class OrderDetail implements OnInit, OnDestroy {
       return;
     }
 
-    // Load all orders to calculate statistics
-    this.apiService.getOrders().subscribe({
-      next: (allOrders) => {
+    // Load only this customer's orders instead of the full order list.
+    this.apiService.getOrdersByCustomerId(this.order.CustomerID).subscribe({
+      next: (customerOrders) => {
         const customerId = this.order.CustomerID;
-
-        // Filter orders for this customer
-        const customerOrders = allOrders.filter((o: any) => o.CustomerID === customerId);
 
         console.log(
           `📊 Calculating stats for customer ${customerId}, found ${customerOrders.length} orders`
@@ -868,19 +866,18 @@ export class OrderDetail implements OnInit, OnDestroy {
 
     const orderStatus = (this.order.status || '').toLowerCase();
 
+    const rawPaymentStatus = (this.order.paymentStatus || '').toLowerCase();
+
     if (orderStatus === 'delivered') {
       // Status delivered: đơn hàng đã được giao
       status = 'confirmed';
       delivery = 'delivered';
-      payment =
-        this.order.paymentMethod === 'cod' ? 'paid' : this.order.paymentMethod ? 'paid' : 'unpaid';
+      payment = rawPaymentStatus || (this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid');
       refund = 'none';
-    } else if (orderStatus === 'completed') {
-      // Status completed: đơn hàng đã hoàn thành (tương tự delivered)
+    } else if (orderStatus === 'unreview' || orderStatus === 'reviewed' || orderStatus === 'completed') {
       status = 'confirmed';
       delivery = 'delivered';
-      payment =
-        this.order.paymentMethod === 'cod' ? 'paid' : this.order.paymentMethod ? 'paid' : 'unpaid';
+      payment = rawPaymentStatus || 'paid';
       refund = 'none';
     } else if (orderStatus === 'pending') {
       status = 'pending';
@@ -896,29 +893,34 @@ export class OrderDetail implements OnInit, OnDestroy {
       // Đang xử lý hoàn trả / đang hoàn trả
       status = 'refund-requested';
       delivery = 'delivering';
-      payment = this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid';
+      payment = rawPaymentStatus || (this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid');
       refund = 'requested';
     } else if (orderStatus === 'returned') {
       status = 'refunded';
       delivery = 'none';
-      payment = 'unpaid';
+      payment = rawPaymentStatus || 'paid';
       refund = 'refunded';
+    } else if (orderStatus === 'rejected') {
+      status = 'refund-requested';
+      delivery = 'delivered';
+      payment = rawPaymentStatus || 'paid';
+      refund = 'rejected';
     } else if (orderStatus === 'processing') {
       status = 'confirmed';
       delivery = 'delivering';
-      payment = this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid';
+      payment = rawPaymentStatus || (this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid');
       refund = 'none';
     } else if (orderStatus === 'shipping') {
       // Status shipping: đơn hàng đang được giao
       status = 'confirmed';
       delivery = 'delivering';
-      payment = this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid';
+      payment = rawPaymentStatus || (this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid');
       refund = 'none';
     } else if (orderStatus === 'confirmed') {
       // Status confirmed: đơn hàng đã được xác nhận, chờ chuyển sang shipping (sau 1 phút)
       status = 'confirmed';
       delivery = 'pending'; // Chưa bắt đầu giao hàng, đang chờ chuyển sang shipping
-      payment = this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid';
+      payment = rawPaymentStatus || (this.order.paymentMethod === 'cod' ? 'unpaid' : 'paid');
       refund = 'none';
     }
 
@@ -1535,29 +1537,17 @@ export class OrderDetail implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('📦 Updating order status to confirmed:', orderID);
-    console.log('⏰ [Frontend] Order sẽ tự động chuyển sang "shipping" sau 1 phút');
-
-    const startTime = new Date();
-    const targetTime = new Date(startTime.getTime() + 1 * 60 * 1000);
-    console.log(`   📅 Thời gian bắt đầu: ${startTime.toLocaleString('vi-VN')}`);
-    console.log(
-      `   🎯 Thời gian dự kiến chuyển sang shipping: ${targetTime.toLocaleString('vi-VN')}`
-    );
+    console.log('📦 Updating order status to shipping:', orderID);
 
     // Call API to update order status
-    this.apiService.updateOrderStatus(orderID, 'confirmed').subscribe({
+    this.apiService.updateOrderStatus(orderID, 'shipping').subscribe({
       next: (response: any) => {
         console.log('✅ Order status updated successfully:', response);
-
-        // Start countdown in frontend console
-        this.startShippingCountdown(orderID, targetTime);
-
         // Reload order data to get latest status from MongoDB
         this.loadOrderDetail();
         // Set flag to navigate after popup closes
         this.shouldNavigateAfterPopup = true;
-        this.displayPopup('Đơn hàng đã được xác nhận!', 'success');
+        this.displayPopup('Đơn hàng đã được xác nhận và chuyển sang đang giao!', 'success');
       },
       error: (error: any) => {
         console.error('❌ Error updating order status:', error);
@@ -1752,7 +1742,7 @@ export class OrderDetail implements OnInit, OnDestroy {
 
   /**
    * Confirm reject refund - Thực sự từ chối yêu cầu trả hàng
-   * Chuyển về trạng thái completed (đơn hàng đã hoàn thành)
+   * Chuyển sang rejected để user nhìn thấy yêu cầu bị từ chối.
    */
   confirmRejectRefund(): void {
     if (!this.selectedRejectReason || this.selectedRejectReason === '') {
@@ -1770,15 +1760,13 @@ export class OrderDetail implements OnInit, OnDestroy {
       return;
     }
 
-    // Khi từ chối yêu cầu trả hàng, chuyển về trạng thái completed
-    // (đơn hàng vẫn được giữ, không hoàn trả)
-    const nextStatus = 'completed';
+    const nextStatus = 'rejected';
 
     console.log(`❌ Rejecting refund, updating order status to ${nextStatus}:`, orderID);
 
-    // Call API to update order status back to completed
-    // TODO: Có thể cần thêm rejectReason vào API call nếu backend hỗ trợ
-    this.apiService.updateOrderStatus(orderID, nextStatus).subscribe({
+    this.apiService.updateOrderStatus(orderID, nextStatus, {
+      rejectReason: this.getRejectReasonLabel(this.selectedRejectReason),
+    }).subscribe({
       next: (response: any) => {
         console.log(`✅ Order status updated to ${nextStatus} (refund rejected):`, response);
         // Close reject popup
@@ -1819,7 +1807,7 @@ export class OrderDetail implements OnInit, OnDestroy {
     const labels: any = {
       pending: 'Chờ giao',
       delivering: 'Đang giao',
-      delivered: 'Hoàn thành',
+      delivered: 'Đã giao',
       none: '',
     };
     return labels[delivery] || delivery;
@@ -1834,6 +1822,17 @@ export class OrderDetail implements OnInit, OnDestroy {
       unpaid: 'Chưa thanh toán',
     };
     return labels[payment] || payment;
+  }
+
+  getPaymentMethodLabel(paymentMethod: string): string {
+    const method = (paymentMethod || '').trim().toLowerCase();
+    const labels: Record<string, string> = {
+      bank: 'Chuyển khoản qua ngân hàng',
+      banking: 'Chuyển khoản qua ngân hàng',
+      bank_transfer: 'Chuyển khoản qua ngân hàng',
+      transfer: 'Chuyển khoản qua ngân hàng',
+    };
+    return labels[method] || paymentMethod || 'COD';
   }
 
   /**

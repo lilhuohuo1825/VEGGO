@@ -17,6 +17,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 import com.veggo.app.presentation.order.OrderHistoryActivity;
 import com.veggo.app.presentation.about.AboutUsActivity;
 
@@ -75,7 +76,7 @@ public class ProfileLoggedInFragment extends BaseFragment {
         view.findViewById(R.id.profileOrderShippingShortcut).setOnClickListener(v -> openOrders("shipping"));
         view.findViewById(R.id.profileOrderDeliveredShortcut).setOnClickListener(v -> openOrders("delivered"));
         view.findViewById(R.id.profileOrderCancelledShortcut).setOnClickListener(v -> openOrders("cancelled"));
-        view.findViewById(R.id.profileLogoutRow).setOnClickListener(v -> logout());
+        view.findViewById(R.id.profileLogoutRow).setOnClickListener(v -> showLogoutDialog());
     }
 
     @Override
@@ -162,6 +163,23 @@ public class ProfileLoggedInFragment extends BaseFragment {
                 .error(R.drawable.ic_profile_avatar)
                 .circleCrop()
                 .into(avatarView);
+    }
+
+    private void showLogoutDialog() {
+        VeggoDialog.show(
+                requireContext(),
+                R.drawable.ic_profile_logout,
+                "Xác nhận đăng xuất",
+                "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?",
+                "Đăng xuất",
+                "Hủy",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        logout();
+                    }
+                }
+        );
     }
 
     private void logout() {

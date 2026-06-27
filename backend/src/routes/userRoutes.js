@@ -13,6 +13,11 @@ const { validateProfileInput, formatProfileResponse } = require('../utils/profil
 const router = express.Router();
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const PHONE_REGEX = /^0\d{9}$/;
+const STRONG_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+const OTP_TTL_MS = 60 * 1000;
+const MAX_OTP_ATTEMPTS = 3;
+const buildOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: AVATAR_MAX_BYTES },
@@ -33,6 +38,13 @@ const upload = multer({
  */
 router.post('/register', asyncHandler(async (req, res) => {
   const { phone, password, fullName, email } = req.body;
+
+  if (!PHONE_REGEX.test(String(phone || '').trim())) {
+    return res.status(400).json({ message: 'Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số' });
+  }
+  if (!STRONG_PASSWORD_REGEX.test(String(password || ''))) {
+    return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 8 ký tự, 1 chữ in hoa và 1 ký tự đặc biệt' });
+  }
 
   // Kiểm tra phone đã tồn tại chưa
   const existingUser = await User.findOne({ Phone: phone });
@@ -74,8 +86,12 @@ router.post('/register', asyncHandler(async (req, res) => {
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
 
+  if (!PHONE_REGEX.test(String(phone || '').trim()) || !STRONG_PASSWORD_REGEX.test(String(password || ''))) {
+    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+  }
+
   const user = await User.findOne({ Phone: phone })
-    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType TotalSpent CertificateID PasswordVersion LastPasswordReset firebaseUid name email phone')
+    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType CustomerTiering TotalSpent CertificateID CertificateName CertificateStatus CertificateGrantedAt CertificateCarbonPointSnapshot CertificateCarbonEmissionSnapshot PasswordVersion LastPasswordReset firebaseUid name email phone')
     .lean();
   if (!user || !user.Password) {
     return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
@@ -98,15 +114,31 @@ router.post('/login', asyncHandler(async (req, res) => {
 router.post('/forgot-password', asyncHandler(async (req, res) => {
   const { phone } = req.body;
 
+  if (!PHONE_REGEX.test(String(phone || '').trim())) {
+    return res.status(400).json({ message: 'Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số' });
+  }
+
   const user = await User.findOne({ Phone: phone });
   if (!user) {
     return res.status(404).json({ message: 'Số điện thoại chưa được đăng ký' });
   }
 
-  // Trả về OTP mock theo yêu cầu của app hiện tại
+  const otp = buildOtp();
+  await Otp.findOneAndUpdate(
+    { phone },
+    {
+      phone,
+      otp,
+      attempts: 0,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + OTP_TTL_MS)
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
   res.json({
     message: 'Mã xác thực đã được gửi đến số điện thoại của bạn',
-    otp: '123456'
+    otp
   });
 }));
 
@@ -117,8 +149,22 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
 router.post('/reset-password', asyncHandler(async (req, res) => {
   const { phone, otp, newPassword } = req.body;
 
-  // Kiểm tra OTP mock
-  if (otp !== '123456') {
+  if (!STRONG_PASSWORD_REGEX.test(String(newPassword || ''))) {
+    return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 8 ký tự, 1 chữ in hoa và 1 ký tự đặc biệt' });
+  }
+
+  const otpRecord = await Otp.findOne({ phone });
+  if (!otpRecord || otpRecord.expiresAt < new Date()) {
+    if (otpRecord) await Otp.deleteOne({ _id: otpRecord._id });
+    return res.status(400).json({ message: 'Mã xác thực đã hết hạn' });
+  }
+  if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    await Otp.deleteOne({ _id: otpRecord._id });
+    return res.status(400).json({ message: 'Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã' });
+  }
+  if (otpRecord.otp !== String(otp || '').trim()) {
+    otpRecord.attempts += 1;
+    await otpRecord.save();
     return res.status(400).json({ message: 'Mã xác thực không đúng' });
   }
 
@@ -137,6 +183,7 @@ router.post('/reset-password', asyncHandler(async (req, res) => {
   user.LastPasswordReset = new Date();
 
   await user.save();
+  await Otp.deleteOne({ _id: otpRecord._id });
 
   res.json({ message: 'Đặt lại mật khẩu thành công' });
 }));
@@ -412,6 +459,9 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
 // --- Admin Auth OTP Password Reset ---
 
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$/;
+const isBcryptHash = (value) => typeof value === 'string' && BCRYPT_HASH_PATTERN.test(value);
+
 /**
  * Admin Đăng nhập qua MongoDB
  * POST /api/users/admin/login
@@ -427,8 +477,26 @@ router.post('/admin/login', asyncHandler(async (req, res) => {
     return res.status(401).json({ error: 'Tài khoản không tồn tại' });
   }
 
-  // So sánh mật khẩu trực tiếp (theo database hiện tại lưu plain-text)
-  if (adminUser.password !== password) {
+  if (!adminUser.password) {
+    return res.status(401).json({ error: 'Mật khẩu không đúng' });
+  }
+
+  let isPasswordValid = false;
+  if (isBcryptHash(adminUser.password)) {
+    isPasswordValid = await bcrypt.compare(password, adminUser.password);
+  } else {
+    // Migrate legacy plaintext admin passwords on successful login.
+    isPasswordValid = adminUser.password === password;
+    if (isPasswordValid) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await mongoose.connection.db.collection('admins').updateOne(
+        { _id: adminUser._id },
+        { $set: { password: hashedPassword, passwordUpdatedAt: new Date() } }
+      );
+    }
+  }
+
+  if (!isPasswordValid) {
     return res.status(401).json({ error: 'Mật khẩu không đúng' });
   }
 
@@ -443,14 +511,32 @@ router.post('/admin/login', asyncHandler(async (req, res) => {
   });
 }));
 
+const getEmailConfig = () => {
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+  const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || '587', 10);
+  const secure = String(process.env.SMTP_SECURE || process.env.EMAIL_SECURE || '').toLowerCase() === 'true' || port === 465;
+
+  return {
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (user ? `"VEGGO Admin Support" <${user}>` : '')
+  };
+};
+
 const getTransporter = () => {
+  const emailConfig = getEmailConfig();
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_PORT === '465',
+    host: emailConfig.host,
+    port: emailConfig.port,
+    secure: emailConfig.secure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: emailConfig.user,
+      pass: emailConfig.pass,
     },
   });
 };
@@ -482,19 +568,17 @@ router.post('/admin/forgot-password', asyncHandler(async (req, res) => {
     { upsert: true, new: true }
   );
 
-  // 3. Gửi OTP qua Email dùng nodemailer
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`[OTP DEV MOCK] Chưa cấu hình SMTP. Mã OTP cho ${email} là: ${otp}`);
-    return res.json({
-      success: true,
-      message: '[MOCK] OTP đã được ghi nhận trong console (chưa cấu hình SMTP)',
-      devOtp: otp
+  const emailConfig = getEmailConfig();
+  if (!emailConfig.user || !emailConfig.pass) {
+    console.error('Thiếu cấu hình email OTP. Vui lòng cấu hình SMTP_USER/SMTP_PASS hoặc EMAIL_USER/EMAIL_PASS trong .env');
+    return res.status(500).json({
+      error: 'Chưa cấu hình email OTP. Vui lòng kiểm tra cấu hình máy chủ.'
     });
   }
 
   const transporter = getTransporter();
   const mailOptions = {
-    from: `"VEGGO Admin Support" <${process.env.SMTP_USER}>`,
+    from: emailConfig.from,
     to: email,
     subject: '[VEGGO] Mã xác thực OTP khôi phục mật khẩu Admin',
     html: `
@@ -559,6 +643,10 @@ router.post('/admin/reset-password', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Thiếu thông tin yêu cầu' });
   }
 
+  if (String(newPassword).length < 6) {
+    return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+  }
+
   // 1. Xác thực OTP lần nữa để bảo mật
   const otpRecord = await Otp.findOne({ email, otp });
   if (!otpRecord) {
@@ -572,9 +660,10 @@ router.post('/admin/reset-password', asyncHandler(async (req, res) => {
 
   // 2. Tiến hành cập nhật mật khẩu trên MongoDB admins collection
   try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     await mongoose.connection.db.collection('admins').updateOne(
       { email },
-      { $set: { password: newPassword } }
+      { $set: { password: hashedPassword, passwordUpdatedAt: new Date() } }
     );
 
     // Đồng bộ cập nhật mật khẩu trên Firebase Auth (nếu có)

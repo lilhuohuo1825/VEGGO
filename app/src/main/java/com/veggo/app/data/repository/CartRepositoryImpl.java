@@ -28,15 +28,16 @@ public class CartRepositoryImpl implements CartRepository {
     }
 
     @Override
-    public Call<CartDto> updateItemQuantity(String customerId, String sku, int quantity) {
-        Map<String, Integer> body = new HashMap<>();
+    public Call<CartDto> updateItemQuantity(String customerId, String sku, int quantity, double selectedWeight) {
+        Map<String, Object> body = new HashMap<>();
         body.put("quantity", quantity);
+        body.put("selectedWeight", selectedWeight);
         return cartApi.updateItemQuantity(customerId, sku, body);
     }
 
     @Override
-    public Call<CartDto> removeItem(String customerId, String sku) {
-        return cartApi.removeItem(customerId, sku);
+    public Call<CartDto> removeItem(String customerId, String sku, double selectedWeight) {
+        return cartApi.removeItem(customerId, sku, selectedWeight);
     }
 
     @Override

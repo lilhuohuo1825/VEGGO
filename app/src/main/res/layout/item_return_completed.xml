@@ -31,12 +31,12 @@
             android:id="@+id/returnOrderStatus"
             android:layout_width="wrap_content"
             android:layout_height="24dp"
-            android:background="@drawable/bg_order_delivered_chip"
+            android:background="@drawable/bg_order_cancelled_chip"
             android:fontFamily="@font/inter_regular"
             android:gravity="center"
             android:minWidth="110dp"
             android:text="@string/returns_status_completed"
-            android:textColor="@color/primary_main"
+            android:textColor="@color/order_status_cancelled"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
 
@@ -53,13 +53,14 @@
         android:gravity="end|center_vertical">
 
         <TextView
+            android:id="@+id/returnBuyAgainButton"
             android:layout_width="wrap_content"
             android:layout_height="34dp"
             android:background="@drawable/bg_order_primary_button"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
             android:minWidth="104dp"
-            android:text="@string/returns_confirm"
+            android:text="Mua lại"
             android:textColor="@color/background_main"
             android:textSize="@dimen/text_sm" />
     </LinearLayout>

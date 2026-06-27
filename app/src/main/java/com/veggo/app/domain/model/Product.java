@@ -33,6 +33,14 @@ public class Product {
     private final int soldCount;
 
     private final String description;
+    private final String ingredients;
+    private final String usage;
+    private final String storage;
+    private final String producer;
+    private final String responsibleOrg;
+    private final String safetyWarning;
+    private final String manufactureDate;
+    private final String expiryDate;
     private final String origin;
     private final String condition;
     private final String fatContent;
@@ -41,13 +49,17 @@ public class Product {
     private final double carbonSavingPoint;
 
     public Product(String id, String name, long price, String imageUrl) {
-        this(id, name, null, price, 0, imageUrl, null, null, 0, 0, 0, null, null, null, null, null, null, 0.0);
+        this(id, name, null, price, 0, imageUrl, null, null, 0, 0, 0,
+                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
                    String weight, float rating, int reviewCount, int soldCount,
                    String description, String origin, String condition, String fatContent) {
-        this(id, name, sku, price, originalPrice, imageUrl, null, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, null, null, 0.0);
+        this(id, name, sku, price, originalPrice, imageUrl, null, weight, rating, reviewCount, soldCount,
+                description, null, null, null, null, null, null, null, null,
+                origin, condition, fatContent, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
@@ -55,13 +67,28 @@ public class Product {
                    String weight, float rating, int reviewCount, int soldCount,
                    String description, String origin, String condition, String fatContent,
                    String categoryId, String subcategoryId) {
-        this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount, description, origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+        this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount,
+                description, null, null, null, null, null, null, null, null,
+                origin, condition, fatContent, categoryId, subcategoryId, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl,
                    List<Double> weightOptions,
                    String weight, float rating, int reviewCount, int soldCount,
                    String description, String origin, String condition, String fatContent,
+                   String categoryId, String subcategoryId, double carbonSavingPoint) {
+        this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount,
+                description, null, null, null, null, null, null, null, null,
+                origin, condition, fatContent, categoryId, subcategoryId, carbonSavingPoint);
+    }
+
+    public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl,
+                   List<Double> weightOptions,
+                   String weight, float rating, int reviewCount, int soldCount,
+                   String description, String ingredients, String usage, String storage,
+                   String producer, String responsibleOrg, String safetyWarning,
+                   String manufactureDate, String expiryDate,
+                   String origin, String condition, String fatContent,
                    String categoryId, String subcategoryId, double carbonSavingPoint) {
         this.id = id;
         this.name = name;
@@ -76,6 +103,14 @@ public class Product {
         this.reviewCount = reviewCount;
         this.soldCount = soldCount;
         this.description = description;
+        this.ingredients = ingredients;
+        this.usage = usage;
+        this.storage = storage;
+        this.producer = producer;
+        this.responsibleOrg = responsibleOrg;
+        this.safetyWarning = safetyWarning;
+        this.manufactureDate = manufactureDate;
+        this.expiryDate = expiryDate;
         this.origin = origin;
         this.condition = condition;
         this.fatContent = fatContent;
@@ -106,6 +141,14 @@ public class Product {
     public int getReviewCount() { return reviewCount; }
     public int getSoldCount() { return soldCount; }
     public String getDescription() { return description; }
+    public String getIngredients() { return ingredients; }
+    public String getUsage() { return usage; }
+    public String getStorage() { return storage; }
+    public String getProducer() { return producer; }
+    public String getResponsibleOrg() { return responsibleOrg; }
+    public String getSafetyWarning() { return safetyWarning; }
+    public String getManufactureDate() { return manufactureDate; }
+    public String getExpiryDate() { return expiryDate; }
     public String getOrigin() { return origin; }
     public String getCondition() { return condition; }
     public String getFatContent() { return fatContent; }

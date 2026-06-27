@@ -1,20 +1,38 @@
 package com.veggo.app.presentation.order;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Typeface;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.data.remote.api.CartApi;
+import com.veggo.app.data.remote.api.OrderApi;
+import com.veggo.app.data.remote.dto.CartItemRequestDto;
+import com.veggo.app.presentation.cart.CartFragment;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class ReturnsActivity extends BaseActivity {
     private TextView pendingTab;
@@ -34,11 +52,16 @@ public class ReturnsActivity extends BaseActivity {
     private View completedList;
     private View rejectedList;
     private View returnsEmptyState;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView returnListScroll;
     private List<AssetModels.Order> pendingOrders;
     private List<AssetModels.Order> processingOrders;
     private List<AssetModels.Order> completedOrders;
     private List<AssetModels.Order> rejectedOrders;
     private android.widget.HorizontalScrollView returnsStatusScroll;
+    private AssetScreenData.Snapshot snapshot;
+    private String searchQuery = "";
+    private String selectedBucket = "pending";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,12 +88,53 @@ public class ReturnsActivity extends BaseActivity {
         rejectedList = findViewById(R.id.returnRejectedList);
         returnsEmptyState = findViewById(R.id.returnsEmptyState);
         returnsStatusScroll = findViewById(R.id.returnsStatusScroll);
+        returnListScroll = findViewById(R.id.returnListScroll);
+        swipeRefreshLayout = findViewById(R.id.returnsSwipeRefresh);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
+            swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) ->
+                    returnListScroll != null && returnListScroll.canScrollVertically(-1));
+            swipeRefreshLayout.setOnRefreshListener(() -> loadReturns(true));
+        }
 
-        findViewById(R.id.returnPendingTab).setOnClickListener(v -> showReturnState(pendingTab, pendingList));
-        findViewById(R.id.returnProcessingTab).setOnClickListener(v -> showReturnState(processingTab, processingList));
-        findViewById(R.id.returnCompletedTab).setOnClickListener(v -> showReturnState(completedTab, completedList));
-        findViewById(R.id.returnRejectedTab).setOnClickListener(v -> showReturnState(rejectedTab, rejectedList));
+        findViewById(R.id.returnPendingTab).setOnClickListener(v -> showReturnState("pending"));
+        findViewById(R.id.returnProcessingTab).setOnClickListener(v -> showReturnState("processing"));
+        findViewById(R.id.returnCompletedTab).setOnClickListener(v -> showReturnState("completed"));
+        findViewById(R.id.returnRejectedTab).setOnClickListener(v -> showReturnState("rejected"));
+        EditText searchInput = findViewById(R.id.returnSearchInput);
+        if (searchInput != null) {
+            searchInput.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    searchQuery = s == null ? "" : s.toString().trim();
+                    if (snapshot != null) {
+                        bindReturnLists(snapshot);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+        }
         loadReturns();
+    }
+
+    private void showReturnState(String bucket) {
+        selectedBucket = bucket;
+        if ("processing".equals(bucket)) {
+            showReturnState(processingTab, processingList);
+        } else if ("completed".equals(bucket)) {
+            showReturnState(completedTab, completedList);
+        } else if ("rejected".equals(bucket)) {
+            showReturnState(rejectedTab, rejectedList);
+        } else {
+            showReturnState(pendingTab, pendingList);
+        }
     }
 
     private void showReturnState(TextView activeTab, View activeList) {
@@ -120,7 +184,7 @@ public class ReturnsActivity extends BaseActivity {
 
 
     private void setActive(TextView textView, TextView badge, boolean active) {
-        int colorRes = active ? R.color.primary_main : R.color.neutral_60;
+        int colorRes = active ? R.color.danger_main : R.color.neutral_60;
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
         textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
         if (badge != null) {
@@ -131,17 +195,27 @@ public class ReturnsActivity extends BaseActivity {
     }
 
     private void loadReturns() {
+        loadReturns(false);
+    }
+
+    private void loadReturns(boolean fromSwipeRefresh) {
         new Thread(() -> {
             AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
-            runOnUiThread(() -> bindReturnLists(snapshot));
+            runOnUiThread(() -> {
+                bindReturnLists(snapshot);
+                if (fromSwipeRefresh && swipeRefreshLayout != null) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            });
         }).start();
     }
 
     private void bindReturnLists(AssetScreenData.Snapshot snapshot) {
-        pendingOrders = AssetScreenData.filterReturnOrders(snapshot, "pending");
-        processingOrders = AssetScreenData.filterReturnOrders(snapshot, "processing");
-        completedOrders = AssetScreenData.filterReturnOrders(snapshot, "completed");
-        rejectedOrders = AssetScreenData.filterReturnOrders(snapshot, "rejected");
+        this.snapshot = snapshot;
+        pendingOrders = filterOrdersByQuery(AssetScreenData.filterReturnOrders(snapshot, "pending"));
+        processingOrders = filterOrdersByQuery(AssetScreenData.filterReturnOrders(snapshot, "processing"));
+        completedOrders = filterOrdersByQuery(AssetScreenData.filterReturnOrders(snapshot, "completed"));
+        rejectedOrders = filterOrdersByQuery(AssetScreenData.filterReturnOrders(snapshot, "rejected"));
         setBadgeCount(pendingBadge, pendingOrders.size());
         setBadgeCount(processingBadge, processingOrders.size());
         setBadgeCount(completedBadge, completedOrders.size());
@@ -150,7 +224,46 @@ public class ReturnsActivity extends BaseActivity {
         bindList((LinearLayout) processingList, processingOrders, R.layout.item_return_processing, snapshot);
         bindList((LinearLayout) completedList, completedOrders, R.layout.item_return_completed, snapshot);
         bindList((LinearLayout) rejectedList, rejectedOrders, R.layout.item_return_rejected, snapshot);
-        showReturnState(pendingTab, pendingList);
+        showReturnState(selectedBucket);
+    }
+
+    private List<AssetModels.Order> filterOrdersByQuery(List<AssetModels.Order> source) {
+        String normalizedQuery = searchQuery == null
+                ? ""
+                : searchQuery.trim().toLowerCase(Locale.ROOT);
+        if (normalizedQuery.isEmpty() || snapshot == null) {
+            return source;
+        }
+
+        List<AssetModels.Order> filtered = new ArrayList<>();
+        for (AssetModels.Order order : source) {
+            if (matchesSearch(order, normalizedQuery)) {
+                filtered.add(order);
+            }
+        }
+        return filtered;
+    }
+
+    private boolean matchesSearch(AssetModels.Order order, String normalizedQuery) {
+        StringBuilder searchable = new StringBuilder();
+        appendSearchable(searchable, order.orderId);
+        appendSearchable(searchable, AssetScreenData.statusLabel(order.status));
+        appendSearchable(searchable, AssetScreenData.date(order.createdAt));
+
+        AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(order.orderId);
+        if (detail != null && detail.items != null) {
+            for (AssetModels.OrderDetailItem item : detail.items) {
+                appendSearchable(searchable, item.productName);
+                appendSearchable(searchable, item.sku);
+            }
+        }
+        return searchable.toString().toLowerCase(Locale.ROOT).contains(normalizedQuery);
+    }
+
+    private void appendSearchable(StringBuilder builder, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            builder.append(' ').append(value);
+        }
     }
 
     private void setBadgeCount(TextView badge, int count) {
@@ -172,12 +285,187 @@ public class ReturnsActivity extends BaseActivity {
         for (AssetModels.Order order : orders) {
             View item = inflater.inflate(layout, container, false);
             AssetScreenData.bindOrderCard(this, item, snapshot, order);
+            bindRejectedReason(item, order);
+            bindActions(item, order, layout);
             item.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(this, OrderDetailActivity.class);
+                Intent intent = new Intent(this, OrderDetailActivity.class);
                 intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, order.orderId);
                 startActivity(intent);
             });
             container.addView(item);
         }
+    }
+
+    private void bindRejectedReason(View item, AssetModels.Order order) {
+        TextView rejectReasonText = item.findViewById(R.id.returnRejectReasonText);
+        if (rejectReasonText == null) {
+            return;
+        }
+        String reason = order.rejectReason == null ? "" : order.rejectReason.trim();
+        rejectReasonText.setText(reason.isEmpty()
+                ? getString(R.string.returns_rejected_reason)
+                : reason);
+    }
+
+    private void bindActions(View item, AssetModels.Order order, int layout) {
+        TextView cancelRequestButton = item.findViewById(R.id.returnCancelRequestButton);
+        if (cancelRequestButton != null && layout == R.layout.item_return_pending) {
+            cancelRequestButton.setOnClickListener(v -> confirmCancelReturnRequest(order));
+        }
+
+        TextView completeButton = item.findViewById(R.id.returnCompleteButton);
+        if (completeButton != null && layout == R.layout.item_return_processing) {
+            completeButton.setOnClickListener(v -> confirmReturnCompleted(order));
+        }
+
+        TextView buyAgainButton = item.findViewById(R.id.returnBuyAgainButton);
+        if (buyAgainButton != null && (layout == R.layout.item_return_completed || layout == R.layout.item_return_rejected)) {
+            buyAgainButton.setOnClickListener(v -> {
+                v.setEnabled(false);
+                buyAgainOrder(order, v);
+            });
+        }
+    }
+
+    private void confirmCancelReturnRequest(AssetModels.Order order) {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_order_cancel_dialog,
+                "Hủy yêu cầu đổi/trả",
+                "Bạn có chắc chắn muốn hủy yêu cầu đổi/trả cho đơn hàng này?",
+                "Xác nhận",
+                "Đóng",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        updateOrderStatus(order, "delivered", "Đã hủy yêu cầu đổi/trả", "pending");
+                    }
+                }
+        );
+    }
+
+    private void confirmReturnCompleted(AssetModels.Order order) {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_order_delivered_box,
+                "Xác nhận đã hoàn/trả",
+                "Bạn xác nhận đơn hàng đã được hoàn/trả xong?",
+                "Xác nhận",
+                "Đóng",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        updateOrderStatus(order, "returned");
+                    }
+                }
+        );
+    }
+
+    private void updateOrderStatus(AssetModels.Order order, String newStatus) {
+        updateOrderStatus(order, newStatus, "Đã xác nhận hoàn/trả thành công", "completed");
+    }
+
+    private void updateOrderStatus(AssetModels.Order order, String newStatus, String toastMessage, String nextBucket) {
+        new Thread(() -> {
+            boolean success = false;
+            String errorMessage = "Không thể cập nhật trạng thái đơn hàng";
+            try {
+                OrderApi orderApi = ApiClient.createService(OrderApi.class);
+                Map<String, String> body = new HashMap<>();
+                body.put("status", newStatus);
+                retrofit2.Response<Map<String, Object>> response =
+                        orderApi.updateOrderStatus(order.orderId, body).execute();
+                success = response.isSuccessful();
+                if (!success && response.errorBody() != null) {
+                    errorMessage = response.errorBody().string();
+                }
+            } catch (Exception exception) {
+                errorMessage = exception.getMessage() == null ? errorMessage : exception.getMessage();
+            }
+
+            boolean finalSuccess = success;
+            String finalErrorMessage = errorMessage;
+            runOnUiThread(() -> {
+                if (finalSuccess) {
+                    android.widget.Toast.makeText(this, toastMessage, android.widget.Toast.LENGTH_SHORT).show();
+                    selectedBucket = nextBucket;
+                    loadReturns();
+                } else {
+                    android.widget.Toast.makeText(this, finalErrorMessage, android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
+    }
+
+    private void openOrderDetail(String orderId) {
+        Intent intent = new Intent(this, OrderDetailActivity.class);
+        intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
+        startActivity(intent);
+    }
+
+    private void buyAgainOrder(AssetModels.Order order, View sourceButton) {
+        AssetModels.OrderDetail detail = snapshot == null ? null : snapshot.detailByOrderId.get(order.orderId);
+        if (detail == null || detail.items == null || detail.items.isEmpty()) {
+            if (sourceButton != null) sourceButton.setEnabled(true);
+            android.widget.Toast.makeText(this, "Không có sản phẩm nào để mua lại", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String customerId = new AppPreferences(this).getCustomerId();
+        if (customerId == null || customerId.trim().isEmpty()) {
+            if (sourceButton != null) sourceButton.setEnabled(true);
+            android.widget.Toast.makeText(this, "Không tìm thấy thông tin người dùng", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new Thread(() -> {
+            boolean success = true;
+            String errorMessage = "Không thể thêm sản phẩm vào giỏ";
+            try {
+                CartApi cartApi = ApiClient.createService(CartApi.class);
+                for (AssetModels.OrderDetailItem item : detail.items) {
+                    String sku = item.sku == null ? "" : item.sku.trim();
+                    if (sku.isEmpty()) continue;
+                    retrofit2.Response<?> response = cartApi.addItem(
+                            customerId,
+                            new CartItemRequestDto(sku, Math.max(1, item.quantity), 1.0)
+                    ).execute();
+                    if (!response.isSuccessful()) {
+                        success = false;
+                        if (response.errorBody() != null) {
+                            errorMessage = response.errorBody().string();
+                        }
+                        break;
+                    }
+                }
+            } catch (Exception exception) {
+                success = false;
+                errorMessage = exception.getMessage() == null ? errorMessage : exception.getMessage();
+            }
+            boolean finalSuccess = success;
+            String finalErrorMessage = errorMessage;
+            runOnUiThread(() -> {
+                if (sourceButton != null) sourceButton.setEnabled(true);
+                if (finalSuccess) {
+                    openCart(detail);
+                } else {
+                    android.widget.Toast.makeText(this, finalErrorMessage, android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
+    }
+
+    private void openCart(AssetModels.OrderDetail detail) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_cart);
+        ArrayList<String> selectedSkus = new ArrayList<>();
+        if (detail.items != null) {
+            for (AssetModels.OrderDetailItem item : detail.items) {
+                if (item.sku != null && !item.sku.trim().isEmpty()) {
+                    selectedSkus.add(item.sku.trim());
+                }
+            }
+        }
+        intent.putStringArrayListExtra(CartFragment.ARG_SELECTED_SKUS, selectedSkus);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
     }
 }

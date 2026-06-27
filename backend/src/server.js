@@ -24,6 +24,7 @@ const promotionTargetRoutes = require('./routes/promotionTargetRoutes');
 const promotionUsageRoutes = require('./routes/promotionUsageRoutes');
 const warehouseRoutes = require('./routes/warehouseRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -33,6 +34,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+app.use('/api', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 
 const toImageBuffer = (data) => {
   if (!data) return null;
@@ -89,6 +99,7 @@ app.use('/api/promotion-usages', promotionUsageRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {

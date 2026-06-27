@@ -30,8 +30,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:fontFamily="@font/inter_extrabold"
-            android:textColor="@color/neutral_100"
+            android:textColor="@color/black"
             android:textSize="22sp"
+            android:textStyle="bold"
             tools:text="Vegetables" />
 
         <androidx.recyclerview.widget.RecyclerView

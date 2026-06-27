@@ -34,14 +34,20 @@ public class PromotionDto {
 
     private String code;
     private String description;
+
+    @SerializedName("discount")
+    private Double discount;
+
+    @SerializedName("discount_type")
+    private String discountType;
     
-    @SerializedName("discount_value")
+    @SerializedName(value = "discount_value", alternate = {"discountValue"})
     private Double discountValue;
     
-    @SerializedName("max_discount_value")
+    @SerializedName(value = "max_discount_value", alternate = {"maxDiscountValue"})
     private Double maxDiscountValue;
     
-    @SerializedName("min_order_value")
+    @SerializedName(value = "min_order_value", alternate = {"minOrderValue"})
     private Double minOrderValue;
     
     @SerializedName("usage_limit")
@@ -60,6 +66,9 @@ public class PromotionDto {
     private String endDate;
     
     private String scope;
+    @SerializedName("promotion_kind")
+    private String promotionKind;
+
 
     public String getId() {
         if (id instanceof String) {
@@ -102,7 +111,8 @@ public class PromotionDto {
 
     public String getCode() { return code; }
     public String getDescription() { return description; }
-    public Double getDiscountValue() { return discountValue; }
+    public Double getDiscountValue() { return discountValue != null ? discountValue : discount; }
+    public String getDiscountType() { return discountType; }
     public Double getMaxDiscountValue() { return maxDiscountValue; }
     public Double getMinOrderValue() { return minOrderValue; }
     public Integer getUsageLimit() { return usageLimit; }
@@ -112,6 +122,8 @@ public class PromotionDto {
     public String getEndDate() { return endDate; }
     public String getScope() { return scope; }
     public String getStatus() { return status; }
+    public String getPromotionKind() { return promotionKind; }
+
 
     public static class BannerDataDto {
         private String imageUrl;

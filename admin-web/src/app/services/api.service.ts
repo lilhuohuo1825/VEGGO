@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -10,14 +10,29 @@ import { environment } from '../../environments/environment';
 export class ApiService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
+  private noCacheHeaders = new HttpHeaders({
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache',
+  });
+
+  private freshUrl(path: string): string {
+    const separator = path.includes('?') ? '&' : '?';
+    return `${this.apiUrl}${path}${separator}_=${Date.now()}`;
+  }
+
+  private getFresh<T>(path: string): Observable<T> {
+    return this.http.get<T>(this.freshUrl(path), { headers: this.noCacheHeaders }).pipe(
+      timeout(20000)
+    );
+  }
 
   // ==================== USERS / CUSTOMERS ====================
   getUsers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/users`);
+    return this.getFresh<any[]>('/users');
   }
 
   getUserById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/users/id/${id}`);
+    return this.getFresh<any>(`/users/id/${id}`);
   }
 
   updateUser(id: string, userData: any): Observable<any> {
@@ -34,15 +49,22 @@ export class ApiService {
 
   // ==================== ORDERS ====================
   getOrders(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/orders`);
+    return this.getFresh<any[]>('/orders');
   }
 
   getOrderById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/orders/id/${id}`);
+    return this.getFresh<any>(`/orders/id/${id}`);
   }
 
   getOrdersByUserId(userId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/orders/${userId}`);
+    return this.getFresh<any[]>(`/orders/${userId}`);
+  }
+
+  getOrdersByCustomerId(customerId: string): Observable<any[]> {
+    return this.getFresh<any>(`/orders/customer/${customerId}`).pipe(
+      map((response) => Array.isArray(response) ? response : response?.orders || []),
+      catchError(() => of([]))
+    );
   }
 
   createOrder(orderData: any): Observable<any> {
@@ -53,8 +75,11 @@ export class ApiService {
     return this.http.put<any>(`${this.apiUrl}/orders/${orderId}`, orderData);
   }
 
-  updateOrderStatus(orderId: string, status: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/orders/${orderId}`, { status });
+  updateOrderStatus(orderId: string, status: string, extraData: Record<string, any> = {}): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/orders/${orderId}/status`, {
+      status,
+      ...extraData,
+    });
   }
 
   deleteOrder(orderId: string): Observable<any> {
@@ -63,11 +88,13 @@ export class ApiService {
 
   // ==================== PRODUCTS ====================
   getProducts(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/products?all=true`);
+    return this.getFresh<any>('/products?all=true&lite=true').pipe(
+      map((response) => Array.isArray(response) ? response : response?.data || response?.products || [])
+    );
   }
 
   getProductById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/products/${id}`);
+    return this.getFresh<any>(`/products/${id}`);
   }
 
   createProduct(productData: any): Observable<any> {
@@ -84,12 +111,12 @@ export class ApiService {
 
   // ==================== WAREHOUSES ====================
   getWarehouses(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/warehouses`);
+    return this.getFresh<any[]>('/warehouses');
   }
 
   // ==================== PROMOTIONS ====================
   getPromotions(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/promotions`);
+    return this.getFresh<any[]>('/promotions');
   }
   
   createPromotion(promoData: any): Observable<any> {
@@ -106,7 +133,7 @@ export class ApiService {
 
   // ==================== BLOGS ====================
   getBlogs(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/blogs`);
+    return this.getFresh<any[]>('/blogs');
   }
 
   createBlog(blogData: any): Observable<any> {
@@ -121,17 +148,45 @@ export class ApiService {
     return this.http.delete<any>(`${this.apiUrl}/blogs/${id}`);
   }
   getReviews(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/reviews`);
+    return this.getFresh<any[]>('/reviews');
   }
   getTree(): Observable<any[]> { return of([]); }
-  getCategories(): Observable<string[]> { return of(['Rau củ', 'Trái cây', 'Thực phẩm khô']); }
-  getProductGroups(): Observable<any[]> { return of([]); }
+  getCategories(): Observable<string[]> {
+    return this.getFresh<any>('/products/metadata/categories').pipe(
+      map((response) => {
+        const categories = Array.isArray(response) ? response : response?.data || [];
+        return categories.map((category: any) => category.name || category).filter(Boolean);
+      }),
+      catchError(() => of([]))
+    );
+  }
+  getProductGroups(): Observable<string[]> {
+    return this.getFresh<any>('/products/groups').pipe(
+      map((response) => Array.isArray(response) ? response : response?.data || []),
+      catchError(() => of([]))
+    );
+  }
   
-  updateProductField(productId: string, field: string, value: any): Observable<any> { return of({ success: true }); }
-  createProductGroup(groupName: string, skus: string[]): Observable<any> { return of({ success: true }); }
-  updateProductGroup(sku: string, action: string, groupName: string): Observable<any> { return of({ success: true }); }
+  updateProductField(productId: string, field: string, value: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/products/${encodeURIComponent(productId)}/field`, {
+      field,
+      value
+    });
+  }
+  createProductGroup(groupName: string, skus: string[]): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/products/groups`, {
+      groupName,
+      skus
+    });
+  }
+  updateProductGroup(sku: string, action: string, groupName: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/products/${encodeURIComponent(sku)}/groups`, {
+      action,
+      groupName
+    });
+  }
   getPromotionUsage(): Observable<Record<string, number>> {
-    return this.http.get<any>(`${this.apiUrl}/promotion-usages`).pipe(
+    return this.getFresh<any>('/promotion-usages').pipe(
       map((response) => {
         const rows = Array.isArray(response) ? response : response?.data || [];
         return rows.reduce((acc: Record<string, number>, usage: any) => {
@@ -148,14 +203,14 @@ export class ApiService {
   }
 
   getPromotionTargets(): Observable<any[]> {
-    return this.http.get<any>(`${this.apiUrl}/promotion-targets`).pipe(
+    return this.getFresh<any>('/promotion-targets').pipe(
       map((response) => Array.isArray(response) ? response : response?.data || []),
       catchError(() => of([]))
     );
   }
 
   getCertificateRequests(): Observable<any[]> {
-    return this.http.get<any>(`${this.apiUrl}/certificates/requests`).pipe(
+    return this.getFresh<any>('/certificates/requests').pipe(
       map((response) => Array.isArray(response) ? response : response?.data || []),
       catchError(() => of([]))
     );

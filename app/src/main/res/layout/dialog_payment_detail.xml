@@ -10,7 +10,7 @@
         android:layout_height="48dp"
         android:fontFamily="@font/inter_semibold"
         android:gravity="center"
-        android:text="Chi tiết khuyến mãi"
+        android:text="Chi tiết tổng đơn"
         android:textColor="#1E1E1E"
         android:textSize="14sp"
         android:textStyle="bold"/>
@@ -45,11 +45,12 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvPaymentSubtotal"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center_vertical"
-                android:text="457.000đ"
+                android:text="0đ"
                 android:textColor="#616161"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -70,11 +71,12 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvPaymentVoucherDiscount"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center_vertical"
-                android:text="-22.000đ"
+                android:text="-0đ"
                 android:textColor="#616161"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -95,11 +97,12 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvPaymentProductDiscount"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center_vertical"
-                android:text="-25.000đ"
+                android:text="-0đ"
                 android:textColor="#616161"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -120,11 +123,12 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvPaymentShippingFee"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center_vertical"
-                android:text="75.000đ"
+                android:text="0đ"
                 android:textColor="#616161"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -145,11 +149,12 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvPaymentShippingDiscount"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center_vertical"
-                android:text="-75.000đ"
+                android:text="-0đ"
                 android:textColor="#616161"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -171,11 +176,12 @@
                 android:textStyle="bold"/>
 
             <TextView
+                android:id="@+id/tvPaymentTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/inter_semibold"
                 android:gravity="center_vertical"
-                android:text="325.000đ"
+                android:text="0đ"
                 android:textColor="#1E1E1E"
                 android:textSize="14sp"
                 android:textStyle="bold"/>

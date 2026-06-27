@@ -2,38 +2,54 @@ package com.veggo.app.presentation.profile;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.JsonElement;
 import com.veggo.app.R;
+import com.veggo.app.assets.AssetFiles;
+import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.assets.AssetModels;
-import com.veggo.app.core.database.AssetRepository;
+import com.veggo.app.core.favorite.FavoriteStore;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.data.local.entity.BlogEntity;
+import com.veggo.app.data.remote.api.BlogApi;
+import com.veggo.app.data.remote.api.ProductApi;
+import com.veggo.app.data.remote.dto.ProductDto;
 import com.veggo.app.presentation.blog.BlogDetailActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.community.InstructionRecipeDetailActivity;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Locale;
 import java.util.List;
-import java.util.Map;
 
 public class FavoritesActivity extends BaseActivity {
-    private static final int MAX_SECTION_ITEMS = 6;
+    private static final int SWIPE_DELETE_WIDTH_DP = 96;
+    private static final int SWIPE_THRESHOLD_DP = 56;
 
     private View tabProducts, tabBlogs, tabDishes;
     private TextView tabProductsText, tabBlogsText, tabDishesText;
     private TextView tabProductsBadge, tabBlogsBadge, tabDishesBadge;
     private View tabProductsIndicator, tabBlogsIndicator, tabDishesIndicator;
     private View sectionProducts, sectionBlogs, sectionDishes;
+    private FavoriteStore favoriteStore;
+    private boolean isEnrichingFavorites;
 
     private enum FavTab {
         PRODUCTS, BLOGS, DISHES
@@ -42,7 +58,11 @@ public class FavoritesActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "yêu thích")) {
+            return;
+        }
         setContentView(R.layout.activity_favorites);
+        favoriteStore = new FavoriteStore(this);
         findViewById(R.id.favoritesBackButton).setOnClickListener(v -> finish());
 
         // Initialize Tab Views
@@ -77,6 +97,14 @@ public class FavoritesActivity extends BaseActivity {
         loadFavorites();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (favoriteStore != null) {
+            loadFavorites();
+        }
+    }
+
     private void selectTab(FavTab tab) {
         int activeColor = androidx.core.content.ContextCompat.getColor(this, R.color.primary_main);
         int inactiveColor = androidx.core.content.ContextCompat.getColor(this, R.color.neutral_60);
@@ -104,78 +132,49 @@ public class FavoritesActivity extends BaseActivity {
     }
 
     private void loadFavorites() {
-        new Thread(() -> {
-            FavoriteSnapshot snapshot = new FavoriteSnapshot(
-                    new ArrayList<>(),
-                    new ArrayList<>(),
-                    new ArrayList<>()
-            );
-            runOnUiThread(() -> bindFavorites(snapshot));
-        }).start();
+        List<FavoriteStore.FavoriteItem> products = favoriteStore.getByType(FavoriteStore.TYPE_PRODUCT);
+        List<FavoriteStore.FavoriteItem> blogs = favoriteStore.getByType(FavoriteStore.TYPE_BLOG);
+        List<FavoriteStore.FavoriteItem> recipes = favoriteStore.getByType(FavoriteStore.TYPE_RECIPE);
+        bindFavorites(products, blogs, recipes);
+        enrichFavoriteMetadata(products, blogs, recipes);
     }
 
-    private List<AssetModels.Product> favoriteProducts(List<AssetModels.Product> products) {
-        List<AssetModels.Product> favorites = new ArrayList<>(products);
-        favorites.sort((left, right) -> Integer.compare(right.liked, left.liked));
-        return limit(favorites);
-    }
-
-    private List<AssetModels.Blog> favoriteBlogs(List<AssetModels.Blog> blogs) {
-        List<AssetModels.Blog> favorites = new ArrayList<>(blogs);
-        favorites.sort((left, right) -> AssetScreenData.safe(right.pubDate == null ? null : right.pubDate.date)
-                .compareTo(AssetScreenData.safe(left.pubDate == null ? null : left.pubDate.date)));
-        return limit(favorites);
-    }
-
-    private List<FavoriteDish> favoriteDishes(List<AssetModels.Dish> dishes, List<AssetModels.Instruction> instructions) {
-        Map<String, AssetModels.Instruction> instructionById = new HashMap<>();
-        for (AssetModels.Instruction instruction : instructions) {
-            instructionById.put(instruction.id, instruction);
-        }
-
-        List<FavoriteDish> favorites = new ArrayList<>();
-        for (AssetModels.Dish dish : dishes) {
-            AssetModels.Instruction instruction = instructionById.get(dish.id);
-            if (instruction != null && AssetScreenData.hasText(instruction.dishName)) {
-                favorites.add(new FavoriteDish(dish, instruction));
-            }
-        }
-        favorites.sort(Comparator.comparing(item -> item.instruction.dishName));
-        return limit(favorites);
-    }
-
-    private void bindFavorites(FavoriteSnapshot snapshot) {
+    private void bindFavorites(
+            List<FavoriteStore.FavoriteItem> products,
+            List<FavoriteStore.FavoriteItem> blogs,
+            List<FavoriteStore.FavoriteItem> recipes
+    ) {
         tabProductsText.setText("Sản phẩm");
         tabBlogsText.setText("Bài viết");
         tabDishesText.setText("Công thức");
 
-        if (snapshot.products.size() > 0) {
+        if (products.size() > 0) {
             tabProductsBadge.setVisibility(View.VISIBLE);
-            tabProductsBadge.setText(String.valueOf(snapshot.products.size()));
+            tabProductsBadge.setText(String.valueOf(products.size()));
         } else {
             tabProductsBadge.setVisibility(View.GONE);
         }
 
-        if (snapshot.blogs.size() > 0) {
+        if (blogs.size() > 0) {
             tabBlogsBadge.setVisibility(View.VISIBLE);
-            tabBlogsBadge.setText(String.valueOf(snapshot.blogs.size()));
+            tabBlogsBadge.setText(String.valueOf(blogs.size()));
         } else {
             tabBlogsBadge.setVisibility(View.GONE);
         }
 
-        if (snapshot.dishes.size() > 0) {
+        if (recipes.size() > 0) {
             tabDishesBadge.setVisibility(View.VISIBLE);
-            tabDishesBadge.setText(String.valueOf(snapshot.dishes.size()));
+            tabDishesBadge.setText(String.valueOf(recipes.size()));
         } else {
             tabDishesBadge.setVisibility(View.GONE);
         }
 
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.favoritesProductTotal,
-                snapshot.products.size() + "\n" + getString(R.string.favorites_products_count));
+                products.size() + "\n" + getString(R.string.favorites_products_count));
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.favoritesBlogTotal,
-                snapshot.blogs.size() + "\n" + getString(R.string.favorites_blogs_count));
+                blogs.size() + "\n" + getString(R.string.favorites_blogs_count));
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.favoritesDishTotal,
-                snapshot.dishes.size() + "\n" + getString(R.string.favorites_dishes_count));
+                recipes.size() + "\n" + getString(R.string.favorites_dishes_count));
 
         LinearLayout productList = findViewById(R.id.favoritesProductList);
         LinearLayout blogList = findViewById(R.id.favoritesBlogList);
@@ -185,54 +184,371 @@ public class FavoritesActivity extends BaseActivity {
         dishList.removeAllViews();
 
         LayoutInflater inflater = LayoutInflater.from(this);
-        for (AssetModels.Product product : snapshot.products) {
-            View item = inflater.inflate(R.layout.item_favorite_card, productList, false);
-            bindItem(item, getString(R.string.favorites_products_count), product.productName,
-                    AssetScreenData.money(product.price) + " • " + product.liked + " lượt thích",
-                    firstImage(product.image));
-            item.setOnClickListener(v -> {
-                Intent intent = new Intent(this, ProductDetailActivity.class);
-                intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.objectId);
-                startActivity(intent);
-            });
-            productList.addView(item);
-        }
+        bindList(inflater, productList, products);
+        bindList(inflater, blogList, blogs);
+        bindList(inflater, dishList, recipes);
+    }
 
-        for (AssetModels.Blog blog : snapshot.blogs) {
-            View item = inflater.inflate(R.layout.item_favorite_card, blogList, false);
-            bindItem(item, getString(R.string.favorites_blogs_count), blog.title,
-                    blog.author + " • " + AssetScreenData.date(blog.pubDate),
-                    blog.img);
-            String blogId = blogId(blog);
-            if (AssetScreenData.hasText(blogId)) {
-                item.setOnClickListener(v -> {
-                    Intent intent = new Intent(this, BlogDetailActivity.class);
-                    intent.putExtra(BlogDetailActivity.EXTRA_BLOG_ID, blogId);
-                    startActivity(intent);
-                });
-            }
-            blogList.addView(item);
-        }
-
-        for (FavoriteDish favoriteDish : snapshot.dishes) {
-            AssetModels.Instruction instruction = favoriteDish.instruction;
-            AssetModels.Dish dish = favoriteDish.dish;
-            View item = inflater.inflate(R.layout.item_favorite_card, dishList, false);
-            bindItem(item, getString(R.string.favorites_dishes_count), instruction.dishName,
-                    instruction.cookingTime + " • " + instruction.difficulty + " • " + firstSentence(dish.description),
-                    instruction.image);
-            dishList.addView(item);
+    private void bindList(
+            LayoutInflater inflater,
+            LinearLayout list,
+            List<FavoriteStore.FavoriteItem> favorites
+    ) {
+        for (FavoriteStore.FavoriteItem favorite : favorites) {
+            View item = inflater.inflate(R.layout.item_favorite_card, list, false);
+            bindItem(item, favorite);
+            View foreground = item.findViewById(R.id.favoriteForeground);
+            foreground.setOnClickListener(v -> openFavorite(favorite));
+            item.findViewById(R.id.favoriteDeleteAction)
+                    .setOnClickListener(v -> showDeleteDialog(favorite));
+            bindSwipeToDelete(item, foreground, favorite);
+            list.addView(item);
         }
     }
 
-    private void bindItem(View item, String type, String title, String subtitle, @Nullable String imageUrl) {
-        AssetScreenData.setText(item, R.id.favoriteType, type);
-        AssetScreenData.setText(item, R.id.favoriteTitle, title);
-        AssetScreenData.setText(item, R.id.favoriteSubtitle, subtitle);
-        ImageView image = item.findViewById(R.id.favoriteImage);
-        if (image != null && AssetScreenData.hasText(imageUrl)) {
-            Glide.with(this).load(imageUrl).placeholder(R.drawable.ic_vegetable).into(image);
+    private void bindItem(View item, FavoriteStore.FavoriteItem favorite) {
+        AssetScreenData.setText(item, R.id.favoriteTitle, favorite.title);
+        TextView subtitleView = item.findViewById(R.id.favoriteSubtitle);
+        if (subtitleView != null) {
+            subtitleView.setText(formatFavoriteSubtitle(favorite));
         }
+        ImageView image = item.findViewById(R.id.favoriteImage);
+        if (image != null && AssetScreenData.hasText(favorite.imageUrl)) {
+            Glide.with(this).load(favorite.imageUrl).placeholder(R.drawable.ic_vegetable).into(image);
+        }
+    }
+
+    private CharSequence formatFavoriteSubtitle(FavoriteStore.FavoriteItem favorite) {
+        String subtitle = favorite.subtitle == null ? "" : favorite.subtitle;
+        if (FavoriteStore.TYPE_PRODUCT.equals(favorite.type) && subtitle.contains("điểm carbon")) {
+            String display = subtitle.replaceFirst("\\s+•\\s+", "\n");
+            SpannableString spannable = new SpannableString(display);
+            int carbonStart = display.indexOf("điểm carbon");
+            if (carbonStart > 0) {
+                int lineStart = display.lastIndexOf('\n', carbonStart);
+                int start = lineStart >= 0 ? lineStart + 1 : carbonStart;
+                spannable.setSpan(
+                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.primary_main)),
+                        start,
+                        display.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+            }
+            return spannable;
+        }
+        if (FavoriteStore.TYPE_RECIPE.equals(favorite.type) && subtitle.contains("nguyên liệu")) {
+            return subtitle.replaceFirst("\\s+•\\s+", "\n");
+        }
+        return subtitle;
+    }
+
+    private void openFavorite(FavoriteStore.FavoriteItem favorite) {
+        Intent intent;
+        if (FavoriteStore.TYPE_PRODUCT.equals(favorite.type)) {
+            intent = new Intent(this, ProductDetailActivity.class);
+            intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, favorite.id);
+        } else if (FavoriteStore.TYPE_BLOG.equals(favorite.type)) {
+            intent = new Intent(this, BlogDetailActivity.class);
+            intent.putExtra(BlogDetailActivity.EXTRA_BLOG_ID, favorite.id);
+        } else {
+            intent = new Intent(this, InstructionRecipeDetailActivity.class);
+            intent.putExtra(InstructionRecipeDetailActivity.EXTRA_INSTRUCTION_ID, favorite.id);
+        }
+        startActivity(intent);
+    }
+
+    private void bindSwipeToDelete(View root, View foreground, FavoriteStore.FavoriteItem favorite) {
+        final float[] downX = new float[1];
+        final int revealWidth = dp(SWIPE_DELETE_WIDTH_DP);
+        final int threshold = dp(SWIPE_THRESHOLD_DP);
+        foreground.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX[0] = event.getRawX();
+                    return false;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    float deltaX = event.getRawX() - downX[0];
+                    if (deltaX < -threshold) {
+                        foreground.animate().translationX(-revealWidth).setDuration(160).start();
+                        root.findViewById(R.id.favoriteDeleteAction).setVisibility(View.VISIBLE);
+                        return true;
+                    }
+                    if (deltaX > threshold || foreground.getTranslationX() < 0) {
+                        foreground.animate().translationX(0).setDuration(160).start();
+                        return true;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private void showDeleteDialog(FavoriteStore.FavoriteItem favorite) {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_trash,
+                "Xoá khỏi yêu thích?",
+                "Bạn có chắc muốn xoá \"" + favorite.title + "\" khỏi danh sách yêu thích không?",
+                "Xoá",
+                "Huỷ",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        favoriteStore.remove(favorite.type, favorite.id);
+                        loadFavorites();
+                    }
+                }
+        );
+    }
+
+    private void enrichFavoriteMetadata(
+            List<FavoriteStore.FavoriteItem> products,
+            List<FavoriteStore.FavoriteItem> blogs,
+            List<FavoriteStore.FavoriteItem> recipes
+    ) {
+        if (isEnrichingFavorites) {
+            return;
+        }
+        isEnrichingFavorites = true;
+        new Thread(() -> {
+            boolean changed = false;
+            try {
+                for (FavoriteStore.FavoriteItem product : products) {
+                    FavoriteStore.FavoriteItem enriched = enrichProduct(product);
+                    if (replaceIfChanged(product, enriched)) changed = true;
+                }
+                for (FavoriteStore.FavoriteItem blog : blogs) {
+                    FavoriteStore.FavoriteItem enriched = enrichBlog(blog);
+                    if (replaceIfChanged(blog, enriched)) changed = true;
+                }
+                for (FavoriteStore.FavoriteItem recipe : recipes) {
+                    FavoriteStore.FavoriteItem enriched = enrichRecipe(recipe);
+                    if (replaceIfChanged(recipe, enriched)) changed = true;
+                }
+            } finally {
+                boolean shouldReload = changed;
+                runOnUiThread(() -> {
+                    isEnrichingFavorites = false;
+                    if (shouldReload) {
+                        loadFavorites();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private FavoriteStore.FavoriteItem enrichProduct(FavoriteStore.FavoriteItem favorite) {
+        ProductDto dto = loadProductDto(favorite.id);
+        if (dto != null) {
+            return new FavoriteStore.FavoriteItem(
+                    favorite.type,
+                    favorite.id,
+                    firstNonBlank(dto.getName(), favorite.title),
+                    productSubtitle(dto.getPrice(), dto.getCarbonSavingPoint(), favorite.subtitle),
+                    firstNonBlank(dto.getImageUrl(), favorite.imageUrl)
+            );
+        }
+
+        AssetModels.Product assetProduct = findAssetProduct(favorite.id);
+        if (assetProduct == null) {
+            return favorite;
+        }
+        return new FavoriteStore.FavoriteItem(
+                favorite.type,
+                favorite.id,
+                firstNonBlank(assetProduct.productName, favorite.title),
+                productSubtitle(assetProduct.price, assetProduct.carbonSavingPoint, favorite.subtitle),
+                firstNonBlank(firstImage(assetProduct.image), favorite.imageUrl)
+        );
+    }
+
+    private FavoriteStore.FavoriteItem enrichBlog(FavoriteStore.FavoriteItem favorite) {
+        BlogEntity blog = loadBlogEntity(favorite.id);
+        if (blog != null) {
+            return new FavoriteStore.FavoriteItem(
+                    favorite.type,
+                    favorite.id,
+                    firstNonBlank(blog.getTitle(), favorite.title),
+                    firstNonBlank(blog.getAuthor(), favorite.subtitle),
+                    firstNonBlank(blog.getImageUrl(), favorite.imageUrl)
+            );
+        }
+
+        AssetModels.Blog assetBlog = findAssetBlog(favorite.id);
+        if (assetBlog == null) {
+            return favorite;
+        }
+        return new FavoriteStore.FavoriteItem(
+                favorite.type,
+                favorite.id,
+                firstNonBlank(assetBlog.title, favorite.title),
+                firstNonBlank(assetBlog.author, favorite.subtitle),
+                firstNonBlank(assetBlog.img, favorite.imageUrl)
+        );
+    }
+
+    private FavoriteStore.FavoriteItem enrichRecipe(FavoriteStore.FavoriteItem favorite) {
+        RecipeAssetInfo recipe = findAssetRecipe(favorite.id);
+        if (recipe == null) {
+            return favorite;
+        }
+        return new FavoriteStore.FavoriteItem(
+                favorite.type,
+                favorite.id,
+                firstNonBlank(recipe.title, favorite.title),
+                recipeSubtitle(recipe.cookingTime, recipe.ingredientCount, favorite.subtitle),
+                firstNonBlank(recipe.imageUrl, favorite.imageUrl)
+        );
+    }
+
+    private boolean replaceIfChanged(
+            FavoriteStore.FavoriteItem original,
+            FavoriteStore.FavoriteItem enriched
+    ) {
+        if (enriched == null || sameFavorite(original, enriched)) {
+            return false;
+        }
+        favoriteStore.add(enriched);
+        return true;
+    }
+
+    private boolean sameFavorite(FavoriteStore.FavoriteItem left, FavoriteStore.FavoriteItem right) {
+        return safe(left.title).equals(safe(right.title))
+                && safe(left.subtitle).equals(safe(right.subtitle))
+                && safe(left.imageUrl).equals(safe(right.imageUrl));
+    }
+
+    @Nullable
+    private ProductDto loadProductDto(String productId) {
+        try {
+            retrofit2.Response<ProductDto> response = ApiClient.createService(ProductApi.class)
+                    .getProductById(productId)
+                    .execute();
+            return response.isSuccessful() ? response.body() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private BlogEntity loadBlogEntity(String blogId) {
+        try {
+            String customerId = new AppPreferences(this).getCustomerId();
+            retrofit2.Response<BlogEntity> response = ApiClient.createService(BlogApi.class)
+                    .getBlog(blogId, customerId)
+                    .execute();
+            return response.isSuccessful() ? response.body() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private AssetModels.Product findAssetProduct(String productId) {
+        try {
+            List<AssetModels.Product> products = new AssetJsonLoader(this)
+                    .readList(AssetFiles.PRODUCTS, AssetModels.Product.class);
+            for (AssetModels.Product product : products) {
+                if (productId.equals(product.objectId) || productId.equals(product.sku)) {
+                    return product;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    @Nullable
+    private AssetModels.Blog findAssetBlog(String blogId) {
+        try {
+            List<AssetModels.Blog> blogs = new AssetJsonLoader(this)
+                    .readList(AssetFiles.BLOGS, AssetModels.Blog.class);
+            for (AssetModels.Blog blog : blogs) {
+                if (blogId.equals(blog.id) || blogId.equals(assetBlogId(blog))) {
+                    return blog;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    @Nullable
+    private RecipeAssetInfo findAssetRecipe(String favoriteId) {
+        try {
+            AssetJsonLoader loader = new AssetJsonLoader(this);
+            List<AssetModels.Instruction> instructions = loader.readList(AssetFiles.INSTRUCTIONS, AssetModels.Instruction.class);
+            List<AssetModels.Dish> dishes = loader.readList(AssetFiles.DISHES, AssetModels.Dish.class);
+
+            AssetModels.Instruction matchedInstruction = null;
+            for (AssetModels.Instruction instruction : instructions) {
+                String objectId = instruction.objectId == null ? "" : instruction.objectId.oid;
+                if (favoriteId.equals(instruction.id) || favoriteId.equals(objectId)) {
+                    matchedInstruction = instruction;
+                    break;
+                }
+            }
+            String dishId = matchedInstruction == null ? favoriteId : matchedInstruction.id;
+            AssetModels.Dish matchedDish = null;
+            for (AssetModels.Dish dish : dishes) {
+                if (dishId.equals(dish.id)) {
+                    matchedDish = dish;
+                    break;
+                }
+            }
+            if (matchedInstruction == null && matchedDish == null) {
+                return null;
+            }
+            RecipeAssetInfo info = new RecipeAssetInfo();
+            info.title = matchedInstruction == null ? "" : matchedInstruction.dishName;
+            info.cookingTime = matchedInstruction == null ? "" : matchedInstruction.cookingTime;
+            info.imageUrl = matchedInstruction == null ? "" : matchedInstruction.image;
+            info.ingredientCount = matchedDish == null ? 0 : countIngredients(matchedDish.ingredients);
+            return info;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String productSubtitle(long price, double carbonPoint, String fallback) {
+        String subtitle = price > 0 ? CurrencyFormatter.formatVnd(price) : firstNonBlank(fallback, "");
+        if (carbonPoint > 0) {
+            subtitle += " • " + formatNumber(carbonPoint) + " điểm carbon";
+        }
+        return subtitle;
+    }
+
+    private String recipeSubtitle(String cookingTime, int ingredientCount, String fallback) {
+        StringBuilder subtitle = new StringBuilder();
+        if (AssetScreenData.hasText(cookingTime)) {
+            subtitle.append(cookingTime.trim());
+        } else if (AssetScreenData.hasText(fallback)) {
+            String firstPart = fallback.split("•")[0].trim();
+            if (!firstPart.isEmpty()) subtitle.append(firstPart);
+        }
+        if (ingredientCount > 0) {
+            if (subtitle.length() > 0) subtitle.append(" • ");
+            subtitle.append(ingredientCount).append(" nguyên liệu");
+        }
+        return subtitle.length() == 0 ? fallback : subtitle.toString();
+    }
+
+    private int countIngredients(String ingredients) {
+        if (!AssetScreenData.hasText(ingredients)) {
+            return 0;
+        }
+        String normalized = ingredients
+                .replace("\r", "\n")
+                .replace(";", ",")
+                .replace("•", ",");
+        String[] parts = normalized.split(",|\\n");
+        int count = 0;
+        for (String part : parts) {
+            if (part != null && !part.trim().isEmpty()) count++;
+        }
+        return count;
     }
 
     @Nullable
@@ -240,54 +556,37 @@ public class FavoritesActivity extends BaseActivity {
         return images == null || images.isEmpty() ? null : images.get(0);
     }
 
-    @Nullable
-    private String blogId(AssetModels.Blog blog) {
+    private String assetBlogId(AssetModels.Blog blog) {
         JsonElement objectId = blog.objectId;
         if (objectId != null && objectId.isJsonPrimitive()) {
             return objectId.getAsString();
         }
-        return blog.id;
+        return "";
     }
 
-    private String firstSentence(@Nullable String value) {
-        if (!AssetScreenData.hasText(value)) {
-            return "";
-        }
-        int end = value.indexOf('.');
-        String sentence = end > 0 ? value.substring(0, end + 1) : value;
-        return sentence.length() > 80 ? sentence.substring(0, 77) + "..." : sentence;
+    private String firstNonBlank(String first, String second) {
+        return AssetScreenData.hasText(first) ? first : (second == null ? "" : second);
     }
 
-    private <T> List<T> limit(List<T> source) {
-        if (source.size() <= MAX_SECTION_ITEMS) {
-            return source;
-        }
-        return new ArrayList<>(source.subList(0, MAX_SECTION_ITEMS));
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 
-    private static final class FavoriteSnapshot {
-        final List<AssetModels.Product> products;
-        final List<AssetModels.Blog> blogs;
-        final List<FavoriteDish> dishes;
-
-        FavoriteSnapshot(
-                List<AssetModels.Product> products,
-                List<AssetModels.Blog> blogs,
-                List<FavoriteDish> dishes
-        ) {
-            this.products = products;
-            this.blogs = blogs;
-            this.dishes = dishes;
+    private String formatNumber(double value) {
+        if (value == Math.rint(value)) {
+            return String.format(Locale.US, "%.0f", value);
         }
+        return String.format(Locale.US, "%.1f", value);
     }
 
-    private static final class FavoriteDish {
-        final AssetModels.Dish dish;
-        final AssetModels.Instruction instruction;
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
 
-        FavoriteDish(AssetModels.Dish dish, AssetModels.Instruction instruction) {
-            this.dish = dish;
-            this.instruction = instruction;
-        }
+    private static final class RecipeAssetInfo {
+        String title;
+        String cookingTime;
+        String imageUrl;
+        int ingredientCount;
     }
 }

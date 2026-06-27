@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
-import { ApiService } from '../services/api.service';
 
 interface Consultation {
   _id: string;
@@ -35,8 +34,8 @@ interface Question {
 })
 export class ConsultationManage implements OnInit, OnDestroy {
   private http = inject(HttpClient);
-  private apiService = inject(ApiService);
   private router = inject(Router);
+  private closeFilterDropdownHandler = () => this.closeFilterDropdown();
 
   consultations: Consultation[] = [];
   allConsultations: Consultation[] = [];
@@ -67,13 +66,11 @@ export class ConsultationManage implements OnInit, OnDestroy {
     this.loadConsultations();
     
     // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-      this.closeFilterDropdown();
-    });
+    document.addEventListener('click', this.closeFilterDropdownHandler);
   }
 
   ngOnDestroy(): void {
-    // Cleanup if needed
+    document.removeEventListener('click', this.closeFilterDropdownHandler);
   }
 
   loadConsultations(): void {
@@ -81,8 +78,9 @@ export class ConsultationManage implements OnInit, OnDestroy {
     
     this.http.get<any>(`${environment.apiUrl}/consultations`).subscribe({
       next: (response: any) => {
-        if (response.success && response.data) {
-          this.allConsultations = response.data;
+        const consultations = this.unwrapConsultationsResponse(response);
+        if (consultations) {
+          this.allConsultations = consultations;
           this.applyFilters();
           this.updateStatistics();
         } else {
@@ -96,6 +94,18 @@ export class ConsultationManage implements OnInit, OnDestroy {
         this.allConsultations = [];
       }
     });
+  }
+
+  private unwrapConsultationsResponse(response: any): Consultation[] | null {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    return null;
   }
 
   applyFilters(): void {

@@ -17,6 +17,8 @@ import androidx.fragment.app.FragmentManager;
 
 import com.veggo.app.core.ui.BottomNavController;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.data.remote.dto.OrderNotificationDto;
+import com.veggo.app.data.repository.OrderNotificationRepository;
 import com.veggo.app.databinding.ActivityMainBinding;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
 import com.veggo.app.presentation.cart.CartFragment;
@@ -30,12 +32,23 @@ import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
+    public static final String EXTRA_SCROLL_HOME_PRODUCTS = "extra_scroll_home_products";
 
     private ActivityMainBinding binding;
     private ComponentBottomNavBinding bottomNavBinding;
     private Tab currentTab;
     private android.net.Uri cameraImageUri = null;
     private boolean isScanReceiptMode = true;
+    private View currentNotificationAlert;
+    private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
+    private final android.os.Handler notificationHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable notificationPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshGlobalNotificationAlert(true);
+            notificationHandler.postDelayed(this, 30000);
+        }
+    };
 
     private final androidx.activity.result.ActivityResultLauncher<String> notificationPermLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
@@ -89,6 +102,11 @@ public class MainActivity extends AppCompatActivity {
         bottomNavBinding.navScanButton.setOnClickListener(view -> {
             openScanScreen();
         });
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                setBottomNavVisible(true);
+            }
+        });
 
         // Seed database from JSON assets if needed
         com.veggo.app.core.database.AssetDatabaseSeeder.seedIfNeeded(this);
@@ -107,9 +125,25 @@ public class MainActivity extends AppCompatActivity {
                 openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
             } else {
                 boolean fromExternal = intent.getBooleanExtra("from_external", false);
-                openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)), fromExternal);
+                openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
+                        fromExternal,
+                        intent.getBooleanExtra(EXTRA_SCROLL_HOME_PRODUCTS, false));
             }
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        notificationHandler.removeCallbacks(notificationPollRunnable);
+        refreshGlobalNotificationAlert(true);
+        notificationHandler.postDelayed(notificationPollRunnable, 30000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        notificationHandler.removeCallbacks(notificationPollRunnable);
     }
 
     @Override
@@ -120,7 +154,9 @@ public class MainActivity extends AppCompatActivity {
             openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
         } else {
             boolean fromExternal = intent.getBooleanExtra("from_external", false);
-            openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)), fromExternal);
+            openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
+                    fromExternal,
+                    intent.getBooleanExtra(EXTRA_SCROLL_HOME_PRODUCTS, false));
         }
     }
 
@@ -148,16 +184,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openTab(Tab tab, boolean fromExternal) {
+        openTab(tab, fromExternal, false);
+    }
+
+    private void openTab(Tab tab, boolean fromExternal, boolean scrollHomeProducts) {
         setBottomNavVisible(true);
 
         boolean isAlreadyInHome = (currentTab == Tab.HOME);
         
         if (tab == Tab.HOME && isAlreadyInHome) {
+            Fragment currentFragment = getVisibleMainFragment();
+            if (!(currentFragment instanceof HomeFragment)) {
+                getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+                setSelectedTab(Tab.HOME);
+                return;
+            }
             if (!fromExternal) {
-                Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("HOME_FRAGMENT");
-                if (currentFragment instanceof HomeFragment) {
-                    ((HomeFragment) currentFragment).onHomeButtonPressed();
-                }
+                ((HomeFragment) currentFragment).onHomeButtonPressed();
+            }
+            if (scrollHomeProducts) {
+                ((HomeFragment) currentFragment).scrollToProductsSection();
             }
             return;
         }
@@ -219,14 +265,36 @@ public class MainActivity extends AppCompatActivity {
                 targetFragment = fm.findFragmentByTag(tag);
                 if (targetFragment == null) {
                     targetFragment = new HomeFragment();
+                    if (scrollHomeProducts) {
+                        Bundle args = new Bundle();
+                        args.putBoolean(EXTRA_SCROLL_HOME_PRODUCTS, true);
+                        targetFragment.setArguments(args);
+                    }
                     ft.add(R.id.mainFragmentContainer, targetFragment, tag);
                 } else {
                     ft.show(targetFragment);
+                    if (scrollHomeProducts && targetFragment instanceof HomeFragment) {
+                        fm.executePendingTransactions();
+                        ((HomeFragment) targetFragment).scrollToProductsSection();
+                    }
                 }
                 break;
         }
 
         ft.commit();
+        if (scrollHomeProducts && targetFragment instanceof HomeFragment) {
+            fm.executePendingTransactions();
+            ((HomeFragment) targetFragment).scrollToProductsSection();
+        }
+    }
+
+    private Fragment getVisibleMainFragment() {
+        for (Fragment fragment : getSupportFragmentManager().getFragments()) {
+            if (fragment != null && fragment.getId() == R.id.mainFragmentContainer && fragment.isVisible()) {
+                return fragment;
+            }
+        }
+        return null;
     }
 
     public void openCartScreen() {
@@ -239,7 +307,15 @@ public class MainActivity extends AppCompatActivity {
                 ft.hide(f);
             }
         }
-        ft.add(R.id.mainFragmentContainer, new CartFragment())
+        CartFragment cartFragment = new CartFragment();
+        java.util.ArrayList<String> selectedSkus = getIntent().getStringArrayListExtra(CartFragment.ARG_SELECTED_SKUS);
+        if (selectedSkus != null && !selectedSkus.isEmpty()) {
+            Bundle args = new Bundle();
+            args.putStringArrayList(CartFragment.ARG_SELECTED_SKUS, selectedSkus);
+            cartFragment.setArguments(args);
+            getIntent().removeExtra(CartFragment.ARG_SELECTED_SKUS);
+        }
+        ft.add(R.id.mainFragmentContainer, cartFragment)
                 .addToBackStack("cart")
                 .commit();
     }
@@ -295,6 +371,157 @@ public class MainActivity extends AppCompatActivity {
 
     public void openNotificationsScreen() {
         startActivity(new Intent(this, PostNotificationsActivity.class));
+    }
+
+    public void showTopNotificationAlert(String title, String body) {
+        if (binding == null) {
+            return;
+        }
+        if (currentNotificationAlert != null) {
+            binding.main.removeView(currentNotificationAlert);
+            currentNotificationAlert = null;
+        }
+
+        android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+        card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        card.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(14), dp(12), dp(14), dp(12));
+        card.setBackgroundResource(R.drawable.bg_post_notification_featured_card);
+        card.setElevation(dp(8));
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setOnClickListener(v -> openNotificationsScreen());
+
+        android.widget.ImageView icon = new android.widget.ImageView(this);
+        icon.setImageResource(R.drawable.ic_notify);
+        icon.setColorFilter(ContextCompat.getColor(this, R.color.primary_hover));
+        android.widget.LinearLayout.LayoutParams iconParams =
+                new android.widget.LinearLayout.LayoutParams(dp(26), dp(26));
+        card.addView(icon, iconParams);
+
+        android.widget.LinearLayout textColumn = new android.widget.LinearLayout(this);
+        textColumn.setOrientation(android.widget.LinearLayout.VERTICAL);
+        android.widget.LinearLayout.LayoutParams textParams =
+                new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        textParams.setMarginStart(dp(12));
+
+        android.widget.TextView titleView = new android.widget.TextView(this);
+        titleView.setText(title == null || title.trim().isEmpty() ? "Thông báo mới" : title);
+        titleView.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+        titleView.setTextSize(14);
+        titleView.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        titleView.setMaxLines(1);
+        titleView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        textColumn.addView(titleView);
+
+        android.widget.TextView bodyView = new android.widget.TextView(this);
+        bodyView.setText(body == null ? "" : body);
+        bodyView.setTextColor(ContextCompat.getColor(this, R.color.neutral_70));
+        bodyView.setTextSize(13);
+        bodyView.setMaxLines(2);
+        bodyView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        textColumn.addView(bodyView);
+        card.addView(textColumn, textParams);
+
+        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params =
+                new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                        0,
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                );
+        params.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.setMargins(dp(16), getStatusBarHeight() + dp(8), dp(16), 0);
+        binding.main.addView(card, params);
+        currentNotificationAlert = card;
+
+        card.post(() -> {
+            card.setTranslationY(-card.getHeight() - dp(24));
+            card.animate().translationY(0).setDuration(260).start();
+            card.postDelayed(() -> {
+                if (currentNotificationAlert == card) {
+                    card.animate()
+                            .translationY(-card.getHeight() - dp(24))
+                            .alpha(0f)
+                            .setDuration(220)
+                            .withEndAction(() -> {
+                                if (currentNotificationAlert == card) {
+                                    binding.main.removeView(card);
+                                    currentNotificationAlert = null;
+                                }
+                            })
+                            .start();
+                }
+            }, 4500);
+        });
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private int getStatusBarHeight() {
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            return getResources().getDimensionPixelSize(resourceId);
+        }
+        return dp(24);
+    }
+
+    private void refreshGlobalNotificationAlert(boolean allowAlert) {
+        String customerId = new AppPreferences(this).getCustomerId();
+        if (customerId == null || customerId.trim().isEmpty()) {
+            updateHomeNotificationBadge(0);
+            return;
+        }
+        orderNotificationRepository.getNotifications(customerId, notifications -> runOnUiThread(() -> {
+            updateHomeNotificationBadge(OrderNotificationRepository.countUnread(notifications));
+            if (allowAlert) {
+                maybeShowNewNotificationAlert(notifications);
+            }
+        }));
+    }
+
+    private void maybeShowNewNotificationAlert(java.util.List<OrderNotificationDto> notifications) {
+        OrderNotificationDto latestUnread = OrderNotificationRepository.latestUnread(notifications);
+        if (latestUnread == null) {
+            return;
+        }
+
+        String latestId = latestUnread.getId();
+        if (latestId.trim().isEmpty()) {
+            latestId = latestUnread.getCreatedAtText();
+        }
+        if (latestId.trim().isEmpty()) {
+            return;
+        }
+
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("order_notification_state", android.content.Context.MODE_PRIVATE);
+        String lastSeenId = prefs.getString("last_seen_order_notification_id", "");
+        if (lastSeenId == null || lastSeenId.isEmpty()) {
+            prefs.edit().putString("last_seen_order_notification_id", latestId).apply();
+            return;
+        }
+        if (latestId.equals(lastSeenId)) {
+            return;
+        }
+
+        prefs.edit().putString("last_seen_order_notification_id", latestId).apply();
+        String title = firstNonBlank(latestUnread.getTitle(), "Thông báo mới");
+        String body = firstNonBlank(latestUnread.getBody(), "");
+        showTopNotificationAlert(title, body);
+    }
+
+    private void updateHomeNotificationBadge(int count) {
+        Fragment fragment = getVisibleMainFragment();
+        if (fragment instanceof HomeFragment) {
+            ((HomeFragment) fragment).updateNotificationBadgesFromMain(count);
+        }
+    }
+
+    private String firstNonBlank(String value, String fallback) {
+        return value == null || value.trim().isEmpty() ? fallback : value;
     }
 
     public void openScanScreen() {

@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_medium"
         android:gravity="center"
-        android:text="Chọn kiểu thanh toán"
+        android:text="Bạn muốn đặt hàng bằng vai trò nào?"
         android:textColor="#1E1E1E"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -24,7 +24,7 @@
         android:background="@drawable/bg_button_primary"
         android:fontFamily="@font/inter_semibold"
         android:gravity="center"
-        android:text="Checkout"
+        android:text="Mua hàng bằng tài khoản VEGGO"
         android:textColor="#FFFFFF"
         android:textSize="14sp" />
 
@@ -36,7 +36,7 @@
         android:background="@drawable/bg_normal"
         android:fontFamily="@font/inter_semibold"
         android:gravity="center"
-        android:text="Checkout Guest"
+        android:text="Tiếp tục với vai trò khách"
         android:textColor="#1E1E1E"
         android:textSize="14sp" />
 </LinearLayout>

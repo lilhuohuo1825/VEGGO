@@ -1,9 +1,12 @@
 package com.veggo.app.presentation.product;
 
 import android.os.Bundle;
+import android.graphics.Typeface;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RatingBar;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.lifecycle.ViewModelProvider;
@@ -13,23 +16,45 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.veggo.app.R;
+import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.core.network.ApiHttpException;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.ConsultationRepository;
+import com.veggo.app.presentation.auth.LoginActivity;
+import com.veggo.app.presentation.checkout.CheckoutActivity;
+import com.veggo.app.presentation.checkout.CheckoutGuestActivity;
+import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ProductDetailActivity extends BaseActivity {
 
     public static final String EXTRA_PRODUCT_ID = "extra_product_id";
+    public static final String EXTRA_OPEN_ADD_TO_CART = "extra_open_add_to_cart";
+    public static final String EXTRA_FLASH_SALE_PRICE = "extra_flash_sale_price";
+    public static final String EXTRA_FLASH_SALE_ORIGINAL_PRICE = "extra_flash_sale_original_price";
+    public static final String EXTRA_FLASH_SALE_DISCOUNT_LABEL = "extra_flash_sale_discount_label";
 
     private ProductViewModel viewModel;
+    private long flashSalePrice;
+    private long flashSaleOriginalPrice;
+    private String flashSaleDiscountLabel;
     
     private ImageView ivProductImage;
     private TextView tvProductName;
@@ -39,12 +64,16 @@ public class ProductDetailActivity extends BaseActivity {
     private TextView tvPrice;
     private TextView tvOriginalPrice;
     private View tvDiscountBadge;
-    private TextView tvDescription;
+    private TableLayout tblDescription;
     private TextView tvShowMoreDesc;
     private View llRelatedRecipes;
     private View llSustainability;
     private TextView tvEmissionFactor;
     private TextView tvCarbonSavingPoint;
+    private View btnCartContainer;
+    private TextView tvProductCartBadge;
+    private ImageView ivFavorite;
+    private FavoriteStore favoriteStore;
 
     // Rating summary views
     private TextView tvAverageRatingSummary;
@@ -61,6 +90,9 @@ public class ProductDetailActivity extends BaseActivity {
     private com.veggo.app.adapter.RelatedProductAdapter relatedAdapter;
     private androidx.recyclerview.widget.RecyclerView rvRelatedProducts;
     private com.veggo.app.adapter.RecipeAdapter recipeAdapter;
+    private final List<TableRow> descriptionRows = new ArrayList<>();
+    private boolean descriptionExpanded = false;
+    private boolean openAddToCartPending;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +101,13 @@ public class ProductDetailActivity extends BaseActivity {
 
         initViews();
         setupViewModel();
+        favoriteStore = new FavoriteStore(this);
         observeViewModel();
+        refreshCartBadge(false);
+        openAddToCartPending = getIntent().getBooleanExtra(EXTRA_OPEN_ADD_TO_CART, false);
+        flashSalePrice = getIntent().getLongExtra(EXTRA_FLASH_SALE_PRICE, 0);
+        flashSaleOriginalPrice = getIntent().getLongExtra(EXTRA_FLASH_SALE_ORIGINAL_PRICE, 0);
+        flashSaleDiscountLabel = getIntent().getStringExtra(EXTRA_FLASH_SALE_DISCOUNT_LABEL);
         
         // Uncomment dòng dưới nếu bạn muốn nạp lại dữ liệu JSON vào Database (chỉ cần chạy 1 lần)
         // com.veggo.app.core.database.AssetDatabaseSeeder.reseed(this);
@@ -87,6 +125,10 @@ public class ProductDetailActivity extends BaseActivity {
                 viewModel.triggerReviewFetch(product);
                 viewModel.triggerConsultationFetch(product);
                 viewModel.triggerRelatedRecipesFetch(product);
+                if (openAddToCartPending) {
+                    openAddToCartPending = false;
+                    showAddToCartPopup(product, false);
+                }
             }
         });
 
@@ -126,6 +168,7 @@ public class ProductDetailActivity extends BaseActivity {
         viewModel.getAddToCartSuccess().observe(this, success -> {
             if (success) {
                 android.widget.Toast.makeText(this, R.string.add_to_cart_success, android.widget.Toast.LENGTH_SHORT).show();
+                refreshCartBadge(true);
                 viewModel.resetAddToCartStatus();
             }
         });
@@ -169,7 +212,13 @@ public class ProductDetailActivity extends BaseActivity {
             return;
         }
 
-        viewModel.submitQuestion(product.getSku(), questionText, null, product.getName(),
+        AppPreferences appPreferences = new AppPreferences(this);
+        viewModel.submitQuestion(
+                product.getSku(),
+                questionText,
+                appPreferences.getCustomerId(),
+                appPreferences.getFullName(),
+                product.getName(),
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
                     public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
@@ -220,12 +269,30 @@ public class ProductDetailActivity extends BaseActivity {
     private void updateRatingSummary(java.util.List<com.veggo.app.domain.model.Review> reviews) {
         View ratingSummary = findViewById(R.id.llRatingSummary);
         if (reviews == null || reviews.isEmpty()) {
-            if (ratingSummary != null) ratingSummary.setVisibility(View.GONE);
-            // Even if reviews are empty, we might want to show 0.0 (0) if the product exists
-            Product currentProduct = viewModel.getProduct().getValue();
-            if (currentProduct != null && tvRating != null) {
-                tvRating.setText(String.format(new Locale("vi", "VN"), "%.1f (0)", 0.0));
+            Product product = viewModel != null ? viewModel.getProduct().getValue() : null;
+            float rating = product != null ? product.getRating() : 0f;
+            int reviewCount = product != null ? product.getReviewCount() : 0;
+            Locale vnLocale = new Locale("vi", "VN");
+            if (ratingSummary != null) {
+                ratingSummary.setVisibility(reviewCount > 0 ? View.VISIBLE : View.GONE);
             }
+            if (tvRating != null) {
+                tvRating.setText(String.format(vnLocale, "%.1f (%d)", rating, reviewCount));
+            }
+            if (tvAverageRatingSummary != null) {
+                tvAverageRatingSummary.setText(String.format(vnLocale, "%.1f", rating));
+            }
+            if (rbAverageRatingSummary != null) {
+                rbAverageRatingSummary.setRating(rating);
+            }
+            if (tvTotalRatingsSummary != null) {
+                tvTotalRatingsSummary.setText(getString(R.string.reviews_count_format, reviewCount));
+            }
+            updateStarRow(R.id.progress5Star, R.id.tvCount5Star, 0, 0);
+            updateStarRow(R.id.progress4Star, R.id.tvCount4Star, 0, 0);
+            updateStarRow(R.id.progress3Star, R.id.tvCount3Star, 0, 0);
+            updateStarRow(R.id.progress2Star, R.id.tvCount2Star, 0, 0);
+            updateStarRow(R.id.progress1Star, R.id.tvCount1Star, 0, 0);
             return;
         }
         if (ratingSummary != null) ratingSummary.setVisibility(View.VISIBLE);
@@ -282,9 +349,9 @@ public class ProductDetailActivity extends BaseActivity {
             adapter = new com.veggo.app.adapter.ReviewAdapter();
             rvReviews.setAdapter(adapter);
         }
-        // Chỉ hiển thị tối đa 1 review trên trang chi tiết sản phẩm
         if (reviews != null && !reviews.isEmpty()) {
-            adapter.setReviews(reviews.subList(0, 1));
+            int previewCount = Math.min(2, reviews.size());
+            adapter.setReviews(new java.util.ArrayList<>(reviews.subList(0, previewCount)));
             rvReviews.setVisibility(View.VISIBLE);
         } else {
             rvReviews.setVisibility(View.GONE);
@@ -297,9 +364,9 @@ public class ProductDetailActivity extends BaseActivity {
             recipeAdapter = new com.veggo.app.adapter.RecipeAdapter();
             recipeAdapter.setOnRecipeClickListener(recipe -> {
                 android.content.Intent intent = new android.content.Intent(
-                        this, com.veggo.app.presentation.community.CommunityRecipeDetailActivity.class);
+                        this, com.veggo.app.presentation.community.InstructionRecipeDetailActivity.class);
                 intent.putExtra(
-                        com.veggo.app.presentation.community.CommunityRecipeDetailActivity.EXTRA_INSTRUCTION_ID,
+                        com.veggo.app.presentation.community.InstructionRecipeDetailActivity.EXTRA_INSTRUCTION_ID,
                         recipe.getId());
                 startActivity(intent);
             });
@@ -319,7 +386,7 @@ public class ProductDetailActivity extends BaseActivity {
         tvPrice = findViewById(R.id.tvPrice);
         tvOriginalPrice = findViewById(R.id.tvOriginalPrice);
         tvDiscountBadge = findViewById(R.id.tvDiscountBadge);
-        tvDescription = findViewById(R.id.tvDescription);
+        tblDescription = findViewById(R.id.tblDescription);
         tvShowMoreDesc = findViewById(R.id.tvShowMoreDesc);
         llRelatedRecipes = findViewById(R.id.llRelatedRecipes);
 
@@ -334,6 +401,8 @@ public class ProductDetailActivity extends BaseActivity {
         edtQuestion = findViewById(R.id.edtQuestion);
         btnSendQuestion = findViewById(R.id.btnSendQuestion);
         progressSendQuestion = findViewById(R.id.progressSendQuestion);
+        btnCartContainer = findViewById(R.id.btnCartContainer);
+        tvProductCartBadge = findViewById(R.id.tvProductCartBadge);
         if (btnSendQuestion != null) {
             btnSendQuestion.setOnClickListener(v -> submitConsultationQuestion());
         }
@@ -344,7 +413,10 @@ public class ProductDetailActivity extends BaseActivity {
         rvRelatedProducts.setAdapter(relatedAdapter);
         // default add action
         relatedAdapter.setOnAddClickListener(product -> {
-            android.widget.Toast.makeText(this, "Đã thêm " + product.getName() + " vào giỏ hàng", android.widget.Toast.LENGTH_SHORT).show();
+            android.content.Intent intent = new android.content.Intent(this, ProductDetailActivity.class);
+            intent.putExtra(EXTRA_PRODUCT_ID, product.getId());
+            intent.putExtra(EXTRA_OPEN_ADD_TO_CART, true);
+            startActivity(intent);
         });
 
         relatedAdapter.setOnProductClickListener(product -> {
@@ -365,16 +437,20 @@ public class ProductDetailActivity extends BaseActivity {
             intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
         });
+
+        View shareButton = findViewById(R.id.ivShare);
+        if (shareButton != null) {
+            shareButton.setOnClickListener(v -> shareCurrentProduct());
+        }
+        ivFavorite = findViewById(R.id.ivFavorite);
+        if (ivFavorite != null) {
+            ivFavorite.setOnClickListener(v -> toggleCurrentProductFavorite());
+        }
         
         // "Show more" for description
         tvShowMoreDesc.setOnClickListener(v -> {
-            if (tvDescription.getMaxLines() == 3) {
-                tvDescription.setMaxLines(Integer.MAX_VALUE);
-                tvShowMoreDesc.setText(R.string.show_less);
-            } else {
-                tvDescription.setMaxLines(3);
-                tvShowMoreDesc.setText(R.string.show_more);
-            }
+            descriptionExpanded = !descriptionExpanded;
+            applyDescriptionExpansion();
         });
 
         // "Show more" for reviews
@@ -406,17 +482,74 @@ public class ProductDetailActivity extends BaseActivity {
         findViewById(R.id.btnAddToCart).setOnClickListener(v -> {
             Product currentProduct = viewModel.getProduct().getValue();
             if (currentProduct != null) {
-                showAddToCartPopup(currentProduct);
+                showAddToCartPopup(currentProduct, false);
             }
         });
 
         // Buy now
         findViewById(R.id.btnBuyNow).setOnClickListener(v -> {
-            android.widget.Toast.makeText(this, "Chuyển đến màn hình thanh toán", android.widget.Toast.LENGTH_SHORT).show();
+            Product currentProduct = viewModel.getProduct().getValue();
+            if (currentProduct != null) {
+                showAddToCartPopup(currentProduct, true);
+            }
         });
     }
 
-    private void showAddToCartPopup(Product product) {
+    private void shareCurrentProduct() {
+        Product product = viewModel != null ? viewModel.getProduct().getValue() : null;
+        if (product == null) {
+            return;
+        }
+        android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, product.getName());
+        startActivity(android.content.Intent.createChooser(shareIntent, "Chia sẻ sản phẩm"));
+    }
+
+    private void toggleCurrentProductFavorite() {
+        Product product = viewModel != null ? viewModel.getProduct().getValue() : null;
+        if (product == null || product.getId() == null) {
+            return;
+        }
+        boolean selected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
+                FavoriteStore.TYPE_PRODUCT,
+                product.getId(),
+                product.getName(),
+                favoriteProductSubtitle(product),
+                product.getImageUrl()
+        ));
+        renderProductFavorite(selected);
+        android.widget.Toast.makeText(this,
+                selected ? "Đã thêm vào yêu thích" : "Đã xoá khỏi yêu thích",
+                android.widget.Toast.LENGTH_SHORT).show();
+    }
+
+    private void renderProductFavorite(boolean selected) {
+        if (ivFavorite == null) {
+            return;
+        }
+        ivFavorite.setImageResource(selected
+                ? R.drawable.ic_profile_menu_heart_filled
+                : R.drawable.ic_heart_outline_green);
+    }
+
+    private String favoriteProductSubtitle(Product product) {
+        String subtitle = CurrencyFormatter.formatVnd(product.getPrice());
+        double carbonPoint = product.getCarbonSavingPoint();
+        if (carbonPoint > 0) {
+            subtitle += " • " + formatCarbonPoint(carbonPoint) + " điểm carbon";
+        }
+        return subtitle;
+    }
+
+    private String formatCarbonPoint(double value) {
+        if (value == Math.rint(value)) {
+            return String.format(Locale.US, "%.0f", value);
+        }
+        return String.format(Locale.US, "%.1f", value);
+    }
+
+    private void showAddToCartPopup(Product product, boolean buyNow) {
         com.google.android.material.bottomsheet.BottomSheetDialog bottomSheetDialog = 
                 new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
         View view = getLayoutInflater().inflate(R.layout.layout_add_to_cart_bottom_sheet, null);
@@ -425,36 +558,52 @@ public class ProductDetailActivity extends BaseActivity {
         ImageView ivThumb = view.findViewById(R.id.ivProductThumb);
         TextView tvName = view.findViewById(R.id.tvProductNamePopup);
         TextView tvPrice = view.findViewById(R.id.tvPricePopup);
+        TextView tvOriginalPrice = view.findViewById(R.id.tvOriginalPricePopup);
+        TextView tvPriceUnit = view.findViewById(R.id.tvPriceUnitPopup);
         TextView tvQuantity = view.findViewById(R.id.tvQuantityPopup);
         TextView tvTotal = view.findViewById(R.id.tvTotalPopup);
         View btnDecrease = view.findViewById(R.id.tvDecrease);
         View btnIncrease = view.findViewById(R.id.tvIncrease);
         View btnConfirm = view.findViewById(R.id.btnConfirmAddToCart);
         View btnClose = view.findViewById(R.id.btnClose);
+        TextView tvWeightTitle = view.findViewById(R.id.tvWeightTitle);
         ChipGroup weightGroup = view.findViewById(R.id.cgWeight);
+        TextView btnConfirmText = view.findViewById(R.id.btnConfirmAddToCart);
 
         // Bind data
         Glide.with(this).load(product.getImageUrl()).into(ivThumb);
         tvName.setText(product.getName());
-        tvPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
-        tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice()));
+        long displayPrice = effectivePrice(product);
+        long displayOriginalPrice = effectiveOriginalPrice(product);
+        tvPrice.setText(CurrencyFormatter.formatVnd(displayPrice));
+        bindPopupOriginalPrice(tvOriginalPrice, displayOriginalPrice, displayPrice);
+        if (btnConfirmText != null) {
+            btnConfirmText.setText(buyNow ? "Mua ngay" : "Thêm vào giỏ");
+        }
 
         final int[] quantity = {1};
         final double[] selectedWeight = {1.0};
-        bindWeightOptions(weightGroup, product.getWeightOptions(), selectedWeight);
+        boolean hasWeightOptions = hasWeightOptions(product);
+        if (tvPriceUnit != null) {
+            tvPriceUnit.setVisibility(hasWeightOptions ? View.VISIBLE : View.GONE);
+            tvPriceUnit.setText("/ kg");
+        }
+        bindWeightOptions(tvWeightTitle, weightGroup, product.getWeightOptions(), selectedWeight, () ->
+                updateAddToCartTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions));
+        updateAddToCartTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
         
         btnDecrease.setOnClickListener(v -> {
             if (quantity[0] > 1) {
                 quantity[0]--;
                 tvQuantity.setText(String.valueOf(quantity[0]));
-                tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice() * quantity[0]));
+                updateAddToCartTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
             }
         });
 
         btnIncrease.setOnClickListener(v -> {
             quantity[0]++;
             tvQuantity.setText(String.valueOf(quantity[0]));
-            tvTotal.setText(CurrencyFormatter.formatVnd(product.getPrice() * quantity[0]));
+            updateAddToCartTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
         });
 
         btnClose.setOnClickListener(v -> bottomSheetDialog.dismiss());
@@ -466,12 +615,141 @@ public class ProductDetailActivity extends BaseActivity {
                 return;
             }
 
-            String customerId = resolveCustomerId();
-            viewModel.addToCart(customerId, sku, quantity[0], selectedWeight[0]);
+            if (buyNow) {
+                openCheckoutForBuyNow(product, sku, quantity[0], selectedWeight[0], hasWeightOptions);
+            } else {
+                String customerId = resolveCustomerId();
+                viewModel.addToCart(customerId, sku, quantity[0], selectedWeight[0]);
+            }
             bottomSheetDialog.dismiss();
         });
 
         bottomSheetDialog.show();
+    }
+
+    private void bindPopupOriginalPrice(TextView originalPriceView, long originalPrice, long salePrice) {
+        if (originalPriceView == null) {
+            return;
+        }
+        if (originalPrice > salePrice && salePrice > 0) {
+            originalPriceView.setVisibility(View.VISIBLE);
+            originalPriceView.setText(CurrencyFormatter.formatVnd(originalPrice));
+            originalPriceView.setPaintFlags(originalPriceView.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+        } else {
+            originalPriceView.setVisibility(View.GONE);
+        }
+    }
+
+    private void openCheckoutForBuyNow(Product product, String sku, int quantity, double selectedWeight, boolean hasWeightOptions) {
+        android.content.Intent intent = buildBuyNowIntent(CheckoutActivity.class, product, sku, quantity, selectedWeight, hasWeightOptions);
+        if (new AppPreferences(this).isLoggedIn()) {
+            startActivity(intent);
+            return;
+        }
+        showBuyNowRoleDialog(intent, product, sku, quantity, selectedWeight, hasWeightOptions);
+    }
+
+    private android.content.Intent buildBuyNowIntent(Class<?> target, Product product, String sku, int quantity,
+                                                     double selectedWeight, boolean hasWeightOptions) {
+        android.content.Intent intent = new android.content.Intent(this, target);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW, true);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_PRODUCT_ID, product.getId());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_SKU, sku);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_NAME, product.getName());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_PRICE, effectivePrice(product));
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_ORIGINAL_PRICE, effectiveOriginalPrice(product));
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_IMAGE, product.getImageUrl());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_WEIGHT, product.getWeight());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_SELECTED_WEIGHT, selectedWeight);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_HAS_WEIGHT_OPTIONS, hasWeightOptions);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_QUANTITY, quantity);
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_CATEGORY_ID, product.getCategoryId());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_SUBCATEGORY_ID, product.getSubcategoryId());
+        intent.putExtra(CheckoutActivity.EXTRA_BUY_NOW_CARBON_POINT, product.getCarbonSavingPoint());
+        return intent;
+    }
+
+    private void showBuyNowRoleDialog(android.content.Intent accountIntent, Product product, String sku, int quantity,
+                                      double selectedWeight, boolean hasWeightOptions) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_checkout_type, null, false);
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(dialogView);
+        dialogView.findViewById(R.id.btnOpenCheckout).setOnClickListener(v -> {
+            new PendingCheckoutStore(this).saveBuyNowIntent(accountIntent);
+            dialog.dismiss();
+            startActivity(new android.content.Intent(this, LoginActivity.class));
+        });
+        dialogView.findViewById(R.id.btnOpenCheckoutGuest).setOnClickListener(v -> {
+            dialog.dismiss();
+            startActivity(buildBuyNowIntent(CheckoutGuestActivity.class, product, sku, quantity, selectedWeight, hasWeightOptions));
+        });
+        dialog.show();
+    }
+
+    private void refreshCartBadge(boolean animate) {
+        String customerId = resolveCustomerId();
+        AppModule.provideCartRepository(this).getCart(customerId).enqueue(new Callback<CartDto>() {
+            @Override
+            public void onResponse(Call<CartDto> call, Response<CartDto> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int count = countCartItems(response.body());
+                    runOnUiThread(() -> {
+                        updateProductCartBadge(count);
+                        if (animate) {
+                            playCartBounce();
+                        }
+                    });
+                } else if (animate) {
+                    runOnUiThread(ProductDetailActivity.this::playCartBounce);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CartDto> call, Throwable t) {
+                if (animate) {
+                    runOnUiThread(ProductDetailActivity.this::playCartBounce);
+                }
+            }
+        });
+    }
+
+    private int countCartItems(CartDto cartDto) {
+        if (cartDto == null || cartDto.getItems() == null) {
+            return 0;
+        }
+        int count = 0;
+        for (CartDto.CartItemDto item : cartDto.getItems()) {
+            count += Math.max(0, item.getQuantity());
+        }
+        return count;
+    }
+
+    private void updateProductCartBadge(int count) {
+        if (tvProductCartBadge == null) {
+            return;
+        }
+        tvProductCartBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+        tvProductCartBadge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void playCartBounce() {
+        View target = btnCartContainer != null ? btnCartContainer : findViewById(R.id.btnCart);
+        if (target == null) {
+            return;
+        }
+        target.animate().cancel();
+        target.setScaleX(1f);
+        target.setScaleY(1f);
+        target.animate()
+                .scaleX(1.22f)
+                .scaleY(1.22f)
+                .setDuration(120)
+                .withEndAction(() -> target.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(160)
+                        .start())
+                .start();
     }
 
     private void setupViewModel() {
@@ -490,21 +768,22 @@ public class ProductDetailActivity extends BaseActivity {
         tvProductName.setText(product.getName());
         tvWeight.setText(product.getWeight());
         
-        // Rating format: 4,5 (875) - Sử dụng Locale VN để hiển thị dấu phẩy thập phân
         Locale vnLocale = new Locale("vi", "VN");
         tvRating.setText(String.format(vnLocale, "%.1f (%d)", product.getRating(), product.getReviewCount()));
         
         tvSold.setText(getString(R.string.sold_count_format, product.getSoldCount()));
-        tvPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
+        long displayPrice = effectivePrice(product);
+        long displayOriginalPrice = effectiveOriginalPrice(product);
+        tvPrice.setText(CurrencyFormatter.formatVnd(displayPrice));
         
-        if (product.hasActiveDiscount()) {
+        if (displayOriginalPrice > displayPrice && displayPrice > 0) {
             tvOriginalPrice.setVisibility(View.VISIBLE);
-            tvOriginalPrice.setText(CurrencyFormatter.formatVnd(product.getOriginalPrice()));
+            tvOriginalPrice.setText(CurrencyFormatter.formatVnd(displayOriginalPrice));
             tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             if (tvDiscountBadge != null) {
                 tvDiscountBadge.setVisibility(View.VISIBLE);
                 if (tvDiscountBadge instanceof TextView) {
-                    ((TextView) tvDiscountBadge).setText(calculateDiscountPercentage(product));
+                    ((TextView) tvDiscountBadge).setText(effectiveDiscountLabel(product, displayPrice, displayOriginalPrice));
                 }
             }
         } else {
@@ -512,13 +791,192 @@ public class ProductDetailActivity extends BaseActivity {
             if (tvDiscountBadge != null) tvDiscountBadge.setVisibility(View.GONE);
         }
         
-        tvDescription.setText(product.getDescription());
+        bindDescriptionTable(product);
+        renderProductFavorite(favoriteStore != null
+                && favoriteStore.isFavorite(FavoriteStore.TYPE_PRODUCT, product.getId()));
+    }
+
+    private void bindDescriptionTable(Product product) {
+        if (tblDescription == null) {
+            return;
+        }
+
+        tblDescription.removeAllViews();
+        descriptionRows.clear();
+        descriptionExpanded = false;
+
+        Map<String, String> rows = buildDescriptionRows(product);
+        for (Map.Entry<String, String> row : rows.entrySet()) {
+            TableRow tableRow = createDescriptionRow(row.getKey(), row.getValue());
+            tblDescription.addView(tableRow);
+            descriptionRows.add(tableRow);
+        }
+
+        applyDescriptionExpansion();
+    }
+
+    private Map<String, String> buildDescriptionRows(Product product) {
+        LinkedHashMap<String, String> rows = new LinkedHashMap<>();
+        Map<String, String> parsed = parseDescriptionSections(product.getDescription());
+
+        putIfPresent(rows, "Thành phần", firstNonBlank(product.getIngredients(), parsed.get("Thành phần")));
+        putIfPresent(rows, "Cách dùng", firstNonBlank(product.getUsage(), parsed.get("Cách dùng"), product.getDescription()));
+        putIfPresent(rows, "Cách bảo quản", firstNonBlank(product.getStorage(), parsed.get("Cách bảo quản"), parsed.get("Bảo quản")));
+        putIfPresent(rows, "Lưu ý khi sử dụng", firstNonBlank(product.getSafetyWarning(), parsed.get("Lưu ý khi sử dụng"), parsed.get("Lưu ý")));
+        putIfPresent(rows, "Hãng", firstNonBlank(parsed.get("Hãng"), product.getFatContent()));
+        putIfPresent(rows, "Nơi sản xuất", firstNonBlank(parsed.get("Nơi sản xuất"), parsed.get("Nhà sản xuất"), product.getOrigin()));
+        putIfPresent(rows, "Nhà sản xuất", product.getProducer());
+        putIfPresent(rows, "Đơn vị chịu trách nhiệm", product.getResponsibleOrg());
+        putIfPresent(rows, "Ngày sản xuất", product.getManufactureDate());
+        putIfPresent(rows, "Hạn sử dụng", product.getExpiryDate());
+
+        if (rows.isEmpty()) {
+            putIfPresent(rows, "Mô tả", product.getDescription());
+        }
+        if (rows.isEmpty()) {
+            rows.put("Mô tả", "Chưa có mô tả chi tiết cho sản phẩm này.");
+        }
+        return rows;
+    }
+
+    private Map<String, String> parseDescriptionSections(String description) {
+        LinkedHashMap<String, String> rows = new LinkedHashMap<>();
+        if (description == null || description.trim().isEmpty()) {
+            return rows;
+        }
+
+        String currentLabel = null;
+        StringBuilder currentValue = new StringBuilder();
+        String[] lines = description.split("\\r?\\n");
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            int colonIndex = line.indexOf(':');
+            if (colonIndex > 0) {
+                if (currentLabel != null) {
+                    rows.put(currentLabel, currentValue.toString().trim());
+                }
+                currentLabel = normalizeDescriptionLabel(line.substring(0, colonIndex));
+                currentValue = new StringBuilder(line.substring(colonIndex + 1).trim());
+            } else if (currentLabel != null) {
+                if (currentValue.length() > 0) {
+                    currentValue.append('\n');
+                }
+                currentValue.append(line);
+            }
+        }
+
+        if (currentLabel != null) {
+            rows.put(currentLabel, currentValue.toString().trim());
+        } else {
+            rows.put("Mô tả", description.trim());
+        }
+        return rows;
+    }
+
+    private String normalizeDescriptionLabel(String label) {
+        String cleaned = label != null ? label.trim() : "";
+        if ("Bảo quản".equalsIgnoreCase(cleaned)) {
+            return "Cách bảo quản";
+        }
+        if ("Nhà sản xuất".equalsIgnoreCase(cleaned)) {
+            return "Nơi sản xuất";
+        }
+        return cleaned;
+    }
+
+    private TableRow createDescriptionRow(String label, String value) {
+        TableRow row = new TableRow(this);
+        row.setPadding(0, dp(4), 0, dp(4));
+
+        TextView labelView = new TextView(this);
+        labelView.setText(label);
+        labelView.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+        labelView.setTextSize(14);
+        labelView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        labelView.setPadding(0, 0, dp(12), 0);
+
+        TextView valueView = new TextView(this);
+        valueView.setText(value);
+        valueView.setTextColor(ContextCompat.getColor(this, R.color.neutral_70));
+        valueView.setTextSize(14);
+        valueView.setLineSpacing(0, 1.08f);
+
+        TableRow.LayoutParams labelParams = new TableRow.LayoutParams(dp(118), TableRow.LayoutParams.WRAP_CONTENT);
+        TableRow.LayoutParams valueParams = new TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1f);
+        row.addView(labelView, labelParams);
+        row.addView(valueView, valueParams);
+        return row;
+    }
+
+    private void applyDescriptionExpansion() {
+        int collapsedRows = 4;
+        for (int i = 0; i < descriptionRows.size(); i++) {
+            descriptionRows.get(i).setVisibility(descriptionExpanded || i < collapsedRows ? View.VISIBLE : View.GONE);
+        }
+        if (tvShowMoreDesc != null) {
+            boolean showToggle = descriptionRows.size() > collapsedRows;
+            tvShowMoreDesc.setVisibility(showToggle ? View.VISIBLE : View.GONE);
+            tvShowMoreDesc.setText(descriptionExpanded ? R.string.show_less : R.string.show_more);
+        }
+    }
+
+    private void putIfPresent(Map<String, String> rows, String label, String value) {
+        String cleaned = firstNonBlank(value);
+        if (cleaned != null) {
+            rows.put(label, cleaned);
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private String calculateDiscountPercentage(Product product) {
         if (product.getOriginalPrice() <= 0) return "";
         long discount = product.getOriginalPrice() - product.getPrice();
         int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
+        return "-" + percentage + "%";
+    }
+
+    private long effectivePrice(Product product) {
+        if (flashSalePrice > 0) {
+            return flashSalePrice;
+        }
+        return product.getPrice();
+    }
+
+    private long effectiveOriginalPrice(Product product) {
+        if (flashSaleOriginalPrice > 0) {
+            return flashSaleOriginalPrice;
+        }
+        return product.getOriginalPrice();
+    }
+
+    private String effectiveDiscountLabel(Product product, long salePrice, long originalPrice) {
+        if (flashSaleDiscountLabel != null && !flashSaleDiscountLabel.trim().isEmpty()) {
+            return flashSaleDiscountLabel;
+        }
+        if (originalPrice <= 0 || salePrice <= 0 || originalPrice <= salePrice) {
+            return "";
+        }
+        long discount = originalPrice - salePrice;
+        int percentage = (int) ((discount * 100.0f) / originalPrice);
         return "-" + percentage + "%";
     }
 
@@ -529,12 +987,34 @@ public class ProductDetailActivity extends BaseActivity {
             customerId = new com.veggo.app.core.preferences.PreferencesManager(this).getUserId();
         }
         if (customerId == null || customerId.trim().isEmpty()) {
-            customerId = "CUS900025";
+            customerId = new PendingCheckoutStore(this).guestId();
         }
         return customerId;
     }
 
-    private void bindWeightOptions(ChipGroup chipGroup, java.util.List<Double> weightOptions, double[] selectedWeight) {
+    private boolean hasWeightOptions(Product product) {
+        if (product == null || product.getWeightOptions() == null) {
+            return false;
+        }
+        for (Double option : product.getWeightOptions()) {
+            if (option != null && option > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateAddToCartTotal(TextView totalView, long unitPrice, int quantity, double selectedWeight, boolean hasWeightOptions) {
+        if (totalView == null) {
+            return;
+        }
+        double multiplier = hasWeightOptions ? selectedWeight : 1.0;
+        long total = Math.round(unitPrice * multiplier * quantity);
+        totalView.setText(CurrencyFormatter.formatVnd(total));
+    }
+
+    private void bindWeightOptions(TextView titleView, ChipGroup chipGroup, java.util.List<Double> weightOptions,
+                                   double[] selectedWeight, Runnable onSelectionChanged) {
         if (chipGroup == null) {
             return;
         }
@@ -551,7 +1031,17 @@ public class ProductDetailActivity extends BaseActivity {
         }
 
         if (resolvedOptions.isEmpty()) {
-            resolvedOptions.add(1.0);
+            selectedWeight[0] = 1.0;
+            chipGroup.setVisibility(View.GONE);
+            if (titleView != null) {
+                titleView.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        chipGroup.setVisibility(View.VISIBLE);
+        if (titleView != null) {
+            titleView.setVisibility(View.VISIBLE);
         }
 
         for (int i = 0; i < resolvedOptions.size(); i++) {
@@ -567,6 +1057,9 @@ public class ProductDetailActivity extends BaseActivity {
             chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
                     selectedWeight[0] = option;
+                    if (onSelectionChanged != null) {
+                        onSelectionChanged.run();
+                    }
                 }
             });
             chipGroup.addView(chip);

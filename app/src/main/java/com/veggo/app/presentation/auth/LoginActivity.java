@@ -2,7 +2,9 @@ package com.veggo.app.presentation.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -15,11 +17,9 @@ import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 
 public class LoginActivity extends BaseActivity {
-    private static final String PHONE_REGEX = "^0\\d{9}$";
-    private static final String PASSWORD_REGEX = "^(?=.*[A-Z]).{8,}$";
-
     private AuthViewModel authViewModel;
     private EditText edtPhone;
     private EditText edtPassword;
@@ -64,6 +64,18 @@ public class LoginActivity extends BaseActivity {
         imgBack.setOnClickListener(v -> finish());
         imgEye.setOnClickListener(v -> togglePasswordVisibility());
         btnLogin.setOnClickListener(v -> handleLogin());
+        edtPhone.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                validatePhone(edtPhone.getText().toString().trim());
+            }
+        });
+        edtPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                validatePassword(s.toString());
+            }
+        });
         tvForgotPassword.setOnClickListener(v ->
                 startActivity(new Intent(this, ForgotPasswordActivity.class))
         );
@@ -90,10 +102,15 @@ public class LoginActivity extends BaseActivity {
             );
             Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
 
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
+            PendingCheckoutStore pendingCheckoutStore = new PendingCheckoutStore(this);
+            if (pendingCheckoutStore.hasPending()) {
+                pendingCheckoutStore.openAfterAuth(this, userDto.getCustomerId());
+            } else {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
             finish();
         });
 
@@ -128,32 +145,10 @@ public class LoginActivity extends BaseActivity {
     }
 
     private boolean validatePhone(String phone) {
-        if (phone.isEmpty()) {
-            tvPhoneError.setText("Vui lòng nhập số điện thoại");
-            tvPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        if (!phone.matches(PHONE_REGEX)) {
-            tvPhoneError.setText("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
-            tvPhoneError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvPhoneError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvPhoneError, AuthFormUtils.phoneError(phone));
     }
 
     private boolean validatePassword(String password) {
-        if (password.isEmpty()) {
-            tvPasswordError.setText("Vui lòng nhập mật khẩu");
-            tvPasswordError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        if (!password.matches(PASSWORD_REGEX)) {
-            tvPasswordError.setText("Mật khẩu phải có ít nhất 8 ký tự và chứa ít nhất 1 chữ in hoa");
-            tvPasswordError.setVisibility(View.VISIBLE);
-            return false;
-        }
-        tvPasswordError.setVisibility(View.GONE);
-        return true;
+        return AuthFormUtils.showError(tvPasswordError, AuthFormUtils.passwordError(password));
     }
 }

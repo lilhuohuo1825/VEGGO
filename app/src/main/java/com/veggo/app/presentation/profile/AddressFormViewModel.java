@@ -25,6 +25,7 @@ public class AddressFormViewModel extends ViewModel {
     private final MutableLiveData<Boolean> treeLoading = new MutableLiveData<>(false);
     private final MutableLiveData<VietnamAddressTree> addressTree = new MutableLiveData<>();
     private final MutableLiveData<Address> savedAddress = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> deletedAddress = new MutableLiveData<>();
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private final MutableLiveData<Boolean> retryableError = new MutableLiveData<>(false);
 
@@ -36,6 +37,7 @@ public class AddressFormViewModel extends ViewModel {
     public LiveData<Boolean> getTreeLoading() { return treeLoading; }
     public LiveData<VietnamAddressTree> getAddressTree() { return addressTree; }
     public LiveData<Address> getSavedAddress() { return savedAddress; }
+    public LiveData<Boolean> getDeletedAddress() { return deletedAddress; }
     public LiveData<String> getError() { return error; }
     public LiveData<Boolean> getRetryableError() { return retryableError; }
 
@@ -56,6 +58,30 @@ public class AddressFormViewModel extends ViewModel {
                 error.postValue("Không thể tải dữ liệu Tỉnh/Huyện/Xã. Vui lòng thử lại.");
             } finally {
                 treeLoading.postValue(false);
+            }
+        });
+    }
+
+    public void deleteAddress(@Nullable String addressId) {
+        if (addressId == null || addressId.trim().isEmpty()) {
+            retryableError.setValue(false);
+            error.setValue("Không tìm thấy địa chỉ để xóa");
+            return;
+        }
+
+        loading.setValue(true);
+        addressRepository.deleteAddress(addressId, new AddressRepository.Callback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                loading.setValue(false);
+                retryableError.setValue(false);
+                deletedAddress.setValue(true);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                loading.setValue(false);
+                handleError(t, "Không thể xóa địa chỉ");
             }
         });
     }

@@ -21,9 +21,14 @@ public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewH
     }
 
     private OnBannerClickListener onBannerClickListener;
+    private ImageView.ScaleType scaleType = ImageView.ScaleType.CENTER_CROP;
 
     public void setOnBannerClickListener(OnBannerClickListener listener) {
         this.onBannerClickListener = listener;
+    }
+
+    public void setScaleType(ImageView.ScaleType scaleType) {
+        this.scaleType = scaleType == null ? ImageView.ScaleType.CENTER_CROP : scaleType;
     }
 
     public BannerAdapter() {
@@ -80,10 +85,23 @@ public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewH
         }
 
         void bind(Banner banner) {
+            imgBanner.setScaleType(scaleType);
             if (banner.getImageUrl() != null && !banner.getImageUrl().isEmpty()) {
-                Glide.with(imgBanner.getContext())
-                        .load(banner.getImageUrl())
-                        .into(imgBanner);
+                if (scaleType == ImageView.ScaleType.FIT_CENTER || scaleType == ImageView.ScaleType.CENTER_INSIDE) {
+                    Glide.with(imgBanner.getContext())
+                            .load(banner.getImageUrl())
+                            .fitCenter()
+                            .placeholder(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
+                            .error(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
+                            .into(imgBanner);
+                } else {
+                    Glide.with(imgBanner.getContext())
+                            .load(banner.getImageUrl())
+                            .centerCrop()
+                            .placeholder(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
+                            .error(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
+                            .into(imgBanner);
+                }
             } else if (banner.getImageRes() != 0) {
                 imgBanner.setImageResource(banner.getImageRes());
             }

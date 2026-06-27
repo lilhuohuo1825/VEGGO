@@ -8,9 +8,14 @@ public class Recipe {
     private final String price;
     private final float rating;
     private final int reviewCount;
+    private final int ingredientCount;
     private boolean isBookmarked;
 
     public Recipe(String id, String name, String imageUrl, String cookingTime, String price, float rating, int reviewCount) {
+        this(id, name, imageUrl, cookingTime, price, rating, reviewCount, 0);
+    }
+
+    public Recipe(String id, String name, String imageUrl, String cookingTime, String price, float rating, int reviewCount, int ingredientCount) {
         this.id = id;
         this.name = name;
         this.imageUrl = imageUrl;
@@ -18,11 +23,16 @@ public class Recipe {
         this.price = price;
         this.rating = rating;
         this.reviewCount = reviewCount;
+        this.ingredientCount = ingredientCount;
         this.isBookmarked = false;
     }
 
     public Recipe(String id, String name, String cookingTime, int imageResId, String imageUrl) {
         this(id, name, imageUrl, cookingTime, "", 0f, 0);
+    }
+
+    public Recipe(String id, String name, String cookingTime, int imageResId, String imageUrl, int ingredientCount) {
+        this(id, name, imageUrl, cookingTime, "", 0f, 0, ingredientCount);
     }
 
     public String getId() { return id; }
@@ -32,6 +42,7 @@ public class Recipe {
     public String getPrice() { return price; }
     public float getRating() { return rating; }
     public int getReviewCount() { return reviewCount; }
+    public int getIngredientCount() { return ingredientCount; }
     public boolean isBookmarked() { return isBookmarked; }
     public void setBookmarked(boolean bookmarked) { isBookmarked = bookmarked; }
 }

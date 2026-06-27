@@ -358,7 +358,7 @@
           <label>{{isFlashSaleCreateMode() ? 'Giới hạn sử dụng Flash Sale' : 'Giới hạn sử dụng'}}</label>
           <input type="number" [(ngModel)]="currentPromotion.usageLimit" placeholder="Để trống = không giới hạn" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="isFlashSaleCreateMode()">
           <label>Giờ bắt đầu</label>
           <div class="time-select-group">
             <select
@@ -379,16 +379,23 @@
           </div>
         </div>
         <div class="form-group" *ngIf="!isFlashSaleCreateMode()">
-          <label>Ngày kết thúc <span class="required-asterisk">*</span></label>
+          <label>Ngày kết thúc <span class="required-asterisk" *ngIf="!currentPromotion.noEndDate">*</span></label>
           <input type="date" [(ngModel)]="currentPromotion.endDate" 
                  [min]="currentPromotion.startDate || ''"
+                 [disabled]="currentPromotion.noEndDate === true"
                  (ngModelChange)="onEndDateChange()" 
                  class="input-field date-input">
           <small class="error-message" *ngIf="dateRangeError" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: block;">
             Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu
           </small>
         </div>
-        <div class="form-group">
+        <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentPromotion.noEndDate" (ngModelChange)="onEndDateChange()" class="checkbox-input">
+            <span>Không có ngày kết thúc</span>
+          </label>
+        </div>
+        <div class="form-group" *ngIf="isFlashSaleCreateMode()">
           <label>Giờ kết thúc</label>
           <div class="time-select-group">
             <select
@@ -419,34 +426,35 @@
           </label>
         </div>
 
-        <!-- Phạm vi áp dụng - Moved to bottom before Target Selection -->
         <div class="form-group full-width" *ngIf="!isFlashSaleCreateMode()">
           <label>Phạm vi áp dụng <span class="required-asterisk">*</span></label>
-          <select [(ngModel)]="currentPromotion.scope" (change)="onScopeChange()" class="input-field">
-            <option value="Order">Đơn hàng (Order)</option>
-            <option value="Shipping">Vận chuyển (Shipping)</option>
-            <option value="Category">Danh mục (Category)</option>
-            <option value="Brand">Thương hiệu (Brand)</option>
-            <option value="Product">Sản phẩm (Product)</option>
-          </select>
-          <span class="target-help-text">Chọn phạm vi áp dụng của khuyến mãi. Nếu chọn Danh mục, Thương hiệu hoặc Sản phẩm, bạn cần chọn các mục cụ thể ở phần bên dưới.</span>
+          <div class="target-list">
+            <label class="target-item" *ngFor="let scope of availableScopes">
+              <input
+                type="checkbox"
+                class="target-checkbox"
+                [checked]="isScopeSelected(scope)"
+                (change)="setScopeSelected(scope, $any($event.target).checked)">
+              <span class="target-label">{{getScopeLabel(scope)}}</span>
+            </label>
+          </div>
+          <span class="target-help-text">Có thể chọn một hoặc nhiều phạm vi áp dụng.</span>
         </div>
 
-        <!-- Target Selection Section - Only show when scope is Category, Product, or Brand -->
-        <div class="form-group full-width target-selection-section" *ngIf="currentPromotion.scope === 'Category' || currentPromotion.scope === 'Product' || currentPromotion.scope === 'Brand'">
+        <!-- Target Selection Section - show per selected concrete scope -->
+        <div class="form-group full-width target-selection-section" *ngFor="let scope of getSelectedTargetScopes()">
           <div class="target-selection-header">
-            <label class="target-section-label">{{isFlashSaleCreateMode() ? 'Sản phẩm Flash Sale' : 'Phạm vi áp dụng cụ thể'}} <span class="required-asterisk">*</span></label>
-            <span class="target-help-text">{{isFlashSaleCreateMode() ? 'Chọn các sản phẩm cần bán nhanh trong khung giờ Flash Sale' : 'Chọn các ' + (currentPromotion.scope === 'Category' ? 'danh mục' : currentPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm') + ' để áp dụng khuyến mãi'}}</span>
+            <label class="target-section-label">Phạm vi áp dụng cụ thể - {{getScopeLabel(scope)}} <span class="required-asterisk">*</span></label>
+            <span class="target-help-text">Chọn các mục thuộc phạm vi {{getScopeLabel(scope)}} để mã khuyến mãi áp dụng.</span>
           </div>
           
           <!-- Target Type Selection (only for Category scope) -->
-          <div class="target-type-selector" *ngIf="currentPromotion.scope === 'Category' && !isFlashSaleCreateMode()">
+          <div class="target-type-selector" *ngIf="scope === 'Category' && !isFlashSaleCreateMode()">
             <label>Loại danh mục <span class="required-asterisk">*</span></label>
-            <select [(ngModel)]="targetType" (change)="onTargetTypeChange()" class="input-field">
+            <select [ngModel]="getTargetTypeForScope(scope)" (ngModelChange)="setTargetTypeForScope(scope, $event)" class="input-field">
               <option value="Category">Danh mục chính (Category)</option>
               <option value="Subcategory">Danh mục phụ (Subcategory)</option>
             </select>
-            <span class="target-help-text">Chọn loại danh mục bạn muốn áp dụng khuyến mãi</span>
           </div>
 
           <!-- Target Selection List -->
@@ -455,7 +463,7 @@
             <div class="target-search">
               <input 
                 type="text" 
-                [placeholder]="getSearchPlaceholder()" 
+                [placeholder]="'Tìm kiếm ' + getScopeLabel(scope).toLowerCase() + '...'" 
                 class="input-field target-search-input"
                 [(ngModel)]="targetSearchTerm"
                 (input)="onTargetSearchChange()">
@@ -464,18 +472,18 @@
             <div class="target-list" *ngIf="!isLoadingTargets">
               <div 
                 class="target-item" 
-                *ngFor="let option of getFilteredTargetOptions()" 
-                [class.selected]="isTargetSelected(getTargetValue(option))"
-                (click)="toggleTarget(getTargetValue(option))">
+                *ngFor="let option of getFilteredTargetOptionsForScope(scope)" 
+                [class.selected]="isGroupTargetSelected(scope, getTargetValue(option))"
+                (click)="setGroupTargetSelected(scope, getTargetValue(option), !isGroupTargetSelected(scope, getTargetValue(option)))">
                 <input 
                   type="checkbox" 
-                  [checked]="isTargetSelected(getTargetValue(option))"
-                  (change)="setTargetSelected(getTargetValue(option), $any($event.target).checked)"
+                  [checked]="isGroupTargetSelected(scope, getTargetValue(option))"
+                  (change)="setGroupTargetSelected(scope, getTargetValue(option), $any($event.target).checked)"
                   class="target-checkbox"
                   (click)="$event.stopPropagation()">
-                <span class="target-label">{{getTargetLabel(option)}}</span>
+                <span class="target-label">{{getTargetLabelForScope(scope, option)}}</span>
               </div>
-              <div class="target-empty" *ngIf="getFilteredTargetOptions().length === 0 && !isLoadingTargets">
+              <div class="target-empty" *ngIf="getFilteredTargetOptionsForScope(scope).length === 0 && !isLoadingTargets">
                 <span *ngIf="targetSearchTerm">Không tìm thấy kết quả cho "{{targetSearchTerm}}"</span>
                 <span *ngIf="!targetSearchTerm">Không có dữ liệu</span>
               </div>
@@ -485,15 +493,14 @@
             </div>
             
             <!-- Selected Targets Summary -->
-            <div class="selected-targets-summary" *ngIf="selectedTargets.length > 0">
+            <div class="selected-targets-summary" *ngIf="getSelectedTargetsForScope(scope).length > 0">
               <div class="summary-header">
-                <strong>Đã chọn ({{selectedTargets.length}}):</strong>
-                <button type="button" class="clear-all-btn" (click)="clearAllTargets()">Xóa tất cả</button>
+                <strong>Đã chọn ({{getSelectedTargetsForScope(scope).length}}):</strong>
               </div>
               <div class="selected-targets-tags">
-                <span class="target-tag" *ngFor="let targetValue of selectedTargets">
-                  {{getTargetDisplayName(targetValue)}}
-                  <button type="button" class="tag-remove" (click)="removeTarget(targetValue)">×</button>
+                <span class="target-tag" *ngFor="let targetValue of getSelectedTargetsForScope(scope)">
+                  {{getGroupTargetDisplayName(scope, targetValue)}}
+                  <button type="button" class="tag-remove" (click)="removeGroupTarget(scope, targetValue)">×</button>
                 </span>
               </div>
             </div>
@@ -620,7 +627,7 @@
           <label>Giới hạn sử dụng Flash Sale</label>
           <input type="number" [(ngModel)]="selectedPromotion.usageLimit" placeholder="0" class="input-field">
         </div>
-        <div class="form-group">
+        <div class="form-group" *ngIf="isFlashSaleDetailMode()">
           <label>Giờ bắt đầu</label>
           <div class="time-select-group">
             <select
@@ -641,16 +648,23 @@
           </div>
         </div>
         <div class="form-group" *ngIf="!isFlashSaleDetailMode()">
-          <label>Ngày kết thúc <span class="required-asterisk">*</span></label>
+          <label>Ngày kết thúc <span class="required-asterisk" *ngIf="!selectedPromotion.noEndDate">*</span></label>
           <input type="date" [(ngModel)]="selectedPromotion.endDate" 
                  [min]="selectedPromotion.startDate || ''"
+                 [disabled]="selectedPromotion.noEndDate === true"
                  (ngModelChange)="onDetailEndDateChange()" 
                  class="input-field date-input">
           <small class="error-message" *ngIf="detailDateRangeError" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: block;">
             Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu
           </small>
         </div>
-        <div class="form-group">
+        <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="selectedPromotion.noEndDate" (ngModelChange)="onDetailEndDateChange()" class="checkbox-input">
+            <span>Không có ngày kết thúc</span>
+          </label>
+        </div>
+        <div class="form-group" *ngIf="isFlashSaleDetailMode()">
           <label>Giờ kết thúc</label>
           <div class="time-select-group">
             <select
@@ -685,45 +699,44 @@
           </label>
         </div>
 
-        <!-- Phạm vi áp dụng - Moved to bottom before Target Selection -->
         <div class="form-group full-width" *ngIf="!isFlashSaleDetailMode()">
           <label>Phạm vi áp dụng <span class="required-asterisk">*</span></label>
-          <select [(ngModel)]="selectedPromotion.scope" (change)="onDetailScopeChange()" class="input-field">
-            <option value="Order">Đơn hàng (Order)</option>
-            <option value="Shipping">Vận chuyển (Shipping)</option>
-            <option value="Category">Danh mục (Category)</option>
-            <option value="Brand">Thương hiệu (Brand)</option>
-            <option value="Product">Sản phẩm (Product)</option>
-          </select>
-          <span class="target-help-text">Chọn phạm vi áp dụng của khuyến mãi. Nếu chọn Danh mục, Thương hiệu hoặc Sản phẩm, bạn cần chọn các mục cụ thể ở phần bên dưới.</span>
+          <div class="target-list">
+            <label class="target-item" *ngFor="let scope of availableScopes">
+              <input
+                type="checkbox"
+                class="target-checkbox"
+                [checked]="isScopeSelected(scope, 'detail')"
+                (change)="setScopeSelected(scope, $any($event.target).checked, 'detail')">
+              <span class="target-label">{{getScopeLabel(scope)}}</span>
+            </label>
+          </div>
         </div>
 
-        <!-- Target Selection Section - Only show when scope is Category, Product, or Brand -->
-        <div class="form-group full-width target-selection-section" *ngIf="selectedPromotion.scope === 'Category' || selectedPromotion.scope === 'Product' || selectedPromotion.scope === 'Brand'">
+        <!-- Target Selection Section - show per selected concrete scope -->
+        <div class="form-group full-width target-selection-section" *ngFor="let scope of getSelectedTargetScopes('detail')">
           <div class="target-selection-header">
-            <label class="target-section-label">{{isFlashSaleDetailMode() ? 'Sản phẩm Flash Sale' : 'Phạm vi áp dụng cụ thể'}} <span class="required-asterisk">*</span></label>
-            <span class="target-help-text">{{isFlashSaleDetailMode() ? 'Chọn các sản phẩm cần bán nhanh trong khung giờ Flash Sale' : 'Chọn các ' + (selectedPromotion.scope === 'Category' ? 'danh mục' : selectedPromotion.scope === 'Brand' ? 'thương hiệu' : 'sản phẩm') + ' để áp dụng khuyến mãi'}}</span>
+            <label class="target-section-label">Phạm vi áp dụng cụ thể - {{getScopeLabel(scope)}} <span class="required-asterisk">*</span></label>
+            <span class="target-help-text">Chọn các mục thuộc phạm vi {{getScopeLabel(scope)}} để mã khuyến mãi áp dụng.</span>
           </div>
           
           <!-- Target Type Selection (only for Category scope) -->
-          <div class="target-type-selector" *ngIf="selectedPromotion.scope === 'Category' && !isFlashSaleDetailMode()">
+          <div class="target-type-selector" *ngIf="scope === 'Category' && !isFlashSaleDetailMode()">
             <label>Loại danh mục <span class="required-asterisk">*</span></label>
-            <select [(ngModel)]="detailTargetType" (change)="onDetailTargetTypeChange()" class="input-field">
+            <select [ngModel]="getTargetTypeForScope(scope, 'detail')" (ngModelChange)="setTargetTypeForScope(scope, $event, 'detail')" class="input-field">
               <option value="Category">Danh mục chính (Category)</option>
               <option value="Subcategory">Danh mục phụ (Subcategory)</option>
             </select>
-            <span class="target-help-text">Chọn loại danh mục bạn muốn áp dụng khuyến mãi</span>
           </div>
 
-          <div class="selected-targets-summary" *ngIf="detailSelectedTargets.length > 0">
+          <div class="selected-targets-summary" *ngIf="getSelectedTargetsForScope(scope, 'detail').length > 0">
             <div class="summary-header">
-              <strong>Đang áp dụng cho ({{detailSelectedTargets.length}}):</strong>
-              <button type="button" class="clear-all-btn" (click)="clearAllDetailTargets()">Xóa tất cả</button>
+              <strong>Đang áp dụng cho ({{getSelectedTargetsForScope(scope, 'detail').length}}):</strong>
             </div>
             <div class="selected-targets-tags">
-              <span class="target-tag" *ngFor="let targetValue of detailSelectedTargets">
-                {{getDetailTargetDisplayName(targetValue)}}
-                <button type="button" class="tag-remove" (click)="removeDetailTarget(targetValue)">×</button>
+              <span class="target-tag" *ngFor="let targetValue of getSelectedTargetsForScope(scope, 'detail')">
+                {{getGroupTargetDisplayName(scope, targetValue, 'detail')}}
+                <button type="button" class="tag-remove" (click)="removeGroupTarget(scope, targetValue, 'detail')">×</button>
               </span>
             </div>
           </div>
@@ -734,7 +747,7 @@
             <div class="target-search">
               <input 
                 type="text" 
-                [placeholder]="getDetailSearchPlaceholder()" 
+                [placeholder]="'Tìm kiếm ' + getScopeLabel(scope).toLowerCase() + '...'" 
                 class="input-field target-search-input"
                 [(ngModel)]="detailTargetSearchTerm"
                 (input)="onDetailTargetSearchChange()">
@@ -743,18 +756,18 @@
             <div class="target-list" *ngIf="!isLoadingTargets">
               <div 
                 class="target-item" 
-                *ngFor="let option of getDetailFilteredTargetOptions()" 
-                [class.selected]="isDetailTargetSelected(getDetailTargetValue(option))"
-                (click)="toggleDetailTarget(getDetailTargetValue(option))">
+                *ngFor="let option of getFilteredTargetOptionsForScope(scope, 'detail')" 
+                [class.selected]="isGroupTargetSelected(scope, getTargetValue(option), 'detail')"
+                (click)="setGroupTargetSelected(scope, getTargetValue(option), !isGroupTargetSelected(scope, getTargetValue(option), 'detail'), 'detail')">
                 <input 
                   type="checkbox" 
-                  [checked]="isDetailTargetSelected(getDetailTargetValue(option))"
-                  (change)="setDetailTargetSelected(getDetailTargetValue(option), $any($event.target).checked)"
+                  [checked]="isGroupTargetSelected(scope, getTargetValue(option), 'detail')"
+                  (change)="setGroupTargetSelected(scope, getTargetValue(option), $any($event.target).checked, 'detail')"
                   class="target-checkbox"
                   (click)="$event.stopPropagation()">
-                <span class="target-label">{{getDetailTargetLabel(option)}}</span>
+                <span class="target-label">{{getTargetLabelForScope(scope, option, 'detail')}}</span>
               </div>
-              <div class="target-empty" *ngIf="getDetailFilteredTargetOptions().length === 0 && !isLoadingTargets">
+              <div class="target-empty" *ngIf="getFilteredTargetOptionsForScope(scope, 'detail').length === 0 && !isLoadingTargets">
                 <span *ngIf="detailTargetSearchTerm">Không tìm thấy kết quả cho "{{detailTargetSearchTerm}}"</span>
                 <span *ngIf="!detailTargetSearchTerm">Không có dữ liệu</span>
               </div>

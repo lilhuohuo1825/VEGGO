@@ -1,12 +1,16 @@
 package com.veggo.app.presentation.profile;
 
+import android.app.Dialog;
 import android.graphics.Bitmap;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,7 +18,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
@@ -25,21 +28,34 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.ImageCompressor;
 import com.veggo.app.data.remote.dto.UserProfileDto;
+import com.veggo.app.MainActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.dialog.VeggoDialog;
 
 import java.io.File;
 import java.io.IOException;
 
 public class PersonalInfoActivity extends BaseActivity {
+    private static final String PHONE_REGEX = "^0\\d{9}$";
+    private static final String DEMO_OTP = "123456";
+
     private PersonalInfoViewModel viewModel;
     private AppPreferences appPreferences;
 
     private EditText nameInput;
     private EditText phoneInput;
     private EditText emailInput;
+    private EditText birthdayInput;
     private TextView saveButton;
     private ImageView avatarView;
     private TextView changeAvatarButton;
+    private CheckBox maleCheckBox;
+    private CheckBox femaleCheckBox;
+
+    private TextView tvNameError;
+    private TextView tvPhoneError;
+    private TextView tvEmailError;
+    private TextView tvBirthdayError;
 
     private String sessionPhone;
     private String currentAvatarUrl;
@@ -60,6 +76,7 @@ public class PersonalInfoActivity extends BaseActivity {
         bindViews();
         setupAvatarPickers();
         setupActions();
+        setupValidationListeners();
         setupViewModel();
         loadProfile();
     }
@@ -68,13 +85,24 @@ public class PersonalInfoActivity extends BaseActivity {
         nameInput = findViewById(R.id.personalInfoNameInput);
         phoneInput = findViewById(R.id.personalInfoPhoneInput);
         emailInput = findViewById(R.id.personalInfoEmailInput);
+        birthdayInput = findViewById(R.id.personalInfoBirthdayInput);
         saveButton = findViewById(R.id.personalInfoSaveButton);
-        avatarView = findAvatarImageView();
-        changeAvatarButton = findChangeAvatarButton();
+        avatarView = findViewById(R.id.personalInfoAvatarImage);
+        changeAvatarButton = findViewById(R.id.personalInfoChangeAvatarButton);
+        maleCheckBox = findViewById(R.id.personalInfoGenderMaleCheck);
+        femaleCheckBox = findViewById(R.id.personalInfoGenderFemaleCheck);
+
+        tvNameError = findViewById(R.id.personalInfoNameError);
+        tvPhoneError = findViewById(R.id.personalInfoPhoneError);
+        tvEmailError = findViewById(R.id.personalInfoEmailError);
+        tvBirthdayError = findViewById(R.id.personalInfoBirthdayError);
+
+        phoneInput.setEnabled(false);
+        phoneInput.setFocusable(false);
 
         com.veggo.app.core.utils.DatePickerHelper.setupDatePicker(
                 this,
-                findViewById(R.id.personalInfoBirthdayInput),
+                birthdayInput,
                 findViewById(R.id.personalInfoBirthdayIcon)
         );
     }
@@ -86,7 +114,13 @@ public class PersonalInfoActivity extends BaseActivity {
 
     private void setupActions() {
         findViewById(R.id.personalInfoBackButton).setOnClickListener(v -> finish());
-        findViewById(R.id.personalInfoLogoutButton).setOnClickListener(v -> finish());
+        findViewById(R.id.personalInfoLogoutButton).setOnClickListener(v -> showLogoutDialog());
+        findViewById(R.id.personalInfoChangePhoneButton).setOnClickListener(v -> showChangePhoneDialog());
+        findViewById(R.id.personalInfoChangePasswordButton).setOnClickListener(v -> {
+            Intent intent = new Intent(this, com.veggo.app.presentation.auth.ForgotPasswordActivity.class);
+            intent.putExtra(com.veggo.app.presentation.auth.ForgotPasswordActivity.EXTRA_SCREEN_TITLE, "Thay đổi mật khẩu");
+            startActivity(intent);
+        });
         saveButton.setOnClickListener(v -> saveProfile());
 
         if (changeAvatarButton != null) {
@@ -95,6 +129,52 @@ public class PersonalInfoActivity extends BaseActivity {
         if (avatarView != null) {
             avatarView.setOnClickListener(v -> showAvatarSourceDialog());
         }
+        maleCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                femaleCheckBox.setChecked(false);
+            }
+        });
+        femaleCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                maleCheckBox.setChecked(false);
+            }
+        });
+        findViewById(R.id.layoutGenderMale).setOnClickListener(v -> {
+            if (!maleCheckBox.isChecked()) {
+                maleCheckBox.setChecked(true);
+            }
+        });
+        findViewById(R.id.layoutGenderFemale).setOnClickListener(v -> {
+            if (!femaleCheckBox.isChecked()) {
+                femaleCheckBox.setChecked(true);
+            }
+        });
+    }
+
+    private void showLogoutDialog() {
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_profile_logout,
+                "Xác nhận đăng xuất",
+                "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?",
+                "Đăng xuất",
+                "Hủy",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        logout();
+                    }
+                }
+        );
+    }
+
+    private void logout() {
+        appPreferences.logout();
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     private void setupViewModel() {
@@ -143,16 +223,32 @@ public class PersonalInfoActivity extends BaseActivity {
         setText(phoneInput, user.phone);
         setText(emailInput, user.email);
         setText(findViewById(R.id.personalInfoBirthdayInput), user.birthDay);
-        setText(findViewById(R.id.personalInfoGenderInput), user.gender);
+        bindGender(user.gender);
         ((TextView) findViewById(R.id.personalInfoCarbonBadge)).setText(user.carbonPoint + " điểm carbon");
 
         currentAvatarUrl = AssetScreenData.hasText(user.avatar) ? user.avatar : appPreferences.getAvatarUrl();
         showAvatarPreview(currentAvatarUrl);
     }
 
+    private void bindGender(@Nullable String gender) {
+        String normalized = gender == null ? "" : gender.trim().toLowerCase(java.util.Locale.ROOT);
+        maleCheckBox.setChecked("nam".equals(normalized) || "male".equals(normalized));
+        femaleCheckBox.setChecked("nữ".equals(normalized) || "nu".equals(normalized) || "female".equals(normalized));
+    }
+
     private void saveProfile() {
         if (!AssetScreenData.hasText(sessionPhone)) {
             Toast.makeText(this, "Vui lòng đăng nhập để cập nhật thông tin", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean isNameValid = validateName(nameInput.getText().toString());
+        boolean isPhoneValid = validatePhone(phoneInput.getText().toString());
+        boolean isEmailValid = validateEmail(emailInput.getText().toString());
+        boolean isBirthdayValid = validateBirthday(birthdayInput.getText().toString());
+
+        if (!isNameValid || !isPhoneValid || !isEmailValid || !isBirthdayValid) {
+            Toast.makeText(this, "Vui lòng sửa các thông tin không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -184,17 +280,126 @@ public class PersonalInfoActivity extends BaseActivity {
         Toast.makeText(this, "Cập nhật thông tin thành công", Toast.LENGTH_SHORT).show();
     }
 
+    private void showChangePhoneDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_change_phone_otp);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        LinearLayout inputSection = dialog.findViewById(R.id.changePhoneInputSection);
+        LinearLayout otpSection = dialog.findViewById(R.id.changePhoneOtpSection);
+        EditText phoneEditText = dialog.findViewById(R.id.changePhoneInput);
+        TextView phoneError = dialog.findViewById(R.id.changePhoneError);
+        TextView otpDescription = dialog.findViewById(R.id.changePhoneOtpDescription);
+        TextView primaryButton = dialog.findViewById(R.id.changePhonePrimaryButton);
+        final String[] pendingPhone = {""};
+
+        dialog.findViewById(R.id.changePhoneCancelButton).setOnClickListener(v -> dialog.dismiss());
+        dialog.findViewById(R.id.changePhoneResendButton).setOnClickListener(v ->
+                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show());
+
+        primaryButton.setOnClickListener(v -> {
+            if (otpSection.getVisibility() != View.VISIBLE) {
+                String newPhone = phoneEditText.getText().toString().trim();
+                if (!validateChangePhone(newPhone, phoneError)) {
+                    return;
+                }
+                pendingPhone[0] = newPhone;
+                inputSection.setVisibility(View.GONE);
+                otpSection.setVisibility(View.VISIBLE);
+                otpDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại " + maskPhone(newPhone));
+                primaryButton.setText("Xác thực");
+                clearOtpFields(getChangePhoneOtpFields(dialog));
+                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String otp = getOtpValue(getChangePhoneOtpFields(dialog));
+            if (!DEMO_OTP.equals(otp)) {
+                Toast.makeText(this, "Mã xác thực không đúng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            setText(phoneInput, pendingPhone[0]);
+            Toast.makeText(this, "Đã xác thực số điện thoại mới. Bấm Lưu để cập nhật.", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private boolean validateChangePhone(String phone, TextView errorView) {
+        if (!AssetScreenData.hasText(phone)) {
+            errorView.setText("Vui lòng nhập số điện thoại mới");
+            errorView.setVisibility(View.VISIBLE);
+            return false;
+        }
+        if (!phone.matches(PHONE_REGEX)) {
+            errorView.setText("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
+            errorView.setVisibility(View.VISIBLE);
+            return false;
+        }
+        if (phone.equals(phoneInput.getText().toString().trim())) {
+            errorView.setText("Số điện thoại mới phải khác số hiện tại");
+            errorView.setVisibility(View.VISIBLE);
+            return false;
+        }
+        errorView.setVisibility(View.GONE);
+        return true;
+    }
+
+    private EditText[] getChangePhoneOtpFields(Dialog dialog) {
+        return new EditText[] {
+                dialog.findViewById(R.id.changePhoneOtp1),
+                dialog.findViewById(R.id.changePhoneOtp2),
+                dialog.findViewById(R.id.changePhoneOtp3),
+                dialog.findViewById(R.id.changePhoneOtp4),
+                dialog.findViewById(R.id.changePhoneOtp5),
+                dialog.findViewById(R.id.changePhoneOtp6)
+        };
+    }
+
+    private void clearOtpFields(EditText[] fields) {
+        for (EditText field : fields) {
+            field.setText("");
+        }
+    }
+
+    private String getOtpValue(EditText[] fields) {
+        StringBuilder builder = new StringBuilder();
+        for (EditText field : fields) {
+            builder.append(field.getText().toString().trim());
+        }
+        return builder.toString();
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return phone == null ? "" : phone;
+        }
+        return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
+    }
+
     private void showAvatarSourceDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Đổi ảnh đại diện")
-                .setItems(new CharSequence[]{"Chụp ảnh", "Chọn từ thư viện"}, (dialog, which) -> {
-                    if (which == 0) {
-                        cameraPicker.launch(null);
-                    } else {
-                        galleryPicker.launch("image/*");
-                    }
-                })
-                .show();
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_image_source);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        dialog.findViewById(R.id.dialogOptionGallery).setOnClickListener(v -> {
+            dialog.dismiss();
+            galleryPicker.launch("image/*");
+        });
+
+        dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
+            dialog.dismiss();
+            cameraPicker.launch(null);
+        });
+
+        dialog.show();
     }
 
     private void onGalleryImageSelected(@Nullable Uri uri) {
@@ -322,5 +527,116 @@ public class PersonalInfoActivity extends BaseActivity {
             return;
         }
         ((EditText) findViewById(viewId)).setText(value);
+    }
+
+    private void setupValidationListeners() {
+        nameInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                validateName(nameInput.getText().toString());
+            }
+        });
+        nameInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                validateName(s.toString());
+            }
+        });
+
+        phoneInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                validatePhone(s.toString());
+            }
+        });
+
+        emailInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                validateEmail(emailInput.getText().toString());
+            }
+        });
+        emailInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                validateEmail(s.toString());
+            }
+        });
+
+        birthdayInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                validateBirthday(s.toString());
+            }
+        });
+    }
+
+    private boolean validateName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            tvNameError.setText("Họ và tên không được để trống");
+            tvNameError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        if (!name.trim().replaceAll("\\s+", " ").matches("^[\\p{L}\\s'.-]{2,}$")) {
+            tvNameError.setText("Họ và tên không hợp lệ (không chứa số hoặc ký tự lạ, tối thiểu 2 ký tự)");
+            tvNameError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        tvNameError.setVisibility(View.GONE);
+        return true;
+    }
+
+    private boolean validatePhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            tvPhoneError.setText("Số điện thoại không được để trống");
+            tvPhoneError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        if (!phone.trim().matches(PHONE_REGEX)) {
+            tvPhoneError.setText("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
+            tvPhoneError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        tvPhoneError.setVisibility(View.GONE);
+        return true;
+    }
+
+    private boolean validateEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            tvEmailError.setVisibility(View.GONE);
+            return true;
+        }
+        if (!email.trim().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            tvEmailError.setText("Email không đúng định dạng (Ví dụ: user@example.com)");
+            tvEmailError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        tvEmailError.setVisibility(View.GONE);
+        return true;
+    }
+
+    private boolean validateBirthday(String birthday) {
+        if (birthday == null || birthday.trim().isEmpty()) {
+            tvBirthdayError.setVisibility(View.GONE);
+            return true;
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+        sdf.setLenient(false);
+        try {
+            java.util.Date date = sdf.parse(birthday.trim());
+            if (date.after(new java.util.Date())) {
+                tvBirthdayError.setText("Ngày sinh không thể ở tương lai");
+                tvBirthdayError.setVisibility(View.VISIBLE);
+                return false;
+            }
+        } catch (java.text.ParseException e) {
+            tvBirthdayError.setText("Ngày sinh không đúng định dạng (dd/MM/yyyy)");
+            tvBirthdayError.setVisibility(View.VISIBLE);
+            return false;
+        }
+        tvBirthdayError.setVisibility(View.GONE);
+        return true;
     }
 }

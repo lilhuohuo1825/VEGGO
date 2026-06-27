@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 
 interface Question {
   _id: string;
@@ -35,9 +35,10 @@ interface Consultation {
 })
 export class ConsultationDetail implements OnInit, OnDestroy {
   private http = inject(HttpClient);
-  private apiService = inject(ApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authService = inject(AuthService);
+  private closeFilterDropdownHandler = () => this.closeFilterDropdown();
 
   sku: string = '';
   consultation: Consultation | null = null;
@@ -80,13 +81,11 @@ export class ConsultationDetail implements OnInit, OnDestroy {
     });
 
     // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-      this.closeFilterDropdown();
-    });
+    document.addEventListener('click', this.closeFilterDropdownHandler);
   }
 
   ngOnDestroy(): void {
-    // Cleanup if needed
+    document.removeEventListener('click', this.closeFilterDropdownHandler);
   }
 
   loadConsultation(): void {
@@ -94,8 +93,9 @@ export class ConsultationDetail implements OnInit, OnDestroy {
     
     this.http.get<any>(`${environment.apiUrl}/consultations/${this.sku}`).subscribe({
       next: (response: any) => {
-        if (response.success && response.data) {
-          this.consultation = response.data;
+        const consultation = this.unwrapConsultationResponse(response);
+        if (consultation) {
+          this.consultation = consultation;
           this.updateStatistics();
         } else {
           this.loadError = 'Không tìm thấy thông tin tư vấn cho sản phẩm này';
@@ -108,6 +108,18 @@ export class ConsultationDetail implements OnInit, OnDestroy {
         this.consultation = null;
       }
     });
+  }
+
+  private unwrapConsultationResponse(response: any): Consultation | null {
+    if (response && response.data) {
+      return response.data;
+    }
+
+    if (response && response.sku && Array.isArray(response.questions)) {
+      return response;
+    }
+
+    return null;
   }
 
   updateStatistics(): void {
@@ -236,8 +248,8 @@ export class ConsultationDetail implements OnInit, OnDestroy {
 
     this.isSubmittingAnswer = true;
 
-    // Get admin name
-    const adminName = 'Admin'; // TODO: Get from auth service
+    const currentUser = this.authService.currentUser();
+    const adminName = currentUser?.name || currentUser?.email || 'Admin';
 
     this.http.post<any>(
       `${environment.apiUrl}/consultations/${this.consultation.sku}/answer/${this.selectedQuestion._id}`,

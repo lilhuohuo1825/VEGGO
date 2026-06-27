@@ -27,6 +27,9 @@ public class CarbonHistoryActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "điểm carbon")) {
+            return;
+        }
         setContentView(R.layout.activity_carbon_history);
         findViewById(R.id.carbonHistoryBackButton).setOnClickListener(v -> finish());
 

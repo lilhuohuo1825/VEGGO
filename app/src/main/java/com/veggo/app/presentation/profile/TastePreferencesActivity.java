@@ -27,6 +27,9 @@ public class TastePreferencesActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LoginRequiredActivity.redirectIfGuest(this, "khẩu vị của tôi")) {
+            return;
+        }
         setContentView(R.layout.activity_taste_preferences);
         tasteStore = new TastePreferenceStore(this);
         tagRow = findViewById(R.id.tasteTagRow);

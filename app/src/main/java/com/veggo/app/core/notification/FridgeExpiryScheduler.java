@@ -33,8 +33,8 @@ public class FridgeExpiryScheduler {
 
         // Lúc 8:00 sáng hôm nay (hoặc ngày mai nếu đã qua 8 sáng)
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 20);
-        calendar.set(Calendar.MINUTE, 25);
+        calendar.set(Calendar.HOUR_OF_DAY, 8);
+        calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {

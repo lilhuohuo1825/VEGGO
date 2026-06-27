@@ -43,6 +43,13 @@ const DEFAULT_CERTIFICATES = [
   }
 ];
 
+const COMPLETED_ORDER_STATUSES = ['completed', 'unreview', 'reviewed'];
+const CUSTOMER_TIERS = [
+  { minSpent: 20000000, customerTiering: 'Vàng', customerType: 'VIP' },
+  { minSpent: 5000000, customerTiering: 'Bạc', customerType: 'Premium' },
+  { minSpent: 0, customerTiering: 'Đồng', customerType: 'Regular' }
+];
+
 const db = () => mongoose.connection.db;
 
 const toNumber = (value, fallback = 0) => {
@@ -52,7 +59,11 @@ const toNumber = (value, fallback = 0) => {
 
 const normalizeKey = (value) => String(value || '').trim().toLowerCase();
 
-const isDeliveredStatus = (status) => ['completed', 'delivered'].includes(normalizeKey(status));
+const isDeliveredStatus = (status) => COMPLETED_ORDER_STATUSES.includes(normalizeKey(status));
+
+const resolveCustomerTier = (totalSpent) => (
+  CUSTOMER_TIERS.find((tier) => totalSpent >= tier.minSpent) || CUSTOMER_TIERS[CUSTOMER_TIERS.length - 1]
+);
 
 const parseWeightKg = (value) => {
   if (value === null || value === undefined || value === '') return 0;
@@ -145,6 +156,8 @@ const getItemKg = (item, product) => {
     parseWeightKg(item.selectedWeight) ||
     parseWeightKg(item.weight) ||
     parseWeightKg(item.Weight) ||
+    parseWeightKg(item.unit) ||
+    parseWeightKg(item.Unit) ||
     parseWeightKg(product?.weight) ||
     parseWeightKg(product?.Weight);
   if (perUnitKg > 0) return perUnitKg * quantity;
@@ -160,6 +173,16 @@ const calculateItemCarbon = (item, product) => {
   const emissionFactor = getEmissionFactor(item, product);
   const kg = getItemKg(item, product);
   if (emissionFactor <= 0 || kg <= 0) {
+    const submittedEmission = toNumber(item.TotalCarbonEmission ?? item.totalCarbonEmission, 0);
+    const submittedPoint = toNumber(item.CarbonPointEarned ?? item.carbonPointEarned, 0);
+    if (submittedEmission > 0 || submittedPoint > 0) {
+      return {
+        kg,
+        emissionFactor,
+        carbonEmission: submittedEmission > 0 ? submittedEmission : submittedPoint / 10,
+        carbonPoint: submittedPoint > 0 ? submittedPoint : Math.round(submittedEmission * 10)
+      };
+    }
     return {
       kg,
       emissionFactor,
@@ -217,9 +240,69 @@ const getNextRequestId = async () => {
   return `CERTREQ${String(maxNumber + 1).padStart(6, '0')}`;
 };
 
+async function createCertificateEligibilityNotification(customerId, request) {
+  if (!customerId || !request?.requestId) return;
+
+  await db().collection('notifications').updateOne(
+    {
+      CustomerID: customerId,
+      type: 'certificate_eligible',
+      requestId: request.requestId
+    },
+    {
+      $setOnInsert: {
+        CustomerID: customerId,
+        category: 'other',
+        type: 'certificate_eligible',
+        title: 'Bạn đủ điều kiện nhận chứng nhận',
+        body: `Bạn đã đạt ${request.carbonPointSnapshot} C, đủ mốc ${request.requestedCertificateName}. Vui lòng chờ quản trị viên duyệt.`,
+        action: 'Xem chứng nhận',
+        iconText: '✓',
+        targetType: 'certificate',
+        targetId: request.requestedCertificateID,
+        requestId: request.requestId,
+        isRead: false,
+        createdAt: new Date()
+      }
+    },
+    { upsert: true }
+  );
+}
+
+async function recalculateCustomerSpending(customerId) {
+  const orders = await db().collection('orders')
+    .find({ CustomerID: customerId, status: { $in: COMPLETED_ORDER_STATUSES } })
+    .toArray();
+
+  const totalSpent = orders.reduce((sum, order) => (
+    sum + toNumber(order.totalAmount ?? order.total ?? order.subtotal, 0)
+  ), 0);
+  const tier = resolveCustomerTier(totalSpent);
+
+  await db().collection('users').updateOne(
+    { CustomerID: customerId },
+    {
+      $set: {
+        TotalSpent: totalSpent,
+        CustomerTiering: tier.customerTiering,
+        CustomerType: tier.customerType,
+        TotalSpentUpdatedAt: new Date()
+      }
+    }
+  );
+
+  return {
+    CustomerID: customerId,
+    totalSpent,
+    completedOrderCount: orders.length,
+    CustomerTiering: tier.customerTiering,
+    CustomerType: tier.customerType
+  };
+}
+
 async function recalculateCustomerCarbon(customerId) {
   const orders = await db().collection('orders')
-    .find({ CustomerID: customerId, status: { $in: ['completed', 'delivered'] } })
+    .find({ CustomerID: customerId, status: { $in: COMPLETED_ORDER_STATUSES } })
     .toArray();
 
   const orderIds = orders.map((order) => order.OrderID).filter(Boolean);
@@ -230,6 +313,23 @@ async function recalculateCustomerCarbon(customerId) {
 
   const products = await db().collection('products').find({}).toArray();
   const productLookup = buildProductLookup(products);
+  const reviewDocs = await db().collection('reviews')
+    .find({ 'reviews.customer_id': customerId })
+    .toArray();
+  const reviewedSkuByOrder = new Map();
+  reviewDocs.forEach((doc) => {
+    const sku = String(doc.sku || '').trim();
+    if (!sku || !Array.isArray(doc.reviews)) return;
+    doc.reviews.forEach((review) => {
+      if (String(review.customer_id || '').trim() !== customerId) return;
+      const orderId = String(review.order_id || '').trim();
+      if (!orderId) return;
+      if (!reviewedSkuByOrder.has(orderId)) {
+        reviewedSkuByOrder.set(orderId, new Set());
+      }
+      reviewedSkuByOrder.get(orderId).add(sku);
+    });
+  });
 
   let totalCarbonEmission = 0;
   let totalCarbonPoint = 0;
@@ -238,21 +338,25 @@ async function recalculateCustomerCarbon(customerId) {
   for (const order of orders) {
     const detail = detailMap.get(order.OrderID) || {};
     const items = Array.isArray(detail.items) ? detail.items : Array.isArray(order.items) ? order.items : [];
+    const reviewedSkus = reviewedSkuByOrder.get(order.OrderID) || new Set();
 
     let orderCarbonEmission = 0;
     let orderCarbonPoint = 0;
     const calculatedItems = items.map((item) => {
       const product = resolveProduct(item, productLookup);
       const calculation = calculateItemCarbon(item, product);
+      const sku = String(item.sku || item.SKU || product?.sku || '').trim();
+      const reviewBonusPoint = sku && reviewedSkus.has(sku) ? 2 : 0;
       orderCarbonEmission += calculation.carbonEmission;
-      orderCarbonPoint += calculation.carbonPoint;
+      orderCarbonPoint += calculation.carbonPoint + reviewBonusPoint;
 
       return {
         ...item,
         EmissionFactor: calculation.emissionFactor || item.EmissionFactor,
         CarbonKg: Number(calculation.kg.toFixed(3)),
         TotalCarbonEmission: Number(calculation.carbonEmission.toFixed(3)),
-        CarbonPointEarned: calculation.carbonPoint
+        CarbonPointEarned: calculation.carbonPoint,
+        ReviewCarbonPointEarned: reviewBonusPoint
       };
     });
 
@@ -305,6 +409,7 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
     return { success: false, message: 'User not found', CustomerID: customerId };
   }
 
+  const spendingSummary = await recalculateCustomerSpending(customerId);
   const carbonSummary = await recalculateCustomerCarbon(customerId);
   const certificates = await getCertificates();
   const eligible = findEligibleCertificate(carbonSummary.totalCarbonPoint, certificates);
@@ -313,6 +418,7 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
       success: true,
       created: false,
       reason: 'not_enough_points',
+      ...spendingSummary,
       ...carbonSummary
     };
   }
@@ -325,6 +431,7 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
       created: false,
       reason: 'already_has_certificate',
       requestedCertificateID: eligible.CertificateID,
+      ...spendingSummary,
       ...carbonSummary
     };
   }
@@ -340,6 +447,7 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
       created: false,
       reason: 'pending_exists',
       request: pending,
+      ...spendingSummary,
       ...carbonSummary
     };
   }
@@ -359,6 +467,7 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
       created: false,
       reason: 'rejected_exists',
       request: rejected,
+      ...spendingSummary,
       ...carbonSummary
     };
   }
@@ -379,18 +488,43 @@ async function evaluateCustomerCertificate(customerId, sourceOrderId = null) {
   };
 
   await db().collection('certificate_requests').insertOne(request);
+  await createCertificateEligibilityNotification(customerId, request);
 
   return {
     success: true,
     created: true,
     request,
+    ...spendingSummary,
+    ...carbonSummary
+  };
+}
+
+async function refreshCustomerOrderMetrics(customerId, sourceOrderId = null) {
+  if (!customerId) {
+    return { success: false, message: 'CustomerID is required' };
+  }
+
+  const user = await db().collection('users').findOne({ CustomerID: customerId });
+  if (!user) {
+    return { success: false, message: 'User not found', CustomerID: customerId };
+  }
+
+  const spendingSummary = await recalculateCustomerSpending(customerId);
+  if (sourceOrderId) {
+    return evaluateCustomerCertificate(customerId, sourceOrderId);
+  }
+
+  const carbonSummary = await recalculateCustomerCarbon(customerId);
+  return {
+    success: true,
+    ...spendingSummary,
     ...carbonSummary
   };
 }
 
 async function evaluateAllDeliveredCustomers() {
   const customerIds = await db().collection('orders').distinct('CustomerID', {
-    status: { $in: ['completed', 'delivered'] },
+    status: { $in: COMPLETED_ORDER_STATUSES },
     CustomerID: { $nin: [null, ''] }
   });
 
@@ -404,6 +538,9 @@ async function evaluateAllDeliveredCustomers() {
 module.exports = {
   getCertificates,
   evaluateCustomerCertificate,
+  refreshCustomerOrderMetrics,
+  recalculateCustomerSpending,
+  recalculateCustomerCarbon,
   evaluateAllDeliveredCustomers,
   isDeliveredStatus
 };

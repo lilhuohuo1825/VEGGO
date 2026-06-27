@@ -554,7 +554,7 @@
           <div class="summary-row">
             <span class="summary-label">Phương thức thanh toán</span>
             <span class="summary-value" *ngIf="!isNewOrder && !isEditMode">{{
-              orderData.paymentMethod || 'COD'
+              getPaymentMethodLabel(orderData.paymentMethod)
             }}</span>
             <select
               *ngIf="isNewOrder || isEditMode"
@@ -562,7 +562,7 @@
               [(ngModel)]="orderData.paymentMethod"
             >
               <option value="COD">COD</option>
-              <option value="bank">Chuyển khoản</option>
+              <option value="bank">Chuyển khoản qua ngân hàng</option>
               <option value="cash">Tiền mặt</option>
             </select>
           </div>
@@ -596,12 +596,23 @@
           (order?.returnReason || order?.return_reason) &&
           (order?.status === 'processing_return' ||
             order?.status === 'returning' ||
-            order?.status === 'returned')
+            order?.status === 'returned' ||
+            order?.status === 'rejected')
         "
       >
         <label class="return-reason-label">Lý do trả hàng/hoàn tiền của khách hàng:</label>
         <div class="return-reason-content">
           {{ order?.returnReason || order?.return_reason || '' }}
+        </div>
+      </div>
+
+      <div
+        class="return-reason-section"
+        *ngIf="!isNewOrder && !isEditMode && (order?.rejectReason || order?.reject_reason)"
+      >
+        <label class="return-reason-label">Lý do admin từ chối trả hàng/hoàn tiền:</label>
+        <div class="return-reason-content">
+          {{ order?.rejectReason || order?.reject_reason || '' }}
         </div>
       </div>
 
@@ -678,15 +689,6 @@
         *ngIf="!isNewOrder && !isEditMode && order?.status === 'processing_return'"
       >
         Chấp nhận yêu cầu trả hàng
-      </button>
-
-      <!-- Complete Return Button - Show for returning status (second step) -->
-      <button
-        class="btn-complete-return"
-        (click)="completeReturn()"
-        *ngIf="!isNewOrder && !isEditMode && order?.status === 'returning'"
-      >
-        Hoàn tất trả hàng/hoàn tiền
       </button>
 
       <!-- Reject Refund Button - Only show for processing_return status -->

@@ -42,26 +42,35 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/cookbookCreateButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="116dp"
+            android:layout_height="48dp"
             android:background="@drawable/bg_community_circle"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:clipChildren="false"
-            android:clipToPadding="false">
-            <androidx.appcompat.widget.AppCompatImageView
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:scaleType="centerInside"
-                android:src="@drawable/icon_plus"
-                android:contentDescription="" />
+                android:layout_gravity="center_vertical"
+                android:src="@drawable/ic_cookbook_plus" />
 
-
-        </FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_gravity="center_vertical"
+                android:text="Tạo mới"
+                android:textColor="@color/primary_hover"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/cookbookSaveButton"
@@ -71,7 +80,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_button_primary_large"
             android:gravity="center"
-            android:text="Lưu"
+            android:text="Lưu vào cookbook"
             android:textColor="@color/neutral_10"
             android:textSize="14sp" />
     </LinearLayout>

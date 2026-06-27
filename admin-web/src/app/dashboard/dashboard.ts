@@ -14,7 +14,7 @@ import { HttpClient } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../services/api.service';
 import { interval, Subscription, forkJoin, of } from 'rxjs';
-import { switchMap, catchError, debounceTime, retry, tap } from 'rxjs/operators';
+import { switchMap, catchError, debounceTime, retry, tap, timeout } from 'rxjs/operators';
 import { DashboardVnMapComponent } from './dashboard-vn-map/dashboard-vn-map.component';
 
 Chart.register(...registerables);
@@ -323,11 +323,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         switchMap(() => {
           // Nếu đang refresh, bỏ qua request này
           if (this.isRefreshing) {
-            return of(null);
+            return of(false);
           }
-          // Đánh dấu đang refresh và thực hiện request
-          this.isRefreshing = true;
-          this.updateError = null;
           return of(true);
         })
       )
@@ -338,11 +335,99 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
+  private getFreshnessValue(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'object') {
+      if (value.$date) return String(value.$date);
+      if (value.$oid) return String(value.$oid);
+      return JSON.stringify(value);
+    }
+    return String(value);
+  }
+
+  private buildOrdersFreshnessSignature(orders: any[] = []): string {
+    if (!Array.isArray(orders)) return '';
+    return orders
+      .map((order) =>
+        [
+          order.OrderID || order.orderId || order.order_id || order._id || order.id,
+          order.status || order.order_status,
+          order.paymentStatus || order.payment_status,
+          order.totalAmount || order.total_amount || order.total || order.order_total,
+          order.updatedAt || order.updated_at,
+          order.createdAt || order.created_at || order.order_date,
+          Array.isArray(order.items) ? order.items.length : 0,
+        ]
+          .map((value) => this.getFreshnessValue(value))
+          .join(':')
+      )
+      .join('|');
+  }
+
+  private buildUsersFreshnessSignature(users: any[] = []): string {
+    if (!Array.isArray(users)) return '';
+    return users
+      .map((user) =>
+        [
+          user.CustomerID || user.customer_id || user._id || user.id,
+          user.RegisterDate || user.register_date || user.createdAt || user.created_at,
+          user.updatedAt || user.updated_at,
+          user.fullName || user.full_name || user.name,
+        ]
+          .map((value) => this.getFreshnessValue(value))
+          .join(':')
+      )
+      .join('|');
+  }
+
+  private buildProductsFreshnessSignature(products: any[] = []): string {
+    if (!Array.isArray(products)) return '';
+    return products
+      .map((product) =>
+        [
+          product.sku || product.SKU || product._id || product.id,
+          product.price || product.salePrice || product.sale_price,
+          product.stock || product.quantity || product.StockQuantity,
+          product.status || product.isActive,
+          product.updatedAt || product.updated_at,
+        ]
+          .map((value) => this.getFreshnessValue(value))
+          .join(':')
+      )
+      .join('|');
+  }
+
+  private buildPromotionsFreshnessSignature(promotions: any[] = []): string {
+    if (!Array.isArray(promotions)) return '';
+    return promotions
+      .map((promotion) =>
+        [
+          promotion.promotion_id || promotion.promotionId || promotion._id || promotion.id,
+          promotion.status || promotion.isActive,
+          promotion.discount || promotion.discountValue || promotion.discount_value,
+          promotion.start_date || promotion.startDate,
+          promotion.end_date || promotion.endDate,
+          promotion.updatedAt || promotion.updated_at,
+        ]
+          .map((value) => this.getFreshnessValue(value))
+          .join(':')
+      )
+      .join('|');
+  }
+
   /**
    * Load all dashboard data from MongoDB theo thời gian thực
    * Tối ưu: Load tất cả dữ liệu song song để cải thiện hiệu suất
    */
   loadDashboardData(): void {
+    if (this.isRefreshing) {
+      return;
+    }
+
+    this.isRefreshing = true;
+    this.updateError = null;
+
     // Load tất cả dữ liệu song song với forkJoin để tối ưu hiệu suất
     forkJoin({
       orders: this.apiService.getOrders().pipe(
@@ -361,7 +446,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         })
       ),
       products: this.apiService.getProducts().pipe(
-        retry(2),
+        timeout(6000),
+        retry(1),
         catchError((error) => {
           console.error('Error loading products:', error);
           return of([]);
@@ -388,22 +474,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           orders = [];
         }
 
-        // Đảm bảo allOrders luôn là array trước khi slice
-        const previousOrdersCount = Array.isArray(this.allOrders) ? this.allOrders.length : 0;
-        const previousOrderIds =
-          Array.isArray(this.allOrders) && this.allOrders.length > 0
-            ? this.allOrders.slice(0, 5).map((o) => o.order_id || o._id || o.id || o.OrderID)
-            : [];
+        const previousOrdersSignature = this.buildOrdersFreshnessSignature(this.allOrders);
 
         this.allOrders = Array.isArray(orders) ? orders : [];
 
-        // Chỉ update charts nếu dữ liệu thay đổi (so sánh số lượng và một số orders đầu tiên)
-        const ordersChanged =
-          previousOrdersCount !== orders.length ||
-          (orders.length > 0 &&
-            previousOrdersCount > 0 &&
-            JSON.stringify(previousOrderIds) !==
-              JSON.stringify(orders.slice(0, 5).map((o) => o.order_id || o._id || o.id)));
+        // Detect cả thay đổi status/total/updatedAt, không chỉ số lượng hoặc ID.
+        const ordersChanged = previousOrdersSignature !== this.buildOrdersFreshnessSignature(orders);
 
         // Tính toán stats từ orders
         this.calculateOrdersStats(orders);
@@ -439,12 +515,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           console.warn('⚠️ [Dashboard] Users data is not an array:', users);
           users = [];
         }
-        const previousUsersCount = Array.isArray(this.allUsers) ? this.allUsers.length : 0;
+        const previousUsersSignature = this.buildUsersFreshnessSignature(this.allUsers);
         this.allUsers = Array.isArray(users) ? users : []; // Lưu users để dùng cho mapping
         this.calculateUsersStats(users);
 
         // Calculate customers by day of week (based on new account registrations)
-        const usersChanged = previousUsersCount !== users.length;
+        const usersChanged = previousUsersSignature !== this.buildUsersFreshnessSignature(users);
         this.calculateCustomersByDay();
         if (usersChanged || ordersChanged) {
           this.createCombinedTimelineChart();
@@ -456,9 +532,9 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           console.warn('⚠️ [Dashboard] Products data is not an array:', products);
           products = [];
         }
-        const previousProductsCount = Array.isArray(this.allProducts) ? this.allProducts.length : 0;
+        const previousProductsSignature = this.buildProductsFreshnessSignature(this.allProducts);
         this.allProducts = Array.isArray(products) ? products : [];
-        const productsChanged = previousProductsCount !== products.length;
+        const productsChanged = previousProductsSignature !== this.buildProductsFreshnessSignature(products);
 
         if (productsChanged) {
           this.calculateProductsStats(products);
@@ -480,11 +556,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           console.warn('⚠️ [Dashboard] Promotions data is not an array:', promotions);
           promotions = [];
         }
-        const previousPromotionsCount = Array.isArray(this.allPromotions)
-          ? this.allPromotions.length
-          : 0;
+        const previousPromotionsSignature = this.buildPromotionsFreshnessSignature(this.allPromotions);
         this.allPromotions = Array.isArray(promotions) ? promotions : [];
-        const promotionsChanged = previousPromotionsCount !== promotions.length;
+        const promotionsChanged =
+          previousPromotionsSignature !== this.buildPromotionsFreshnessSignature(promotions);
 
         if (promotionsChanged && this.promotionChartInstance) {
           this.updatePromotionChart();
@@ -704,15 +779,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     // 2. Visitors - Số đơn hàng hôm nay (proxy cho visitors)
     this.calculateChangeStats(todayOrders.length, yesterdayOrders.length, 'visitors');
 
-    // 3. Revenue - Tổng doanh thu từ các đơn hàng ĐÃ THANH TOÁN (completed/delivered)
-    // Loại bỏ các đơn hàng hủy (cancelled) hoặc hoàn tiền (refunded)
-    const paidOrders = orders.filter((order) => {
-      const status = order.status || order.order_status || '';
-      // Chỉ tính các đơn hàng đã thanh toán
-      return status === 'completed' || status === 'delivered';
-    });
+    // 3. Revenue - tổng giá trị các đơn hàng hợp lệ.
+    const revenueOrders = orders.filter((order) => this.isRevenueOrder(order));
 
-    const totalRevenue = paidOrders.reduce((sum, order) => {
+    const totalRevenue = revenueOrders.reduce((sum, order) => {
       const total =
         order.totalAmount ||
         order.total_amount ||
@@ -728,18 +798,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       );
     }, 0);
 
-    // Tính doanh thu hôm nay và hôm qua để so sánh phần trăm (chỉ đơn hàng đã thanh toán)
-    const todayPaidOrders = todayOrders.filter((order) => {
-      const status = order.status || order.order_status || '';
-      return status === 'completed' || status === 'delivered';
-    });
+    // Tính doanh thu hôm nay và hôm qua để so sánh phần trăm.
+    const todayRevenueOrders = todayOrders.filter((order) => this.isRevenueOrder(order));
 
-    const yesterdayPaidOrders = yesterdayOrders.filter((order) => {
-      const status = order.status || order.order_status || '';
-      return status === 'completed' || status === 'delivered';
-    });
+    const yesterdayRevenueOrders = yesterdayOrders.filter((order) => this.isRevenueOrder(order));
 
-    const todayRevenue = todayPaidOrders.reduce((sum, order) => {
+    const todayRevenue = todayRevenueOrders.reduce((sum, order) => {
       const total =
         order.totalAmount ||
         order.total_amount ||
@@ -755,7 +819,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       );
     }, 0);
 
-    const yesterdayRevenue = yesterdayPaidOrders.reduce((sum, order) => {
+    const yesterdayRevenue = yesterdayRevenueOrders.reduce((sum, order) => {
       const total =
         order.totalAmount ||
         order.total_amount ||
@@ -3520,9 +3584,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       customersData = new Array(12).fill(0);
 
       this.allOrders.forEach(o => {
-        const rawDate = o.createdAt || o.created_at || o.date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseOrderDateTime(o);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d.getFullYear() === this.selectedYearActivity) {
           ordersData[d.getMonth()]++;
@@ -3530,9 +3593,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.allUsers.forEach(u => {
-        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseUserDateTime(u);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d.getFullYear() === this.selectedYearActivity) {
           customersData[d.getMonth()]++;
@@ -3546,9 +3608,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       customersData = new Array(daysInMonth).fill(0);
 
       this.allOrders.forEach(o => {
-        const rawDate = o.createdAt || o.created_at || o.date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseOrderDateTime(o);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d.getFullYear() === this.selectedYearActivity && (d.getMonth() + 1) === this.selectedMonthActivity) {
           ordersData[d.getDate() - 1]++;
@@ -3556,9 +3617,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.allUsers.forEach(u => {
-        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseUserDateTime(u);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d.getFullYear() === this.selectedYearActivity && (d.getMonth() + 1) === this.selectedMonthActivity) {
           customersData[d.getDate() - 1]++;
@@ -3593,9 +3653,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       customersData = new Array(daysInWeek).fill(0);
 
       this.allOrders.forEach(o => {
-        const rawDate = o.createdAt || o.created_at || o.date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseOrderDateTime(o);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d >= startDate && d <= endDate) {
           const dayDiff = Math.floor((d.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -3606,9 +3665,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.allUsers.forEach(u => {
-        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseUserDateTime(u);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (d >= startDate && d <= endDate) {
           const dayDiff = Math.floor((d.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -3624,9 +3682,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       customersData = new Array(24).fill(0);
 
       this.allOrders.forEach(o => {
-        const rawDate = o.createdAt || o.created_at || o.date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseOrderDateTime(o);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (
           d.getFullYear() === this.selectedYearActivity &&
@@ -3638,9 +3695,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.allUsers.forEach(u => {
-        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseUserDateTime(u);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (
           d.getFullYear() === this.selectedYearActivity &&
@@ -3657,9 +3713,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       customersData = new Array(12).fill(0);
 
       this.allOrders.forEach(o => {
-        const rawDate = o.createdAt || o.created_at || o.date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseOrderDateTime(o);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (
           d.getFullYear() === this.selectedYearActivity &&
@@ -3675,9 +3730,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.allUsers.forEach(u => {
-        const rawDate = u.createdAt || u.created_at || u.date || u.RegisterDate || u.register_date;
-        if (!rawDate) return;
-        const d = new Date(rawDate);
+        const d = this.parseUserDateTime(u);
+        if (!d) return;
         if (isNaN(d.getTime())) return;
         if (
           d.getFullYear() === this.selectedYearActivity &&
@@ -3837,9 +3891,91 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
+  private getNormalizedStatus(value: any): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private isRevenueOrder(order: any): boolean {
+    const status = this.getNormalizedStatus(order.status || order.order_status);
+    const excludedStatuses = new Set([
+      'cancelled',
+      'canceled',
+      'deleted',
+      'returned',
+      'refunded',
+      'rejected',
+      'processing_return',
+      'returning',
+    ]);
+
+    return !excludedStatuses.has(status) && this.getOrderRevenueAmount(order) > 0;
+  }
+
   private isPaidOrder(order: any): boolean {
-    const status = order.status || order.order_status || '';
-    return status === 'completed' || status === 'delivered';
+    return this.isRevenueOrder(order);
+  }
+
+  private parseDateTimeValue(dateInput: any): Date | null {
+    if (!dateInput) return null;
+
+    if (dateInput instanceof Date) {
+      return isNaN(dateInput.getTime()) ? null : dateInput;
+    }
+
+    if (typeof dateInput === 'object') {
+      if (dateInput.$date) {
+        const parsed = new Date(dateInput.$date);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+      if (typeof dateInput.toString === 'function') {
+        const parsed = new Date(dateInput.toString());
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+    }
+
+    if (typeof dateInput === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        const [year, month, day] = dateInput.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
+        const [day, month, year] = dateInput.split('/').map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      const parsed = new Date(dateInput);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    return null;
+  }
+
+  private parseOrderDateTime(order: any): Date | null {
+    return this.parseDateTimeValue(
+      order.createdAt ||
+        order.created_at ||
+        order.order_date ||
+        order.orderDate ||
+        order.OrderDate ||
+        order.CreatedAt ||
+        order.date ||
+        order.createdDate ||
+        order.Date
+    );
+  }
+
+  private parseUserDateTime(user: any): Date | null {
+    return this.parseDateTimeValue(
+      user.RegisterDate ||
+        user.register_date ||
+        user.registerDate ||
+        user.created_at ||
+        user.createdAt ||
+        user.date ||
+        user.createdDate ||
+        user.created_date
+    );
   }
 
   /**
@@ -3866,10 +4002,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
 
     orders.forEach((order, index) => {
-      // Chỉ tính các đơn hàng đã thanh toán (completed/delivered)
+      // Chỉ tính các đơn hàng hợp lệ, bỏ qua đơn hủy/hoàn/trả.
       const status = order.status || order.order_status || '';
       if (!this.isPaidOrder(order)) {
-        return; // Bỏ qua đơn hàng chưa thanh toán, hủy, hoặc hoàn tiền
+        return; // Bỏ qua đơn hàng hủy, xóa, hoặc hoàn/trả.
       }
 
       const orderDate = this.parseOrderDate(order);
@@ -5034,7 +5170,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getProductImage(product: any): string {
-    const image = product?.image || product?.Image || product?.images;
+    const image = [product?.image, product?.imageUrl, product?.Image, product?.images].find((source) => {
+      if (Array.isArray(source)) {
+        return source.some((url) => typeof url === 'string' && url.trim() !== '');
+      }
+      return typeof source === 'string' && source.trim() !== '';
+    });
     if (Array.isArray(image)) {
       return image.find((url) => !!url) || '/assets/icons/image.png';
     }

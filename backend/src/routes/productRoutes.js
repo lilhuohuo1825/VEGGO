@@ -17,6 +17,90 @@ const HOME_LIMIT = 24;
 // Helpers
 // ─────────────────────────────────────────────
 
+function parsePromotionDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'object' && value.$date) return new Date(value.$date);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isPromotionCurrentlyActive(promo, now = new Date()) {
+  const status = String(promo.status || '').trim().toLowerCase();
+  if (status === 'inactive' || status === 'expired') return false;
+  if (promo.isActive === false || promo.show_on_app === false) return false;
+
+  const startDate = parsePromotionDate(promo.start_date);
+  const endDate = parsePromotionDate(promo.end_date);
+  if (startDate && startDate > now) return false;
+  if (endDate && endDate < now) return false;
+  return true;
+}
+
+function isFlashSalePromotion(promo) {
+  return String(promo.promotion_kind || '').trim().toLowerCase() === 'flashsale';
+}
+
+function calculateFlashSalePrice(originalPrice, promo) {
+  const discountValue = Number(promo.discount_value || promo.discount || 0);
+  if (promo.discount_type === 'fixed') {
+    return Math.max(0, originalPrice - discountValue);
+  }
+  if (promo.discount_type === 'buy1get1') {
+    return originalPrice;
+  }
+  return Math.max(0, Math.round(originalPrice * (100 - discountValue) / 100));
+}
+
+async function getActiveFlashSaleBySku(skus) {
+  const cleanSkus = [...new Set((skus || []).map(sku => String(sku || '').trim()).filter(Boolean))];
+  const result = new Map();
+  if (!cleanSkus.length) return result;
+
+  const db = mongoose.connection.db;
+  const targets = await db.collection('promotion_targets')
+    .find({ target_type: 'Product', target_ref: { $in: cleanSkus } })
+    .toArray();
+  const promotionIds = [...new Set(targets.map(target => target.promotion_id).filter(Boolean))];
+  if (!promotionIds.length) return result;
+
+  const now = new Date();
+  const promos = await db.collection('promotions')
+    .find({ promotion_id: { $in: promotionIds }, show_on_app: { $ne: false }, status: { $ne: 'Inactive' } })
+    .toArray();
+  const activePromoById = new Map(
+    promos
+      .filter(promo => isPromotionCurrentlyActive(promo, now) && isFlashSalePromotion(promo))
+      .map(promo => [promo.promotion_id, promo])
+  );
+
+  targets.forEach(target => {
+    const promo = activePromoById.get(target.promotion_id);
+    if (!promo || !Array.isArray(target.target_ref)) return;
+    target.target_ref.forEach(sku => {
+      if (cleanSkus.includes(String(sku)) && !result.has(String(sku))) {
+        result.set(String(sku), promo);
+      }
+    });
+  });
+
+  return result;
+}
+
+function applyFlashSalePricing(product, promo) {
+  if (!product || !promo) return product;
+  const originalPrice = Number(product.price || 0);
+  const salePrice = calculateFlashSalePrice(originalPrice, promo);
+  return {
+    ...product,
+    price: salePrice,
+    originalPrice,
+    base_price: originalPrice,
+    activePromotionId: promo.promotion_id,
+    activePromotionKind: promo.promotion_kind,
+  };
+}
+
 /**
  * Trả về aggregation pipeline hoặc sort object tương ứng với tab.
  *
@@ -109,6 +193,7 @@ router.get('/home', asyncHandler(async (req, res) => {
 
 router.get('/', asyncHandler(async (req, res) => {
   const showAll = req.query.all === 'true';
+  const lite = req.query.lite === 'true';
   const query = showAll
     ? {}
     : {
@@ -119,13 +204,55 @@ router.get('/', asyncHandler(async (req, res) => {
         ],
       };
 
-  const products = await mongoose.connection.db.collection('products')
-    .find(query)
+  const db = mongoose.connection.db;
+  const projection = lite
+    ? {
+        product_name: 1,
+        name: 1,
+        sku: 1,
+        brand: 1,
+        unit: 1,
+        price: 1,
+        base_price: 1,
+        originalPrice: 1,
+        image: 1,
+        imageUrl: 1,
+        stock: 1,
+        quantity: 1,
+        quantity_available: 1,
+        Quantity: 1,
+        CategoryID: 1,
+        SubcategoryID: 1,
+        categoryId: 1,
+        subcategoryId: 1,
+        category: 1,
+        subcategory: 1,
+        rating: 1,
+        reviewCount: 1,
+        purchase_count: 1,
+        soldCount: 1,
+        liked: 1,
+        status: 1,
+        isActive: 1,
+        post_date: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        groups: 1,
+        EmissionFactor: 1,
+        AllowCustomWeight: 1,
+        allowCustomWeight: 1,
+        WeightOptions: 1,
+      }
+    : { image: 0, imageUrl: 0 };
+  const products = await db.collection('products')
+    .find(query, { projection })
     .sort({ createdAt: -1, post_date: -1 })
     .toArray();
 
-  // Tải danh mục từ collection 'categories' để map tên
-  const categories = await mongoose.connection.db.collection('categories').find().toArray();
+  const [reviewStatsBySku, categories] = await Promise.all([
+    lite ? Promise.resolve(new Map()) : getReviewStatsBySku(products.map(product => product.sku)),
+    db.collection('categories').find().toArray(),
+  ]);
   const categoryMap = {};
   const subcategoryMap = {};
 
@@ -140,11 +267,19 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const mappedProducts = products.map(product => {
     const normalized = normalizeProduct(product);
+    const reviewStats = reviewStatsBySku.get(String(product.sku)) || {
+      rating: normalized.rating,
+      reviewCount: normalized.reviewCount,
+    };
     return {
       ...product,
       ...normalized,
-      category: categoryMap[product.CategoryID || product.categoryId] || '',
-      subcategory: subcategoryMap[product.SubcategoryID || product.subcategoryId] || '',
+      rating: reviewStats.rating,
+      reviewCount: reviewStats.reviewCount,
+      image: sanitizeListImage(product.image),
+      imageUrl: sanitizeListImage(product.imageUrl || normalized.imageUrl),
+      category: categoryMap[product.CategoryID || product.categoryId] || product.category || normalized.category || '',
+      subcategory: subcategoryMap[product.SubcategoryID || product.subcategoryId] || product.subcategory || normalized.subcategory || '',
     };
   });
 
@@ -222,6 +357,110 @@ router.get('/metadata/products', asyncHandler(async (_req, res) => {
   });
 }));
 
+router.get('/groups', asyncHandler(async (_req, res) => {
+  const groups = await mongoose.connection.db
+    .collection('products')
+    .distinct('groups', { groups: { $exists: true, $ne: [] } });
+
+  res.json({
+    success: true,
+    data: groups
+      .filter(group => typeof group === 'string' && group.trim())
+      .sort((a, b) => a.localeCompare(b, 'vi')),
+  });
+}));
+
+router.post('/groups', asyncHandler(async (req, res) => {
+  const groupName = typeof req.body.groupName === 'string' ? req.body.groupName.trim() : '';
+  const skus = Array.isArray(req.body.skus)
+    ? req.body.skus.map(sku => String(sku).trim()).filter(Boolean)
+    : [];
+
+  if (!groupName) {
+    return res.status(400).json({ success: false, message: 'Group name is required' });
+  }
+
+  if (skus.length === 0) {
+    return res.status(400).json({ success: false, message: 'At least one SKU is required' });
+  }
+
+  const result = await mongoose.connection.db.collection('products').updateMany(
+    { sku: { $in: skus } },
+    { $addToSet: { groups: groupName } }
+  );
+
+  res.json({
+    success: true,
+    message: `Đã tạo nhóm "${groupName}"`,
+    matchedCount: result.matchedCount,
+    modifiedCount: result.modifiedCount,
+  });
+}));
+
+router.patch('/:sku/groups', asyncHandler(async (req, res) => {
+  const groupName = typeof req.body.groupName === 'string' ? req.body.groupName.trim() : '';
+  const action = String(req.body.action || '').trim().toLowerCase();
+
+  if (!groupName) {
+    return res.status(400).json({ success: false, message: 'Group name is required' });
+  }
+
+  if (!['add', 'remove'].includes(action)) {
+    return res.status(400).json({ success: false, message: 'Valid action is required' });
+  }
+
+  const update = action === 'add'
+    ? { $addToSet: { groups: groupName } }
+    : { $pull: { groups: groupName } };
+
+  const result = await mongoose.connection.db.collection('products').findOneAndUpdate(
+    { sku: req.params.sku },
+    update,
+    { returnDocument: 'after' }
+  );
+
+  if (!result) {
+    return res.status(404).json({ success: false, message: 'Product not found' });
+  }
+
+  res.json({ success: true, data: result });
+}));
+
+router.patch('/:id/field', asyncHandler(async (req, res) => {
+  const field = typeof req.body.field === 'string' ? req.body.field.trim() : '';
+
+  if (!field || field === '_id' || field.includes('$') || field.includes('.')) {
+    return res.status(400).json({ success: false, message: 'Valid field is required' });
+  }
+
+  let query = {};
+  if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+    query = { _id: new mongoose.Types.ObjectId(req.params.id) };
+  } else {
+    query = { $or: [{ sku: req.params.id }, { id: req.params.id }] };
+  }
+
+  let value = req.body.value;
+  if (field === 'EmissionFactor') {
+    value = Number(value) || 0;
+  }
+  if (field === 'allowCustomWeight' || field === 'AllowCustomWeight') {
+    value = value === true || value === 'true';
+  }
+
+  const result = await mongoose.connection.db.collection('products').findOneAndUpdate(
+    query,
+    { $set: { [field]: value, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+
+  if (!result) {
+    return res.status(404).json({ success: false, message: 'Product not found' });
+  }
+
+  res.json({ success: true, data: result });
+}));
+
 // Get single product (supports ObjectId, sku, or ID fallback)
 router.get('/:id', asyncHandler(async (req, res) => {
   let query = {};
@@ -231,10 +470,15 @@ router.get('/:id', asyncHandler(async (req, res) => {
     query = { $or: [{ sku: req.params.id }, { id: req.params.id }] };
   }
 
-  const product = await mongoose.connection.db.collection('products').findOne(query);
-  if (!product) {
+  const rawProduct = await mongoose.connection.db.collection('products').findOne(query);
+  if (!rawProduct) {
     return res.status(404).json({ message: 'Product not found' });
   }
+
+  const flashSaleBySku = await getActiveFlashSaleBySku([rawProduct.sku]);
+  const product = applyFlashSalePricing(rawProduct, flashSaleBySku.get(String(rawProduct.sku)));
+
+  const reviewStats = await getReviewStats(product.sku);
 
   // Lấy thêm tên danh mục và danh mục con
   const catDoc = await mongoose.connection.db.collection('categories').findOne({ CategoryID: product.CategoryID });
@@ -249,6 +493,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json({
     ...product,
     ...normalizeProduct(product),
+    rating: reviewStats.rating,
+    reviewCount: reviewStats.reviewCount,
     category: product.category,
     subcategory: product.subcategory,
   });
@@ -335,9 +581,74 @@ function normalizeProduct(product) {
   };
 }
 
+async function getReviewStats(sku) {
+  if (!sku) {
+    return { rating: 0, reviewCount: 0 };
+  }
+
+  const reviewDoc = await mongoose.connection.db.collection('reviews').findOne({ sku: String(sku) });
+  const reviews = Array.isArray(reviewDoc?.reviews) ? reviewDoc.reviews : [];
+  const validReviews = reviews.filter(review => Number.isFinite(Number(review.rating)));
+  if (validReviews.length === 0) {
+    return { rating: 0, reviewCount: 0 };
+  }
+
+  const total = validReviews.reduce((sum, review) => sum + Number(review.rating), 0);
+  return {
+    rating: Math.round((total / validReviews.length) * 10) / 10,
+    reviewCount: validReviews.length,
+  };
+}
+
+async function getReviewStatsBySku(skus) {
+  const cleanSkus = [...new Set((skus || [])
+    .map(sku => sku == null ? '' : String(sku))
+    .filter(Boolean))];
+  const stats = new Map();
+  if (cleanSkus.length === 0) {
+    return stats;
+  }
+
+  let reviewDocs = [];
+  try {
+    reviewDocs = await mongoose.connection.db.collection('reviews')
+      .find(
+        { sku: { $in: cleanSkus } },
+        { projection: { sku: 1, reviews: 1 }, maxTimeMS: 1500 }
+      )
+      .toArray();
+  } catch (error) {
+    console.warn('[GET /api/products] Review stats skipped:', error.message);
+    return stats;
+  }
+
+  reviewDocs.forEach(doc => {
+    const reviews = Array.isArray(doc.reviews) ? doc.reviews : [];
+    const validReviews = reviews.filter(review => Number.isFinite(Number(review.rating)));
+    if (validReviews.length === 0) {
+      stats.set(String(doc.sku), { rating: 0, reviewCount: 0 });
+      return;
+    }
+
+    const total = validReviews.reduce((sum, review) => sum + Number(review.rating), 0);
+    stats.set(String(doc.sku), {
+      rating: Math.round((total / validReviews.length) * 10) / 10,
+      reviewCount: validReviews.length,
+    });
+  });
+
+  return stats;
+}
+
 function firstImage(value) {
   if (Array.isArray(value)) {
     return value[0] || '';
   }
   return value || '';
+}
+
+function sanitizeListImage(value) {
+  const image = firstImage(value);
+  if (!image) return '';
+  return String(image);
 }

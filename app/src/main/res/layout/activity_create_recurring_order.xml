@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_main"
+    android:background="@color/background_main">
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:clipToPadding="false"
     android:overScrollMode="never"
     android:paddingStart="@dimen/spacing_md"
     android:paddingEnd="@dimen/spacing_md"
-    android:paddingBottom="@dimen/spacing_lg">
+    android:paddingBottom="104dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,50 +31,115 @@
     android:scaleType="centerInside"
     android:src="@drawable/ic_left"
     android:tint="@color/primary_hover" />
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/recurring_create_title" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/recurring_create_title" android:textColor="@color/neutral_100" android:textSize="20sp" android:textStyle="bold" />
             <ImageView android:layout_width="40dp" android:layout_height="40dp" android:contentDescription="@string/orders_menu" android:padding="@dimen/spacing_sm" android:src="@drawable/ic_order_list_menu" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_md">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/recurring_form_info" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:text="@string/recurring_form_name" android:textColor="@color/neutral_80" android:textSize="@dimen/text_sm" />
-            <TextView android:id="@+id/createRecurringName" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_form_name_value" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/recurring_form_info" android:textColor="@color/primary_hover" android:textSize="18sp" android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:fontFamily="@font/inter_semibold" android:text="@string/recurring_form_name" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" android:textStyle="bold" />
+            <EditText android:id="@+id/createRecurringName" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:inputType="textCapSentences" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:singleLine="true" android:text="@string/recurring_form_name_value" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="@dimen/spacing_md" android:gravity="center_vertical" android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/recurring_address" android:textColor="@color/neutral_80" android:textSize="@dimen/text_sm" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/inter_semibold" android:text="@string/recurring_address" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" android:textStyle="bold" />
                 <TextView android:id="@+id/createRecurringAddressBookButton" android:layout_width="112dp" android:layout_height="36dp" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="@string/recurring_address_book" android:textColor="@color/background_main" android:textSize="@dimen/text_sm" android:textStyle="bold" />
             </LinearLayout>
-            <TextView android:layout_width="match_parent" android:layout_height="40dp" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_city_hint" android:textColor="@color/neutral_60" />
-            <TextView android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_ward_hint" android:textColor="@color/neutral_60" />
-            <TextView android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_detail_address_hint" android:textColor="@color/neutral_60" />
+            <LinearLayout android:id="@+id/createRecurringSelectedAddressCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_recurring_input" android:orientation="vertical" android:padding="@dimen/spacing_md">
+                <TextView android:id="@+id/createRecurringAddressName" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/inter_semibold" android:text="Chưa chọn địa chỉ" android:textColor="@color/neutral_100" android:textSize="@dimen/text_sm" />
+                <TextView android:id="@+id/createRecurringAddressLine" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_xs" android:fontFamily="@font/inter_regular" android:text="Chọn địa chỉ trong sổ địa chỉ để giao đơn định kỳ." android:textColor="@color/neutral_70" android:textSize="13sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_md">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/recurring_select_products" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
-            <TextView android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="@dimen/spacing_md" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_search_hint" android:textColor="@color/neutral_60" />
-            <include layout="@layout/item_order_detail_product_kale" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:text="Sản phẩm" android:textColor="@color/primary_hover" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:id="@+id/createRecurringChooseProductButton" android:layout_width="156dp" android:layout_height="36dp" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:singleLine="true" android:text="@string/recurring_select_products" android:textColor="@color/background_main" android:textSize="13sp" android:textStyle="bold" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/createRecurringProductContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_md">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/recurring_time_title" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="@string/recurring_time_title" android:textColor="@color/primary_hover" android:textSize="18sp" android:textStyle="bold" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:orientation="vertical">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:orientation="horizontal">
-                    <TextView android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_day" android:textSize="@dimen/text_sm" />
-                    <TextView android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_week" android:textColor="@color/background_main" android:textSize="@dimen/text_sm" />
-                    <TextView android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_month" android:textSize="@dimen/text_sm" />
+                    <TextView android:id="@+id/createRecurringFrequencyDay" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_day" android:textSize="@dimen/text_sm" />
+                    <TextView android:id="@+id/createRecurringFrequencyWeek" android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_week" android:textColor="@color/background_main" android:textSize="@dimen/text_sm" />
+                    <TextView android:id="@+id/createRecurringFrequencyMonth" android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_month" android:textSize="@dimen/text_sm" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:layout_marginTop="@dimen/spacing_sm" android:orientation="horizontal">
-                    <TextView android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_quarter" android:textSize="@dimen/text_sm" />
-                    <TextView android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_year" android:textSize="@dimen/text_sm" />
+                    <TextView android:id="@+id/createRecurringFrequencyQuarter" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_quarter" android:textSize="@dimen/text_sm" />
+                    <TextView android:id="@+id/createRecurringFrequencyYear" android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" android:background="@drawable/bg_recurring_input" android:fontFamily="@font/inter_medium" android:gravity="center" android:maxLines="1" android:text="@string/recurring_frequency_year" android:textSize="@dimen/text_sm" />
                     <Space android:layout_width="0dp" android:layout_height="36dp" android:layout_marginStart="@dimen/spacing_sm" android:layout_weight="1" />
                 </LinearLayout>
             </LinearLayout>
-            <TextView android:layout_width="match_parent" android:layout_height="42dp" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_delivery_day_value" />
-            <TextView android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:text="@string/recurring_delivery_slot_value" />
+            <TextView android:id="@+id/createRecurringDeliveryDay" android:layout_width="match_parent" android:layout_height="42dp" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:text="@string/recurring_delivery_day_value" />
+            <TextView android:id="@+id/createRecurringDeliverySlot" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="@dimen/spacing_sm" android:background="@drawable/bg_recurring_input" android:gravity="center_vertical" android:paddingStart="@dimen/spacing_md" android:paddingEnd="@dimen/spacing_md" android:text="@string/recurring_delivery_slot_value" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="64dp" android:gravity="center_vertical" android:orientation="horizontal">
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/inter_semibold" android:text="@string/recurring_estimate" android:textColor="@color/primary_hover" />
-            <TextView android:id="@+id/createRecurringScheduleButton" android:layout_width="120dp" android:layout_height="40dp" android:background="@drawable/bg_order_primary_button" android:gravity="center" android:text="@string/recurring_create_schedule" android:textColor="@color/background_main" android:textStyle="bold" />
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="88dp"
+        android:layout_gravity="bottom"
+        android:background="@color/background_main"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/createRecurringEstimateAmountText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter_semibold"
+                android:text="Dự kiến 0đ/lần"
+                android:textColor="@color/primary_hover"
+                android:textSize="@dimen/text_sm" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_leaf"
+                    android:tint="@color/primary_hover" />
+
+                <TextView
+                    android:id="@+id/createRecurringCarbonText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="+0 điểm carbon"
+                    android:textColor="@color/primary_hover"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/createRecurringScheduleButton"
+            android:layout_width="148dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/recurring_create_schedule"
+            android:textColor="@color/background_main"
+            android:textSize="@dimen/text_md"
+            android:textStyle="bold" />
+    </LinearLayout>
+</FrameLayout>
