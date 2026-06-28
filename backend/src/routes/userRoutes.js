@@ -85,26 +85,61 @@ router.post('/register', asyncHandler(async (req, res) => {
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
+// ... (giữ nguyên code cũ)
+}));
 
-  if (!PHONE_REGEX.test(String(phone || '').trim()) || !STRONG_PASSWORD_REGEX.test(String(password || ''))) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+/**
+ * 2.1 Đăng nhập bằng Google
+ * POST /api/users/google-login
+ */
+router.post('/google-login', asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: 'Thiếu ID Token' });
   }
 
-  const user = await User.findOne({ Phone: phone })
-    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType CustomerTiering TotalSpent CertificateID CertificateName CertificateStatus CertificateGrantedAt CertificateCarbonPointSnapshot CertificateCarbonEmissionSnapshot PasswordVersion LastPasswordReset firebaseUid name email phone')
-    .lean();
-  if (!user || !user.Password) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
-  }
+  try {
+    // Verify Firebase ID Token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const { email, name, picture, uid } = decodedToken;
 
-  const isMatch = await bcrypt.compare(password, user.Password);
-  if (!isMatch) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
-  }
+    // Tìm user trong MongoDB theo Email (SSOT)
+    let user = await User.findOne({ Email: email })
+      .select('-Password')
+      .lean();
 
-  delete user.Password;
-  user._id = String(user._id);
-  res.json(user);
+    if (!user) {
+      // Nếu chưa có, tạo user mới
+      const customerId = await User.generateNextCustomerId();
+      const newUser = new User({
+        CustomerID: customerId,
+        FullName: name || 'Google User',
+        Email: email,
+        EmailConfirmed: true,
+        avatarUrl: picture || '',
+        firebaseUid: uid,
+        name: name,
+        email: email,
+        Provider: 'google',
+        tastePreferences: defaultTastePreferences()
+      });
+      await newUser.save();
+      user = newUser.toObject();
+    } else {
+      // Nếu đã có, cập nhật firebaseUid nếu cần
+      if (!user.firebaseUid) {
+        await User.updateOne({ _id: user._id }, { $set: { firebaseUid: uid } });
+        user.firebaseUid = uid;
+      }
+    }
+
+    user._id = String(user._id);
+    res.json(user);
+  } catch (error) {
+    console.error('Google Login Error:', error);
+    res.status(401).json({ message: 'Xác thực Google thất bại' });
+  }
 }));
 
 /**

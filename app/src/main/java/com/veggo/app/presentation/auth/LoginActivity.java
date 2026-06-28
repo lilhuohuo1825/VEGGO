@@ -11,8 +11,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -27,8 +39,33 @@ public class LoginActivity extends BaseActivity {
     private TextView tvPasswordError;
     private ImageView imgEye;
     private View btnLogin;
+    private View btnGoogle;
     private View progressBar;
     private boolean isPasswordVisible;
+    private GoogleSignInClient mGoogleSignInClient;
+    private FirebaseAuth mAuth;
+
+    private final ActivityResultLauncher<Intent> googleSignInLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                android.util.Log.d("VEGGO_AUTH", "Google Sign-In ResultCode: " + result.getResultCode());
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    try {
+                        GoogleSignInAccount account = task.getResult(ApiException.class);
+                        if (account != null) {
+                            android.util.Log.d("VEGGO_AUTH", "Google ID Token: " + (account.getIdToken() != null ? "Present" : "NULL"));
+                            firebaseAuthWithGoogle(account.getIdToken());
+                        }
+                    } catch (ApiException e) {
+                        android.util.Log.e("VEGGO_AUTH", "Google Sign-In ApiException: " + e.getStatusCode() + " - " + e.getMessage());
+                        Toast.makeText(this, "Google sign in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    android.util.Log.e("VEGGO_AUTH", "Google Sign-In Canceled or Failed. ResultCode: " + result.getResultCode());
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +73,20 @@ public class LoginActivity extends BaseActivity {
         setContentView(R.layout.activity_login);
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        mAuth = FirebaseAuth.getInstance();
 
+        initGoogleSignIn();
         initViews();
         setupActions();
         observeViewModel();
+    }
+
+    private void initGoogleSignIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     private void initViews() {
@@ -49,6 +96,7 @@ public class LoginActivity extends BaseActivity {
         tvPasswordError = findViewById(R.id.tvPasswordError);
         imgEye = findViewById(R.id.imgEye);
         btnLogin = findViewById(R.id.btnLogin);
+        btnGoogle = findViewById(R.id.btnGoogle);
 //        progressBar = findViewById(R.id.progressBar); // Đảm bảo layout có progressBar hoặc xử lý ẩn/hiện btnLogin
 
         tvPhoneError.setVisibility(View.GONE);
@@ -64,6 +112,7 @@ public class LoginActivity extends BaseActivity {
         imgBack.setOnClickListener(v -> finish());
         imgEye.setOnClickListener(v -> togglePasswordVisibility());
         btnLogin.setOnClickListener(v -> handleLogin());
+        btnGoogle.setOnClickListener(v -> signInWithGoogle());
         edtPhone.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 validatePhone(edtPhone.getText().toString().trim());
@@ -129,6 +178,38 @@ public class LoginActivity extends BaseActivity {
             imgEye.setImageResource(R.drawable.ic_eye_hide_dark);
         }
         edtPassword.setSelection(edtPassword.getText().length());
+    }
+
+    private void signInWithGoogle() {
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        googleSignInLauncher.launch(signInIntent);
+    }
+
+    private void firebaseAuthWithGoogle(String idToken) {
+        android.util.Log.d("VEGGO_AUTH", "Starting FirebaseAuth with Google Token...");
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        android.util.Log.d("VEGGO_AUTH", "FirebaseAuth Success. User: " + (user != null ? user.getEmail() : "NULL"));
+                        if (user != null) {
+                            user.getIdToken(true).addOnCompleteListener(tokenTask -> {
+                                if (tokenTask.isSuccessful()) {
+                                    String firebaseIdToken = tokenTask.getResult().getToken();
+                                    android.util.Log.d("VEGGO_AUTH", "Firebase ID Token acquired. Sending to Backend...");
+                                    authViewModel.googleLogin(firebaseIdToken);
+                                } else {
+                                    android.util.Log.e("VEGGO_AUTH", "Failed to get Firebase ID Token: " + tokenTask.getException());
+                                    Toast.makeText(this, "Failed to get Firebase ID Token", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    } else {
+                        android.util.Log.e("VEGGO_AUTH", "FirebaseAuth Failed: " + task.getException());
+                        Toast.makeText(this, "Firebase authentication failed.", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void handleLogin() {

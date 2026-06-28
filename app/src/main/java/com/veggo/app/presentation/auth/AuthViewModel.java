@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.veggo.app.data.remote.dto.UserDto;
 import com.veggo.app.data.repository.AuthRepositoryImpl;
 import com.veggo.app.domain.repository.AuthRepository;
+import com.veggo.app.domain.usecase.auth.GoogleLoginUseCase;
 
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import retrofit2.Response;
 
 public class AuthViewModel extends ViewModel {
     private final AuthRepository authRepository;
+    private final GoogleLoginUseCase googleLoginUseCase;
 
     private final MutableLiveData<Boolean> _loading = new MutableLiveData<>(false);
     public LiveData<Boolean> getLoading() { return _loading; }
@@ -37,6 +39,28 @@ public class AuthViewModel extends ViewModel {
 
     public AuthViewModel() {
         this.authRepository = new AuthRepositoryImpl();
+        this.googleLoginUseCase = new GoogleLoginUseCase(authRepository);
+    }
+
+    public void googleLogin(String idToken) {
+        _loading.setValue(true);
+        googleLoginUseCase.execute(idToken, new Callback<UserDto>() {
+            @Override
+            public void onResponse(Call<UserDto> call, Response<UserDto> response) {
+                _loading.setValue(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    _user.setValue(response.body());
+                } else {
+                    _error.setValue("Đăng nhập bằng Google thất bại");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserDto> call, Throwable t) {
+                _loading.setValue(false);
+                _error.setValue("Lỗi kết nối: " + t.getMessage());
+            }
+        });
     }
 
     public void login(String phone, String password) {

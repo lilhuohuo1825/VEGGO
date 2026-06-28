@@ -392,4 +392,5 @@
     <string name="reviews_empty_body">Bạn chưa có sản phẩm nào cần đánh giá hoặc đã hoàn thành tất cả đánh giá.</string>
     <string name="returns_empty_title">Không có yêu cầu đổi trả nào</string>
     <string name="returns_empty_body">Bạn chưa tạo yêu cầu đổi/trả sản phẩm nào.</string>
+    <string name="default_web_client_id">435688023132-m8b63vme7cb6pfskgtm0jsl80i5a5khh.apps.googleusercontent.com</string>
 </resources>
