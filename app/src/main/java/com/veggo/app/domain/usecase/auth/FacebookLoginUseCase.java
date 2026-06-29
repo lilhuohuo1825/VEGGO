@@ -4,10 +4,10 @@ import com.veggo.app.data.remote.dto.UserDto;
 import com.veggo.app.domain.repository.AuthRepository;
 import retrofit2.Callback;
 
-public class GoogleLoginUseCase {
+public class FacebookLoginUseCase {
     private final AuthRepository repository;
 
-    public GoogleLoginUseCase(AuthRepository repository) {
+    public FacebookLoginUseCase(AuthRepository repository) {
         this.repository = repository;
     }
 

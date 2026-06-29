@@ -1,12 +1,9 @@
 package com.veggo.app.data.remote.request;
 
-import com.google.gson.annotations.SerializedName;
-
-public class GoogleLoginRequest {
-    @SerializedName("idToken")
+public class FirebaseLoginRequest {
     private String idToken;
 
-    public GoogleLoginRequest(String idToken) {
+    public FirebaseLoginRequest(String idToken) {
         this.idToken = idToken;
     }
 

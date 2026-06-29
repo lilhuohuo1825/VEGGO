@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.veggo.app.data.remote.dto.UserDto;
 import com.veggo.app.data.repository.AuthRepositoryImpl;
 import com.veggo.app.domain.repository.AuthRepository;
+import com.veggo.app.domain.usecase.auth.FacebookLoginUseCase;
 import com.veggo.app.domain.usecase.auth.GoogleLoginUseCase;
 
 import java.util.Map;
@@ -18,6 +19,7 @@ import retrofit2.Response;
 public class AuthViewModel extends ViewModel {
     private final AuthRepository authRepository;
     private final GoogleLoginUseCase googleLoginUseCase;
+    private final FacebookLoginUseCase facebookLoginUseCase;
 
     private final MutableLiveData<Boolean> _loading = new MutableLiveData<>(false);
     public LiveData<Boolean> getLoading() { return _loading; }
@@ -40,6 +42,7 @@ public class AuthViewModel extends ViewModel {
     public AuthViewModel() {
         this.authRepository = new AuthRepositoryImpl();
         this.googleLoginUseCase = new GoogleLoginUseCase(authRepository);
+        this.facebookLoginUseCase = new FacebookLoginUseCase(authRepository);
     }
 
     public void googleLogin(String idToken) {
@@ -51,7 +54,7 @@ public class AuthViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     _user.setValue(response.body());
                 } else {
-                    _error.setValue("Đăng nhập bằng Google thất bại");
+                    handleError(response);
                 }
             }
 
@@ -61,6 +64,43 @@ public class AuthViewModel extends ViewModel {
                 _error.setValue("Lỗi kết nối: " + t.getMessage());
             }
         });
+    }
+
+    public void facebookLogin(String idToken) {
+        _loading.setValue(true);
+        facebookLoginUseCase.execute(idToken, new Callback<UserDto>() {
+            @Override
+            public void onResponse(Call<UserDto> call, Response<UserDto> response) {
+                _loading.setValue(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    _user.setValue(response.body());
+                } else {
+                    handleError(response);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserDto> call, Throwable t) {
+                _loading.setValue(false);
+                _error.setValue("Lỗi kết nối: " + t.getMessage());
+            }
+        });
+    }
+
+    private void handleError(Response<UserDto> response) {
+        String errorMsg = "Đăng nhập thất bại";
+        if (response.errorBody() != null) {
+            try {
+                String errorJson = response.errorBody().string();
+                org.json.JSONObject jsonObj = new org.json.JSONObject(errorJson);
+                if (jsonObj.has("message")) {
+                    errorMsg = jsonObj.getString("message");
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+        _error.setValue(errorMsg);
     }
 
     public void login(String phone, String password) {

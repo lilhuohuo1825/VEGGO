@@ -89,10 +89,10 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 /**
- * 2.1 Đăng nhập bằng Google
- * POST /api/users/google-login
+ * 2.1 Đăng nhập bằng Firebase (Google/Facebook)
+ * POST /api/users/firebase-login
  */
-router.post('/google-login', asyncHandler(async (req, res) => {
+router.post('/firebase-login', asyncHandler(async (req, res) => {
   const { idToken } = req.body;
 
   if (!idToken) {
@@ -102,43 +102,47 @@ router.post('/google-login', asyncHandler(async (req, res) => {
   try {
     // Verify Firebase ID Token
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { email, name, picture, uid } = decodedToken;
+    const { email, name, picture, uid, firebase } = decodedToken;
 
-    // Tìm user trong MongoDB theo Email (SSOT)
-    let user = await User.findOne({ Email: email })
+    // Yêu cầu bắt buộc phải có Email (theo yêu cầu SSOT)
+    if (!email) {
+      return res.status(400).json({
+        message: 'Tài khoản này không cung cấp địa chỉ email. Vui lòng đăng nhập bằng số điện thoại hoặc sử dụng tài khoản khác có email.'
+      });
+    }
+
+    const provider = firebase.sign_in_provider === 'facebook.com' ? 'facebook' : 'google';
+
+    // Tìm user trong MongoDB theo firebaseUid (Định danh duy nhất cho từng Provider)
+    let user = await User.findOne({ firebaseUid: uid })
       .select('-Password')
       .lean();
 
     if (!user) {
-      // Nếu chưa có, tạo user mới
+      // Nếu chưa có tài khoản liên kết với UID này, tạo user mới hoàn toàn
+      // Lưu ý: Không tìm theo Email để tránh tự động gộp tài khoản Phone/khác vào Google/Facebook
       const customerId = await User.generateNextCustomerId();
       const newUser = new User({
         CustomerID: customerId,
-        FullName: name || 'Google User',
+        FullName: name || 'User',
         Email: email,
         EmailConfirmed: true,
         avatarUrl: picture || '',
         firebaseUid: uid,
         name: name,
         email: email,
-        Provider: 'google',
+        Provider: provider,
         tastePreferences: defaultTastePreferences()
       });
       await newUser.save();
       user = newUser.toObject();
-    } else {
-      // Nếu đã có, cập nhật firebaseUid nếu cần
-      if (!user.firebaseUid) {
-        await User.updateOne({ _id: user._id }, { $set: { firebaseUid: uid } });
-        user.firebaseUid = uid;
-      }
     }
 
     user._id = String(user._id);
     res.json(user);
   } catch (error) {
-    console.error('Google Login Error:', error);
-    res.status(401).json({ message: 'Xác thực Google thất bại' });
+    console.error('Firebase Login Error:', error);
+    res.status(401).json({ message: 'Xác thực tài khoản thất bại' });
   }
 }));
 

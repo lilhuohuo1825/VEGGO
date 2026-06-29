@@ -13,8 +13,15 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -22,6 +29,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
@@ -40,9 +48,11 @@ public class LoginActivity extends BaseActivity {
     private ImageView imgEye;
     private View btnLogin;
     private View btnGoogle;
+    private View btnFacebook;
     private View progressBar;
     private boolean isPasswordVisible;
     private GoogleSignInClient mGoogleSignInClient;
+    private CallbackManager mCallbackManager;
     private FirebaseAuth mAuth;
 
     private final ActivityResultLauncher<Intent> googleSignInLauncher = registerForActivityResult(
@@ -76,9 +86,33 @@ public class LoginActivity extends BaseActivity {
         mAuth = FirebaseAuth.getInstance();
 
         initGoogleSignIn();
+        initFacebookSignIn();
         initViews();
         setupActions();
         observeViewModel();
+    }
+
+    private void initFacebookSignIn() {
+        mCallbackManager = CallbackManager.Factory.create();
+        LoginManager.getInstance().registerCallback(mCallbackManager,
+                new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        android.util.Log.d("VEGGO_AUTH", "Facebook login success");
+                        handleFacebookAccessToken(loginResult.getAccessToken());
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        android.util.Log.d("VEGGO_AUTH", "Facebook login cancelled");
+                    }
+
+                    @Override
+                    public void onError(FacebookException exception) {
+                        android.util.Log.e("VEGGO_AUTH", "Facebook login error", exception);
+                        Toast.makeText(LoginActivity.this, "Facebook login error: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void initGoogleSignIn() {
@@ -97,6 +131,7 @@ public class LoginActivity extends BaseActivity {
         imgEye = findViewById(R.id.imgEye);
         btnLogin = findViewById(R.id.btnLogin);
         btnGoogle = findViewById(R.id.btnGoogle);
+        btnFacebook = findViewById(R.id.btnFacebook);
 //        progressBar = findViewById(R.id.progressBar); // Đảm bảo layout có progressBar hoặc xử lý ẩn/hiện btnLogin
 
         tvPhoneError.setVisibility(View.GONE);
@@ -113,6 +148,7 @@ public class LoginActivity extends BaseActivity {
         imgEye.setOnClickListener(v -> togglePasswordVisibility());
         btnLogin.setOnClickListener(v -> handleLogin());
         btnGoogle.setOnClickListener(v -> signInWithGoogle());
+        btnFacebook.setOnClickListener(v -> signInWithFacebook());
         edtPhone.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 validatePhone(edtPhone.getText().toString().trim());
@@ -186,6 +222,41 @@ public class LoginActivity extends BaseActivity {
             Intent signInIntent = mGoogleSignInClient.getSignInIntent();
             googleSignInLauncher.launch(signInIntent);
         });
+    }
+
+    private void signInWithFacebook() {
+        LoginManager.getInstance().logInWithReadPermissions(this, mCallbackManager, java.util.Arrays.asList("email", "public_profile"));
+    }
+
+    private void handleFacebookAccessToken(AccessToken token) {
+        android.util.Log.d("VEGGO_AUTH", "handleFacebookAccessToken:" + token);
+        AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null) {
+                            user.getIdToken(true).addOnCompleteListener(tokenTask -> {
+                                if (tokenTask.isSuccessful()) {
+                                    String firebaseIdToken = tokenTask.getResult().getToken();
+                                    authViewModel.facebookLogin(firebaseIdToken);
+                                } else {
+                                    Toast.makeText(this, "Failed to get Firebase ID Token", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    } else {
+                        android.util.Log.e("VEGGO_AUTH", "Firebase auth with Facebook failed", task.getException());
+                        Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // Pass the activity result back to the Facebook SDK
+        mCallbackManager.onActivityResult(requestCode, resultCode, data);
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
