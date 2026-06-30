@@ -318,11 +318,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const userTargets = new Map(targets.map((target) => [target.promotion_id, target]));
   const customerId = String(req.query.customerId || '').trim();
   const surface = String(req.query.surface || '').trim().toLowerCase();
+  const code = String(req.query.code || '').trim().toLowerCase();
   const user = customerId
     ? await mongoose.connection.db.collection('users').findOne({ CustomerID: customerId })
     : null;
 
-  const filtered = promos.filter((promo) => {
+  let filtered = promos.filter((promo) => {
     const target = userTargets.get(promo.promotion_id);
     if (surface === 'home' && target) return false;
     if (surface === 'carbon') {
@@ -333,6 +334,14 @@ router.get('/', asyncHandler(async (req, res) => {
     if (!customerId) return true;
     return !target || matchesUserPromotionTarget(target, user);
   });
+
+  if (code) {
+    filtered = filtered.filter((promo) => {
+      const promoCode = String(promo.code || '').trim().toLowerCase();
+      const promoId = String(promo.promotion_id || '').trim().toLowerCase();
+      return promoCode === code || promoId === code;
+    });
+  }
 
   res.json(filtered.map((promo) => normalizePromotionBanner(normalizePromotionPayload(promo.toObject()), serverRoot)));
 }));

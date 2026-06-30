@@ -46,18 +46,42 @@ public class VoucherOptionAdapter extends RecyclerView.Adapter<VoucherOptionAdap
         return items.size();
     }
 
+    public void setSelectedPosition(int selectedPosition) {
+        int previous = this.selectedPosition;
+        this.selectedPosition = selectedPosition;
+        if (previous != RecyclerView.NO_POSITION && previous < items.size()) {
+            notifyItemChanged(previous);
+        }
+        if (selectedPosition != RecyclerView.NO_POSITION && selectedPosition < items.size()) {
+            notifyItemChanged(selectedPosition);
+        }
+    }
+
+    public int getSelectedPosition() {
+        return selectedPosition;
+    }
+
     private void select(int position) {
-        if (position == RecyclerView.NO_POSITION || position == selectedPosition || !items.get(position).enabled) {
+        if (position == RecyclerView.NO_POSITION || !items.get(position).enabled) {
             return;
         }
         int previous = selectedPosition;
-        selectedPosition = position;
+        if (selectedPosition == position) {
+            selectedPosition = RecyclerView.NO_POSITION;
+            if (listener != null) {
+                listener.onVoucherSelected(null);
+            }
+        } else {
+            selectedPosition = position;
+            if (listener != null) {
+                listener.onVoucherSelected(items.get(position));
+            }
+        }
         if (previous != RecyclerView.NO_POSITION) {
             notifyItemChanged(previous);
         }
-        notifyItemChanged(position);
-        if (listener != null) {
-            listener.onVoucherSelected(items.get(position));
+        if (selectedPosition != RecyclerView.NO_POSITION) {
+            notifyItemChanged(selectedPosition);
         }
     }
 

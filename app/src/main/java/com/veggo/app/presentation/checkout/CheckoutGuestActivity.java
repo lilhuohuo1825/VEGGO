@@ -119,6 +119,7 @@ public class CheckoutGuestActivity extends BaseActivity {
     private String selectedPaymentMethod = "momo";
     private String guestId;
     private boolean buyNowMode;
+    private boolean isSearchingVoucher = false;
     private VietnamAddressTree addressTree;
     private String selectedProvince;
     private String selectedDistrict;
@@ -187,6 +188,8 @@ public class CheckoutGuestActivity extends BaseActivity {
             showScheduleTimePicker();
         });
         findViewById(R.id.btnPlaceOrder).setOnClickListener(v -> validatePhoneAndCreateOrder());
+        restoreSelectedVoucherFromIntent();
+        prefetchVoucherData();
         if (buyNowMode) {
             bindBuyNowItem();
         } else {
@@ -363,6 +366,7 @@ public class CheckoutGuestActivity extends BaseActivity {
             }
         }
         paymentItemAdapter.setItems(uiItems);
+        validateAppliedVoucher();
         bindPaymentSummary();
     }
 
@@ -394,13 +398,33 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void validatePhoneAndCreateOrder() {
-        if ("momo".equals(selectedPaymentMethod)) {
-            Toast.makeText(this, "Liên kết Ví MoMo đang được phát triển", Toast.LENGTH_SHORT).show();
-            return;
-        }
         if (cartItems.isEmpty()) {
             Toast.makeText(this, "Giỏ hàng đang trống", Toast.LENGTH_SHORT).show();
             return;
+        }
+        if (selectedVoucher != null) {
+            PromotionTargetDto target = null;
+            for (PromotionTargetDto t : cachedTargets) {
+                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
+                    target = t;
+                    break;
+                }
+            }
+            PromotionUsageDto usage = null;
+            for (PromotionUsageDto u : cachedUsages) {
+                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
+                    usage = u;
+                    break;
+                }
+            }
+            String reason = disabledReason(selectedVoucher.promotion, target, usage);
+            if (reason != null) {
+                Toast.makeText(this, "Voucher không còn hợp lệ: " + reason, Toast.LENGTH_LONG).show();
+                selectedVoucher = null;
+                updateSelectedVoucherUi();
+                bindPaymentSummary();
+                return;
+            }
         }
         if (!validateGuestInputs()) {
             return;
@@ -869,7 +893,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         intent.putExtra(QrPaymentActivity.EXTRA_ITEM_COUNT, currentProductCount);
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE, "VG" + orderId);
         intent.putExtra(QrPaymentActivity.EXTRA_ORDER_ID, orderId);
-        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod));
+        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod) || "momo".equals(selectedPaymentMethod));
         intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode);
         intent.putExtra(QrPaymentActivity.EXTRA_CUSTOMER_ID, customerId);
         intent.putExtra(QrPaymentActivity.EXTRA_IS_GUEST_ORDER, guestOrder);
@@ -1023,72 +1047,143 @@ public class CheckoutGuestActivity extends BaseActivity {
         TextView tvSelectedCount = dialogView.findViewById(R.id.tvVoucherSelectedCount);
         TextView tvSelectedTitle = dialogView.findViewById(R.id.tvVoucherSelectedTitle);
         TextView btnApplyVoucher = dialogView.findViewById(R.id.btnApplyVoucher);
+        EditText edtVoucherCode = dialogView.findViewById(R.id.edtVoucherCode);
+        TextView btnSearchVoucher = dialogView.findViewById(R.id.btnSearchVoucher);
+        TextView tvEmptyState = dialogView.findViewById(R.id.tvVoucherEmptyState);
+        TextView tvListTitle = dialogView.findViewById(R.id.tvVoucherListTitle);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvSelectedCount.setText("Đang tải khuyến mãi...");
         tvSelectedTitle.setText("");
         recyclerView.setAdapter(new VoucherOptionAdapter(new ArrayList<>(), RecyclerView.NO_POSITION, item -> {
         }));
-        loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle);
+        loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
 
         BottomSheetDialog dialog = createHalfHeightBottomSheetDialog(dialogView);
         btnApplyVoucher.setOnClickListener(v -> dialog.dismiss());
+        btnSearchVoucher.setOnClickListener(v -> {
+            String code = edtVoucherCode.getText().toString().trim();
+            if (code.isEmpty()) {
+                loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
+            } else {
+                searchVoucher(code, recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
+            }
+        });
         dialog.show();
     }
 
-    private void loadVoucherOptions(RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView) {
+    private List<PromotionTargetDto> cachedTargets = new ArrayList<>();
+    private List<PromotionUsageDto> cachedUsages = new ArrayList<>();
+
+    private void searchVoucher(String code, RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView, TextView tvEmptyState, TextView tvListTitle) {
         PromotionApi promotionApi = AppModule.providePromotionApi();
+        isSearchingVoucher = true;
+
+        // Phản hồi tức thì: Hiện tiêu đề tìm kiếm và thông báo đang kiểm tra
+        recyclerView.setVisibility(View.GONE);
+        tvListTitle.setVisibility(View.VISIBLE);
+        tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
+        tvEmptyState.setVisibility(View.VISIBLE);
+        tvEmptyState.setText("Đang kiểm tra mã '" + code + "'...");
+        selectedCountView.setText("Đang kiểm tra mã...");
+
+        promotionApi.getPromotions(guestId, code, null).enqueue(new Callback<List<PromotionDto>>() {
+            @Override
+            public void onResponse(Call<List<PromotionDto>> call, Response<List<PromotionDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<PromotionDto> found = response.body();
+                    runOnUiThread(() -> {
+                        if (found.isEmpty()) {
+                            showVoucherEmptyState("Không tìm thấy mã khuyến mãi '" + code + "'.", recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
+                        } else {
+                            tvEmptyState.setVisibility(View.GONE);
+                            tvListTitle.setVisibility(View.VISIBLE);
+                            tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
+                            recyclerView.setVisibility(View.VISIBLE);
+                            renderVoucherOptions(found, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                        }
+                    });
+                } else {
+                    runOnUiThread(() -> {
+                        showVoucherEmptyState("Mã '" + code + "' không hợp lệ hoặc đã hết hạn.", recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
+                    });
+                }
+            }
+            @Override public void onFailure(Call<List<PromotionDto>> call, Throwable t) {
+                runOnUiThread(() -> {
+                    showVoucherEmptyState("Lỗi kết nối khi tìm mã. Vui lòng thử lại.", recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
+                });
+            }
+        });
+    }
+
+    private void showVoucherEmptyState(String message, RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView, TextView tvEmptyState, TextView tvListTitle) {
+        voucherItems.clear();
+        if (recyclerView.getAdapter() != null) recyclerView.getAdapter().notifyDataSetChanged();
+        tvEmptyState.setText(message);
+        tvEmptyState.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+        tvListTitle.setVisibility(View.VISIBLE);
+        selectedCountView.setText("Không áp dụng được");
+        selectedTitleView.setText("");
+    }
+
+    private void loadVoucherOptions(RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView, TextView tvEmptyState, TextView tvListTitle) {
+        PromotionApi promotionApi = AppModule.providePromotionApi();
+        isSearchingVoucher = false;
         List<PromotionDto> promotions = new ArrayList<>();
-        List<PromotionTargetDto> targets = new ArrayList<>();
-        List<PromotionUsageDto> usages = new ArrayList<>();
+        cachedTargets.clear();
+        cachedUsages.clear();
         AtomicInteger remainingCalls = new AtomicInteger(3);
 
         Runnable renderWhenReady = () -> {
             if (remainingCalls.decrementAndGet() == 0) {
-                runOnUiThread(() -> renderVoucherOptions(
-                        promotions, targets, usages, recyclerView, selectedCountView, selectedTitleView));
+                runOnUiThread(() -> {
+                    if (isSearchingVoucher) return;
+                    if (promotions.isEmpty()) {
+                        tvEmptyState.setVisibility(View.VISIBLE);
+                        tvEmptyState.setText("Không có mã khuyến mãi khả dụng.");
+                        recyclerView.setVisibility(View.GONE);
+                        tvListTitle.setVisibility(View.VISIBLE);
+                        tvListTitle.setText("Mã giảm giá");
+                    } else {
+                        tvEmptyState.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
+                        tvListTitle.setVisibility(View.VISIBLE);
+                        tvListTitle.setText("Mã giảm giá");
+                    }
+                    renderVoucherOptions(promotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                });
             }
         };
 
-        promotionApi.getPromotions(guestId, null).enqueue(new Callback<List<PromotionDto>>() {
+        promotionApi.getPromotions(guestId, null, null).enqueue(new Callback<List<PromotionDto>>() {
             @Override
             public void onResponse(Call<List<PromotionDto>> call, Response<List<PromotionDto>> response) {
                 if (response.isSuccessful() && response.body() != null) promotions.addAll(response.body());
                 renderWhenReady.run();
             }
-
-            @Override
-            public void onFailure(Call<List<PromotionDto>> call, Throwable t) {
-                renderWhenReady.run();
-            }
+            @Override public void onFailure(Call<List<PromotionDto>> call, Throwable t) { renderWhenReady.run(); }
         });
         promotionApi.getPromotionTargets().enqueue(new Callback<ApiListResponseDto<PromotionTargetDto>>() {
             @Override
             public void onResponse(Call<ApiListResponseDto<PromotionTargetDto>> call, Response<ApiListResponseDto<PromotionTargetDto>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                    targets.addAll(response.body().getData());
+                    cachedTargets.addAll(response.body().getData());
                 }
                 renderWhenReady.run();
             }
-
-            @Override
-            public void onFailure(Call<ApiListResponseDto<PromotionTargetDto>> call, Throwable t) {
-                renderWhenReady.run();
-            }
+            @Override public void onFailure(Call<ApiListResponseDto<PromotionTargetDto>> call, Throwable t) { renderWhenReady.run(); }
         });
         promotionApi.getPromotionUsages().enqueue(new Callback<ApiListResponseDto<PromotionUsageDto>>() {
             @Override
             public void onResponse(Call<ApiListResponseDto<PromotionUsageDto>> call, Response<ApiListResponseDto<PromotionUsageDto>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                    usages.addAll(response.body().getData());
+                    cachedUsages.addAll(response.body().getData());
                 }
                 renderWhenReady.run();
             }
-
-            @Override
-            public void onFailure(Call<ApiListResponseDto<PromotionUsageDto>> call, Throwable t) {
-                renderWhenReady.run();
-            }
+            @Override public void onFailure(Call<ApiListResponseDto<PromotionUsageDto>> call, Throwable t) { renderWhenReady.run(); }
         });
     }
 
@@ -1106,15 +1201,14 @@ public class CheckoutGuestActivity extends BaseActivity {
         }
 
         for (PromotionDto promotion : promotions) {
-            if (!isActivePromotion(promotion)) continue;
             if (promotion.getPromotionKind() != null && "FlashSale".equalsIgnoreCase(promotion.getPromotionKind())) {
                 continue;
             }
             PromotionTargetDto target = targetByPromotion.get(promotion.getPromotionId());
-
             PromotionUsageDto usage = usageByPromotion.get(promotion.getPromotionId());
             String disabledReason = disabledReason(promotion, target, usage);
             boolean enabled = disabledReason == null;
+
             voucherItems.add(new VoucherOptionAdapter.VoucherItemUiModel(
                     voucherTitle(promotion),
                     voucherCondition(promotion, target, disabledReason),
@@ -1125,6 +1219,15 @@ public class CheckoutGuestActivity extends BaseActivity {
                     promotion
             ));
         }
+
+        java.util.Collections.sort(voucherItems, (v1, v2) -> {
+            if (v1.enabled && !v2.enabled) {
+                return -1;
+            } else if (!v1.enabled && v2.enabled) {
+                return 1;
+            }
+            return 0;
+        });
 
         int selectedPosition = selectedVoucherPosition();
         updateVoucherSelectionText(selectedCountView, selectedTitleView);
@@ -1242,6 +1345,81 @@ public class CheckoutGuestActivity extends BaseActivity {
         }
     }
 
+    private void restoreSelectedVoucherFromIntent() {
+        String promotionId = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID);
+        String title = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE);
+        PromotionDto promotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_voucher_dto");
+        if (title != null && !title.trim().isEmpty()) {
+            selectedVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
+                    title,
+                    "",
+                    "",
+                    R.drawable.ic_voucher,
+                    promotionId,
+                    true,
+                    promotion
+            );
+        }
+        updateSelectedVoucherUi();
+    }
+
+    private void prefetchVoucherData() {
+        PromotionApi promotionApi = AppModule.providePromotionApi();
+        promotionApi.getPromotionTargets().enqueue(new Callback<ApiListResponseDto<PromotionTargetDto>>() {
+            @Override
+            public void onResponse(Call<ApiListResponseDto<PromotionTargetDto>> call, Response<ApiListResponseDto<PromotionTargetDto>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    cachedTargets.clear();
+                    cachedTargets.addAll(response.body().getData());
+                    validateAppliedVoucher();
+                }
+            }
+            @Override public void onFailure(Call<ApiListResponseDto<PromotionTargetDto>> call, Throwable t) {}
+        });
+
+        promotionApi.getPromotionUsages().enqueue(new Callback<ApiListResponseDto<PromotionUsageDto>>() {
+            @Override
+            public void onResponse(Call<ApiListResponseDto<PromotionUsageDto>> call, Response<ApiListResponseDto<PromotionUsageDto>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    cachedUsages.clear();
+                    cachedUsages.addAll(response.body().getData());
+                    validateAppliedVoucher();
+                }
+            }
+            @Override public void onFailure(Call<ApiListResponseDto<PromotionUsageDto>> call, Throwable t) {}
+        });
+    }
+
+    private void validateAppliedVoucher() {
+        if (selectedVoucher == null || selectedVoucher.promotion == null) {
+            return;
+        }
+
+        PromotionTargetDto target = null;
+        for (PromotionTargetDto t : cachedTargets) {
+            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
+                target = t;
+                break;
+            }
+        }
+
+        PromotionUsageDto usage = null;
+        for (PromotionUsageDto u : cachedUsages) {
+            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
+                usage = u;
+                break;
+            }
+        }
+
+        String reason = disabledReason(selectedVoucher.promotion, target, usage);
+        if (reason != null) {
+            selectedVoucher = null;
+            updateSelectedVoucherUi();
+            bindPaymentSummary();
+            Toast.makeText(this, "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private int selectedVoucherPosition() {
         if (selectedVoucher == null || selectedVoucher.promotionId == null) {
             return RecyclerView.NO_POSITION;
@@ -1262,17 +1440,37 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private String disabledReason(PromotionDto promotion, PromotionTargetDto target, PromotionUsageDto usage) {
+        if (promotion == null) return null;
+
+        if (!Boolean.TRUE.equals(promotion.getActive())) {
+            return "Mã đã bị vô hiệu hóa";
+        }
+
+        long now = System.currentTimeMillis();
+        Long start = parseDateMillis(promotion.getStartDate());
+        Long end = parseDateMillis(promotion.getEndDate());
+        if (start != null && now < start) {
+            return "Chưa đến thời gian bắt đầu";
+        }
+        if (end != null && now > end) {
+            return "Mã đã hết hạn";
+        }
+
         double minOrder = promotion.getMinOrderValue() != null ? promotion.getMinOrderValue() : 0;
         if (currentSubtotal < minOrder) {
             return "Đơn tối thiểu " + formatCurrency((long) minOrder);
         }
         if (!matchesTarget(target)) {
+            // Check if it's a shipping voucher
+            if ("Shipping".equalsIgnoreCase(promotion.getPromotionKind())) {
+                return null;
+            }
             return "Không áp dụng cho sản phẩm trong giỏ";
         }
         if (promotion.getUsageLimit() != null && promotion.getUsageLimit() > 0 && usage != null
                 && usage.getOrderIds() != null
                 && usage.getOrderIds().size() >= promotion.getUsageLimit()) {
-            return "Đã hết lượt sử dụng";
+            return "Mã đã hết lượt sử dụng";
         }
         return null;
     }
