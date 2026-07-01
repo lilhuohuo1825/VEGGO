@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -93,6 +94,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
                     recipe.getImageUrl()
             ));
             renderFavoriteIcon(holder, nowSelected);
+            Toast.makeText(
+                    holder.itemView.getContext(),
+                    nowSelected ? "Đã thêm vào yêu thích" : "Đã xoá khỏi yêu thích",
+                    Toast.LENGTH_SHORT
+            ).show();
         });
 
         holder.itemView.setOnClickListener(v -> {

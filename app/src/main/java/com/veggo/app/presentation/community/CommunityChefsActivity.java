@@ -5,6 +5,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
@@ -12,6 +13,7 @@ import com.veggo.app.databinding.ComponentBottomNavBinding;
 public class CommunityChefsActivity extends AppCompatActivity {
     private LinearLayout container;
     private CommunityRepository repository;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -20,7 +22,15 @@ public class CommunityChefsActivity extends AppCompatActivity {
         container = findViewById(R.id.communityHomeContainer);
         repository = new CommunityRepository(this);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
-        CommunityUi.setupTopHeader(this, "\u0110\u1ea7u b\u1ebfp");
-        repository.loadChefs(chefs -> runOnUiThread(() -> CommunityUi.addChefGrid(this, container, chefs)));
+        CommunityUi.setupTopHeader(this, "Đầu bếp");
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.communityListScroll, this::loadChefs);
+        loadChefs();
+    }
+
+    private void loadChefs() {
+        repository.loadChefs(chefs -> runOnUiThread(() -> {
+            CommunityUi.addChefGrid(this, container, CommunityUi.shuffled(chefs));
+            CommunityUi.finishRefresh(refreshLayout);
+        }));
     }
 }

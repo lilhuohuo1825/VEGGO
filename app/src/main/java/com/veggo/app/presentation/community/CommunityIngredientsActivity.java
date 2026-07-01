@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -25,6 +26,9 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
 
     private CommunityRepository repository;
     private LinearLayout list;
+    private View bookmarkButton;
+    private String recipeId;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -35,14 +39,40 @@ public class CommunityIngredientsActivity extends AppCompatActivity {
         list = findViewById(R.id.ingredientsList);
         findViewById(R.id.ingredientsBackButton).setOnClickListener(v -> finish());
         ToggleUi.bindToggle(findViewById(R.id.ingredientsHeartButton), R.drawable.ic_heart_green, R.drawable.ic_heart_full, false);
-        View bookmarkButton = findViewById(R.id.ingredientsBookmarkButton);
-        bookmarkButton.setOnClickListener(v -> {
-            ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true);
-            CommunityUi.showAddToCookbook(this, getIntent().getStringExtra(EXTRA_RECIPE_ID));
-        });
+        bookmarkButton = findViewById(R.id.ingredientsBookmarkButton);
+        bookmarkButton.setOnClickListener(v -> toggleBookmark());
 
-        String recipeId = getIntent().getStringExtra(EXTRA_RECIPE_ID);
-        repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> bindData(data)));
+        recipeId = getIntent().getStringExtra(EXTRA_RECIPE_ID);
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.ingredientsScroll, this::loadData);
+        loadData();
+        loadBookmarkState();
+    }
+
+    private void loadData() {
+        repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> {
+            bindData(data);
+            CommunityUi.finishRefresh(refreshLayout);
+        }));
+    }
+
+    private void loadBookmarkState() {
+        repository.isRecipeSaved(recipeId, saved -> runOnUiThread(() ->
+                ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, saved)));
+    }
+
+    private void toggleBookmark() {
+        Object tag = bookmarkButton.getTag();
+        boolean saved = tag instanceof Boolean && (Boolean) tag;
+        if (saved) {
+            repository.removeRecipeFromCookbooks(recipeId, done -> runOnUiThread(() -> {
+                if (done) {
+                    ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, false);
+                }
+            }));
+            return;
+        }
+        CommunityUi.showAddToCookbook(this, recipeId, () ->
+                ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true));
     }
 
     private void bindData(CommunityRepository.RecipeDetailData data) {

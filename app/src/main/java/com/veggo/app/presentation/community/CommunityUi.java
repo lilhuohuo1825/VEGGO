@@ -20,6 +20,7 @@ import android.widget.Toast;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -33,6 +34,8 @@ import com.veggo.app.data.local.entity.CommunityRecipeEntity;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public final class CommunityUi {
     public interface SaveCallback {
@@ -111,6 +114,42 @@ public final class CommunityUi {
             searchButton.setOnClickListener(v ->
                     activity.startActivity(new Intent(activity, CommunityDiscoveryActivity.class)));
         }
+    }
+
+    public static SwipeRefreshLayout setupPullToRefresh(Activity activity, int contentViewId, Runnable refreshAction) {
+        View content = activity.findViewById(contentViewId);
+        if (content == null || !(content.getParent() instanceof ViewGroup)) {
+            return null;
+        }
+        ViewGroup parent = (ViewGroup) content.getParent();
+        int index = parent.indexOfChild(content);
+        ViewGroup.LayoutParams params = content.getLayoutParams();
+        parent.removeView(content);
+
+        SwipeRefreshLayout refreshLayout = new SwipeRefreshLayout(activity);
+        refreshLayout.setColorSchemeResources(R.color.primary_main);
+        refreshLayout.addView(content, new SwipeRefreshLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+        refreshLayout.setOnRefreshListener(refreshAction::run);
+        parent.addView(refreshLayout, index, params);
+        return refreshLayout;
+    }
+
+    public static void finishRefresh(SwipeRefreshLayout refreshLayout) {
+        if (refreshLayout != null) {
+            refreshLayout.setRefreshing(false);
+        }
+    }
+
+    public static <T> List<T> shuffled(List<T> items) {
+        List<T> copy = new ArrayList<>();
+        if (items != null) {
+            copy.addAll(items);
+        }
+        Collections.shuffle(copy);
+        return copy;
     }
 
     public static void addCategoryChips(Activity activity, LinearLayout row, List<CommunityCategoryEntity> categories) {
@@ -307,6 +346,17 @@ public final class CommunityUi {
         repository.isRecipeSaved(recipe.getId(), saved ->
                 activity.runOnUiThread(() -> renderSaveState(save, saved)));
         save.setOnClickListener(v -> {
+            Object tag = save.getTag();
+            boolean saved = tag instanceof Boolean && (Boolean) tag;
+            if (saved) {
+                repository.removeRecipeFromCookbooks(recipe.getId(), done -> activity.runOnUiThread(() -> {
+                    Toast.makeText(activity, done ? "Da bo luu" : "Chua bo luu duoc", Toast.LENGTH_SHORT).show();
+                    if (done) {
+                        renderSaveState(save, false);
+                    }
+                }));
+                return;
+            }
             showAddToCookbook(activity, recipe.getId(), () -> renderSaveState(save, true));
         });
         card.setOnClickListener(v -> openRecipeDetail(activity, recipe));

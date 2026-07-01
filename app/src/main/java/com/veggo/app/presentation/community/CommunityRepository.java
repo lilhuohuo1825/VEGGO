@@ -1,8 +1,11 @@
 package com.veggo.app.presentation.community;
 
 import android.content.Context;
+import android.util.Log;
 
+import com.veggo.app.assets.AssetFiles;
 import com.veggo.app.assets.AssetJsonLoader;
+import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.local.entity.CommunityCategoryEntity;
@@ -36,6 +39,8 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 
 public class CommunityRepository {
+    private static final String TAG = "CommunityRepository";
+
     public interface Callback<T> {
         void onResult(T result);
     }
@@ -43,8 +48,8 @@ public class CommunityRepository {
     public static final String RELATION_FOLLOWING = "following";
     public static final String RELATION_FOLLOWER = "follower";
     public static final String ACCOUNT_ID = "account-thuc-quyen";
-    public static final String ACCOUNT_NAME = "Th\u1ee5c Quy\u00ean";
-    public static final String ACCOUNT_LOCATION = "Th\u1ee7 \u0110\u1ee9c";
+    public static final String ACCOUNT_NAME = "Thục Quyên";
+    public static final String ACCOUNT_LOCATION = "Thủ Đức";
     public static final String ACCOUNT_AVATAR_URL = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80";
     public static final String ACCOUNT_HERO_URL = "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?auto=format&fit=crop&w=1200&q=80";
     public static final String ACCOUNT_RECIPE_CHEF_ID = "santana";
@@ -78,7 +83,10 @@ public class CommunityRepository {
     }
 
     public void loadProducts(Callback<List<ProductDto>> callback) {
-        request(productApi.getProducts(), new ArrayList<>(), callback);
+        executor.execute(() -> {
+            List<ProductDto> remote = execute(productApi.getProducts());
+            callback.onResult(isEmpty(remote) ? assetProducts() : remote);
+        });
     }
 
     public void loadChefs(Callback<List<CommunityChefEntity>> callback) {
@@ -182,6 +190,13 @@ public class CommunityRepository {
         });
     }
 
+    public void removeRecipeFromCookbooks(String recipeId, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            OkResponse response = execute(api.removeRecipeFromCookbooks(recipeId, currentCustomerId()));
+            callback.onResult(response != null && response.ok);
+        });
+    }
+
     public void createCookbook(String title, String description, String recipeId, Callback<Boolean> callback) {
         executor.execute(() -> {
             CreateCookbookRequest request = new CreateCookbookRequest(currentCustomerId(), title, description, recipeId);
@@ -235,8 +250,43 @@ public class CommunityRepository {
                 return response.body();
             }
         } catch (IOException ignored) {
+        } catch (RuntimeException exception) {
+            Log.w(TAG, "Community request failed", exception);
         }
         return null;
+    }
+
+    private List<ProductDto> assetProducts() {
+        List<ProductDto> result = new ArrayList<>();
+        try {
+            List<AssetModels.Product> products = assetLoader.readList(AssetFiles.PRODUCTS, AssetModels.Product.class);
+            for (AssetModels.Product item : products) {
+                ProductDto dto = new ProductDto();
+                dto.setId(firstNonEmpty(item.objectId, item.sku));
+                dto.setName(firstNonEmpty(item.productName, "Sản phẩm Veggo"));
+                dto.setBrand(item.brand);
+                dto.setSku(item.sku);
+                dto.setUnit(item.unit);
+                dto.setWeight(item.weight);
+                dto.setPrice(item.price);
+                dto.setOriginalPrice(item.basePrice > 0 ? item.basePrice : item.price);
+                dto.setImage(item.image);
+                dto.setOrigin(item.origin);
+                dto.setStatus(item.status);
+                dto.setRating((float) item.rating);
+                dto.setSoldCount(item.purchaseCount);
+                dto.setLiked(item.liked);
+                dto.setStock(item.stock);
+                dto.setCategoryId(item.categoryId);
+                dto.setSubcategoryId(item.subcategoryId);
+                dto.setCarbonSavingPoint(item.carbonSavingPoint);
+                dto.setEmissionFactor(item.emissionFactor);
+                result.add(dto);
+            }
+        } catch (IOException exception) {
+            Log.w(TAG, "Product asset fallback failed", exception);
+        }
+        return result;
     }
 
     private void preparePublicImageUrls(RecipeDraft draft) {
@@ -415,6 +465,18 @@ public class CommunityRepository {
         return list == null || list.isEmpty();
     }
 
+    private String firstNonEmpty(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
     public static class CommunityData {
         public List<CommunityCategoryEntity> categories;
         public List<CommunityChefEntity> chefs;
@@ -513,6 +575,7 @@ public class CommunityRepository {
         public String customerId;
         public String title;
         public String categoryId;
+        public int timeMinutes;
         public String imageUrl;
         public List<String> imageUrls;
         public String videoUrl;

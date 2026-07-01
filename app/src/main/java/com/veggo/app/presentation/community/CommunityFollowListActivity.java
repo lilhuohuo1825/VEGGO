@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -28,6 +29,8 @@ public class CommunityFollowListActivity extends AppCompatActivity {
     private CommunityRepository repository;
     private LinearLayout listContainer;
     private String relationType;
+    private String chefId;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,8 +47,16 @@ public class CommunityFollowListActivity extends AppCompatActivity {
         findViewById(R.id.followBackButton).setOnClickListener(v -> finish());
         bindTitle(0);
 
-        String chefId = getIntent().getStringExtra(EXTRA_CHEF_ID);
-        repository.loadFollows(chefId, relationType, follows -> runOnUiThread(() -> renderFollows(follows)));
+        chefId = getIntent().getStringExtra(EXTRA_CHEF_ID);
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.followScroll, this::loadFollows);
+        loadFollows();
+    }
+
+    private void loadFollows() {
+        repository.loadFollows(chefId, relationType, follows -> runOnUiThread(() -> {
+            renderFollows(CommunityUi.shuffled(follows));
+            CommunityUi.finishRefresh(refreshLayout);
+        }));
     }
 
     private void renderFollows(List<CommunityFollowEntity> follows) {
@@ -61,9 +72,9 @@ public class CommunityFollowListActivity extends AppCompatActivity {
 
     private void bindTitle(int count) {
         boolean followingPage = CommunityRepository.RELATION_FOLLOWING.equals(relationType);
-        String title = followingPage ? "\u0110ang theo d\u00f5i" : "Ng\u01b0\u1eddi theo d\u00f5i";
+        String title = followingPage ? "Đang theo dõi" : "Người theo dõi";
         ((TextView) findViewById(R.id.followTitle)).setText(title);
-        ((TextView) findViewById(R.id.followCountPill)).setText(count + (followingPage ? " \u0110ang theo d\u00f5i" : " Ng\u01b0\u1eddi theo d\u00f5i"));
+        ((TextView) findViewById(R.id.followCountPill)).setText(count + (followingPage ? " Đang theo dõi" : " Người theo dõi"));
     }
 
     private void bindRow(View row, CommunityFollowEntity follow) {

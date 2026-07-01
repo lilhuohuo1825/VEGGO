@@ -40,6 +40,25 @@
                     android:layout_height="120dp"
                     android:layout_gravity="bottom|center_horizontal"
                     android:scaleType="centerCrop" />
+
+                <TextView
+                    android:id="@+id/profileAvatarAddButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="2dp"
+                    android:background="@drawable/bg_community_circle_green"
+                    android:clickable="true"
+                    android:elevation="8dp"
+                    android:focusable="true"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="+"
+                    android:textColor="@color/neutral_10"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:translationX="46dp"
+                    android:visibility="gone" />
             </FrameLayout>
 
             <TextView

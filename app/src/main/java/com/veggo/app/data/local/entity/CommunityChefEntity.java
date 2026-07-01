@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import com.google.gson.annotations.SerializedName;
+
 @Entity(tableName = "community_chefs")
 public class CommunityChefEntity {
     @PrimaryKey
@@ -12,6 +14,7 @@ public class CommunityChefEntity {
     private String name;
     private int recipeCount;
     private int likes;
+    @SerializedName(value = "avatarUrl", alternate = {"imageUrl"})
     private String imageUrl;
 
     public CommunityChefEntity(@NonNull String id, String name, int recipeCount, int likes, String imageUrl) {

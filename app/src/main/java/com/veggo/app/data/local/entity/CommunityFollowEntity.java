@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import com.google.gson.annotations.SerializedName;
+
 @Entity(tableName = "community_follows")
 public class CommunityFollowEntity {
     @PrimaryKey
@@ -13,6 +15,7 @@ public class CommunityFollowEntity {
     private String relationType;
     private String name;
     private String location;
+    @SerializedName(value = "avatarUrl", alternate = {"imageUrl"})
     private String imageUrl;
     private boolean following;
 

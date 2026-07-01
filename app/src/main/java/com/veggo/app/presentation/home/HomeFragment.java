@@ -829,6 +829,14 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            refreshCartBadge();
+        }
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         bannerHandler.removeCallbacks(bannerRunnable);

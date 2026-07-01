@@ -237,6 +237,7 @@ router.put('/recipes/:recipeId', asyncHandler(async (req, res) => {
     ...recipe,
     Title: req.body.title || req.body.Title || recipe.Title,
     CategoryID: req.body.categoryId || req.body.CategoryID || recipe.CategoryID,
+    TimeMinutes: Number(req.body.timeMinutes ?? req.body.TimeMinutes ?? recipe.TimeMinutes ?? 0),
     IngredientCount: ingredientNames.length,
     ImageUrl: imageUrls[0] || recipe.ImageUrl || '',
     VideoUrl: req.body.videoUrl || req.body.VideoUrl || '',
@@ -537,6 +538,59 @@ router.post('/cookbooks/:cookbookId/recipes', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+router.delete('/cookbooks/recipes/:recipeId', asyncHandler(async (req, res) => {
+  const recipeId = req.params.recipeId;
+  const customerId = req.query.customerId || req.body.customerId || req.body.accountId || ACCOUNT_ID;
+  if (!recipeId || !customerId) {
+    return res.status(400).json({ message: 'recipeId and customerId are required' });
+  }
+
+  const data = await getCommunityCooking();
+  const ownedCookbookIds = new Set((data.cookbooks || [])
+    .filter((cookbook) => (cookbook.CustomerID || cookbook.customerId || cookbook.accountId || '') === customerId)
+    .map(cookbookRef));
+  if (!ownedCookbookIds.size) {
+    return res.json({ ok: true, removed: false });
+  }
+
+  const cookbookRecipes = data.cookbookRecipes || [];
+  const nextCookbookRecipes = cookbookRecipes.filter((item) =>
+    !(ownedCookbookIds.has(cookbookRef(item)) && recipeRef(item) === recipeId)
+  );
+  const removed = nextCookbookRecipes.length !== cookbookRecipes.length;
+  if (!removed) {
+    return res.json({ ok: true, removed: false });
+  }
+
+  const countsByCookbookId = nextCookbookRecipes.reduce((counts, item) => {
+    const id = cookbookRef(item);
+    counts[id] = (counts[id] || 0) + 1;
+    return counts;
+  }, {});
+  const nextCookbooks = (data.cookbooks || []).map((cookbook) => {
+    const id = cookbookRef(cookbook);
+    if (!ownedCookbookIds.has(id)) {
+      return cookbook;
+    }
+    return {
+      ...cookbook,
+      RecipeCount: countsByCookbookId[id] || 0,
+      UpdatedAt: new Date(),
+    };
+  });
+
+  await communityCollection().updateOne(
+    { _id: data._id },
+    {
+      $set: {
+        cookbooks: nextCookbooks,
+        cookbookRecipes: nextCookbookRecipes,
+      },
+    }
+  );
+  res.json({ ok: true, removed: true });
+}));
+
 router.get('/follows', asyncHandler(async (req, res) => {
   const { chefId, relationType } = req.query;
   if (!chefId || !relationType) {
@@ -783,7 +837,8 @@ function normalizeUserAsChef(user) {
     name: user.FullName || user.name || 'Người dùng Veggo',
     recipeCount: user.recipeCount || 0,
     likes: user.followerCount || 0,
-    imageUrl: user.avatarUrl || user.Avatar || '',
+    avatarUrl: user.avatarUrl || '',
+    imageUrl: user.avatarUrl || '',
   };
 }
 
@@ -794,7 +849,8 @@ function userAsFollowItem(user, customerId, chefId, relationType) {
     relationType,
     name: user?.FullName || user?.name || customerId,
     location: user?.Address || '',
-    imageUrl: user?.Avatar || user?.avatarUrl || '',
+    avatarUrl: user?.avatarUrl || '',
+    imageUrl: user?.avatarUrl || '',
     following: true,
   };
 }
@@ -828,6 +884,7 @@ function normalizeRecipeDraft(draft) {
     customerId: draft.CustomerID || '',
     title: draft.Title || '',
     categoryId: draft.CategoryID || '',
+    timeMinutes: draft.TimeMinutes ?? draft.timeMinutes ?? 0,
     imageUrl: imageUrls[0] || '',
     imageUrls,
     videoUrl: draft.VideoUrl || '',
@@ -897,7 +954,7 @@ function normalizeRecipeComment(comment, user, viewerId = '') {
     id: comment.CommentID || comment.id || '',
     recipeId: recipeRef(comment),
     userName: user?.FullName || user?.name || comment.UserName || '',
-    userImageUrl: user?.Avatar || user?.avatarUrl || comment.UserImageUrl || '',
+    userImageUrl: user?.avatarUrl || comment.UserImageUrl || '',
     content: comment.Content || comment.content || '',
     likeCount: comment.LikeCount ?? comment.likeCount ?? likedIds.length,
     likedByCurrentUser: viewerId ? likedIds.includes(viewerId) : false,
@@ -959,6 +1016,7 @@ function buildRecipeDraft(body, drafts) {
     CustomerID: customerId,
     Title: body.title || body.Title || '',
     CategoryID: body.categoryId || body.CategoryID || '',
+    TimeMinutes: Number(body.timeMinutes || body.TimeMinutes || 0),
     ImageUrl: imageUrls[0] || '',
     ImageUrls: imageUrls,
     VideoUrl: body.videoUrl || body.VideoUrl || '',

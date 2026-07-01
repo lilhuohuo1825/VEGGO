@@ -83,7 +83,7 @@ public final class AssetScreenData {
                     user.carbonPoint = userDto.getCarbonPoint();
                     user.certificateId = userDto.getCertificateId();
                     user.address = userDto.getAddress();
-                    user.avatar = userDto.getAvatarUrl();
+                    user.avatarUrl = userDto.getAvatarUrl();
                     // Add addresses from addresses list in UserDto
                     if (userDto.getAddresses() != null && !userDto.getAddresses().isEmpty()) {
                         for (com.veggo.app.data.remote.dto.UserDto.AddressDto addrDto : userDto.getAddresses()) {
@@ -109,7 +109,7 @@ public final class AssetScreenData {
                 user.customerId = customerId;
                 user.fullName = appPreferences.getFullName();
                 user.email = appPreferences.getEmail();
-                user.avatar = appPreferences.getAvatarUrl();
+                user.avatarUrl = appPreferences.getAvatarUrl();
                 user.carbonPoint = 0;
             } else {
                 enrichUserFromPreferences(user, appPreferences);
@@ -382,8 +382,8 @@ public final class AssetScreenData {
         if (hasText(appPreferences.getEmail())) {
             user.email = appPreferences.getEmail();
         }
-        if (hasText(appPreferences.getAvatarUrl())) {
-            user.avatar = appPreferences.getAvatarUrl();
+        if (!hasText(user.avatarUrl) && hasText(appPreferences.getAvatarUrl())) {
+            user.avatarUrl = appPreferences.getAvatarUrl();
         }
     }
 

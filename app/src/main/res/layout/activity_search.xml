@@ -23,7 +23,7 @@
             android:layout_width="26dp"
             android:layout_height="26dp"
             android:src="@drawable/ic_left"
-            app:tint="@color/neutral_100"
+            app:tint="@color/primary_main"
             android:clickable="true"
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless"/>
@@ -39,28 +39,76 @@
 
     </LinearLayout>
 
-    <!-- Categories (Shown when search is empty) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvCategories"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingHorizontal="12dp"
-        android:clipToPadding="false"
-        android:paddingBottom="24dp"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:spanCount="2"
-        tools:listitem="@layout/item_category_search"
-        android:visibility="visible"/>
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-    <!-- Global Search Results (Shown when searching) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvSearchResults"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingHorizontal="18dp"
-        android:clipToPadding="false"
-        android:paddingBottom="24dp"
-        tools:listitem="@layout/item_search_product"
-        android:visibility="gone"/>
+        <!-- Categories (Shown when search is empty) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCategories"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingHorizontal="12dp"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp"
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:spanCount="2"
+            tools:listitem="@layout/item_category_search"
+            android:visibility="visible"/>
+
+        <!-- Global Search Results (Shown when searching) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSearchResults"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingHorizontal="18dp"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp"
+            tools:listitem="@layout/item_search_product"
+            android:visibility="gone"/>
+
+        <LinearLayout
+            android:id="@+id/searchEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/spacing_xl"
+            android:paddingEnd="@dimen/spacing_xl"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:contentDescription="Không có sản phẩm phù hợp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/mascot_sad" />
+
+            <TextView
+                android:id="@+id/searchEmptyTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:fontFamily="@font/encodesans_bold"
+                android:gravity="center"
+                android:text="Không có sản phẩm phù hợp"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_lg"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/searchEmptyBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="Thử nhập từ khóa khác để tìm sản phẩm bạn cần."
+                android:textColor="@color/neutral_70"
+                android:textSize="@dimen/text_sm" />
+        </LinearLayout>
+    </FrameLayout>
 
 </LinearLayout>

@@ -334,7 +334,7 @@ public class AddressFormActivity extends BaseActivity {
 
     private void updateDefaultCheckboxUi() {
         defaultCheckbox.setBackgroundResource(isDefaultSelected
-                ? R.drawable.bg_order_primary_button
+                ? R.drawable.bg_address_checkbox_checked
                 : R.drawable.bg_address_checkbox);
     }
 

@@ -226,7 +226,7 @@ public class PersonalInfoActivity extends BaseActivity {
         bindGender(user.gender);
         ((TextView) findViewById(R.id.personalInfoCarbonBadge)).setText(user.carbonPoint + " điểm carbon");
 
-        currentAvatarUrl = AssetScreenData.hasText(user.avatar) ? user.avatar : appPreferences.getAvatarUrl();
+        currentAvatarUrl = AssetScreenData.hasText(user.avatarUrl) ? user.avatarUrl : appPreferences.getAvatarUrl();
         showAvatarPreview(currentAvatarUrl);
     }
 

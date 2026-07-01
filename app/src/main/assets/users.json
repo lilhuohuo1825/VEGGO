@@ -172,7 +172,7 @@
     "$date": "2025-11-02T10:35:40.204Z"
   },
   "__v": 0,
-  "Avatar": null
+  "avatarUrl": null
 },
 {
   "_id": "69099293fe18b1560249f11b",
@@ -194,7 +194,7 @@
     "$date": "2025-11-04T05:43:47.706Z"
   },
   "__v": 0,
-  "Avatar": null
+  "avatarUrl": null
 },
 {
   "_id": "69099701683274a316eb8605",
@@ -216,7 +216,7 @@
     "$date": "2025-11-04T06:02:41.562Z"
   },
   "__v": 0,
-  "Avatar": null
+  "avatarUrl": null
 },
 {
   "_id": "69106c7add39fc233bc7e77d",
@@ -228,7 +228,7 @@
   "Address": "ffxtrdjttttttttttttt, p1, q1, hcm",
   "BirthDay": null,
   "Gender": null,
-  "Avatar": null,
+  "avatarUrl": null,
   "CustomerType": "",
   "TotalSpent": 0,
   "CarbonPoint": 0,
@@ -250,7 +250,7 @@
   "Address": "39 Nguyễn Huệ, p2, q1, hcm",
   "BirthDay": null,
   "Gender": null,
-  "Avatar": null,
+  "avatarUrl": null,
   "CustomerType": "",
   "TotalSpent": 0,
   "CarbonPoint": 0,

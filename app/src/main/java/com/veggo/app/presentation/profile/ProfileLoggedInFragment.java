@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -118,7 +119,7 @@ public class ProfileLoggedInFragment extends BaseFragment {
         user.customerId = appPreferences.getCustomerId();
         user.fullName = appPreferences.getFullName();
         user.email = appPreferences.getEmail();
-        user.avatar = appPreferences.getAvatarUrl();
+        user.avatarUrl = appPreferences.getAvatarUrl();
         user.carbonPoint = 0;
         return user;
     }
@@ -138,8 +139,8 @@ public class ProfileLoggedInFragment extends BaseFragment {
         String phone = AssetScreenData.hasText(user.phone)
                 ? user.phone
                 : appPreferences.getCurrentPhone();
-        String avatarUrl = AssetScreenData.hasText(user.avatar)
-                ? user.avatar
+        String avatarUrl = AssetScreenData.hasText(user.avatarUrl)
+                ? user.avatarUrl
                 : appPreferences.getAvatarUrl();
 
         AssetScreenData.setText(view, R.id.profileUserName, name);
@@ -161,6 +162,8 @@ public class ProfileLoggedInFragment extends BaseFragment {
                 .load(avatarUrl)
                 .placeholder(R.drawable.ic_profile_avatar)
                 .error(R.drawable.ic_profile_avatar)
+                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .circleCrop()
                 .into(avatarView);
     }

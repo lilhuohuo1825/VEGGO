@@ -5,6 +5,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
@@ -12,6 +13,7 @@ import com.veggo.app.databinding.ComponentBottomNavBinding;
 public class CommunityCategoriesActivity extends AppCompatActivity {
     private LinearLayout container;
     private CommunityRepository repository;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -20,7 +22,15 @@ public class CommunityCategoriesActivity extends AppCompatActivity {
         container = findViewById(R.id.communityHomeContainer);
         repository = new CommunityRepository(this);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
-        CommunityUi.setupTopHeader(this, "Danh m\u1ee5c");
-        repository.loadCategories(categories -> runOnUiThread(() -> CommunityUi.addCategoryGrid(this, container, categories)));
+        CommunityUi.setupTopHeader(this, "Danh mục");
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.communityListScroll, this::loadCategories);
+        loadCategories();
+    }
+
+    private void loadCategories() {
+        repository.loadCategories(categories -> runOnUiThread(() -> {
+            CommunityUi.addCategoryGrid(this, container, CommunityUi.shuffled(categories));
+            CommunityUi.finishRefresh(refreshLayout);
+        }));
     }
 }
