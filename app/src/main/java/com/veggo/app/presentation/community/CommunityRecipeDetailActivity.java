@@ -28,6 +28,7 @@ import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.presentation.dialog.VeggoDialog;
+import com.veggo.app.presentation.product.ProductDetailActivity;
 
 public class CommunityRecipeDetailActivity extends AppCompatActivity {
     public static final String EXTRA_RECIPE_ID = "community_recipe_detail_recipe_id";
@@ -155,6 +156,7 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
                 emoji.setVisibility(View.GONE);
                 Glide.with(this).load(product.getImageUrl()).transform(new CenterCrop(), new RoundedCorners(dp(12))).into(image);
             }
+            item.setOnClickListener(v -> openProductDetail(ingredient, product));
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
             params.width = 0;
             params.height = dp(122);
@@ -162,6 +164,21 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
             params.setMargins(dp(4), dp(4), dp(4), dp(8));
             ingredientsGrid.addView(item, params);
         }
+    }
+
+    private void openProductDetail(CommunityRecipeIngredientEntity ingredient, ProductEntity product) {
+        String productId = product != null ? product.getId() : null;
+        if (isBlank(productId) && ingredient != null) {
+            productId = ingredient.getProductId();
+        }
+        if (isBlank(productId)) {
+            Toast.makeText(this, "KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(this, ProductDetailActivity.class);
+        intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
+        startActivity(intent);
     }
 
     private void bindInstructions(String instructions) {

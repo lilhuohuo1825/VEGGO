@@ -1,5 +1,6 @@
 package com.veggo.app.presentation.profile;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -32,6 +33,9 @@ public class PoliciesFragment extends BaseFragment {
         binding = ActivityPoliciesBinding.inflate(inflater, container, false);
         binding.backButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
+        );
+        binding.notifyButton.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PostNotificationsActivity.class))
         );
         // setupBottomNavigation();
         setupReturnPolicy();
