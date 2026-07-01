@@ -40,7 +40,7 @@ public class BlogAllPostsActivity extends AppCompatActivity {
             render();
         });
         for (BlogEntity blog : filteredBlogs()) {
-            BlogUi.addFeaturedCard(this, binding.blogAllPostsContainer, blog);
+            BlogUi.addFeaturedCard(this, binding.blogAllPostsContainer, blog, repository, this::render);
         }
     }
 

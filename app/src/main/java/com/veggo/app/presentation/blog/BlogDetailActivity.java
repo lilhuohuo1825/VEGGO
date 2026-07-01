@@ -45,12 +45,24 @@ public class BlogDetailActivity extends AppCompatActivity {
         binding.blogDetailCommentIcon.setOnClickListener(v -> binding.blogDetailScroll.post(() ->
                 binding.blogDetailScroll.smoothScrollTo(0, binding.blogCommentsTitle.getTop())));
         binding.blogDetailCommentIcon.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary_main)));
+        binding.blogDetailRefresh.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
+        binding.blogDetailRefresh.setOnChildScrollUpCallback((parent, child) -> binding.blogDetailScroll.canScrollVertically(-1));
+        binding.blogDetailRefresh.setOnRefreshListener(this::loadBlog);
 
         if (blogId == null) {
             renderMissing();
             return;
         }
+        loadBlog();
+    }
+
+    private void loadBlog() {
+        if (blogId == null) {
+            binding.blogDetailRefresh.setRefreshing(false);
+            return;
+        }
         repository.getById(blogId, blog -> runOnUiThread(() -> {
+            binding.blogDetailRefresh.setRefreshing(false);
             if (blog == null) {
                 renderMissing();
             } else {
@@ -83,12 +95,12 @@ public class BlogDetailActivity extends AppCompatActivity {
     }
 
     private void bindBlogLike(BlogEntity blog) {
-        boolean selected = favoriteStore != null
-                && favoriteStore.isFavorite(FavoriteStore.TYPE_BLOG, blog.getId());
-        binding.blogDetailLikeIcon.setImageTintList(ColorStateList.valueOf(
-                getColor(R.color.primary_main)
-        ));
-        binding.blogDetailLikeIcon.setAlpha(selected || blog.isLikedByCurrentUser() ? 1f : 0.45f);
+        boolean liked = blog.isLikedByCurrentUser();
+        binding.blogDetailLikeIcon.setImageResource(liked
+                ? R.drawable.ic_profile_menu_heart_filled
+                : R.drawable.ic_heart_outline_green);
+        binding.blogDetailLikeIcon.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary_main)));
+        binding.blogDetailLikeIcon.setAlpha(liked ? 1f : 0.92f);
         binding.blogDetailLikeIcon.setOnClickListener(v -> toggleBlogLike());
     }
 
@@ -97,24 +109,38 @@ public class BlogDetailActivity extends AppCompatActivity {
             return;
         }
         binding.blogDetailLikeIcon.setEnabled(false);
-        boolean selected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
-                FavoriteStore.TYPE_BLOG,
-                currentBlog.getId(),
-                BlogText.clean(currentBlog.getTitle()),
-                BlogText.clean(currentBlog.getAuthor()),
-                currentBlog.getImageUrl()
-        ));
+        boolean selected = !currentBlog.isLikedByCurrentUser();
+        syncFavorite(selected);
         currentBlog.setLikedByCurrentUser(selected);
         bindBlogLike(currentBlog);
-        repository.toggleBlogLike(blogId, updated -> runOnUiThread(() -> {
+        repository.setBlogLike(blogId, selected, updated -> runOnUiThread(() -> {
             binding.blogDetailLikeIcon.setEnabled(true);
             if (updated == null) {
                 Toast.makeText(this, selected ? "Đã lưu bài viết" : "Đã xoá khỏi yêu thích", Toast.LENGTH_SHORT).show();
                 return;
             }
             currentBlog.setLikeCount(updated.getLikeCount());
+            currentBlog.setLikedByCurrentUser(updated.isLikedByCurrentUser());
+            syncFavorite(updated.isLikedByCurrentUser());
             bindBlogLike(currentBlog);
         }));
+    }
+
+    private void syncFavorite(boolean selected) {
+        if (currentBlog == null || favoriteStore == null) {
+            return;
+        }
+        if (selected) {
+            favoriteStore.add(new FavoriteStore.FavoriteItem(
+                    FavoriteStore.TYPE_BLOG,
+                    currentBlog.getId(),
+                    BlogText.clean(currentBlog.getTitle()),
+                    BlogText.clean(currentBlog.getAuthor()),
+                    currentBlog.getImageUrl()
+            ));
+        } else {
+            favoriteStore.remove(FavoriteStore.TYPE_BLOG, currentBlog.getId());
+        }
     }
 
     private void loadComments() {

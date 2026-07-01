@@ -12,6 +12,7 @@ import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.databinding.ActivityBlogHomeBinding;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class BlogHomeActivity extends AppCompatActivity {
@@ -20,6 +21,7 @@ public class BlogHomeActivity extends AppCompatActivity {
     private ActivityBlogHomeBinding binding;
     private BlogRepository repository;
     private List<BlogEntity> allBlogs = new ArrayList<>();
+    private List<BlogEntity> randomPostBlogs = new ArrayList<>();
     private String selectedCategory = ALL_CATEGORY;
     private boolean randomPopupShown;
 
@@ -29,16 +31,31 @@ public class BlogHomeActivity extends AppCompatActivity {
         binding = ActivityBlogHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new BlogRepository(this);
+        binding.blogHomeRefresh.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
+        binding.blogHomeRefresh.setOnChildScrollUpCallback((parent, child) -> binding.blogHomeScroll.canScrollVertically(-1));
+        binding.blogHomeRefresh.setOnRefreshListener(() -> loadBlogs(true));
         renderLoading();
-        loadBlogs();
+        loadBlogs(false);
     }
 
-    private void loadBlogs() {
+    private void loadBlogs(boolean fromRefresh) {
         repository.getAll(blogs -> runOnUiThread(() -> {
+            binding.blogHomeRefresh.setRefreshing(false);
             allBlogs = new ArrayList<>(blogs);
+            randomizePostBlogs();
             render();
-            showRandomPopupOnce();
+            if (!fromRefresh) {
+                showRandomPopupOnce();
+            }
         }));
+    }
+
+    private void randomizePostBlogs() {
+        randomPostBlogs = new ArrayList<>(allBlogs);
+        if (!randomPostBlogs.isEmpty()) {
+            randomPostBlogs.remove(0);
+        }
+        Collections.shuffle(randomPostBlogs);
     }
 
     private void showRandomPopupOnce() {
@@ -65,7 +82,7 @@ public class BlogHomeActivity extends AppCompatActivity {
                 "Xem th\u00eam",
                 v -> startActivity(new Intent(this, BlogNewPostsActivity.class))
         );
-        BlogUi.addFeaturedCard(this, binding.blogHomeContainer, allBlogs.get(0));
+        BlogUi.addFeaturedCard(this, binding.blogHomeContainer, allBlogs.get(0), repository, this::render);
 
         BlogUi.addSectionHeader(
                 this,
@@ -79,14 +96,10 @@ public class BlogHomeActivity extends AppCompatActivity {
             render();
         });
 
-        List<BlogEntity> preview = new ArrayList<>(allBlogs);
-        if (!preview.isEmpty()) {
-            preview.remove(0);
-        }
-        preview = filterByCategory(preview);
+        List<BlogEntity> preview = filterByCategory(randomPostBlogs);
         int limit = Math.min(preview.size(), 5);
         for (int index = 0; index < limit; index++) {
-            BlogUi.addPostItem(this, binding.blogHomeContainer, preview.get(index));
+            BlogUi.addPostItem(this, binding.blogHomeContainer, preview.get(index), repository, this::render);
         }
     }
 

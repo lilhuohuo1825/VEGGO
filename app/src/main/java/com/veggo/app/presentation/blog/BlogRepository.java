@@ -49,6 +49,12 @@ public class BlogRepository {
         request(api.toggleBlogLike(blogId, new ToggleBlogCommentLikeRequest(currentCustomerId())), null, callback);
     }
 
+    public void setBlogLike(String blogId, boolean liked, Callback<BlogEntity> callback) {
+        ToggleBlogCommentLikeRequest requestBody = new ToggleBlogCommentLikeRequest(currentCustomerId());
+        requestBody.liked = liked;
+        request(api.toggleBlogLike(blogId, requestBody), null, callback);
+    }
+
     public void loadComments(String blogId, Callback<List<BlogCommentEntity>> callback) {
         request(api.getComments(blogId, currentCustomerId()), new ArrayList<>(), callback);
     }
@@ -116,6 +122,7 @@ public class BlogRepository {
 
     public static class ToggleBlogCommentLikeRequest {
         public String customerId;
+        public Boolean liked;
 
         public ToggleBlogCommentLikeRequest(String customerId) {
             this.customerId = customerId;

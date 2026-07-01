@@ -5,15 +5,20 @@
     android:layout_height="match_parent"
     android:background="#102015">
 
-    <ScrollView
-        android:id="@+id/blogDetailScroll"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/blogDetailRefresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+
+        <ScrollView
+            android:id="@+id/blogDetailScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/blogDetailContainer"
@@ -84,8 +89,8 @@
                             android:layout_height="40dp"
                             android:padding="8dp"
                             android:scaleType="centerInside"
-                            android:src="@drawable/ic_heart_full"
-                            android:tint="@color/danger_main" />
+                            android:src="@drawable/ic_heart_outline_green"
+                            android:tint="@color/primary_main" />
 
                         <ImageView
                             android:id="@+id/blogDetailCommentIcon"
@@ -194,7 +199,8 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <FrameLayout
         android:id="@+id/blogDetailHeader"

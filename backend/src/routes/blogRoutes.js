@@ -77,9 +77,10 @@ router.post('/:blogId/like', asyncHandler(async (req, res) => {
 
   const likedIds = likedCustomerIds(blog);
   const currentlyLiked = likedIds.includes(customerId);
-  const nextLikedIds = currentlyLiked
-    ? likedIds.filter((id) => id !== customerId)
-    : [...likedIds, customerId];
+  const desiredLiked = typeof req.body.liked === 'boolean' ? req.body.liked : !currentlyLiked;
+  const nextLikedIds = desiredLiked
+    ? [...new Set([...likedIds, customerId])]
+    : likedIds.filter((id) => id !== customerId);
 
   await blogs.updateOne(
     { _id: blog._id },

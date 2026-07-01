@@ -28,7 +28,7 @@ public class BlogNewPostsActivity extends AppCompatActivity {
         binding.blogNewPostsContainer.removeAllViews();
         BlogUi.addTopActions(this, binding.blogNewPostsHeader, "B\u00e0i \u0111\u0103ng m\u1edbi nh\u1ea5t", blogs);
         for (BlogEntity blog : blogs) {
-            BlogUi.addFeaturedCard(this, binding.blogNewPostsContainer, blog);
+            BlogUi.addFeaturedCard(this, binding.blogNewPostsContainer, blog, repository, () -> render(blogs));
         }
     }
 }
