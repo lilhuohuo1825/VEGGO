@@ -46,6 +46,7 @@ const normalizePaymentMethod = (method) => {
   const value = String(method || '').trim().toLowerCase();
   if (['bank', 'banking', 'bank_transfer', 'transfer'].includes(value)) return 'bank';
   if (value === 'momo') return 'momo';
+  if (value === 'vnpay') return 'vnpay';
   return 'cod';
 };
 

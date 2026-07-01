@@ -8,5 +8,10 @@
         <domain includeSubdomains="true">172.20.10.2</domain>
         <domain includeSubdomains="true">10.43.171.23</domain>
         <domain includeSubdomains="true">10.0.44.124</domain>
+        <domain includeSubdomains="true">10.0.173.187</domain>
+        <domain includeSubdomains="true">10.0.208.145</domain>
+        <domain includeSubdomains="true">10.43.182.30</domain>
+        <domain includeSubdomains="true">10.0.1.184</domain>
     </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

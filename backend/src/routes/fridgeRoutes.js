@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { GoogleGenAI } = require('@google/genai');
 const FridgeItem = require('../models/FridgeItem');
 const FridgeLocation = require('../models/FridgeLocation');
+const Product = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
 
 // Initialize Gemini Client
@@ -29,7 +30,7 @@ router.post('/ai/recognize', asyncHandler(async (req, res) => {
 Nhận diện TẤT CẢ các loại bao gồm: rau củ quả, thịt cá hải sản, mì tôm/mì gói, đồ ăn liền, bánh kẹo, sữa và chế phẩm, đồ uống (cà phê, trà, nước ngọt), gia vị, dầu ăn, ngũ cốc, đồ khô, đồ đông lạnh, snack, và mọi loại thực phẩm khác.
 
 Trả về JSON với định dạng CHÍNH XÁC là một MẢNG các object (không có text khác ngoài JSON):
-[{"name": "Tên nguyên liệu/sản phẩm", "quantity": số_lượng_hoặc_null, "unit": "đơn vị (cái/gói/kg/l/hộp...)", "purchaseDate": "YYYY-MM-DD nếu có trên hóa đơn, nếu không thì null"}]
+[{"name": "Tên hiển thị chi tiết (vd: Quả dưa leo, Sữa chua Vinamilk 100g)", "searchKeyword": "Danh từ gốc siêu ngắn gọn (chỉ 1-2 từ, không tính từ/trạng thái) để tìm kiếm (vd: Rong biển, Dưa leo, Cà phê)", "generalCategory": "Danh mục chung tiếng Việt để dự phòng (vd: Đồ khô, Rau xanh, Gia vị)", "quantity": số_lượng_hoặc_null, "unit": "đơn vị (cái/gói/kg/l/hộp...)", "purchaseDate": "YYYY-MM-DD nếu có trên hóa đơn, nếu không thì null"}]
 
 Lưu ý: 
 - Nếu là hóa đơn: trích xuất tất cả mặt hàng thực phẩm trong đó
@@ -80,6 +81,84 @@ Lưu ý:
 
     const textResponse = response.text;
     const result = JSON.parse(textResponse);
+
+    // Hàm escape regex để tránh lỗi khi keyword chứa ký tự đặc biệt (VD: dấu ngoặc)
+    const escapeRegex = (text) => {
+      return (text || '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    };
+
+    // Add product search matching for each item
+    for (let item of result) {
+      if (item.name) {
+        const keyword = item.searchKeyword || item.name;
+
+        const safeKeyword = escapeRegex(keyword);
+        const safeName = escapeRegex(item.name);
+
+        // Search by keyword, limiting to 4 items as requested
+        let matchedProducts = await Product.find({
+          $or: [
+            { name: { $regex: safeKeyword, $options: 'i' } },
+            { product_name: { $regex: safeKeyword, $options: 'i' } },
+            { name: { $regex: safeName, $options: 'i' } },
+            { product_name: { $regex: safeName, $options: 'i' } }
+          ],
+          status: 'Active'
+        }).lean();
+
+        if (matchedProducts.length === 0 && item.generalCategory) {
+          const safeCategory = escapeRegex(item.generalCategory);
+          matchedProducts = await Product.find({
+            $or: [
+              { name: { $regex: safeCategory, $options: 'i' } },
+              { product_name: { $regex: safeCategory, $options: 'i' } }
+            ],
+            status: 'Active'
+          }).lean();
+        }
+
+        // Cải thiện độ chính xác: Ưu tiên tên trùng khớp hoàn toàn, sau đó ưu tiên tên ngắn hơn (gần với từ khóa nhất)
+        const searchLower = keyword.toLowerCase();
+        matchedProducts.sort((a, b) => {
+          const nameA = (a.name || a.product_name || '').toLowerCase();
+          const nameB = (b.name || b.product_name || '').toLowerCase();
+
+          if (nameA === searchLower) return -1;
+          if (nameB === searchLower) return 1;
+
+          return nameA.length - nameB.length;
+        });
+
+        // Nếu món đầu tiên khớp chính xác 100% với từ khóa thì lấy duy nhất món đó để bật popup
+        if (matchedProducts.length > 0) {
+          const topName = (matchedProducts[0].name || matchedProducts[0].product_name || '').toLowerCase();
+          if (topName === searchLower) {
+            matchedProducts = [matchedProducts[0]];
+          } else {
+            matchedProducts = matchedProducts.slice(0, 10);
+          }
+        }
+
+        item.matchedProducts = matchedProducts.map(p => {
+          let imageUrl = p.imageUrl;
+          if (!imageUrl && p.image) {
+            imageUrl = Array.isArray(p.image) ? p.image[0] : p.image;
+          }
+          return {
+            _id: String(p._id),
+            name: p.name || p.product_name || '',
+            price: p.price || 0,
+            originalPrice: p.originalPrice || p.base_price || p.price || 0,
+            imageUrl: imageUrl || '',
+            unit: p.unit || '',
+            sku: p.sku || ''
+          };
+        });
+      } else {
+        item.matchedProducts = [];
+      }
+    }
+
     res.json(result);
   } catch (error) {
     console.error("Gemini AI Error:", error);

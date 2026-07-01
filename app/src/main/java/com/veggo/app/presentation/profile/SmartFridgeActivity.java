@@ -196,7 +196,7 @@ public class SmartFridgeActivity extends BaseActivity {
         }).start();
     }
 
-    private void bindInventory(List<com.veggo.app.data.remote.dto.FridgeItemDto> items) {
+    private void updateHeaderCounts(List<com.veggo.app.data.remote.dto.FridgeItemDto> items) {
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.fridgeIngredientsCount, items.size() + " nguyên liệu");
 
         int expiringCount = 0;
@@ -219,6 +219,10 @@ public class SmartFridgeActivity extends BaseActivity {
             }
         }
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.fridgeExpiringCount, expiringCount + " sắp hết hạn");
+    }
+
+    private void bindInventory(List<com.veggo.app.data.remote.dto.FridgeItemDto> items) {
+        updateHeaderCounts(items);
 
         androidx.recyclerview.widget.RecyclerView list = findViewById(R.id.fridgeInventoryList);
         list.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
@@ -233,96 +237,43 @@ public class SmartFridgeActivity extends BaseActivity {
 
             @Override
             public void onDeleteClick(com.veggo.app.data.remote.dto.FridgeItemDto item, int position) {
-                new Thread(() -> {
-                    try {
-                        String customerId = new com.veggo.app.core.preferences.AppPreferences(SmartFridgeActivity.this).getCustomerId();
-                        com.veggo.app.data.remote.api.FridgeApi api = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.FridgeApi.class);
-                        api.deleteFridgeItem(customerId, item.getId()).execute();
-                        runOnUiThread(() -> {
-                            androidx.recyclerview.widget.RecyclerView list = findViewById(R.id.fridgeInventoryList);
-                            if (list != null && list.getAdapter() instanceof FridgeInventoryAdapter) {
-                                ((FridgeInventoryAdapter) list.getAdapter()).removeItem(position);
-                            }
-                            android.widget.Toast.makeText(SmartFridgeActivity.this, "Đã xóa nguyên liệu", android.widget.Toast.LENGTH_SHORT).show();
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        runOnUiThread(() -> android.widget.Toast.makeText(SmartFridgeActivity.this, "Lỗi xóa nguyên liệu", android.widget.Toast.LENGTH_SHORT).show());
+                com.veggo.app.presentation.dialog.VeggoDialog.show(
+                    SmartFridgeActivity.this,
+                    com.veggo.app.R.drawable.ic_trash,
+                    "Xác nhận xóa nguyên liệu",
+                    "Bạn có chắc chắn muốn xóa nguyên liệu này khỏi tủ lạnh?",
+                    "Xóa",
+                    "Hủy",
+                    new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
+                        @Override
+                        public void onConfirm() {
+                            new Thread(() -> {
+                                try {
+                                    String customerId = new com.veggo.app.core.preferences.AppPreferences(SmartFridgeActivity.this).getCustomerId();
+                                    com.veggo.app.data.remote.api.FridgeApi api = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.FridgeApi.class);
+                                    api.deleteFridgeItem(customerId, item.getId()).execute();
+                                    runOnUiThread(() -> {
+                                        androidx.recyclerview.widget.RecyclerView list = findViewById(R.id.fridgeInventoryList);
+                                        if (list != null && list.getAdapter() instanceof FridgeInventoryAdapter) {
+                                            FridgeInventoryAdapter adapt = (FridgeInventoryAdapter) list.getAdapter();
+                                            adapt.removeItem(position);
+                                            updateHeaderCounts(adapt.getItems());
+                                        }
+                                        android.widget.Toast.makeText(SmartFridgeActivity.this, "Đã xóa nguyên liệu", android.widget.Toast.LENGTH_SHORT).show();
+                                    });
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    runOnUiThread(() -> android.widget.Toast.makeText(SmartFridgeActivity.this, "Lỗi xóa nguyên liệu", android.widget.Toast.LENGTH_SHORT).show());
+                                }
+                            }).start();
+                        }
                     }
-                }).start();
+                );
             }
         });
         list.setAdapter(adapter);
 
-        androidx.recyclerview.widget.ItemTouchHelper itemTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
-            new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.LEFT) {
-                @Override
-                public boolean onMove(@androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView recyclerView, @androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder, @androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder target) {
-                    return false;
-                }
 
-                @Override
-                public float getSwipeThreshold(@androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder) {
-                    float width = viewHolder.itemView.getWidth();
-                    float maxSwipe = 80 * viewHolder.itemView.getContext().getResources().getDisplayMetrics().density;
-                    return (maxSwipe * 0.5f) / width;
-                }
-
-                @Override
-                public void onSwiped(@androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder, int direction) {
-                    int pos = viewHolder.getAdapterPosition();
-                    if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
-                        ((FridgeInventoryAdapter) adapter).setSwipedPosition(pos);
-                    }
-                }
-
-                @Override
-                public void onChildDraw(@androidx.annotation.NonNull android.graphics.Canvas c, @androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView recyclerView, @androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-                    if (viewHolder instanceof FridgeInventoryAdapter.ViewHolder) {
-                        android.view.View foreground = ((FridgeInventoryAdapter.ViewHolder) viewHolder).foreground;
-                        float maxSwipe = 80 * getResources().getDisplayMetrics().density;
-                        
-                        // Nếu item đang mở, dX bắt đầu từ -maxSwipe
-                        int swipedPos = ((FridgeInventoryAdapter) adapter).getSwipedPosition();
-                        if (swipedPos == viewHolder.getAdapterPosition()) {
-                            dX -= maxSwipe;
-                        }
-
-                        if (dX < -maxSwipe) dX = -maxSwipe;
-                        if (dX > 0) dX = 0;
-                        
-                        getDefaultUIUtil().onDraw(c, recyclerView, foreground, dX, dY, actionState, isCurrentlyActive);
-                    }
-                }
-
-                @Override
-                public void clearView(@androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView recyclerView, @androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder) {
-                    if (viewHolder instanceof FridgeInventoryAdapter.ViewHolder) {
-                        android.view.View foreground = ((FridgeInventoryAdapter.ViewHolder) viewHolder).foreground;
-                        float maxSwipe = 80 * getResources().getDisplayMetrics().density;
-                        int swipedPos = ((FridgeInventoryAdapter) adapter).getSwipedPosition();
-                        int pos = viewHolder.getAdapterPosition();
-                        
-                        if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
-                            if (swipedPos == pos) {
-                                // Nếu đang mở mà người dùng kéo về (translationX lớn hơn -40dp)
-                                if (foreground.getTranslationX() > -maxSwipe / 2) {
-                                    ((FridgeInventoryAdapter) adapter).setSwipedPosition(-1);
-                                }
-                            } else {
-                                // Nếu đang đóng mà người dùng kéo ra (translationX nhỏ hơn -40dp)
-                                if (foreground.getTranslationX() <= -maxSwipe / 2) {
-                                    ((FridgeInventoryAdapter) adapter).setSwipedPosition(pos);
-                                }
-                            }
-                        }
-                        
-                        getDefaultUIUtil().clearView(foreground);
-                    }
-                }
-            }
-        );
-        itemTouchHelper.attachToRecyclerView(list);
     }
 
 }

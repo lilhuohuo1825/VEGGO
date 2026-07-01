@@ -34,7 +34,16 @@ public final class BottomNavController {
                 LoginRequiredActivity.open(activity, "tủ lạnh thông minh");
                 return;
             }
-            activity.startActivity(new Intent(activity, AddFridgeIngredientActivity.class));
+            if (activity instanceof MainActivity) {
+                ((MainActivity) activity).openScanScreen();
+            } else {
+                Intent intent = new Intent(activity, MainActivity.class);
+                intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_home);
+                intent.putExtra("EXTRA_OPEN_SCAN", true);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                activity.startActivity(intent);
+                activity.overridePendingTransition(0, 0);
+            }
         });
         binding.bottomNavCard.setOnClickListener(v -> {
         });

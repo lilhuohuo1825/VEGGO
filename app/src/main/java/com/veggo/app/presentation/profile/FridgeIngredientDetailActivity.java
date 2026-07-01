@@ -382,7 +382,8 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
         String unitStr = unitInput.getText().toString().trim();
 
         if (name.isEmpty()) {
-            nameInput.setError("Vui lòng nhập tên nguyên liệu");
+            Toast.makeText(this, "Vui lòng nhập tên nguyên liệu", Toast.LENGTH_SHORT).show();
+            nameInput.requestFocus();
             return;
         }
         if (expiryCal == null) {
@@ -467,39 +468,48 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
     }
 
     private void deleteIngredient() {
-        new AlertDialog.Builder(this)
-            .setTitle("Xóa nguyên liệu")
-            .setMessage("Bạn có chắc chắn muốn xóa nguyên liệu này khỏi tủ lạnh?")
-            .setPositiveButton("Xóa", (dialog, which) -> {
-                String customerId = new AppPreferences(this).getCustomerId();
-                if (customerId == null || customerId.isEmpty()) return;
+        com.veggo.app.presentation.dialog.VeggoDialog.show(
+            this,
+            com.veggo.app.R.drawable.ic_trash,
+            "Xác nhận xóa nguyên liệu",
+            "Bạn có chắc chắn muốn xóa nguyên liệu này khỏi tủ lạnh?",
+            "Xóa",
+            "Hủy",
+            new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
+                @Override
+                public void onConfirm() {
+                    String customerId = new AppPreferences(FridgeIngredientDetailActivity.this).getCustomerId();
+                    if (customerId == null || customerId.isEmpty()) return;
 
-                findViewById(R.id.detailFridgeDeleteButton).setEnabled(false);
-                FridgeApi api = ApiClient.createService(FridgeApi.class);
+                    findViewById(R.id.detailFridgeDeleteButton).setEnabled(false);
+                    FridgeApi api = ApiClient.createService(FridgeApi.class);
 
-                new Thread(() -> {
-                    try {
-                        retrofit2.Response<Void> response = api.deleteFridgeItem(customerId, currentItem.getId()).execute();
-                        runOnUiThread(() -> {
-                            if (response.isSuccessful()) {
-                                Toast.makeText(this, "Đã xóa nguyên liệu", Toast.LENGTH_SHORT).show();
-                                setResult(RESULT_OK);
-                                finish();
-                            } else {
+                    new Thread(() -> {
+                        try {
+                            retrofit2.Response<Void> response = api.deleteFridgeItem(customerId, currentItem.getId()).execute();
+                            runOnUiThread(() -> {
+                                if (response.isSuccessful()) {
+                                    Toast.makeText(FridgeIngredientDetailActivity.this, "Đã xóa nguyên liệu", Toast.LENGTH_SHORT).show();
+                                    setResult(RESULT_OK);
+                                    finish();
+                                } else {
+                                    findViewById(R.id.detailFridgeDeleteButton).setEnabled(true);
+                                    Toast.makeText(FridgeIngredientDetailActivity.this, "Lỗi xóa nguyên liệu", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            runOnUiThread(() -> {
                                 findViewById(R.id.detailFridgeDeleteButton).setEnabled(true);
-                                Toast.makeText(this, "Lỗi xóa nguyên liệu", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        runOnUiThread(() -> {
-                            findViewById(R.id.detailFridgeDeleteButton).setEnabled(true);
-                            Toast.makeText(this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                }).start();
-            })
-            .setNegativeButton("Hủy", null)
-            .show();
+                                Toast.makeText(FridgeIngredientDetailActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    }).start();
+                }
+
+                @Override
+                public void onCancel() {}
+            }
+        );
     }
 }

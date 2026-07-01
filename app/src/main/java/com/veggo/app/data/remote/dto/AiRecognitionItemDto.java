@@ -1,10 +1,13 @@
 package com.veggo.app.data.remote.dto;
 
+import java.util.List;
+
 public class AiRecognitionItemDto {
     private String name;
     private Double quantity;
     private String unit;
     private String purchaseDate;
+    private List<ProductDto> matchedProducts;
 
     public String getName() {
         return name;
@@ -36,5 +39,13 @@ public class AiRecognitionItemDto {
 
     public void setPurchaseDate(String purchaseDate) {
         this.purchaseDate = purchaseDate;
+    }
+
+    public List<ProductDto> getMatchedProducts() {
+        return matchedProducts;
+    }
+
+    public void setMatchedProducts(List<ProductDto> matchedProducts) {
+        this.matchedProducts = matchedProducts;
     }
 }

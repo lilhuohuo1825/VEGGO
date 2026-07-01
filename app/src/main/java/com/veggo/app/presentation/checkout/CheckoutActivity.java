@@ -113,7 +113,8 @@ public class CheckoutActivity extends BaseActivity {
     private AppCompatRadioButton radioPaymentMomo;
     private AppCompatRadioButton radioPaymentBank;
     private AppCompatRadioButton radioPaymentCod;
-    private String selectedPaymentMethod = "momo";
+    private AppCompatRadioButton radioPaymentVnpay;
+    private String selectedPaymentMethod = "vnpay";
     private long currentPaymentTotal;
     private long currentSubtotal;
     private long currentProductDiscount;
@@ -183,6 +184,7 @@ public class CheckoutActivity extends BaseActivity {
         radioPaymentMomo = findViewById(R.id.radioPaymentMomo);
         radioPaymentBank = findViewById(R.id.radioPaymentCard);
         radioPaymentCod = findViewById(R.id.radioPaymentCod);
+        radioPaymentVnpay = findViewById(R.id.radioPaymentVnpay);
         tvCheckoutNote.setText("");
         tvCheckoutNote.setHint("Nhập ghi chú");
         buyNowMode = getIntent().getBooleanExtra(EXTRA_BUY_NOW, false);
@@ -208,7 +210,10 @@ public class CheckoutActivity extends BaseActivity {
             selectDeliveryMode(false);
             showScheduleTimePicker();
         });
-        btnPlaceOrder.setOnClickListener(v -> createOrderAndOpenPaymentStep());
+        btnPlaceOrder.setOnClickListener(v -> {
+            btnPlaceOrder.setEnabled(false);
+            createOrderAndOpenPaymentStep();
+        });
 
         if (buyNowMode) {
             bindBuyNowItemFromIntent();
@@ -263,13 +268,15 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void setupPaymentMethods() {
-        selectPaymentMethod("momo");
+        selectPaymentMethod("vnpay");
         radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
         radioPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         radioPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
+        if (radioPaymentVnpay != null) radioPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
         View layoutPaymentMomo = findViewById(R.id.layoutPaymentMomo);
         View layoutPaymentCod = findViewById(R.id.layoutPaymentCod);
         View layoutPaymentBank = findViewById(R.id.layoutPaymentBank);
+        View layoutPaymentVnpay = findViewById(R.id.layoutPaymentVnpay);
         if (layoutPaymentMomo != null) {
             layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
         }
@@ -279,24 +286,23 @@ public class CheckoutActivity extends BaseActivity {
         if (layoutPaymentBank != null) {
             layoutPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         }
+        if (layoutPaymentVnpay != null) {
+            layoutPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
+        }
     }
 
     private void selectPaymentMethod(String method) {
         selectedPaymentMethod = method;
-        if (radioPaymentMomo != null) {
-            radioPaymentMomo.setChecked("momo".equals(method));
-        }
-        if (radioPaymentBank != null) {
-            radioPaymentBank.setChecked("bank".equals(method));
-        }
-        if (radioPaymentCod != null) {
-            radioPaymentCod.setChecked("cod".equals(method));
-        }
+        if (radioPaymentMomo != null) radioPaymentMomo.setChecked("momo".equals(method));
+        if (radioPaymentBank != null) radioPaymentBank.setChecked("bank".equals(method));
+        if (radioPaymentCod  != null) radioPaymentCod.setChecked("cod".equals(method));
+        if (radioPaymentVnpay != null) radioPaymentVnpay.setChecked("vnpay".equals(method));
     }
 
     private void createOrderAndOpenPaymentStep() {
-        if ("momo".equals(selectedPaymentMethod)) {
-            Toast.makeText(this, "Liên kết Ví MoMo đang được phát triển", Toast.LENGTH_SHORT).show();
+        if ("momo".equals(selectedPaymentMethod) || "bank".equals(selectedPaymentMethod)) {
+            Toast.makeText(this, "Hệ thống đang phát triển", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         if (cartItems.isEmpty()) {
@@ -308,27 +314,37 @@ public class CheckoutActivity extends BaseActivity {
             return;
         }
 
-        OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(OrderApi.class);
-        orderApi.createOrder(buildOrderPayload()).enqueue(new Callback<OrderDto>() {
-            @Override
-            public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng", Toast.LENGTH_SHORT).show();
-                    return;
+        if ("vnpay".equals(selectedPaymentMethod)) {
+            String tempOrderId = "VG" + System.currentTimeMillis();
+            openVnpayPayment(tempOrderId);
+        } else {
+            showProgress("Đang gửi yêu cầu đặt đơn hàng...");
+            OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(OrderApi.class);
+            orderApi.createOrder(buildOrderPayload()).enqueue(new Callback<OrderDto>() {
+                @Override
+                public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
+                    hideProgress();
+                    if (!response.isSuccessful() || response.body() == null) {
+                        Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng", Toast.LENGTH_SHORT).show();
+                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                        return;
+                    }
+                    OrderDto order = response.body();
+                    String orderId = order.getOrderId();
+                    if (orderId == null || orderId.trim().isEmpty()) {
+                        orderId = order.getId();
+                    }
+                    openPaymentStep(orderId);
                 }
-                OrderDto order = response.body();
-                String orderId = order.getOrderId();
-                if (orderId == null || orderId.trim().isEmpty()) {
-                    orderId = order.getId();
-                }
-                openPaymentStep(orderId);
-            }
 
-            @Override
-            public void onFailure(Call<OrderDto> call, Throwable t) {
-                Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                @Override
+                public void onFailure(Call<OrderDto> call, Throwable t) {
+                    hideProgress();
+                    Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                }
+            });
+        }
     }
 
     private void bindBuyNowItemFromIntent() {
@@ -372,7 +388,7 @@ public class CheckoutActivity extends BaseActivity {
         intent.putExtra(QrPaymentActivity.EXTRA_ITEM_COUNT, currentProductCount);
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE, buildPaymentCode());
         intent.putExtra(QrPaymentActivity.EXTRA_ORDER_ID, orderId);
-        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod));
+        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod));
         intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode && !transferredCheckoutMode);
         intent.putExtra(QrPaymentActivity.EXTRA_CUSTOMER_ID, customerId);
         if (!buyNowMode && !transferredCheckoutMode) {
@@ -380,6 +396,66 @@ public class CheckoutActivity extends BaseActivity {
             intent.putExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_WEIGHTS, selectedCleanupWeights());
         }
         startActivity(intent);
+        finish();
+    }
+
+    private void openVnpayPayment(String orderId) {
+        showProgress("Đang tạo liên kết thanh toán VNPay...");
+        new Thread(() -> {
+            try {
+                com.veggo.app.data.remote.api.PaymentApi paymentApi =
+                    com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.PaymentApi.class);
+                java.util.Map<String, Object> body = new java.util.HashMap<>();
+                body.put("orderId", orderId);
+                body.put("amount", currentPaymentTotal);
+                body.put("orderInfo", "Thanh toan don hang VEGGO " + orderId);
+                retrofit2.Response<com.veggo.app.data.remote.dto.PaymentUrlDto> resp =
+                    paymentApi.createVnpayUrl(body).execute();
+                android.util.Log.d("VNPAY", "HTTP code: " + resp.code() + " successful: " + resp.isSuccessful());
+                if (resp.isSuccessful() && resp.body() != null) {
+                    String paymentUrl = resp.body().getPaymentUrl();
+                    android.util.Log.d("VNPAY", "paymentUrl: " + (paymentUrl != null ? paymentUrl.substring(0, Math.min(100, paymentUrl.length())) : "NULL"));
+                    if (paymentUrl == null || paymentUrl.isEmpty()) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            Toast.makeText(this, "Lỗi: paymentUrl rỗng từ server", Toast.LENGTH_LONG).show();
+                            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                        });
+                        return;
+                    }
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        Intent intent = new Intent(this, VnpayWebViewActivity.class);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_PAYMENT_URL, paymentUrl);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_ORDER_ID, orderId);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_CUSTOMER_ID, customerId);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_CLEAR_CART, !buyNowMode && !transferredCheckoutMode);
+                        if (!buyNowMode && !transferredCheckoutMode) {
+                            intent.putStringArrayListExtra(VnpayWebViewActivity.EXTRA_CLEANUP_SKUS, selectedCleanupSkus());
+                            intent.putExtra(VnpayWebViewActivity.EXTRA_CLEANUP_WEIGHTS, selectedCleanupWeights());
+                        }
+                        startActivityForResult(intent, 1001);
+                    });
+                } else {
+                    String errBody = "";
+                    try { if (resp.errorBody() != null) errBody = resp.errorBody().string(); } catch (Exception ignored) {}
+                    final String finalErr = errBody;
+                    android.util.Log.e("VNPAY", "Error response: " + resp.code() + " body: " + finalErr);
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        Toast.makeText(this, "Không thể tạo URL thanh toán (HTTP " + resp.code() + "): " + finalErr, Toast.LENGTH_LONG).show();
+                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                android.util.Log.e("VNPAY", "Exception: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    hideProgress();
+                    Toast.makeText(this, "Lỗi kết nối VNPAY: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                });
+            }
+        }).start();
     }
 
     private ArrayList<String> selectedCleanupSkus() {
@@ -1322,6 +1398,106 @@ public class CheckoutActivity extends BaseActivity {
 
     private String formatCurrency(long amount) {
         return String.format(Locale.US, "%,d", amount).replace(',', '.') + "đ";
+    }
+
+    private android.app.Dialog progressDialog;
+    private android.widget.TextView progressTextView;
+
+    private void showProgress(String message) {
+        if (progressDialog == null) {
+            progressDialog = new android.app.Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+            
+            // Full screen layout with translucent black background
+            android.widget.RelativeLayout rootLayout = new android.widget.RelativeLayout(this);
+            rootLayout.setBackgroundColor(android.graphics.Color.parseColor("#99000000")); // ~60% black opacity overlay
+            
+            android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+            container.setOrientation(android.widget.LinearLayout.VERTICAL);
+            container.setGravity(android.view.Gravity.CENTER);
+            
+            android.widget.ProgressBar progressBar = new android.widget.ProgressBar(this);
+            
+            progressTextView = new android.widget.TextView(this);
+            progressTextView.setText(message);
+            progressTextView.setTextColor(android.graphics.Color.WHITE);
+            progressTextView.setTextSize(16);
+            progressTextView.setGravity(android.view.Gravity.CENTER);
+            progressTextView.setPadding(30, 32, 30, 0); // padding horizontal and space below spinner
+            
+            container.addView(progressBar);
+            container.addView(progressTextView);
+            
+            android.widget.RelativeLayout.LayoutParams layoutParams = new android.widget.RelativeLayout.LayoutParams(
+                    android.widget.RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.RelativeLayout.LayoutParams.WRAP_CONTENT
+            );
+            layoutParams.addRule(android.widget.RelativeLayout.CENTER_IN_PARENT);
+            rootLayout.addView(container, layoutParams);
+            
+            progressDialog.setContentView(rootLayout);
+            progressDialog.setCancelable(false);
+        }
+        if (progressTextView != null) {
+            progressTextView.setText(message);
+        }
+        if (!progressDialog.isShowing()) {
+            progressDialog.show();
+        }
+    }
+
+    private void hideProgress() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001) {
+            if (resultCode == RESULT_OK) {
+                showProgress("Đang đồng bộ và khởi tạo đơn hàng VNPay...");
+                String tempOrderId = data != null ? data.getStringExtra("orderId") : ("VG" + System.currentTimeMillis());
+                createOrderAfterVnpaySuccess(tempOrderId);
+            } else {
+                Toast.makeText(this, "Thanh toán VNPay thất bại hoặc bị hủy", Toast.LENGTH_SHORT).show();
+                findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            }
+        }
+    }
+
+    private void createOrderAfterVnpaySuccess(String orderId) {
+        java.util.Map<String, Object> payload = buildOrderPayload();
+        payload.put("orderId", orderId);
+        payload.put("paymentStatus", "paid");
+        
+        OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(OrderApi.class);
+        orderApi.createOrder(payload).enqueue(new Callback<OrderDto>() {
+            @Override
+            public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
+                hideProgress();
+                String finalId = orderId;
+                if (response.isSuccessful() && response.body() != null) {
+                    finalId = response.body().getOrderId() != null ? response.body().getOrderId() : response.body().getId();
+                }
+                openPaymentStep(finalId);
+            }
+
+            @Override
+            public void onFailure(Call<OrderDto> call, Throwable t) {
+                hideProgress();
+                Toast.makeText(CheckoutActivity.this, "Đã thanh toán nhưng lỗi tạo đơn: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                openPaymentStep(orderId);
+            }
+        });
     }
 
     private String formatDiscount(long amount) {

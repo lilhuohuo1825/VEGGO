@@ -278,12 +278,29 @@ public class FridgeSuggestionsActivity extends BaseActivity {
         if (expiryMillis == UNKNOWN_EXPIRY) {
             return "Sắp hết hạn";
         }
-        long diff = expiryMillis - System.currentTimeMillis();
-        if (diff <= 0) {
-            return "Còn hôm nay";
+        
+        java.util.Calendar today = java.util.Calendar.getInstance();
+        today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        today.set(java.util.Calendar.MINUTE, 0);
+        today.set(java.util.Calendar.SECOND, 0);
+        today.set(java.util.Calendar.MILLISECOND, 0);
+        
+        java.util.Calendar expiry = java.util.Calendar.getInstance();
+        expiry.setTimeInMillis(expiryMillis);
+        expiry.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        expiry.set(java.util.Calendar.MINUTE, 0);
+        expiry.set(java.util.Calendar.SECOND, 0);
+        expiry.set(java.util.Calendar.MILLISECOND, 0);
+        
+        long diffDays = (expiry.getTimeInMillis() - today.getTimeInMillis()) / (1000L * 60 * 60 * 24);
+        
+        if (diffDays < 0) {
+            return "Đã hết hạn";
+        } else if (diffDays == 0) {
+            return "Hết hạn hôm nay";
+        } else {
+            return "Còn " + diffDays + " ngày";
         }
-        long days = (long) Math.ceil(diff / (1000d * 60d * 60d * 24d));
-        return "Còn " + Math.max(1, days) + " ngày";
     }
 
     private String firstText(String... values) {
