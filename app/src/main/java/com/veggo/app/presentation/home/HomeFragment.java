@@ -1,6 +1,9 @@
 package com.veggo.app.presentation.home;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.view.MotionEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,6 +47,10 @@ import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
+    private static final String PREF_CHATBOT_FAB = "home_chatbot_fab_position";
+    private static final String KEY_CHATBOT_FAB_X = "chatbot_fab_x";
+    private static final String KEY_CHATBOT_FAB_Y = "chatbot_fab_y";
+
     // ─── Interface để MainActivity gọi khi nhấn icon Home ────────────────
     public interface HomeButtonHandler {
         /**
@@ -68,6 +75,12 @@ public class HomeFragment extends Fragment {
     private FlashSaleAdapter flashSaleAdapter;
     private RecipeAdapter recipeAdapter;
     private CategoryAdapter categoryAdapter;
+
+    private float chatbotDragOffsetX;
+    private float chatbotDragOffsetY;
+    private float chatbotDownRawX;
+    private float chatbotDownRawY;
+    private boolean chatbotDragging;
 
     /** Thứ tự tương ứng với VALID_TABS trong ViewModel */
     private static final String[] TAB_KEYS = {
@@ -200,6 +213,132 @@ public class HomeFragment extends Fragment {
 
         binding.btnChatbot.setOnClickListener(v -> startActivity(
                 new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class)));
+        setupDraggableChatbot();
+    }
+
+    private void setupDraggableChatbot() {
+        View fab = binding.btnChatbot;
+        fab.post(() -> {
+            if (binding == null || fab.getParent() == null) {
+                return;
+            }
+            restoreChatbotPosition(fab);
+            attachChatbotDragBehavior(fab);
+        });
+    }
+
+    private void attachChatbotDragBehavior(View fab) {
+        final float touchSlop = 8f * getResources().getDisplayMetrics().density;
+        final float edgeMargin = 16f * getResources().getDisplayMetrics().density;
+        final float bottomSafeMargin = 96f * getResources().getDisplayMetrics().density;
+        final int[] parentLocation = new int[2];
+
+        fab.setOnTouchListener((view, event) -> {
+            ViewGroup parent = (ViewGroup) view.getParent();
+            if (parent == null) {
+                return false;
+            }
+
+            parent.getLocationOnScreen(parentLocation);
+            float localX = event.getRawX() - parentLocation[0];
+            float localY = event.getRawY() - parentLocation[1];
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    chatbotDragging = false;
+                    chatbotDragOffsetX = localX - view.getX();
+                    chatbotDragOffsetY = localY - view.getY();
+                    chatbotDownRawX = event.getRawX();
+                    chatbotDownRawY = event.getRawY();
+                    view.setPressed(true);
+                    return true;
+
+                case MotionEvent.ACTION_MOVE:
+                    float deltaX = Math.abs(event.getRawX() - chatbotDownRawX);
+                    float deltaY = Math.abs(event.getRawY() - chatbotDownRawY);
+                    if (!chatbotDragging && (deltaX > touchSlop || deltaY > touchSlop)) {
+                        chatbotDragging = true;
+                        view.setPressed(false);
+                    }
+                    if (chatbotDragging) {
+                        view.setX(clampChatbotX(view, parent, localX - chatbotDragOffsetX, edgeMargin));
+                        view.setY(clampChatbotY(view, parent, localY - chatbotDragOffsetY, bottomSafeMargin));
+                    }
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    view.setPressed(false);
+                    if (chatbotDragging) {
+                        snapChatbotToEdge(view, parent, edgeMargin);
+                        chatbotDragging = false;
+                        return true;
+                    }
+                    view.performClick();
+                    return true;
+
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private float clampChatbotX(View fab, ViewGroup parent, float x, float edgeMargin) {
+        float minX = edgeMargin;
+        float maxX = parent.getWidth() - fab.getWidth() - edgeMargin;
+        if (maxX < minX) {
+            maxX = minX;
+        }
+        return Math.max(minX, Math.min(x, maxX));
+    }
+
+    private float clampChatbotY(View fab, ViewGroup parent, float y, float bottomSafeMargin) {
+        float minY = edgeMarginFromTop();
+        float maxY = parent.getHeight() - fab.getHeight() - bottomSafeMargin;
+        if (maxY < minY) {
+            maxY = minY;
+        }
+        return Math.max(minY, Math.min(y, maxY));
+    }
+
+    private float edgeMarginFromTop() {
+        return 12f * getResources().getDisplayMetrics().density;
+    }
+
+    private void snapChatbotToEdge(View fab, ViewGroup parent, float edgeMargin) {
+        float centerX = fab.getX() + fab.getWidth() / 2f;
+        float targetX = centerX < parent.getWidth() / 2f
+                ? edgeMargin
+                : parent.getWidth() - fab.getWidth() - edgeMargin;
+        fab.animate()
+                .x(targetX)
+                .setDuration(180L)
+                .withEndAction(() -> saveChatbotPosition(fab))
+                .start();
+    }
+
+    private void restoreChatbotPosition(View fab) {
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREF_CHATBOT_FAB, Context.MODE_PRIVATE);
+        if (!prefs.contains(KEY_CHATBOT_FAB_X) || !prefs.contains(KEY_CHATBOT_FAB_Y)) {
+            return;
+        }
+        ViewGroup parent = (ViewGroup) fab.getParent();
+        if (parent == null) {
+            return;
+        }
+        float edgeMargin = 16f * getResources().getDisplayMetrics().density;
+        float bottomSafeMargin = 96f * getResources().getDisplayMetrics().density;
+        fab.setX(clampChatbotX(fab, parent, prefs.getFloat(KEY_CHATBOT_FAB_X, fab.getX()), edgeMargin));
+        fab.setY(clampChatbotY(fab, parent, prefs.getFloat(KEY_CHATBOT_FAB_Y, fab.getY()), bottomSafeMargin));
+    }
+
+    private void saveChatbotPosition(View fab) {
+        requireContext()
+                .getSharedPreferences(PREF_CHATBOT_FAB, Context.MODE_PRIVATE)
+                .edit()
+                .putFloat(KEY_CHATBOT_FAB_X, fab.getX())
+                .putFloat(KEY_CHATBOT_FAB_Y, fab.getY())
+                .apply();
     }
 
     private void setupRecyclerViews() {

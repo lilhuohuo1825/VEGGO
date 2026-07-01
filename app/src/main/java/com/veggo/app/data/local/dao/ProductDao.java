@@ -40,6 +40,9 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE id IN (:productIds)")
     List<ProductEntity> getProductsByIds(List<String> productIds);
 
+    @Query("SELECT * FROM products")
+    LiveData<List<ProductEntity>> observeAllProductEntities();
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<ProductEntity> products);
 

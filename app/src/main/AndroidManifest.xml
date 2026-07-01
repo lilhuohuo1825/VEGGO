@@ -14,7 +14,24 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Android 11+: required so SpeechRecognizer can see Google voice service on real devices -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+        <package android:name="com.google.android.googlequicksearchbox" />
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.samsung.android.bixby.agent" />
+        <package android:name="com.samsung.android.honeyboard" />
+        <package android:name="com.samsung.android.svoice" />
+        <package android:name="com.samsung.android.app.spage" />
+    </queries>
 
     <application
         android:name=".VeggoApplication"
@@ -45,9 +62,6 @@
 
         <activity
             android:name=".presentation.promotion.PromotionDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.chatbot.ChatbotActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.chatbot.ChatbotActivity"

@@ -25,6 +25,8 @@ const promotionUsageRoutes = require('./routes/promotionUsageRoutes');
 const warehouseRoutes = require('./routes/warehouseRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -100,6 +102,8 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {

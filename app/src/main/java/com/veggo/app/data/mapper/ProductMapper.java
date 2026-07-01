@@ -73,6 +73,7 @@ public final class ProductMapper {
                 dto.getFatContent(),
                 dto.getCategoryId(),
                 dto.getSubcategoryId(),
+                dto.getBrand(),
                 dto.getCarbonSavingPoint()
         );
     }
@@ -104,6 +105,7 @@ public final class ProductMapper {
                 entity.getFatContent(),
                 entity.getCategoryId(),
                 entity.getSubcategoryId(),
+                entity.getBrand(),
                 entity.getCarbonSavingPoint()
         );
     }
@@ -144,6 +146,7 @@ public final class ProductMapper {
                 dto.getFatContent(),
                 dto.getCategoryId(),
                 dto.getSubcategoryId(),
+                dto.getBrand(),
                 dto.getCarbonSavingPoint()
         );
     }
@@ -175,6 +178,7 @@ public final class ProductMapper {
                 product.getFatContent(),
                 product.getCategoryId(),
                 product.getSubcategoryId(),
+                product.getBrand(),
                 product.getCarbonSavingPoint()
         );
     }

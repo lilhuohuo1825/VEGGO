@@ -99,6 +99,7 @@ public class FirebaseSyncManager {
                 String fatContent = doc.getString("fatContent");
                 String catId = doc.getString("categoryId");
                 String subId = doc.getString("subcategoryId");
+                String brand = doc.getString("brand");
 
                 long price = priceL != null ? priceL : 0;
                 long originalPrice = originalPriceL != null ? originalPriceL : price;
@@ -125,8 +126,9 @@ public class FirebaseSyncManager {
 
                 ProductEntity entity = new ProductEntity(
                         id, name, price, originalPrice, sku, imageUrl, weightOptionsJson, weight,
-                        rating, reviewCount, soldCount, desc, origin, condition, fatContent,
-                        catId, subId, carbonSavingPoint
+                        rating, reviewCount, soldCount, desc,
+                        null, null, null, null, null, null, null, null,
+                        origin, condition, fatContent, catId, subId, brand, carbonSavingPoint
                 );
                 activeProducts.add(entity);
             } catch (Exception e) {

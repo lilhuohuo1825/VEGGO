@@ -1,275 +1,279 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="@android:color/white">
+
+    <RelativeLayout
+        android:id="@+id/layoutFilterHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_left" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Bộ lọc"
+            android:textColor="#222222"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txtClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="Xóa tất cả"
+            android:textColor="#57AF37"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+    </RelativeLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/layoutFilterFooter"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
-
-        <!-- HEADER -->
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_left"
-                android:contentDescription="@null"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Bộ lọc"
-                android:textStyle="bold"
-                android:textSize="20sp"
-                android:textColor="#222222"/>
-
-            <TextView
-                android:id="@+id/txtClear"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:text="Xóa tất cả"
-                android:textStyle="bold"
-                android:textColor="#57AF37"
-                android:textSize="15sp"/>
-
-        </RelativeLayout>
-
-        <!-- SORT -->
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:text="Sắp xếp"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
-
-        <CheckBox
-            android:id="@+id/chkPopular"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Mức phổ biến"
-            android:textSize="15sp"/>
-
-        <CheckBox
-            android:id="@+id/chkDiscount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Đang giảm giá"
-            android:textSize="15sp"/>
-
-        <CheckBox
-            android:id="@+id/chkLowHigh"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Giá: thấp đến cao"
-            android:textSize="15sp"/>
-
-        <CheckBox
-            android:id="@+id/chkHighLow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Giá: cao đến thấp"
-            android:textSize="15sp"/>
-
-        <CheckBox
-            android:id="@+id/chkOrganic"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Hữu cơ"
-            android:textSize="15sp"/>
+        android:paddingHorizontal="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="@dimen/spacing_lg"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginVertical="20dp"
-            android:background="#DDDDDD"/>
-
-        <!-- CATEGORY -->
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Danh mục"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/cgCategories"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:singleSelection="true"
-            app:chipSpacingHorizontal="8dp"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="20dp"
-            android:background="#DDDDDD"/>
-
-        <!-- SUBCATEGORY -->
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Danh mục con"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/cgSubcategories"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:singleSelection="true"
-            app:chipSpacingHorizontal="8dp"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="20dp"
-            android:background="#DDDDDD"/>
-
-        <!-- PRICE -->
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Khoảng giá"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
-
-        <TextView
-            android:id="@+id/txtPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="0đ - 100đ"
-            android:textSize="15sp"
-            android:textColor="#999999"/>
-
-        <com.google.android.material.slider.RangeSlider
-            android:id="@+id/rangePrice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:valueFrom="0"
-            android:valueTo="1000000"
-            android:stepSize="10000"
-            app:values="@array/initial_range_values"
-            app:thumbColor="@color/primary_main"
-            app:trackColorActive="@color/primary_main"
-            app:trackColorInactive="@color/neutral_20"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="0đ"
-                android:textSize="14sp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1,000,000đ"
-                android:textSize="14sp"/>
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="20dp"
-            android:background="#DDDDDD"/>
-
-        <!-- BRAND -->
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Thương hiệu"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="#F2F2F2"
-                    android:text="VinEco"
-                    android:padding="10dp"
-                    android:textSize="14sp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="#F2F2F2"
-                    android:text="Dalat Farm"
-                    android:padding="10dp"
-                    android:textSize="14sp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="#F2F2F2"
-                    android:text="Hữu cơ"
-                    android:padding="10dp"
-                    android:textSize="14sp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="#F2F2F2"
-                    android:text="Fresh Garden"
-                    android:padding="10dp"
-                    android:textSize="14sp"/>
-
-            </LinearLayout>
-
-        </HorizontalScrollView>
+            android:background="#EEEEEE" />
 
         <Button
             android:id="@+id/btnApply"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="30dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginTop="12dp"
             android:backgroundTint="#57AF37"
             android:text="Áp dụng bộ lọc"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
-            android:textStyle="bold"/>
+            android:textStyle="bold" />
 
     </LinearLayout>
 
-</ScrollView>
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollFilterContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toTopOf="@id/layoutFilterFooter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutFilterHeader">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Sắp xếp"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgSort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbPopular"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/primary_main"
+                    android:paddingVertical="4dp"
+                    android:text="Mức phổ biến"
+                    android:textSize="15sp" />
+
+                <RadioButton
+                    android:id="@+id/rbDiscount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/primary_main"
+                    android:paddingVertical="4dp"
+                    android:text="Đang giảm giá"
+                    android:textSize="15sp" />
+
+                <RadioButton
+                    android:id="@+id/rbLowHigh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/primary_main"
+                    android:paddingVertical="4dp"
+                    android:text="Giá: thấp đến cao"
+                    android:textSize="15sp" />
+
+                <RadioButton
+                    android:id="@+id/rbHighLow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/primary_main"
+                    android:paddingVertical="4dp"
+                    android:text="Giá: cao đến thấp"
+                    android:textSize="15sp" />
+
+                <RadioButton
+                    android:id="@+id/rbOrganic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/primary_main"
+                    android:paddingVertical="4dp"
+                    android:text="Hữu cơ"
+                    android:textSize="15sp" />
+
+            </RadioGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="20dp"
+                android:background="#DDDDDD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Danh mục"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cgCategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:chipSpacingHorizontal="8dp"
+                app:singleSelection="true" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="20dp"
+                android:background="#DDDDDD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Danh mục con"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cgSubcategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:chipSpacingHorizontal="8dp"
+                app:singleSelection="true" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="20dp"
+                android:background="#DDDDDD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Khoảng giá"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="0đ - 100đ"
+                android:textColor="#999999"
+                android:textSize="15sp" />
+
+            <com.google.android.material.slider.RangeSlider
+                android:id="@+id/rangePrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:stepSize="10000"
+                android:valueFrom="0"
+                android:valueTo="1000000"
+                app:thumbColor="@color/primary_main"
+                app:trackColorActive="@color/primary_main"
+                app:trackColorInactive="@color/neutral_20"
+                app:values="@array/initial_range_values" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="0đ"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1,000,000đ"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="20dp"
+                android:background="#DDDDDD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thương hiệu"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cgBrands"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:chipSpacingHorizontal="8dp"
+                app:singleSelection="true" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

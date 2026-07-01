@@ -175,12 +175,21 @@ public final class AssetDatabaseSeeder {
                     assetProduct.liked,
                     assetProduct.purchaseCount,
                     finalDescription,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
                     assetProduct.origin != null ? assetProduct.origin : "Việt Nam",
                     assetProduct.status != null ? assetProduct.status : "Mới",
-                    assetProduct.brand != null ? assetProduct.brand : "Veggo",
+                    null,
                     assetProduct.categoryId,
                     assetProduct.subcategoryId,
-                    0.0 // carbonSavingPoint default for assets
+                    assetProduct.brand != null ? assetProduct.brand : "Veggo",
+                    0.0
             ));
         }
         return products;

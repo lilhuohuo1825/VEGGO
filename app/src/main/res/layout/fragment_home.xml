@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="@color/background_main">
+    android:background="@color/background_main"
+    android:clipChildren="false">
 
     <ScrollView
         android:id="@+id/homeScrollView"
@@ -710,9 +711,11 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="96dp"
-        android:src="@drawable/ic_chatbot"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
+        android:contentDescription="@string/chatbot_fab_content_description"
+        android:elevation="8dp"
         android:focusable="true"
-        android:background="?attr/selectableItemBackgroundBorderless" />
+        android:src="@drawable/ic_chatbot" />
 
 </FrameLayout>

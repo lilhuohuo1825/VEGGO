@@ -96,9 +96,16 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         });
 
         holder.itemView.setOnClickListener(v -> {
-            if (onRecipeClickListener != null) {
-                onRecipeClickListener.onRecipeClick(recipe);
+            if (onRecipeClickListener == null) {
+                return;
             }
+            int clickedPosition = holder.getBindingAdapterPosition();
+            if (clickedPosition == RecyclerView.NO_POSITION
+                    || clickedPosition < 0
+                    || clickedPosition >= recipes.size()) {
+                return;
+            }
+            onRecipeClickListener.onRecipeClick(recipes.get(clickedPosition));
         });
     }
 

@@ -23,11 +23,13 @@
         android:padding="12dp">
 
         <TextView
+            android:id="@+id/tvIntro"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dạ, giá bơ hiện tại như sau:"
+            android:text="Gợi ý sản phẩm:"
             android:textColor="@color/neutral_100"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -74,14 +76,15 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvProductOrigin"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Xuất xứ: Đắk Lắk"
+                        android:text="Xuất xứ: Việt Nam"
                         android:textSize="10sp"
                         android:textColor="@color/neutral_60" />
 
                     <Button
-                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:id="@+id/btnViewDetail"
                         android:layout_width="wrap_content"
                         android:layout_height="32dp"
                         android:layout_marginTop="4dp"

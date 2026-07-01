@@ -19,9 +19,13 @@ import java.util.List;
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
 
+    private static final float HORIZONTAL_CARD_WIDTH_DP = 168f;
+    private static final float HORIZONTAL_CARD_MARGIN_END_DP = 12f;
+
     private List<Product> products = new ArrayList<>();
     private OnProductClickListener listener;
     private OnAddProductClickListener addProductClickListener;
+    private boolean horizontalScrollMode;
 
     public interface OnProductClickListener {
         void onProductClick(Product product);
@@ -37,6 +41,10 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     public void setOnAddProductClickListener(OnAddProductClickListener listener) {
         this.addProductClickListener = listener;
+    }
+
+    public void setHorizontalScrollMode(boolean horizontalScrollMode) {
+        this.horizontalScrollMode = horizontalScrollMode;
     }
 
     public void setProducts(List<Product> products) {
@@ -57,6 +65,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public ProductViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ItemProductGridBinding binding = ItemProductGridBinding.inflate(
                 LayoutInflater.from(parent.getContext()), parent, false);
+        if (horizontalScrollMode) {
+            float density = parent.getResources().getDisplayMetrics().density;
+            int width = Math.round(HORIZONTAL_CARD_WIDTH_DP * density);
+            int marginEnd = Math.round(HORIZONTAL_CARD_MARGIN_END_DP * density);
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.setMarginEnd(marginEnd);
+            binding.getRoot().setLayoutParams(params);
+        }
         return new ProductViewHolder(binding);
     }
 
