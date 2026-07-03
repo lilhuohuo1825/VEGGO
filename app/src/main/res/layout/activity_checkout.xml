@@ -523,6 +523,39 @@
                         android:buttonTint="@color/payment_radio_button_tint"
                         app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
+
+                <!-- VNPAY -->
+                <LinearLayout
+                    android:id="@+id/layoutPaymentVnpay"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_payment_vnpay" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="VNPAY"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/radioPaymentVnpay"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:buttonTint="#57AF37" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Voucher -->

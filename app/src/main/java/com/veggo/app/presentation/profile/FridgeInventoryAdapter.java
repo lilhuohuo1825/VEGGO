@@ -29,6 +29,10 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
         return swipedPosition;
     }
 
+    public List<FridgeItemDto> getItems() {
+        return items;
+    }
+
     public void setSwipedPosition(int position) {
         if (swipedPosition == position) return;
         int previous = swipedPosition;
@@ -67,12 +71,33 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         long now = System.currentTimeMillis();
 
+        String expiryStr = "Sắp hết hạn";
         try {
             if (item.getExpiryDate() != null) {
                 Date d = format.parse(item.getExpiryDate());
                 if (d != null) {
-                    long diff = d.getTime() - now;
-                    daysLeft = diff / (1000L * 60 * 60 * 24);
+                    java.util.Calendar today = java.util.Calendar.getInstance();
+                    today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                    today.set(java.util.Calendar.MINUTE, 0);
+                    today.set(java.util.Calendar.SECOND, 0);
+                    today.set(java.util.Calendar.MILLISECOND, 0);
+                    
+                    java.util.Calendar expiry = java.util.Calendar.getInstance();
+                    expiry.setTime(d);
+                    expiry.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                    expiry.set(java.util.Calendar.MINUTE, 0);
+                    expiry.set(java.util.Calendar.SECOND, 0);
+                    expiry.set(java.util.Calendar.MILLISECOND, 0);
+                    
+                    long diffDays = (expiry.getTimeInMillis() - today.getTimeInMillis()) / (1000L * 60 * 60 * 24);
+                    
+                    if (diffDays < 0) {
+                        expiryStr = "Đã hết hạn";
+                    } else if (diffDays == 0) {
+                        expiryStr = "Hết hạn hôm nay";
+                    } else {
+                        expiryStr = "Còn " + diffDays + " ngày";
+                    }
                 }
             }
         } catch (Exception e) {
@@ -87,8 +112,6 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
         String qtyStr = String.valueOf(item.getQuantity());
         if (qtyStr.endsWith(".0")) qtyStr = qtyStr.substring(0, qtyStr.length() - 2);
         AssetScreenData.setText(holder.itemView, R.id.fridgeIngredientMeta, "Số lượng: " + qtyStr + " " + (item.getUnit() != null ? item.getUnit() : ""));
-        
-        String expiryStr = daysLeft < 0 ? "Hết hạn" : ("Còn " + daysLeft + " ngày");
         AssetScreenData.setText(holder.itemView, R.id.fridgeIngredientExpiry, expiryStr);
 
         ImageView image = holder.itemView.findViewById(R.id.fridgeIngredientImage);
@@ -110,22 +133,74 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
         View foreground = holder.itemView.findViewById(R.id.fridgeItemForeground);
         View deleteBg = holder.itemView.findViewById(R.id.fridgeItemDeleteBg);
         
-        // Maintain translation state for swiped item
         if (foreground != null) {
-            if (position == swipedPosition) {
-                float maxSwipe = 80 * holder.itemView.getContext().getResources().getDisplayMetrics().density;
-                foreground.setTranslationX(-maxSwipe);
-            } else {
-                foreground.setTranslationX(0f);
-            }
-            
+            foreground.setTranslationX(0f);
             foreground.setOnClickListener(v -> {
-                if (swipedPosition != -1) {
-                    setSwipedPosition(-1); // Close swipe on tap
-                    return;
-                }
                 if (listener != null) {
                     listener.onItemClick(item);
+                }
+            });
+            
+            final float touchSlop = holder.itemView.getResources().getDisplayMetrics().density * 8f;
+            foreground.setOnTouchListener(new View.OnTouchListener() {
+                private float downX, downY;
+                private boolean swiping, longPressTriggered;
+                private Runnable longPressRunnable;
+
+                @Override
+                public boolean onTouch(View v, android.view.MotionEvent event) {
+                    float deleteWidth = deleteBg != null && deleteBg.getWidth() > 0 ? deleteBg.getWidth() : 80f * holder.itemView.getResources().getDisplayMetrics().density;
+                    switch (event.getActionMasked()) {
+                        case android.view.MotionEvent.ACTION_DOWN:
+                            downX = event.getX();
+                            downY = event.getY();
+                            swiping = false;
+                            longPressTriggered = false;
+                            longPressRunnable = () -> {
+                                if (!swiping) {
+                                    longPressTriggered = true;
+                                    foreground.performLongClick();
+                                }
+                            };
+                            foreground.postDelayed(longPressRunnable, android.view.ViewConfiguration.getLongPressTimeout());
+                            return true;
+                        case android.view.MotionEvent.ACTION_MOVE:
+                            float deltaX = event.getX() - downX;
+                            float deltaY = event.getY() - downY;
+                            if (Math.abs(deltaX) > touchSlop && Math.abs(deltaX) > Math.abs(deltaY)) {
+                                swiping = true;
+                                if (longPressRunnable != null) {
+                                    foreground.removeCallbacks(longPressRunnable);
+                                    longPressRunnable = null;
+                                }
+                                holder.itemView.getParent().requestDisallowInterceptTouchEvent(true);
+                            }
+                            if (swiping) {
+                                float currentTranslation = foreground.getTranslationX();
+                                float targetTranslation = Math.max(-deleteWidth, Math.min(0f, currentTranslation + deltaX));
+                                foreground.setTranslationX(targetTranslation);
+                                downX = event.getX();
+                                return true;
+                            }
+                            return false;
+                        case android.view.MotionEvent.ACTION_UP:
+                        case android.view.MotionEvent.ACTION_CANCEL:
+                            if (longPressRunnable != null) {
+                                foreground.removeCallbacks(longPressRunnable);
+                                longPressRunnable = null;
+                            }
+                            holder.itemView.getParent().requestDisallowInterceptTouchEvent(false);
+                            if (swiping) {
+                                float target = foreground.getTranslationX() < -deleteWidth / 2f ? -deleteWidth : 0f;
+                                foreground.animate().translationX(target).setDuration(120).start();
+                            } else if (!longPressTriggered && event.getActionMasked() == android.view.MotionEvent.ACTION_UP) {
+                                foreground.performClick();
+                            }
+                            swiping = false;
+                            return true;
+                        default:
+                            return false;
+                    }
                 }
             });
         }

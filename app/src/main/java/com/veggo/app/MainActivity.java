@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         intent.putExtra("EXTRA_AI_INGREDIENT_URI", cameraImageUri.toString());
                     }
+                    intent.putExtra("EXTRA_FROM_NAVBAR", true);
                     startActivity(intent);
                 }
             }
@@ -128,6 +129,9 @@ public class MainActivity extends AppCompatActivity {
                 openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
                         fromExternal,
                         intent.getBooleanExtra(EXTRA_SCROLL_HOME_PRODUCTS, false));
+                if (intent.getBooleanExtra("EXTRA_OPEN_SCAN", false)) {
+                    openScanScreen();
+                }
             }
         }
     }
@@ -157,6 +161,9 @@ public class MainActivity extends AppCompatActivity {
             openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
                     fromExternal,
                     intent.getBooleanExtra(EXTRA_SCROLL_HOME_PRODUCTS, false));
+            if (intent.getBooleanExtra("EXTRA_OPEN_SCAN", false)) {
+                openScanScreen();
+            }
         }
     }
 

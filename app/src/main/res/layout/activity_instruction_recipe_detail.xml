@@ -351,6 +351,13 @@
         </LinearLayout>
     </ScrollView>
 
+    <View
+        android:id="@+id/recipeHeaderBackground"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@color/neutral_10"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <FrameLayout
         android:id="@+id/recipeBackButton"
         android:layout_width="40dp"

@@ -64,6 +64,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
     private static final int MODE_SCAN_RECEIPT = 1;
     private static final int MODE_SCAN_INGREDIENT = 2;
     private int cameraMode = MODE_BLOCK_IMAGE;
+    private boolean isFromNavbar = false;
 
     private final SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
     private final SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
@@ -184,6 +185,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         
         String extraAiImageUri = getIntent().getStringExtra("EXTRA_AI_IMAGE_URI");
         String extraIngredientUri = getIntent().getStringExtra("EXTRA_AI_INGREDIENT_URI");
+        isFromNavbar = getIntent().getBooleanExtra("EXTRA_FROM_NAVBAR", false);
         if (extraAiImageUri != null) {
             cameraMode = MODE_SCAN_RECEIPT;
             analyzeImageWithAI(Uri.parse(extraAiImageUri));
@@ -558,8 +560,12 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                     if (response.isSuccessful() && response.body() != null) {
                         List<AiRecognitionItemDto> items = response.body();
                         if (!items.isEmpty()) {
+                            List<com.veggo.app.data.remote.dto.ProductDto> allMatches = new ArrayList<>();
                             for (int i = 0; i < items.size(); i++) {
                                 AiRecognitionItemDto item = items.get(i);
+                                if (item.getMatchedProducts() != null) {
+                                    allMatches.addAll(item.getMatchedProducts());
+                                }
                                 if (i == 0) {
                                     ManualBlockViewHolder targetBlock = null;
                                     for (ManualBlockViewHolder b : blocks) {
@@ -575,6 +581,17 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                                     }
                                 } else {
                                     addManualBlock(item);
+                                }
+                            }
+                            if (isFromNavbar) {
+                                if (!allMatches.isEmpty()) {
+                                    if (items.size() == 1) {
+                                        showSingleMatchedProductDialog(allMatches.get(0));
+                                    } else {
+                                        showMultiMatchedProductsDialog(allMatches);
+                                    }
+                                } else {
+                                    showNoMatchDialog();
                                 }
                             }
                             Toast.makeText(this, "Đã thêm " + items.size() + " nguyên liệu từ hóa đơn!", Toast.LENGTH_SHORT).show();
@@ -618,6 +635,15 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                     if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                         AiRecognitionItemDto item = response.body().get(0);
                         fillBlockWithItem(block, item);
+                        if (isFromNavbar) {
+                            if (item.getMatchedProducts() != null && item.getMatchedProducts().size() == 1) {
+                                showSingleMatchedProductDialog(item.getMatchedProducts().get(0));
+                            } else if (item.getMatchedProducts() != null && item.getMatchedProducts().size() > 1) {
+                                showMultiMatchedProductsDialog(item.getMatchedProducts());
+                            } else {
+                                showNoMatchDialog();
+                            }
+                        }
                     } else {
                         Toast.makeText(this, "Không nhận diện được nguyên liệu", Toast.LENGTH_SHORT).show();
                     }
@@ -627,6 +653,139 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                 runOnUiThread(() -> Toast.makeText(this, "Lỗi nhận diện AI", Toast.LENGTH_SHORT).show());
             }
         }).start();
+    }
+
+    private void showSingleMatchedProductDialog(com.veggo.app.data.remote.dto.ProductDto productDto) {
+        com.veggo.app.domain.model.Product product = com.veggo.app.data.mapper.ProductMapper.fromDto(productDto);
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
+        dialog.setContentView(R.layout.dialog_matched_product_single);
+
+        ImageView img = dialog.findViewById(R.id.ivProductImage);
+        TextView name = dialog.findViewById(R.id.tvProductName);
+        TextView weight = dialog.findViewById(R.id.tvWeight);
+        TextView rating = dialog.findViewById(R.id.tvRating);
+        TextView sold = dialog.findViewById(R.id.tvSold);
+        TextView price = dialog.findViewById(R.id.tvPrice);
+        TextView originalPrice = dialog.findViewById(R.id.tvOriginalPrice);
+        TextView discountBadge = dialog.findViewById(R.id.tvDiscountBadge);
+
+        if (name != null) name.setText(product.getName());
+        if (price != null) price.setText(com.veggo.app.core.utils.CurrencyFormatter.formatVnd(product.getPrice()));
+        if (img != null) Glide.with(this).load(product.getImageUrl()).into(img);
+
+        if (weight != null) {
+            String w = product.getWeight();
+            weight.setText(w != null ? w : "");
+        }
+        if (rating != null) rating.setText(String.valueOf(product.getRating() == 0 ? 5.0f : product.getRating()));
+        if (sold != null) sold.setText(product.getSoldCount() + " lượt mua");
+
+        if (product.hasActiveDiscount()) {
+            if (discountBadge != null) {
+                discountBadge.setVisibility(View.VISIBLE);
+                long discount = product.getOriginalPrice() - product.getPrice();
+                int percentage = (int) ((discount * 100.0f) / product.getOriginalPrice());
+                discountBadge.setText("-" + percentage + "%");
+            }
+            if (originalPrice != null) {
+                originalPrice.setVisibility(View.VISIBLE);
+                originalPrice.setText(com.veggo.app.core.utils.CurrencyFormatter.formatVnd(product.getOriginalPrice()));
+                originalPrice.setPaintFlags(originalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            }
+        } else {
+            if (discountBadge != null) discountBadge.setVisibility(View.GONE);
+            if (originalPrice != null) originalPrice.setVisibility(View.GONE);
+        }
+
+        View btnViewDetails = dialog.findViewById(R.id.btnViewDetails);
+        if (btnViewDetails != null) {
+            btnViewDetails.setOnClickListener(v -> {
+                dialog.dismiss();
+                Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
+                intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+                startActivity(intent);
+            });
+        }
+
+        View btnAddToCart = dialog.findViewById(R.id.btnAddToCart);
+        if (btnAddToCart != null) {
+            btnAddToCart.setOnClickListener(v -> {
+                dialog.dismiss();
+                String customerId = new com.veggo.app.core.preferences.AppPreferences(this).getCustomerId();
+                if (customerId != null) {
+                    com.veggo.app.data.remote.api.CartApi cartApi = ApiClient.createService(com.veggo.app.data.remote.api.CartApi.class);
+                    new Thread(() -> {
+                        try {
+                            cartApi.addItem(customerId, new com.veggo.app.data.remote.dto.CartItemRequestDto(product.getSku(), 1)).execute();
+                            runOnUiThread(() -> {
+                                Toast.makeText(this, "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(this, com.veggo.app.MainActivity.class);
+                                intent.putExtra(com.veggo.app.MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_cart);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                                startActivity(intent);
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void showMultiMatchedProductsDialog(List<com.veggo.app.data.remote.dto.ProductDto> productDtos) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
+        dialog.setContentView(R.layout.dialog_matched_products_list);
+        
+        androidx.recyclerview.widget.RecyclerView rv = dialog.findViewById(R.id.rvMatchedProducts);
+        if (rv != null) {
+            rv.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 2));
+            com.veggo.app.adapter.ProductAdapter adapter = new com.veggo.app.adapter.ProductAdapter();
+            
+            List<com.veggo.app.domain.model.Product> products = new ArrayList<>();
+            for (com.veggo.app.data.remote.dto.ProductDto dto : productDtos) {
+                products.add(com.veggo.app.data.mapper.ProductMapper.fromDto(dto));
+            }
+            
+            adapter.setProducts(products);
+            adapter.setOnProductClickListener(product -> {
+                dialog.dismiss();
+                Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
+                intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
+                startActivity(intent);
+            });
+            
+            adapter.setOnAddProductClickListener(product -> {
+                String customerId = new com.veggo.app.core.preferences.AppPreferences(this).getCustomerId();
+                if (customerId != null) {
+                    com.veggo.app.data.remote.api.CartApi cartApi = ApiClient.createService(com.veggo.app.data.remote.api.CartApi.class);
+                    new Thread(() -> {
+                        try {
+                            cartApi.addItem(customerId, new com.veggo.app.data.remote.dto.CartItemRequestDto(product.getSku(), 1)).execute();
+                            runOnUiThread(() -> {
+                                Toast.makeText(this, "Đã thêm " + product.getName() + " vào giỏ", Toast.LENGTH_SHORT).show();
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }
+            });
+            
+            rv.setAdapter(adapter);
+        }
+        
+        dialog.show();
+    }
+
+    private void showNoMatchDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Không tìm thấy sản phẩm")
+            .setMessage("Không có sản phẩm nào trên VEGGO khớp với nguyên liệu này.")
+            .setPositiveButton("Đóng", null)
+            .show();
     }
 
     private void saveIngredients() {
@@ -646,7 +805,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         for (ManualBlockViewHolder block : blocks) {
             String name = block.nameInput.getText().toString().trim();
             if (name.isEmpty()) {
-                block.nameInput.setError("Vui lòng nhập tên");
+                Toast.makeText(this, "Vui lòng nhập tên nguyên liệu", Toast.LENGTH_SHORT).show();
                 block.nameInput.requestFocus();
                 return;
             }
