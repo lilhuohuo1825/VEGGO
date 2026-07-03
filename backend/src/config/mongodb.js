@@ -8,7 +8,11 @@ async function connectMongo() {
 
   mongoose.set('strictQuery', true);
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10_000,
+      socketTimeoutMS: 45_000,
+      maxPoolSize: 20,
+    });
   } catch (error) {
     if (error.message && error.message.includes('querySrv ECONNREFUSED')) {
       throw new Error(

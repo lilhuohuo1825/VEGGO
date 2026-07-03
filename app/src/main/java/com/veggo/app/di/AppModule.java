@@ -113,4 +113,8 @@ public final class AppModule {
     public static PromotionApi providePromotionApi() {
         return ApiClient.createService(PromotionApi.class);
     }
+
+    public static com.veggo.app.data.remote.api.ForecastApi provideForecastApi() {
+        return ApiClient.createService(com.veggo.app.data.remote.api.ForecastApi.class);
+    }
 }

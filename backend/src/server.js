@@ -29,6 +29,7 @@ const { migrateUserAvatarField } = require('./utils/userAvatarMigration');
 const paymentRoutes = require('./routes/paymentRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const forecastRoutes = require('./routes/forecastRoutes');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -107,6 +108,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/forecast', forecastRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {
@@ -185,8 +187,8 @@ connectMongo()
       ]);
     }
 
-    app.listen(port, () => {
-      console.log(`VEGGO API running on port ${port}`);
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`VEGGO API running on http://0.0.0.0:${port}`);
     });
   })
   .catch((error) => {

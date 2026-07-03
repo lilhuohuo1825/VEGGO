@@ -77,6 +77,15 @@ public class PostNotificationsActivity extends BaseActivity {
             String category = firstNonBlank(notification.getCategory(), CATEGORY_ORDERS);
             String targetType = firstNonBlank(notification.getTargetType(), CATEGORY_ORDERS.equals(category) ? "order" : "");
             String targetId = firstNonBlank(notification.getTargetId(), "");
+            
+            long ts = System.currentTimeMillis();
+            if (notification.getCreatedAtText() != null) {
+                try {
+                    ts = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                            .parse(notification.getCreatedAtText()).getTime();
+                } catch (Exception ignored) {}
+            }
+            
             notificationItems.add(new PostNotificationItem(
                     notification.getId(),
                     normalizeCategory(category),
@@ -88,7 +97,8 @@ public class PostNotificationsActivity extends BaseActivity {
                     true,
                     !notification.isRead(),
                     targetType,
-                    targetId
+                    targetId,
+                    ts
             ));
         }
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -153,6 +163,42 @@ public class PostNotificationsActivity extends BaseActivity {
                 ""
         ));
 
+        // Đọc thông báo nhắc nhở giảm giá từ SharedPreferences để hiện trong tab "Khác"
+        SharedPreferences reminderPrefs = getSharedPreferences("price_alert_reminders", MODE_PRIVATE);
+        java.util.Map<String, ?> allEntries = reminderPrefs.getAll();
+        for (java.util.Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            if (entry.getKey().startsWith("reminder_") && entry.getValue() instanceof String) {
+                String valueStr = (String) entry.getValue();
+                String[] parts = valueStr.split("\\|");
+                if (parts.length >= 4) {
+                    String pName = parts[0];
+                    String percent = parts[1];
+                    String days = parts[2];
+                    try {
+                        long time = Long.parseLong(parts[3]);
+                        // Hiển thị lời nhắc này trong vòng 7 ngày kể từ khi tạo
+                        long sevenDaysMs = 7L * 24 * 60 * 60 * 1000;
+                        if (System.currentTimeMillis() - time < sevenDaysMs) {
+                            notificationItems.add(new PostNotificationItem(
+                                    "",
+                                    CATEGORY_OTHER,
+                                    "⏰ Lời nhắc giảm giá đã tạo",
+                                    "Bạn đã tạo lời nhắc cho \"" + pName + "\" (dự kiến giảm khoảng " + percent + "% vào " + days + " ngày tới).",
+                                    "Xem giỏ hàng",
+                                    "Hôm nay",
+                                    R.drawable.ic_order_list_menu,
+                                    false,
+                                    false,
+                                    "cart",
+                                    "",
+                                    time
+                            ));
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        }
+
         // Đọc thông báo nguyên liệu sắp hết hạn từ SharedPreferences
         SharedPreferences expiryPrefs = getSharedPreferences("fridge_notifications", MODE_PRIVATE);
         String expiryItems = expiryPrefs.getString("fridge_expiry_items_json", null);
@@ -180,10 +226,14 @@ public class PostNotificationsActivity extends BaseActivity {
                         false,
                         localUnread,
                         "fridge",
-                        ""
+                        "",
+                        expiryTime
                 ));
             }
         }
+
+        // Sắp xếp danh sách thông báo theo thời gian giảm dần (mới nhất lên đầu)
+        java.util.Collections.sort(notificationItems, (o1, o2) -> Long.compare(o2.timestamp, o1.timestamp));
     }
 
     private void showNotifications(String category) {
@@ -258,7 +308,6 @@ public class PostNotificationsActivity extends BaseActivity {
         }
         return count;
     }
-
     private void markAllNotificationsRead() {
         boolean hadUnread = false;
         for (PostNotificationItem item : notificationItems) {
@@ -358,6 +407,11 @@ public class PostNotificationsActivity extends BaseActivity {
         }
         if ("support".equals(targetType) || CATEGORY_QA.equals(item.category)) {
             return new Intent(this, SupportCustomersActivity.class);
+        }
+        if ("cart".equals(targetType)) {
+            Intent intent = new Intent(this, com.veggo.app.MainActivity.class);
+            intent.putExtra(com.veggo.app.MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_cart);
+            return intent;
         }
         if (CATEGORY_OTHER.equals(item.category)) {
             return new Intent(this, CarbonPointsActivity.class);
@@ -480,6 +534,7 @@ public class PostNotificationsActivity extends BaseActivity {
         final boolean remoteOrder;
         final String targetType;
         final String targetId;
+        final long timestamp;
         boolean unread;
 
         PostNotificationItem(
@@ -509,6 +564,23 @@ public class PostNotificationsActivity extends BaseActivity {
                 String targetType,
                 String targetId
         ) {
+            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, targetType, targetId, System.currentTimeMillis());
+        }
+
+        PostNotificationItem(
+                String id,
+                String category,
+                String title,
+                String body,
+                String action,
+                String time,
+                int iconResId,
+                boolean remoteOrder,
+                boolean unread,
+                String targetType,
+                String targetId,
+                long timestamp
+        ) {
             this.id = id;
             this.category = category;
             this.title = title;
@@ -520,6 +592,7 @@ public class PostNotificationsActivity extends BaseActivity {
             this.unread = unread;
             this.targetType = targetType;
             this.targetId = targetId;
+            this.timestamp = timestamp;
         }
     }
 }
