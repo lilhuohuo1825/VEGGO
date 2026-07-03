@@ -52,6 +52,7 @@ public class ProductDetailActivity extends BaseActivity {
     public static final String EXTRA_FLASH_SALE_DISCOUNT_LABEL = "extra_flash_sale_discount_label";
 
     private ProductViewModel viewModel;
+    private Product currentProduct;
     private long flashSalePrice;
     private long flashSaleOriginalPrice;
     private String flashSaleDiscountLabel;
@@ -121,6 +122,7 @@ public class ProductDetailActivity extends BaseActivity {
     private void observeViewModel() {
         viewModel.getProduct().observe(this, product -> {
             if (product != null) {
+                this.currentProduct = product;
                 bindProductData(product);
                 viewModel.triggerReviewFetch(product);
                 viewModel.triggerConsultationFetch(product);
@@ -480,17 +482,19 @@ public class ProductDetailActivity extends BaseActivity {
 
         // Add to cart
         findViewById(R.id.btnAddToCart).setOnClickListener(v -> {
-            Product currentProduct = viewModel.getProduct().getValue();
-            if (currentProduct != null) {
-                showAddToCartPopup(currentProduct, false);
+            if (this.currentProduct != null) {
+                showAddToCartPopup(this.currentProduct, false);
+            } else {
+                android.widget.Toast.makeText(this, "Đang tải thông tin sản phẩm...", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
 
         // Buy now
         findViewById(R.id.btnBuyNow).setOnClickListener(v -> {
-            Product currentProduct = viewModel.getProduct().getValue();
-            if (currentProduct != null) {
-                showAddToCartPopup(currentProduct, true);
+            if (this.currentProduct != null) {
+                showAddToCartPopup(this.currentProduct, true);
+            } else {
+                android.widget.Toast.makeText(this, "Đang tải thông tin sản phẩm...", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -794,6 +798,88 @@ public class ProductDetailActivity extends BaseActivity {
         bindDescriptionTable(product);
         renderProductFavorite(favoriteStore != null
                 && favoriteStore.isFavorite(FavoriteStore.TYPE_PRODUCT, product.getId()));
+        
+        loadPriceAlertBanner(product.getId());
+    }
+
+    private void loadPriceAlertBanner(String productId) {
+        if (productId == null || productId.isEmpty()) return;
+
+        com.veggo.app.data.remote.api.ForecastApi forecastApi = com.veggo.app.core.network.ApiClient.createService(com.veggo.app.data.remote.api.ForecastApi.class);
+        forecastApi.getProductForecast(productId).enqueue(new retrofit2.Callback<com.veggo.app.data.remote.dto.ForecastResponseDto>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.veggo.app.data.remote.dto.ForecastResponseDto> call, retrofit2.Response<com.veggo.app.data.remote.dto.ForecastResponseDto> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    com.veggo.app.data.remote.dto.ForecastResponseDto.ForecastData forecast = response.body().getData();
+                    if (forecast != null) {
+                        double change = forecast.getChangePercent();
+                        if (change >= 10.0 || change <= -10.0) {
+                            com.google.android.material.card.MaterialCardView banner = findViewById(R.id.cardProductDetailAlert);
+                            TextView txtDetailAlertText = findViewById(R.id.txtDetailAlertText);
+                            ImageView imgDetailAlertIcon = findViewById(R.id.imgDetailAlertIcon);
+
+                            if (banner != null) {
+                                banner.setVisibility(View.VISIBLE);
+                                 if (txtDetailAlertText != null) {
+                                     txtDetailAlertText.setText(android.text.Html.fromHtml(forecast.getReason(), android.text.Html.FROM_HTML_MODE_LEGACY));
+                                 }
+                                if (imgDetailAlertIcon != null) {
+                                    if ("down".equals(forecast.getTrend())) {
+                                        imgDetailAlertIcon.setImageResource(R.drawable.ic_fire);
+                                        imgDetailAlertIcon.setImageTintList(null); // Sử dụng màu nguyên bản của icon ngọn lửa PNG
+                                        
+                                        banner.setCardBackgroundColor(android.content.res.ColorStateList.valueOf(
+                                                android.graphics.Color.parseColor("#FFF9E6")
+                                        ));
+                                        banner.setStrokeColor(android.content.res.ColorStateList.valueOf(
+                                                android.graphics.Color.parseColor("#FBC02D")
+                                        ));
+
+                                        // Tạo animation bập bùng (flicker) cho ngọn lửa ở banner trang chi tiết
+                                        android.view.animation.AnimationSet animationSet = new android.view.animation.AnimationSet(true);
+                                        
+                                        android.view.animation.AlphaAnimation alphaAnim = new android.view.animation.AlphaAnimation(0.6f, 1.0f);
+                                        alphaAnim.setDuration(350);
+                                        alphaAnim.setRepeatMode(android.view.animation.Animation.REVERSE);
+                                        alphaAnim.setRepeatCount(android.view.animation.Animation.INFINITE);
+                                        
+                                        android.view.animation.ScaleAnimation scaleAnim = new android.view.animation.ScaleAnimation(
+                                                0.88f, 1.12f,
+                                                0.88f, 1.12f,
+                                                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
+                                                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f
+                                        );
+                                        scaleAnim.setDuration(350);
+                                        scaleAnim.setRepeatMode(android.view.animation.Animation.REVERSE);
+                                        scaleAnim.setRepeatCount(android.view.animation.Animation.INFINITE);
+                                        
+                                        animationSet.addAnimation(alphaAnim);
+                                        animationSet.addAnimation(scaleAnim);
+                                        imgDetailAlertIcon.startAnimation(animationSet);
+                                    } else {
+                                        imgDetailAlertIcon.setImageResource(android.R.drawable.stat_sys_warning);
+                                        imgDetailAlertIcon.setImageTintList(android.content.res.ColorStateList.valueOf(
+                                                androidx.core.content.ContextCompat.getColor(ProductDetailActivity.this, R.color.veggo_danger)
+                                        ));
+                                        banner.setCardBackgroundColor(android.content.res.ColorStateList.valueOf(
+                                                androidx.core.content.ContextCompat.getColor(ProductDetailActivity.this, R.color.veggo_danger_soft)
+                                        ));
+                                        banner.setStrokeColor(android.content.res.ColorStateList.valueOf(
+                                                androidx.core.content.ContextCompat.getColor(ProductDetailActivity.this, R.color.veggo_danger)
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.veggo.app.data.remote.dto.ForecastResponseDto> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
 
     private void bindDescriptionTable(Product product) {

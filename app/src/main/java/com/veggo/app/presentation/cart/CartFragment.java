@@ -288,6 +288,48 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         cartAdapter.notifyDataSetChanged();
         syncAllCheckboxState();
         updateCartSummary();
+
+        triggerCartPriceAlerts();
+    }
+
+    private void triggerCartPriceAlerts() {
+        if (cartItems == null || cartItems.isEmpty()) return;
+
+        for (CartAdapter.CartItemUiModel item : cartItems) {
+            if (item.product != null && item.product.getId() != null) {
+                com.veggo.app.presentation.dialog.PriceAlertHelper.checkAndShowPriceAlert(
+                        requireContext(),
+                        item.product.getId(),
+                        item.name,
+                        item.imageUrl,
+                        item.price,
+                        productId -> triggerCheckoutForProduct(productId)
+                );
+            }
+        }
+    }
+
+    private void triggerCheckoutForProduct(String productId) {
+        if (cartItems == null || productId == null) return;
+
+        CartAdapter.CartItemUiModel foundItem = null;
+        for (CartAdapter.CartItemUiModel item : cartItems) {
+            if (item.product != null && productId.equals(item.product.getId())) {
+                foundItem = item;
+                break;
+            }
+        }
+
+        if (foundItem != null) {
+            ArrayList<String> keys = new ArrayList<>();
+            keys.add(foundItem.cartLineKey());
+
+            if (isLoggedIn()) {
+                startAccountCheckout(keys);
+            } else {
+                showCheckoutRoleDialog(keys);
+            }
+        }
     }
 
     private String formatWeight(double weight) {

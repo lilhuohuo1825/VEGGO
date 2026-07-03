@@ -182,6 +182,8 @@
                     </LinearLayout>
                 </RelativeLayout>
 
+                <include layout="@layout/view_product_detail_price_alert" />
+
                 <!-- Mô tả -->
                 <TextView
                     android:layout_width="wrap_content"

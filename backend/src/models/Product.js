@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
  */
 const productSchema = new mongoose.Schema(
   {
+    _id: { type: String },
     // --- Identity ---
     name: { type: String, trim: true },
     product_name: { type: String, trim: true },

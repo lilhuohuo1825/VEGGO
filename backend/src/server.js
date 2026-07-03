@@ -25,6 +25,7 @@ const promotionUsageRoutes = require('./routes/promotionUsageRoutes');
 const warehouseRoutes = require('./routes/warehouseRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const forecastRoutes = require('./routes/forecastRoutes');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -100,6 +101,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/forecast', forecastRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {
@@ -176,8 +178,8 @@ connectMongo()
       ]);
     }
 
-    app.listen(port, () => {
-      console.log(`VEGGO API running on port ${port}`);
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`VEGGO API running on http://0.0.0.0:${port}`);
     });
   })
   .catch((error) => {

@@ -109,6 +109,8 @@ function buildProductSnapshot(product) {
   }
 
   return {
+    _id: String(product._id),
+    id: String(product._id),
     product_name: product.product_name,
     image: getPrimaryImage(product.image),
     price: product.price,
