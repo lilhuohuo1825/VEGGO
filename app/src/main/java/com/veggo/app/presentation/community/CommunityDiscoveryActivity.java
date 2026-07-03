@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
@@ -33,6 +34,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
     private TextView chefsText;
     private View recipesIndicator;
     private View chefsIndicator;
+    private SwipeRefreshLayout refreshLayout;
     private int activeTab = TAB_RECIPES;
     private final List<CommunityRecipeEntity> recipes = new ArrayList<>();
     private final List<CommunityChefEntity> chefs = new ArrayList<>();
@@ -50,6 +52,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         recipesIndicator = findViewById(R.id.discoveryRecipesIndicator);
         chefsIndicator = findViewById(R.id.discoveryChefsIndicator);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.discoveryScroll, this::loadDiscoveryData);
 
         findViewById(R.id.discoveryBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.discoveryRecipesTab).setOnClickListener(v -> showRecipes());
@@ -62,15 +65,20 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
 
+        loadDiscoveryData();
+    }
+
+    private void loadDiscoveryData() {
         repository.loadRecipes(result -> runOnUiThread(() -> {
             recipes.clear();
-            recipes.addAll(result);
+            recipes.addAll(CommunityUi.shuffled(result));
             renderActiveTab();
         }));
         repository.loadChefs(result -> runOnUiThread(() -> {
             chefs.clear();
-            chefs.addAll(result);
+            chefs.addAll(CommunityUi.shuffled(result));
             renderActiveTab();
+            CommunityUi.finishRefresh(refreshLayout);
         }));
     }
 

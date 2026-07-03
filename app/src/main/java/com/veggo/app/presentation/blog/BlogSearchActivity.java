@@ -59,7 +59,7 @@ public class BlogSearchActivity extends AppCompatActivity {
             return;
         }
         for (BlogEntity blog : filtered) {
-            BlogUi.addPostItem(this, container, blog);
+            BlogUi.addPostItem(this, container, blog, repository, this::render);
         }
     }
 

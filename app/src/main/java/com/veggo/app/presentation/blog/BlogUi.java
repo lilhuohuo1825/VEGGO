@@ -15,6 +15,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
@@ -22,6 +23,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
+import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.data.local.entity.BlogEntity;
 
 import java.util.ArrayList;
@@ -33,6 +35,10 @@ import java.util.Set;
 public final class BlogUi {
     public interface CategoryClickListener {
         void onCategoryClick(String category);
+    }
+
+    public interface BlogLikeChangedListener {
+        void onBlogLikeChanged();
     }
 
     private BlogUi() {
@@ -118,22 +124,44 @@ public final class BlogUi {
     }
 
     public static void addFeaturedCard(Activity activity, LinearLayout parent, BlogEntity blog) {
+        addFeaturedCard(activity, parent, blog, null, null);
+    }
+
+    public static void addFeaturedCard(
+            Activity activity,
+            LinearLayout parent,
+            BlogEntity blog,
+            BlogRepository repository,
+            BlogLikeChangedListener listener
+    ) {
         View item = LayoutInflater.from(activity).inflate(R.layout.item_blog_featured, parent, false);
         item.setOnClickListener(v -> openDetail(activity, blog));
         bindImage(activity, item.findViewById(R.id.blogFeaturedImage), blog.getImageUrl(), 8);
         ((TextView) item.findViewById(R.id.blogFeaturedCategory)).setText(BlogText.clean(blog.getCategoryTag()));
         ((TextView) item.findViewById(R.id.blogFeaturedTitle)).setText(BlogText.clean(blog.getTitle()));
         bindMeta(item, blog);
+        bindBlogLikeButton(activity, item.findViewById(R.id.blogFeaturedLikeButton), blog, repository, listener);
         parent.addView(item);
     }
 
     public static void addPostItem(Activity activity, LinearLayout parent, BlogEntity blog) {
+        addPostItem(activity, parent, blog, null, null);
+    }
+
+    public static void addPostItem(
+            Activity activity,
+            LinearLayout parent,
+            BlogEntity blog,
+            BlogRepository repository,
+            BlogLikeChangedListener listener
+    ) {
         View item = LayoutInflater.from(activity).inflate(R.layout.item_blog_post, parent, false);
         item.setOnClickListener(v -> openDetail(activity, blog));
         bindImage(activity, item.findViewById(R.id.blogPostImage), blog.getImageUrl(), 8);
         ((TextView) item.findViewById(R.id.blogPostCategory)).setText(BlogText.clean(blog.getCategoryTag()));
         ((TextView) item.findViewById(R.id.blogPostTitle)).setText(BlogText.clean(blog.getTitle()));
         bindMeta(item, blog);
+        bindBlogLikeButton(activity, item.findViewById(R.id.blogPostLikeButton), blog, repository, listener);
         parent.addView(item);
     }
 
@@ -183,6 +211,69 @@ public final class BlogUi {
         if (time != null) {
             String published = BlogText.date(blog.getPublishedAt());
             time.setText(published.isEmpty() ? "" : "  • " + published);
+        }
+    }
+
+    private static void bindBlogLikeButton(
+            Activity activity,
+            ImageButton button,
+            BlogEntity blog,
+            BlogRepository repository,
+            BlogLikeChangedListener listener
+    ) {
+        if (button == null) {
+            return;
+        }
+        FavoriteStore favoriteStore = new FavoriteStore(activity);
+        renderBlogLikeButton(button, blog.isLikedByCurrentUser());
+        button.setOnClickListener(v -> {
+            button.setEnabled(false);
+            boolean selected = !blog.isLikedByCurrentUser();
+            syncFavorite(favoriteStore, blog, selected);
+            blog.setLikedByCurrentUser(selected);
+            renderBlogLikeButton(button, selected);
+            if (listener != null) {
+                listener.onBlogLikeChanged();
+            }
+            if (repository == null) {
+                button.setEnabled(true);
+                return;
+            }
+            repository.setBlogLike(blog.getId(), selected, updated -> activity.runOnUiThread(() -> {
+                button.setEnabled(true);
+                if (updated == null) {
+                    Toast.makeText(activity, selected ? "Đã lưu bài viết" : "Đã xoá khỏi yêu thích", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                blog.setLikeCount(updated.getLikeCount());
+                blog.setLikedByCurrentUser(updated.isLikedByCurrentUser());
+                syncFavorite(favoriteStore, blog, updated.isLikedByCurrentUser());
+                renderBlogLikeButton(button, updated.isLikedByCurrentUser());
+                if (listener != null) {
+                    listener.onBlogLikeChanged();
+                }
+            }));
+        });
+    }
+
+    private static void renderBlogLikeButton(ImageButton button, boolean selected) {
+        button.setImageResource(selected
+                ? R.drawable.ic_profile_menu_heart_filled
+                : R.drawable.ic_heart_outline_green);
+        button.setAlpha(selected ? 1f : 0.92f);
+    }
+
+    private static void syncFavorite(FavoriteStore favoriteStore, BlogEntity blog, boolean selected) {
+        if (selected) {
+            favoriteStore.add(new FavoriteStore.FavoriteItem(
+                    FavoriteStore.TYPE_BLOG,
+                    blog.getId(),
+                    BlogText.clean(blog.getTitle()),
+                    BlogText.clean(blog.getAuthor()),
+                    blog.getImageUrl()
+            ));
+        } else {
+            favoriteStore.remove(FavoriteStore.TYPE_BLOG, blog.getId());
         }
     }
 

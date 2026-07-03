@@ -5,6 +5,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
@@ -17,6 +18,9 @@ public class CommunityRecipesActivity extends AppCompatActivity {
 
     private LinearLayout container;
     private CommunityRepository repository;
+    private SwipeRefreshLayout refreshLayout;
+    private String categoryId;
+    private String chefId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -25,23 +29,33 @@ public class CommunityRecipesActivity extends AppCompatActivity {
         container = findViewById(R.id.communityHomeContainer);
         repository = new CommunityRepository(this);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
-        String categoryId = getIntent().getStringExtra(EXTRA_CATEGORY_ID);
+        categoryId = getIntent().getStringExtra(EXTRA_CATEGORY_ID);
         String categoryName = getIntent().getStringExtra(EXTRA_CATEGORY_NAME);
-        String chefId = getIntent().getStringExtra(EXTRA_CHEF_ID);
+        chefId = getIntent().getStringExtra(EXTRA_CHEF_ID);
         String chefName = getIntent().getStringExtra(EXTRA_CHEF_NAME);
         String title = categoryName == null || categoryName.isEmpty()
-                ? "C\u00f4ng th\u1ee9c g\u1ee3i \u00fd h\u00f4m nay"
+                ? "Công thức gợi ý hôm nay"
                 : categoryName;
         if (chefName != null && !chefName.isEmpty()) {
             title = chefName;
         }
         CommunityUi.setupTopHeader(this, title);
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.communityListScroll, this::loadRecipes);
+        loadRecipes();
+    }
+
+    private void loadRecipes() {
         if (categoryId != null && !categoryId.isEmpty()) {
-            repository.loadRecipesByCategory(categoryId, recipes -> runOnUiThread(() -> CommunityUi.addRecipeList(this, container, recipes)));
+            repository.loadRecipesByCategory(categoryId, recipes -> runOnUiThread(() -> renderRecipes(recipes)));
         } else if (chefId != null && !chefId.isEmpty()) {
-            repository.loadRecipesByChef(chefId, recipes -> runOnUiThread(() -> CommunityUi.addRecipeList(this, container, recipes)));
+            repository.loadRecipesByChef(chefId, recipes -> runOnUiThread(() -> renderRecipes(recipes)));
         } else {
-            repository.loadRecipes(recipes -> runOnUiThread(() -> CommunityUi.addRecipeList(this, container, recipes)));
+            repository.loadRecipes(recipes -> runOnUiThread(() -> renderRecipes(recipes)));
         }
+    }
+
+    private void renderRecipes(java.util.List<com.veggo.app.data.local.entity.CommunityRecipeEntity> recipes) {
+        CommunityUi.addRecipeList(this, container, CommunityUi.shuffled(recipes));
+        CommunityUi.finishRefresh(refreshLayout);
     }
 }

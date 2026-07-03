@@ -1,17 +1,25 @@
 package com.veggo.app.presentation.community;
 
+import android.app.Dialog;
+import android.graphics.Bitmap;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -19,11 +27,19 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.load.resource.bitmap.GranularRoundedCorners;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
+import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.utils.ImageCompressor;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityCookbookEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeEntity;
+import com.veggo.app.data.remote.api.UserApi;
+import com.veggo.app.data.remote.dto.UserProfileDto;
+import com.veggo.app.data.repository.UserRepositoryImpl;
+import com.veggo.app.domain.repository.UserRepository;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,11 +56,18 @@ public class CommunityProfileActivity extends AppCompatActivity {
     private LinearLayout rightColumn;
     private TextView recipesTab;
     private TextView galleriesTab;
+    private AppPreferences preferences;
+    private UserRepository userRepository;
+    private SwipeRefreshLayout refreshLayout;
     private boolean accountProfile;
     private boolean savedSelected;
     private boolean suggestionsExpanded;
     private String profileCustomerId;
     private String accountCustomerId;
+    @Nullable
+    private File pendingAvatarFile;
+    private ActivityResultLauncher<String> galleryPicker;
+    private ActivityResultLauncher<Void> cameraPicker;
     private final List<CommunityRecipeEntity> chefRecipes = new ArrayList<>();
     private final List<CommunityCookbookEntity> cookbooks = new ArrayList<>();
 
@@ -54,13 +77,15 @@ public class CommunityProfileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_community_profile);
 
         repository = new CommunityRepository(this);
+        userRepository = new UserRepositoryImpl(ApiClient.createService(UserApi.class));
+        preferences = new AppPreferences(this);
+        setupAvatarPickers();
         leftColumn = findViewById(R.id.profileLeftColumn);
         rightColumn = findViewById(R.id.profileRightColumn);
         recipesTab = findViewById(R.id.profileRecipesTab);
         galleriesTab = findViewById(R.id.profileGalleriesTab);
 
         accountProfile = getIntent().getBooleanExtra(EXTRA_ACCOUNT_PROFILE, false);
-        AppPreferences preferences = new AppPreferences(this);
         String accountId = firstNonBlank(preferences.getCustomerId(), CommunityRepository.ACCOUNT_ID);
         accountCustomerId = accountId;
         String accountName = firstNonBlank(preferences.getFullName(), "Tài khoản của bạn");
@@ -77,6 +102,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
         bindRecipeNavigation();
         bindFollowAction(chefId);
         bindTabs();
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.profileScroll, this::loadProfileContent);
 
         if (accountProfile) {
             bindFreshAccountUser(accountId);
@@ -93,6 +119,11 @@ public class CommunityProfileActivity extends AppCompatActivity {
         loadProfileContent();
     }
 
+    private void setupAvatarPickers() {
+        galleryPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onGalleryImageSelected);
+        cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicturePreview(), this::onCameraImageSelected);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -104,18 +135,20 @@ public class CommunityProfileActivity extends AppCompatActivity {
     private void loadProfileContent() {
         CommunityRepository.Callback<List<CommunityRecipeEntity>> recipeCallback = recipes -> runOnUiThread(() -> {
             chefRecipes.clear();
-            chefRecipes.addAll(recipes);
+            chefRecipes.addAll(CommunityUi.shuffled(recipes));
             ((TextView) findViewById(R.id.profileRecipeCount)).setText(String.valueOf(recipes.size()));
             showRecipes();
+            CommunityUi.finishRefresh(refreshLayout);
         });
         if (accountProfile) {
             repository.loadRecipesByChef(accountCustomerId, recipeCallback);
             repository.loadCookbooks(accountCustomerId, items -> runOnUiThread(() -> {
                 cookbooks.clear();
-                cookbooks.addAll(items);
+                cookbooks.addAll(CommunityUi.shuffled(items));
                 if (savedSelected) {
                     showCookbooks();
                 }
+                CommunityUi.finishRefresh(refreshLayout);
             }));
         } else {
             repository.loadRecipesByChef(profileCustomerId, recipeCallback);
@@ -131,11 +164,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
             ((TextView) findViewById(R.id.profileRecipeCount)).setText(String.valueOf(user.getRecipeCount()));
             if (!isBlank(user.getImageUrl())) {
                 ImageView avatar = findViewById(R.id.profileAvatar);
-                avatar.setPadding(0, 0, 0, 0);
-                Glide.with(this)
-                        .load(user.getImageUrl())
-                        .transform(new CenterCrop(), new RoundedCorners(dp(12)))
-                        .into(avatar);
+                loadProfileAvatar(avatar, user.getImageUrl());
             }
         }));
     }
@@ -150,6 +179,10 @@ public class CommunityProfileActivity extends AppCompatActivity {
             findViewById(R.id.profileSuggestionsSection).setVisibility(View.GONE);
             findViewById(R.id.profileShareButton).setVisibility(View.GONE);
             findViewById(R.id.profileAccountActions).setVisibility(View.VISIBLE);
+            View avatarAddButton = findViewById(R.id.profileAvatarAddButton);
+            avatarAddButton.setVisibility(View.VISIBLE);
+            avatarAddButton.setOnClickListener(v -> showAvatarSourceDialog());
+            findViewById(R.id.profileAvatar).setOnClickListener(v -> showAvatarSourceDialog());
             findViewById(R.id.profileAddButton).setOnClickListener(v ->
                     startActivity(new Intent(this, CommunityPostActivity.class)));
         } else {
@@ -158,6 +191,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
             bindSuggestedToggle();
             findViewById(R.id.profileShareButton).setVisibility(View.VISIBLE);
             findViewById(R.id.profileAccountActions).setVisibility(View.GONE);
+            findViewById(R.id.profileAvatarAddButton).setVisibility(View.GONE);
         }
 
         ((TextView) findViewById(R.id.profileName)).setText(chefName == null ? "" : chefName);
@@ -175,19 +209,137 @@ public class CommunityProfileActivity extends AppCompatActivity {
         ImageView avatar = findViewById(R.id.profileAvatar);
         ImageView hero = findViewById(R.id.profileHeroImage);
         if (accountProfile) {
-            avatar.setPadding(dp(28), dp(28), dp(28), dp(28));
-            avatar.setImageResource(R.drawable.ic_user_full);
+            showDefaultProfileAvatar(avatar);
             hero.setImageResource(R.drawable.bg_auth);
         } else {
-            Glide.with(this)
-                    .load(chefImageUrl)
-                    .transform(new CenterCrop(), new RoundedCorners(dp(12)))
-                    .into(avatar);
+            loadProfileAvatar(avatar, chefImageUrl);
             Glide.with(this)
                     .load(chefImageUrl)
                     .transform(new CenterCrop(), bottomRoundedCorners(18))
                     .into(hero);
         }
+    }
+
+    private void loadProfileAvatar(ImageView avatar, String imageUrl) {
+        if (isBlank(imageUrl)) {
+            showDefaultProfileAvatar(avatar);
+            return;
+        }
+        avatar.setPadding(0, 0, 0, 0);
+        avatar.setBackground(null);
+        Glide.with(this)
+                .load(imageUrl)
+                .placeholder(R.drawable.ic_user_full)
+                .error(R.drawable.ic_user_full)
+                .transform(new CenterCrop(), new RoundedCorners(dp(12)))
+                .into(avatar);
+    }
+
+    private void showDefaultProfileAvatar(ImageView avatar) {
+        avatar.setBackgroundResource(R.drawable.bg_community_profile_avatar_default);
+        avatar.setPadding(dp(30), dp(30), dp(30), dp(30));
+        avatar.setImageResource(R.drawable.ic_profile_avatar);
+    }
+
+    private void showAvatarSourceDialog() {
+        if (!accountProfile) {
+            return;
+        }
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_image_source);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        dialog.findViewById(R.id.dialogOptionGallery).setOnClickListener(v -> {
+            dialog.dismiss();
+            galleryPicker.launch("image/*");
+        });
+
+        dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
+            dialog.dismiss();
+            cameraPicker.launch(null);
+        });
+
+        dialog.show();
+    }
+
+    private void onGalleryImageSelected(@Nullable Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        try {
+            pendingAvatarFile = ImageCompressor.compressToJpeg(this, uri);
+            previewSelectedAvatar(uri);
+            uploadSelectedAvatar();
+        } catch (IOException exception) {
+            Toast.makeText(this, "Không thể xử lý ảnh đã chọn", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onCameraImageSelected(@Nullable Bitmap bitmap) {
+        if (bitmap == null) {
+            return;
+        }
+        try {
+            pendingAvatarFile = ImageCompressor.compressToJpeg(this, bitmap);
+            previewSelectedAvatar(bitmap);
+            uploadSelectedAvatar();
+        } catch (IOException exception) {
+            Toast.makeText(this, "Không thể xử lý ảnh đã chụp", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void previewSelectedAvatar(Object image) {
+        ImageView avatar = findViewById(R.id.profileAvatar);
+        avatar.setPadding(0, 0, 0, 0);
+        avatar.setBackground(null);
+        Glide.with(this)
+                .load(image)
+                .transform(new CenterCrop(), new RoundedCorners(dp(12)))
+                .into(avatar);
+    }
+
+    private void uploadSelectedAvatar() {
+        if (pendingAvatarFile == null) {
+            return;
+        }
+        String phone = firstNonBlank(preferences.getCurrentPhone(), "");
+        if (isBlank(phone)) {
+            Toast.makeText(this, "Vui lòng đăng nhập để cập nhật ảnh đại diện", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String name = firstNonBlank(preferences.getFullName(), ((TextView) findViewById(R.id.profileName)).getText().toString());
+        String email = firstNonBlank(preferences.getEmail(), "");
+        userRepository.updateProfile(phone, name, phone, email, pendingAvatarFile, new UserRepository.Callback<UserProfileDto>() {
+            @Override
+            public void onSuccess(UserProfileDto profile) {
+                runOnUiThread(() -> onAvatarUploaded(profile));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                runOnUiThread(() -> Toast.makeText(
+                        CommunityProfileActivity.this,
+                        "Không thể cập nhật ảnh đại diện",
+                        Toast.LENGTH_SHORT
+                ).show());
+            }
+        });
+    }
+
+    private void onAvatarUploaded(UserProfileDto profile) {
+        pendingAvatarFile = null;
+        String phone = firstNonBlank(profile.getPhone(), preferences.getCurrentPhone());
+        String name = firstNonBlank(profile.getName(), preferences.getFullName());
+        String email = firstNonBlank(profile.getEmail(), preferences.getEmail());
+        preferences.saveProfileSession(phone, name, email, profile.getAvatarUrl());
+        if (!isBlank(name)) {
+            ((TextView) findViewById(R.id.profileName)).setText(name);
+        }
+        loadProfileAvatar(findViewById(R.id.profileAvatar), profile.getAvatarUrl());
+        Toast.makeText(this, "Đã cập nhật ảnh đại diện", Toast.LENGTH_SHORT).show();
     }
 
     private GranularRoundedCorners bottomRoundedCorners(int radiusDp) {

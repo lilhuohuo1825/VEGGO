@@ -517,8 +517,8 @@ public final class AssetModels {
         public String birthDay;
         @SerializedName("Gender")
         public String gender;
-        @SerializedName("Avatar")
-        public String avatar;
+        @SerializedName("avatarUrl")
+        public String avatarUrl;
         @SerializedName("__v")
         public int version;
     }

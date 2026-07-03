@@ -24,18 +24,26 @@ import com.veggo.app.assets.AssetFiles;
 import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.favorite.FavoriteStore;
+import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeCommentEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeDetailEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
+import com.veggo.app.data.remote.api.ProductApi;
+import com.veggo.app.data.remote.dto.ProductDto;
 import com.veggo.app.data.remote.dto.RecipeDetailDto;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.repository.RecipeRepository;
 import com.veggo.app.presentation.dialog.VeggoDialog;
+import com.veggo.app.presentation.product.ProductDetailActivity;
 
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class InstructionRecipeDetailActivity extends AppCompatActivity {
     public static final String EXTRA_RECIPE_ID = "community_recipe_detail_recipe_id";
@@ -43,6 +51,7 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
 
     private CommunityRepository repository;
     private RecipeRepository recipeRepository;
+    private ProductApi productApi;
     private FavoriteStore favoriteStore;
     private String videoUrl;
     private String recipeId;
@@ -66,6 +75,7 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
 
         repository = new CommunityRepository(this);
         recipeRepository = AppModule.provideRecipeRepository();
+        productApi = ApiClient.createService(ProductApi.class);
         favoriteStore = new FavoriteStore(this);
         ingredientsGrid = findViewById(R.id.recipeIngredientsGrid);
         instructionsContainer = findViewById(R.id.recipeInstructionsContainer);
@@ -243,13 +253,19 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
     }
 
     private void addIngredientChecklistItem(LayoutInflater inflater, String ingredientText) {
+        addIngredientChecklistItem(inflater, ingredientText, null);
+    }
+
+    private void addIngredientChecklistItem(LayoutInflater inflater, String ingredientText, @Nullable String productId) {
         if (isBlank(ingredientText)) {
             return;
         }
         View item = inflater.inflate(R.layout.item_recipe_ingredient_check, ingredientsGrid, false);
         CheckBox checkBox = item.findViewById(R.id.ingredientCheckBox);
+        checkBox.setClickable(true);
+        checkBox.setFocusable(false);
         ((TextView) item.findViewById(R.id.ingredientCheckText)).setText(ingredientText.trim());
-        item.setOnClickListener(v -> checkBox.setChecked(!checkBox.isChecked()));
+        item.setOnClickListener(v -> openIngredientProduct(productId, ingredientText));
         ingredientsGrid.addView(item);
     }
 
@@ -419,7 +435,8 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
                     ? (product == null ? "Sản phẩm" : product.getName())
                     : ingredient.getDisplayName();
             String quantity = ingredient.getQuantity();
-            addIngredientChecklistItem(inflater, isBlank(quantity) ? name : name + " - " + quantity);
+            String productId = product != null ? product.getId() : ingredient.getProductId();
+            addIngredientChecklistItem(inflater, isBlank(quantity) ? name : name + " - " + quantity, productId);
         }
     }
 
@@ -490,10 +507,10 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         VeggoDialog.show(
                 this,
                 R.drawable.ic_trash,
-                "X\u00f3a c\u00f4ng th\u1ee9c?",
-                "C\u00f4ng th\u1ee9c n\u00e0y s\u1ebd b\u1ecb x\u00f3a v\u0129nh vi\u1ec5n kh\u1ecfi c\u1ed9ng \u0111\u1ed3ng.",
-                "X\u00f3a",
-                "H\u1ee7y",
+                "Xóa công thức?",
+                "Công thức này sẽ bị xóa vĩnh viễn khỏi cộng đồng.",
+                "Xóa",
+                "Hủy",
                 new VeggoDialog.DialogListener() {
                     @Override
                     public void onConfirm() {
@@ -508,12 +525,12 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         repository.deleteRecipe(recipeId, deleted -> runOnUiThread(() -> {
             deleteButton.setEnabled(true);
             if (deleted) {
-                Toast.makeText(this, "\u0110\u00e3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đã xóa công thức", Toast.LENGTH_SHORT).show();
                 setResult(RESULT_OK);
                 finish();
                 return;
             }
-            Toast.makeText(this, "Kh\u00f4ng th\u1ec3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể xóa công thức", Toast.LENGTH_SHORT).show();
         }));
     }
 
@@ -584,6 +601,72 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         }
         Intent intent = new Intent(this, CommunityIngredientsActivity.class);
         intent.putExtra(CommunityIngredientsActivity.EXTRA_RECIPE_ID, recipeId);
+        startActivity(intent);
+    }
+
+    private void openIngredientProduct(@Nullable String productId, String ingredientText) {
+        if (!isBlank(productId)) {
+            openProductDetail(productId);
+            return;
+        }
+
+        String query = ingredientSearchQuery(ingredientText);
+        if (isBlank(query)) {
+            Toast.makeText(this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        productApi.getProducts().enqueue(new Callback<List<ProductDto>>() {
+            @Override
+            public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
+                String foundProductId = findMatchingProductId(response.body(), query);
+                if (isBlank(foundProductId)) {
+                    Toast.makeText(InstructionRecipeDetailActivity.this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                openProductDetail(foundProductId);
+            }
+
+            @Override
+            public void onFailure(Call<List<ProductDto>> call, Throwable t) {
+                Toast.makeText(InstructionRecipeDetailActivity.this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String findMatchingProductId(@Nullable List<ProductDto> products, String query) {
+        if (products == null || isBlank(query)) {
+            return "";
+        }
+        String normalizedQuery = query.toLowerCase();
+        for (ProductDto product : products) {
+            if (product == null) {
+                continue;
+            }
+            String name = product.getName() == null ? "" : product.getName().toLowerCase();
+            String sku = product.getSku() == null ? "" : product.getSku().toLowerCase();
+            if (name.contains(normalizedQuery) || normalizedQuery.contains(name) || sku.contains(normalizedQuery)) {
+                return product.getId();
+            }
+        }
+        return "";
+    }
+
+    private String ingredientSearchQuery(String ingredientText) {
+        if (ingredientText == null) {
+            return "";
+        }
+        String query = ingredientText.trim();
+        int dashIndex = query.indexOf(" - ");
+        if (dashIndex > 0) {
+            query = query.substring(0, dashIndex);
+        }
+        return query.trim();
+    }
+
+    private void openProductDetail(String productId) {
+        Intent intent = new Intent(this, ProductDetailActivity.class);
+        intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
         startActivity(intent);
     }
 

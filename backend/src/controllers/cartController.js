@@ -129,7 +129,12 @@ async function populateCart(cart) {
 
   const cartObject = cart.toObject();
   const skus = cartObject.items.map((item) => item.sku);
-  const products = await Product.find({ sku: { $in: skus } }).lean();
+  const numericSkus = skus
+    .map((sku) => Number(sku))
+    .filter((sku) => Number.isFinite(sku));
+  const products = await Product.collection
+    .find({ $or: [{ sku: { $in: skus } }, { sku: { $in: numericSkus } }] })
+    .toArray();
   const flashSaleBySku = await getActiveFlashSaleBySku(skus);
   const productBySku = new Map(products.map((product) => [
     product.sku,
@@ -199,15 +204,43 @@ exports.getCart = async (req, res) => {
 
 exports.addItem = async (req, res) => {
   const { customerId } = req.params;
-  const { sku, quantity, selectedWeight } = req.body;
+  const { sku, productId, quantity, selectedWeight } = req.body;
+  const cleanSku = String(sku || '').trim();
+  const cleanProductId = String(productId || '').trim();
 
-  if (!sku) {
-    return res.status(400).json({ message: 'sku is required' });
+  if (!cleanSku && !cleanProductId) {
+    return res.status(400).json({ message: 'sku or productId is required' });
   }
 
-  const product = await Product.findOne({ sku }).lean();
+  const productQuery = [];
+  if (cleanSku) {
+    productQuery.push({ sku: cleanSku });
+    const numericSku = Number(cleanSku);
+    if (Number.isFinite(numericSku)) {
+      productQuery.push({ sku: numericSku });
+    }
+  }
+  if (mongoose.Types.ObjectId.isValid(cleanProductId)) {
+    productQuery.push({ _id: new mongoose.Types.ObjectId(cleanProductId) });
+  }
+  if (!productQuery.length) {
+    return res.status(400).json({ message: 'Valid sku or productId is required' });
+  }
+
+  let product = await Product.findOne({ $or: productQuery }).lean();
+  if (!product && cleanSku) {
+    const numericSku = Number(cleanSku);
+    if (Number.isFinite(numericSku)) {
+      product = await Product.collection.findOne({ sku: numericSku });
+    }
+  }
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
+  }
+
+  const resolvedSku = String(product.sku || cleanSku).trim();
+  if (!resolvedSku) {
+    return res.status(400).json({ message: 'Product sku is required' });
   }
 
   const resolvedQuantity = parseQuantity(quantity);
@@ -218,12 +251,12 @@ exports.addItem = async (req, res) => {
     cart = new Cart({ customerId, items: [] });
   }
 
-  const itemIndex = findCartItemIndex(cart.items, sku, resolvedWeight);
+  const itemIndex = findCartItemIndex(cart.items, resolvedSku, resolvedWeight);
   if (itemIndex > -1) {
     cart.items[itemIndex].quantity += resolvedQuantity;
   } else {
     cart.items.push({
-      sku,
+      sku: resolvedSku,
       quantity: resolvedQuantity,
       selectedWeight: resolvedWeight,
     });

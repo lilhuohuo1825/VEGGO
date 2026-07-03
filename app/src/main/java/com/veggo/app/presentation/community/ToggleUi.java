@@ -26,6 +26,7 @@ final class ToggleUi {
     }
 
     static void renderSelected(View button, int iconRes, boolean selected) {
+        button.setTag(selected);
         button.setBackgroundResource(selected ? R.drawable.bg_community_circle_green : R.drawable.bg_community_circle);
         ImageView icon = findIcon(button);
         if (icon == null) {

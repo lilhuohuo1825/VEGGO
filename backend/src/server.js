@@ -25,6 +25,7 @@ const promotionUsageRoutes = require('./routes/promotionUsageRoutes');
 const warehouseRoutes = require('./routes/warehouseRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const { migrateUserAvatarField } = require('./utils/userAvatarMigration');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -142,6 +143,8 @@ connectMongo()
 
     // Seed default warehouses if empty
     const db = mongoose.connection.db;
+    await migrateUserAvatarField(db);
+
     const warehouseCount = await db.collection('warehouses').countDocuments();
     if (warehouseCount === 0) {
       console.log('Seeding default VEGGO warehouses...');

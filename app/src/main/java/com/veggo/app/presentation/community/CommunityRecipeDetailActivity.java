@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -27,6 +28,7 @@ import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.presentation.dialog.VeggoDialog;
+import com.veggo.app.presentation.product.ProductDetailActivity;
 
 public class CommunityRecipeDetailActivity extends AppCompatActivity {
     public static final String EXTRA_RECIPE_ID = "community_recipe_detail_recipe_id";
@@ -41,6 +43,7 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
     private View editButton;
     private View deleteButton;
     private View bookmarkButton;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,14 +66,34 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
         deleteButton.setOnClickListener(v -> showDeleteRecipeDialog());
         bookmarkButton = findViewById(R.id.recipeBookmarkButton);
         ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, false);
-        bookmarkButton.setOnClickListener(v -> {
-            ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true);
-            CommunityUi.showAddToCookbook(this, recipeId, () ->
-                    ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true));
-        });
+        bookmarkButton.setOnClickListener(v -> toggleBookmark());
         findViewById(R.id.recipeCommentSend).setOnClickListener(v -> submitComment());
-        repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> bindDetail(data)));
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.recipeDetailScroll, this::loadRecipeDetail);
+        loadRecipeDetail();
         loadBookmarkState();
+    }
+
+    private void loadRecipeDetail() {
+        repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> {
+            bindDetail(data);
+            CommunityUi.finishRefresh(refreshLayout);
+        }));
+    }
+
+    private void toggleBookmark() {
+        Object tag = bookmarkButton.getTag();
+        boolean saved = tag instanceof Boolean && (Boolean) tag;
+        if (saved) {
+            repository.removeRecipeFromCookbooks(recipeId, done -> runOnUiThread(() -> {
+                Toast.makeText(this, done ? "Đã bỏ lưu" : "Không thể bỏ lưu", Toast.LENGTH_SHORT).show();
+                if (done) {
+                    ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, false);
+                }
+            }));
+            return;
+        }
+        CommunityUi.showAddToCookbook(this, recipeId, () ->
+                ToggleUi.renderSelected(bookmarkButton, R.drawable.ic_bookmark_green, true));
     }
 
     private void loadBookmarkState() {
@@ -133,6 +156,7 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
                 emoji.setVisibility(View.GONE);
                 Glide.with(this).load(product.getImageUrl()).transform(new CenterCrop(), new RoundedCorners(dp(12))).into(image);
             }
+            item.setOnClickListener(v -> openProductDetail(ingredient, product));
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
             params.width = 0;
             params.height = dp(122);
@@ -140,6 +164,21 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
             params.setMargins(dp(4), dp(4), dp(4), dp(8));
             ingredientsGrid.addView(item, params);
         }
+    }
+
+    private void openProductDetail(CommunityRecipeIngredientEntity ingredient, ProductEntity product) {
+        String productId = product != null ? product.getId() : null;
+        if (isBlank(productId) && ingredient != null) {
+            productId = ingredient.getProductId();
+        }
+        if (isBlank(productId)) {
+            Toast.makeText(this, "KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(this, ProductDetailActivity.class);
+        intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
+        startActivity(intent);
     }
 
     private void bindInstructions(String instructions) {
@@ -206,10 +245,10 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
         VeggoDialog.show(
                 this,
                 R.drawable.ic_trash,
-                "X\u00f3a c\u00f4ng th\u1ee9c?",
-                "C\u00f4ng th\u1ee9c n\u00e0y s\u1ebd b\u1ecb x\u00f3a v\u0129nh vi\u1ec5n kh\u1ecfi c\u1ed9ng \u0111\u1ed3ng.",
-                "X\u00f3a",
-                "H\u1ee7y",
+                "Xóa công thức?",
+                "Công thức này sẽ bị xóa vĩnh viễn khỏi cộng đồng.",
+                "Xóa",
+                "Hủy",
                 new VeggoDialog.DialogListener() {
                     @Override
                     public void onConfirm() {
@@ -224,12 +263,12 @@ public class CommunityRecipeDetailActivity extends AppCompatActivity {
         repository.deleteRecipe(recipeId, deleted -> runOnUiThread(() -> {
             deleteButton.setEnabled(true);
             if (deleted) {
-                Toast.makeText(this, "\u0110\u00e3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đã xóa công thức", Toast.LENGTH_SHORT).show();
                 setResult(RESULT_OK);
                 finish();
                 return;
             }
-            Toast.makeText(this, "Kh\u00f4ng th\u1ec3 x\u00f3a c\u00f4ng th\u1ee9c", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể xóa công thức", Toast.LENGTH_SHORT).show();
         }));
     }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <solid android:color="@color/primary_main" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item
+        android:width="14dp"
+        android:height="14dp"
+        android:gravity="center"
+        android:drawable="@drawable/ic_address_check_white" />
+</layer-list>

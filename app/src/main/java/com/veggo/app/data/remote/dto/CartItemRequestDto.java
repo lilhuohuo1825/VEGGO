@@ -3,6 +3,9 @@ package com.veggo.app.data.remote.dto;
 import com.google.gson.annotations.SerializedName;
 
 public class CartItemRequestDto {
+    @SerializedName("productId")
+    private String productId;
+
     @SerializedName("sku")
     private String sku;
     
@@ -26,6 +29,8 @@ public class CartItemRequestDto {
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public double getSelectedWeight() { return selectedWeight; }

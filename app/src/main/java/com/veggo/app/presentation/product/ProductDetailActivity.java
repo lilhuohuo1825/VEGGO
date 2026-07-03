@@ -1,8 +1,17 @@
 package com.veggo.app.presentation.product;
 
+import android.app.Dialog;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.util.TypedValue;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TableLayout;
@@ -438,6 +447,10 @@ public class ProductDetailActivity extends BaseActivity {
             startActivity(intent);
         });
 
+        if (ivProductImage != null) {
+            ivProductImage.setOnClickListener(v -> showProductImagePreview());
+        }
+
         View shareButton = findViewById(R.id.ivShare);
         if (shareButton != null) {
             shareButton.setOnClickListener(v -> shareCurrentProduct());
@@ -750,6 +763,143 @@ public class ProductDetailActivity extends BaseActivity {
                         .setDuration(160)
                         .start())
                 .start();
+    }
+
+    private void showProductImagePreview() {
+        Product product = viewModel != null && viewModel.getProduct() != null
+                ? viewModel.getProduct().getValue()
+                : null;
+        String imageUrl = product != null ? product.getImageUrl() : null;
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return;
+        }
+
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.BLACK);
+
+        ImageView previewImage = new ImageView(this);
+        previewImage.setAdjustViewBounds(true);
+        previewImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        previewImage.setOnTouchListener(new ImageZoomTouchListener(previewImage));
+        root.addView(previewImage, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+
+        FrameLayout closeButton = new FrameLayout(this);
+        closeButton.setBackgroundResource(R.drawable.bg_community_circle);
+        closeButton.setClickable(true);
+        closeButton.setFocusable(true);
+        closeButton.setForeground(resolveBorderlessSelectable());
+        closeButton.setClipChildren(false);
+        closeButton.setClipToPadding(false);
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+
+        androidx.appcompat.widget.AppCompatImageView closeIcon =
+                new androidx.appcompat.widget.AppCompatImageView(this);
+        closeIcon.setImageResource(R.drawable.ic_close);
+        closeIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary_main));
+        closeIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        FrameLayout.LayoutParams closeIconParams = new FrameLayout.LayoutParams(dp(20), dp(20));
+        closeIconParams.gravity = android.view.Gravity.CENTER;
+        closeButton.addView(closeIcon, closeIconParams);
+
+        FrameLayout.LayoutParams closeParams = new FrameLayout.LayoutParams(dp(42), dp(42));
+        closeParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        closeParams.setMargins(0, dp(16), dp(14), 0);
+        root.addView(closeButton, closeParams);
+
+        dialog.setContentView(root);
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+        }
+
+        Glide.with(this).load(imageUrl).into(previewImage);
+    }
+
+    private android.graphics.drawable.Drawable resolveBorderlessSelectable() {
+        TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, typedValue, true);
+        return ContextCompat.getDrawable(this, typedValue.resourceId);
+    }
+
+    private class ImageZoomTouchListener implements View.OnTouchListener {
+        private final ImageView target;
+        private final ScaleGestureDetector scaleDetector;
+        private float scale = 1f;
+        private float lastX;
+        private float lastY;
+
+        ImageZoomTouchListener(ImageView target) {
+            this.target = target;
+            this.scaleDetector = new ScaleGestureDetector(
+                    ProductDetailActivity.this,
+                    new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                        @Override
+                        public boolean onScale(ScaleGestureDetector detector) {
+                            scale = Math.max(1f, Math.min(scale * detector.getScaleFactor(), 4f));
+                            target.setScaleX(scale);
+                            target.setScaleY(scale);
+                            target.setTranslationX(clampTranslation(target.getTranslationX(), target.getWidth(), scale));
+                            target.setTranslationY(clampTranslation(target.getTranslationY(), target.getHeight(), scale));
+                            return true;
+                        }
+                    }
+            );
+        }
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            scaleDetector.onTouchEvent(event);
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    lastX = event.getX();
+                    lastY = event.getY();
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    if (!scaleDetector.isInProgress() && scale > 1f) {
+                        float dx = event.getX() - lastX;
+                        float dy = event.getY() - lastY;
+                        target.setTranslationX(clampTranslation(target.getTranslationX() + dx, target.getWidth(), scale));
+                        target.setTranslationY(clampTranslation(target.getTranslationY() + dy, target.getHeight(), scale));
+                    }
+                    lastX = event.getX();
+                    lastY = event.getY();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (scale <= 1.02f) {
+                        resetImage();
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        private float clampTranslation(float value, int size, float currentScale) {
+            float max = (size * (currentScale - 1f)) / 2f;
+            return Math.max(-max, Math.min(max, value));
+        }
+
+        private void resetImage() {
+            scale = 1f;
+            target.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .translationX(0f)
+                    .translationY(0f)
+                    .setDuration(160)
+                    .start();
+        }
     }
 
     private void setupViewModel() {

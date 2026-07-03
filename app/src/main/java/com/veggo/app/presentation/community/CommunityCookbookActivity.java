@@ -6,6 +6,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 
@@ -15,6 +16,8 @@ public class CommunityCookbookActivity extends AppCompatActivity {
     private CommunityRepository repository;
     private LinearLayout leftColumn;
     private LinearLayout rightColumn;
+    private SwipeRefreshLayout refreshLayout;
+    private String cookbookId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -26,13 +29,19 @@ public class CommunityCookbookActivity extends AppCompatActivity {
         rightColumn = findViewById(R.id.cookbookRightColumn);
         findViewById(R.id.cookbookBackButton).setOnClickListener(v -> finish());
 
-        String cookbookId = getIntent().getStringExtra(EXTRA_COOKBOOK_ID);
+        cookbookId = getIntent().getStringExtra(EXTRA_COOKBOOK_ID);
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.cookbookScroll, this::loadCookbook);
+        loadCookbook();
+    }
+
+    private void loadCookbook() {
         repository.loadCookbookRecipes(cookbookId, data -> runOnUiThread(() -> {
             if (data.cookbook != null) {
                 ((TextView) findViewById(R.id.cookbookTitle)).setText(data.cookbook.getTitle());
-                ((TextView) findViewById(R.id.cookbookCount)).setText(data.recipes.size() + " c\u00f4ng th\u1ee9c");
+                ((TextView) findViewById(R.id.cookbookCount)).setText(data.recipes.size() + " công thức");
             }
-            CommunityUi.addRecipeMasonry(this, leftColumn, rightColumn, data.recipes);
+            CommunityUi.addRecipeMasonry(this, leftColumn, rightColumn, CommunityUi.shuffled(data.recipes));
+            CommunityUi.finishRefresh(refreshLayout);
         }));
     }
 }

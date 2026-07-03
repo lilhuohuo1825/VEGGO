@@ -5,6 +5,7 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
@@ -14,6 +15,7 @@ import com.veggo.app.R;
 public class CommunityHomeActivity extends AppCompatActivity {
     private ActivityCommunityHomeBinding binding;
     private CommunityRepository repository;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -32,10 +34,16 @@ public class CommunityHomeActivity extends AppCompatActivity {
         binding.communityAddButton.setOnClickListener(v -> startActivity(new Intent(this, CommunityPostActivity.class)));
         binding.topChefSeeMore.setOnClickListener(v -> startActivity(new Intent(this, CommunityChefsActivity.class)));
         binding.recipesSeeMore.setOnClickListener(v -> startActivity(new Intent(this, CommunityRecipesActivity.class)));
+        refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.communityHomeScroll, this::loadHome);
+        loadHome();
+    }
+
+    private void loadHome() {
         repository.loadHome(data -> runOnUiThread(() -> {
-            CommunityUi.addCategoryChips(this, binding.communityChipRow, data.categories);
-            CommunityUi.addChefPreview(this, binding.chefPreviewRow, data.chefs);
-            CommunityUi.addRecipePreview(this, binding.recipeLeftColumn, binding.recipeRightColumn, data.recipes);
+            CommunityUi.addCategoryChips(this, binding.communityChipRow, CommunityUi.shuffled(data.categories));
+            CommunityUi.addChefPreview(this, binding.chefPreviewRow, CommunityUi.shuffled(data.chefs));
+            CommunityUi.addRecipePreview(this, binding.recipeLeftColumn, binding.recipeRightColumn, CommunityUi.shuffled(data.recipes));
+            CommunityUi.finishRefresh(refreshLayout);
         }));
     }
 

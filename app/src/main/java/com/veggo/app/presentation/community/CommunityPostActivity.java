@@ -66,12 +66,14 @@ public class CommunityPostActivity extends AppCompatActivity {
     private TextView categoryButton;
     private TextView titleError;
     private TextView categoryError;
+    private TextView timeError;
     private TextView imageError;
     private TextView ingredientsError;
     private TextView stepsError;
     private TextView nutritionError;
     private TextView formError;
     private EditText titleInput;
+    private EditText timeInput;
     private EditText videoInput;
     private EditText caloriesInput;
     private EditText saltInput;
@@ -84,6 +86,10 @@ public class CommunityPostActivity extends AppCompatActivity {
     private String editRecipeId;
     private String originalEditSnapshot = "";
     private String selectedCategoryId = "";
+    private boolean loadingCategories;
+    private boolean openCategoryAfterLoad;
+    private boolean loadingProducts;
+    private boolean openProductAfterLoad;
     private final List<CommunityCategoryEntity> categories = new ArrayList<>();
     private final List<ProductDto> products = new ArrayList<>();
     private final List<IngredientSelection> selectedIngredients = new ArrayList<>();
@@ -146,12 +152,14 @@ public class CommunityPostActivity extends AppCompatActivity {
         categoryButton = findViewById(R.id.communityPostCategoryButton);
         titleError = findViewById(R.id.communityPostTitleError);
         categoryError = findViewById(R.id.communityPostCategoryError);
+        timeError = findViewById(R.id.communityPostTimeError);
         imageError = findViewById(R.id.communityPostImageError);
         ingredientsError = findViewById(R.id.communityPostIngredientsError);
         stepsError = findViewById(R.id.communityPostStepsError);
         nutritionError = findViewById(R.id.communityPostNutritionError);
         formError = findViewById(R.id.communityPostFormError);
         titleInput = findViewById(R.id.communityPostTitleInput);
+        timeInput = findViewById(R.id.communityPostTimeInput);
         videoInput = findViewById(R.id.communityPostVideoInput);
         stepsList = findViewById(R.id.communityPostStepsList);
         caloriesInput = findViewById(R.id.communityPostCaloriesInput);
@@ -179,20 +187,56 @@ public class CommunityPostActivity extends AppCompatActivity {
     }
 
     private void loadCategories() {
+        loadCategories(null);
+    }
+
+    private void loadCategories(@Nullable Runnable afterLoad) {
+        if (loadingCategories) {
+            if (afterLoad != null) {
+                openCategoryAfterLoad = true;
+            }
+            return;
+        }
+        loadingCategories = true;
         repository.loadCategories(result -> runOnUiThread(() -> {
+            loadingCategories = false;
             categories.clear();
             if (result != null) {
                 categories.addAll(result);
             }
             updateCategoryLabel();
+            if (afterLoad != null) {
+                afterLoad.run();
+            } else if (openCategoryAfterLoad) {
+                openCategoryAfterLoad = false;
+                showCategorySheet();
+            }
         }));
     }
 
     private void loadProducts() {
+        loadProducts(null);
+    }
+
+    private void loadProducts(@Nullable Runnable afterLoad) {
+        if (loadingProducts) {
+            if (afterLoad != null) {
+                openProductAfterLoad = true;
+            }
+            return;
+        }
+        loadingProducts = true;
         repository.loadProducts(result -> runOnUiThread(() -> {
+            loadingProducts = false;
             products.clear();
             if (result != null) {
                 products.addAll(result);
+            }
+            if (afterLoad != null) {
+                afterLoad.run();
+            } else if (openProductAfterLoad) {
+                openProductAfterLoad = false;
+                showProductPicker();
             }
         }));
     }
@@ -238,7 +282,9 @@ public class CommunityPostActivity extends AppCompatActivity {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_veggo);
-        ((ImageView) dialog.findViewById(R.id.imgIcon)).setImageResource(editing ? R.drawable.ic_edit : R.drawable.ic_community_publish);
+        ImageView icon = dialog.findViewById(R.id.imgIcon);
+        icon.setImageResource(editing ? R.drawable.ic_edit : R.drawable.ic_community_publish);
+        icon.setColorFilter(getColor(R.color.primary_main));
         ((TextView) dialog.findViewById(R.id.tvTitle)).setText(editing ? "Lưu thay đổi?" : "Đăng công thức?");
         ((TextView) dialog.findViewById(R.id.tvMessage)).setText(editing
                 ? "Công thức sẽ được cập nhật và hiển thị cho cộng đồng."
@@ -305,6 +351,10 @@ public class CommunityPostActivity extends AppCompatActivity {
             showValidationError(categoryError, "Vui lòng chọn danh mục");
             firstInvalidView = firstInvalidView == null ? categoryButton : firstInvalidView;
         }
+        if (TextUtils.isEmpty(text(timeInput)) || parseInt(text(timeInput)) <= 0) {
+            showValidationError(timeError, "Vui long nhap thoi gian nau");
+            firstInvalidView = firstInvalidView == null ? timeInput : firstInvalidView;
+        }
         if (selectedImageUris.isEmpty()) {
             showValidationError(imageError, "Vui lòng thêm ít nhất 1 ảnh món ăn");
             firstInvalidView = firstInvalidView == null ? findViewById(R.id.communityPostImagePickerButton) : firstInvalidView;
@@ -346,6 +396,7 @@ public class CommunityPostActivity extends AppCompatActivity {
     private void clearValidationErrors() {
         hideValidationError(titleError);
         hideValidationError(categoryError);
+        hideValidationError(timeError);
         hideValidationError(imageError);
         hideValidationError(ingredientsError);
         hideValidationError(stepsError);
@@ -394,6 +445,11 @@ public class CommunityPostActivity extends AppCompatActivity {
             Toast.makeText(this, "Nhập các bước nấu trước nha", Toast.LENGTH_SHORT).show();
             return false;
         }
+        if (TextUtils.isEmpty(text(timeInput)) || parseInt(text(timeInput)) <= 0) {
+            timeInput.requestFocus();
+            Toast.makeText(this, "Nhap thoi gian nau truoc nha", Toast.LENGTH_SHORT).show();
+            return false;
+        }
         if (TextUtils.isEmpty(text(caloriesInput))) {
             caloriesInput.requestFocus();
             Toast.makeText(this, "Nhập calories trước nha", Toast.LENGTH_SHORT).show();
@@ -425,6 +481,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         }
         titleInput.setText(data.recipe.getTitle());
         selectedCategoryId = data.recipe.getCategoryId();
+        timeInput.setText(data.recipe.getTimeMinutes() > 0 ? String.valueOf(data.recipe.getTimeMinutes()) : "");
         updateCategoryLabel();
         if (data.detail != null) {
             videoInput.setText(data.detail.getVideoUrl());
@@ -463,6 +520,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         StringBuilder builder = new StringBuilder();
         builder.append(text(titleInput)).append('|');
         builder.append(selectedCategoryId).append('|');
+        builder.append(text(timeInput)).append('|');
         builder.append(text(videoInput)).append('|');
         builder.append(buildStepsText()).append('|');
         builder.append(text(caloriesInput)).append('|');
@@ -485,6 +543,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         CommunityRepository.RecipeDraft draft = new CommunityRepository.RecipeDraft();
         draft.title = text(titleInput);
         draft.categoryId = selectedCategoryId;
+        draft.timeMinutes = parseInt(text(timeInput));
         draft.imageUrls = new ArrayList<>(selectedImageUris);
         draft.imageUrl = selectedImageUris.isEmpty() ? "" : selectedImageUris.get(0);
         draft.videoUrl = text(videoInput);
@@ -520,6 +579,7 @@ public class CommunityPostActivity extends AppCompatActivity {
         }
         titleInput.setText(draft.title);
         selectedCategoryId = draft.categoryId == null ? "" : draft.categoryId;
+        timeInput.setText(draft.timeMinutes > 0 ? String.valueOf(draft.timeMinutes) : "");
         updateCategoryLabel();
         videoInput.setText(draft.videoUrl);
         setStepTexts(splitSteps(draft.steps));
@@ -679,6 +739,17 @@ public class CommunityPostActivity extends AppCompatActivity {
 
     private void showCategorySheet() {
         if (categories.isEmpty()) {
+            Toast.makeText(this, "Dang tai danh muc", Toast.LENGTH_SHORT).show();
+            loadCategories(() -> {
+                if (categories.isEmpty()) {
+                    Toast.makeText(this, "Chua tai duoc danh muc", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showCategorySheet();
+            });
+            return;
+        }
+        if (categories.isEmpty()) {
             Toast.makeText(this, "Chưa tải được danh mục", Toast.LENGTH_SHORT).show();
             loadCategories();
             return;
@@ -726,7 +797,13 @@ public class CommunityPostActivity extends AppCompatActivity {
     private void showProductPicker() {
         if (products.isEmpty()) {
             Toast.makeText(this, "Chưa tải được sản phẩm", Toast.LENGTH_SHORT).show();
-            loadProducts();
+            loadProducts(() -> {
+                if (products.isEmpty()) {
+                    Toast.makeText(this, "Chua tai duoc san pham", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showProductPicker();
+            });
             return;
         }
         Dialog dialog = bottomSheetDialog();
@@ -1140,6 +1217,7 @@ public class CommunityPostActivity extends AppCompatActivity {
     private boolean hasDraftContent() {
         return !TextUtils.isEmpty(text(titleInput))
                 || !TextUtils.isEmpty(selectedCategoryId)
+                || !TextUtils.isEmpty(text(timeInput))
                 || !selectedImageUris.isEmpty()
                 || !TextUtils.isEmpty(text(videoInput))
                 || !selectedIngredients.isEmpty()
@@ -1156,6 +1234,7 @@ public class CommunityPostActivity extends AppCompatActivity {
             }
         };
         titleInput.addTextChangedListener(watcher);
+        timeInput.addTextChangedListener(watcher);
         videoInput.addTextChangedListener(watcher);
         caloriesInput.addTextChangedListener(watcher);
         saltInput.addTextChangedListener(watcher);

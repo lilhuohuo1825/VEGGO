@@ -36,6 +36,7 @@ public class ForgotPasswordActivity extends BaseActivity {
     private EditText edtForgotPhone;
     private TextView tvForgotPhoneError;
     private TextView tvForgotVerifyPhoneDescription;
+    private TextView tvForgotOtpAlert;
     private EditText edtNewPassword;
     private EditText edtConfirmNewPassword;
     private TextView tvNewPasswordError;
@@ -87,6 +88,7 @@ public class ForgotPasswordActivity extends BaseActivity {
         edtForgotPhone = findViewById(R.id.edtForgotPhone);
         tvForgotPhoneError = findViewById(R.id.tvForgotPhoneError);
         tvForgotVerifyPhoneDescription = findViewById(R.id.tvForgotVerifyPhoneDescription);
+        tvForgotOtpAlert = findViewById(R.id.tvForgotOtpAlert);
         edtNewPassword = findViewById(R.id.edtNewPassword);
         edtConfirmNewPassword = findViewById(R.id.edtConfirmNewPassword);
         tvNewPasswordError = findViewById(R.id.tvNewPasswordError);
@@ -95,6 +97,7 @@ public class ForgotPasswordActivity extends BaseActivity {
         imgEyeConfirmNewPassword = findViewById(R.id.imgEyeConfirmNewPassword);
 
         tvForgotPhoneError.setVisibility(View.GONE);
+        tvForgotOtpAlert.setVisibility(View.GONE);
         tvNewPasswordError.setVisibility(View.GONE);
         tvConfirmNewPasswordError.setVisibility(View.GONE);
     }
@@ -138,6 +141,17 @@ public class ForgotPasswordActivity extends BaseActivity {
             }
         });
         AuthFormUtils.wireOtpFields(getForgotOtpFields(), this::handleVerifyOtp);
+        for (EditText field : getForgotOtpFields()) {
+            field.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (getOtpValue(getForgotOtpFields()).length() >= 6) {
+                        hideForgotOtpAlert();
+                    }
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+        }
     }
 
     private void handleSendOtp() {
@@ -152,6 +166,10 @@ public class ForgotPasswordActivity extends BaseActivity {
 
     private void handleVerifyOtp() {
         String otp = getOtpValue(getForgotOtpFields());
+        if (otp.isEmpty()) {
+            showForgotOtpAlert();
+            return;
+        }
         if (otp.length() < 6) {
             return;
         }
@@ -172,6 +190,33 @@ public class ForgotPasswordActivity extends BaseActivity {
         }
         verifiedOtp = otp;
         showResetForm();
+    }
+
+    private void showForgotOtpAlert() {
+        if (tvForgotOtpAlert == null) {
+            return;
+        }
+        tvForgotOtpAlert.animate().cancel();
+        tvForgotOtpAlert.setVisibility(View.VISIBLE);
+        tvForgotOtpAlert.setAlpha(0f);
+        tvForgotOtpAlert.setTranslationY(18f);
+        tvForgotOtpAlert.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(180)
+                .start();
+    }
+
+    private void hideForgotOtpAlert() {
+        if (tvForgotOtpAlert == null || tvForgotOtpAlert.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        tvForgotOtpAlert.animate()
+                .alpha(0f)
+                .translationY(12f)
+                .setDuration(160)
+                .withEndAction(() -> tvForgotOtpAlert.setVisibility(View.GONE))
+                .start();
     }
 
     private void handleResetPassword() {
@@ -255,6 +300,7 @@ public class ForgotPasswordActivity extends BaseActivity {
         tvForgotVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
                 + maskPhone(verifiedPhone) + ". Mã có hiệu lực trong 60 giây.");
         clearOtpFields(getForgotOtpFields());
+        hideForgotOtpAlert();
         showForgotVerifyForm();
         getForgotOtpFields()[0].requestFocus();
         if (otpTimer != null) {
@@ -332,6 +378,7 @@ public class ForgotPasswordActivity extends BaseActivity {
     }
 
     private void showForgotForm() {
+        hideForgotOtpAlert();
         layoutForgotForm.setVisibility(View.VISIBLE);
         layoutForgotVerifyForm.setVisibility(View.GONE);
         layoutResetForm.setVisibility(View.GONE);
@@ -344,6 +391,7 @@ public class ForgotPasswordActivity extends BaseActivity {
     }
 
     private void showResetForm() {
+        hideForgotOtpAlert();
         layoutForgotForm.setVisibility(View.GONE);
         layoutForgotVerifyForm.setVisibility(View.GONE);
         layoutResetForm.setVisibility(View.VISIBLE);

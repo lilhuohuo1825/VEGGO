@@ -100,6 +100,12 @@ public interface CommunityApi {
             @Body CommunityRepository.AddRecipeToCookbookRequest request
     );
 
+    @DELETE("community/cookbooks/recipes/{recipeId}")
+    Call<CommunityRepository.OkResponse> removeRecipeFromCookbooks(
+            @Path("recipeId") String recipeId,
+            @Query("customerId") String customerId
+    );
+
     @GET("community/follows")
     Call<List<CommunityFollowEntity>> getFollows(
             @Query("chefId") String chefId,

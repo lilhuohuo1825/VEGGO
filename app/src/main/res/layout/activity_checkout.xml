@@ -453,7 +453,8 @@
                         android:id="@+id/radioPaymentMomo"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:buttonTint="#57AF37"
+                        android:buttonTint="@color/payment_radio_button_tint"
+                        app:buttonTint="@color/payment_radio_button_tint"
                         android:checked="true" />
                 </LinearLayout>
 
@@ -486,7 +487,8 @@
                         android:id="@+id/radioPaymentCod"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:buttonTint="#57AF37" />
+                        android:buttonTint="@color/payment_radio_button_tint"
+                        app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -518,7 +520,8 @@
                         android:id="@+id/radioPaymentCard"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:buttonTint="#57AF37" />
+                        android:buttonTint="@color/payment_radio_button_tint"
+                        app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
             </LinearLayout>
 

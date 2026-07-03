@@ -31,7 +31,7 @@ public class ProductDto {
     private List<String> image;
 
     @SerializedName(value = "imageUrl")
-    private String imageUrl;
+    private Object imageUrl;
 
     @SerializedName(value = "WeightOptions", alternate = {"weightOptions"})
     private List<Double> weightOptions;
@@ -127,7 +127,16 @@ public class ProductDto {
 
     public String getImageUrl() {
         if (image != null && !image.isEmpty()) return image.get(0);
-        return imageUrl;
+        if (imageUrl instanceof String) {
+            return (String) imageUrl;
+        }
+        if (imageUrl instanceof List<?>) {
+            List<?> imageUrls = (List<?>) imageUrl;
+            if (!imageUrls.isEmpty() && imageUrls.get(0) != null) {
+                return String.valueOf(imageUrls.get(0));
+            }
+        }
+        return null;
     }
 
     public List<Double> getWeightOptions() { return weightOptions; }

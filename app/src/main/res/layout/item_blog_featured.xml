@@ -8,11 +8,29 @@
     android:focusable="true"
     android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/blogFeaturedImage"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="198dp"
-        android:scaleType="centerCrop" />
+        android:layout_height="198dp">
+
+        <ImageView
+            android:id="@+id/blogFeaturedImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <ImageButton
+            android:id="@+id/blogFeaturedLikeButton"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_category_circle"
+            android:contentDescription="Yêu thích bài viết"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_heart_outline_green"
+            android:tint="@color/primary_main" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/blogFeaturedCategory"

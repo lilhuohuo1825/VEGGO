@@ -100,9 +100,11 @@ public class SearchActivity extends AppCompatActivity {
             if (query.isEmpty()) {
                 binding.rvCategories.setVisibility(android.view.View.VISIBLE);
                 binding.rvSearchResults.setVisibility(android.view.View.GONE);
+                binding.searchEmptyState.setVisibility(android.view.View.GONE);
             } else {
                 binding.rvCategories.setVisibility(android.view.View.GONE);
                 binding.rvSearchResults.setVisibility(android.view.View.VISIBLE);
+                updateResults();
             }
         });
 
@@ -119,6 +121,20 @@ public class SearchActivity extends AppCompatActivity {
         List<Product> products = viewModel.getProductResults().getValue();
         List<SearchViewModel.FeatureResult> features = viewModel.getFeatureResults().getValue();
         searchAdapter.setResults(products, features);
+        String query = viewModel.getSearchQuery().getValue();
+        boolean hasQuery = query != null && !query.trim().isEmpty();
+        if (!hasQuery) {
+            binding.rvCategories.setVisibility(android.view.View.VISIBLE);
+            binding.rvSearchResults.setVisibility(android.view.View.GONE);
+            binding.searchEmptyState.setVisibility(android.view.View.GONE);
+            return;
+        }
+        boolean hasProducts = products != null && !products.isEmpty();
+        boolean hasFeatures = features != null && !features.isEmpty();
+        boolean showEmpty = !hasProducts && !hasFeatures;
+        binding.rvCategories.setVisibility(android.view.View.GONE);
+        binding.rvSearchResults.setVisibility(showEmpty ? android.view.View.GONE : android.view.View.VISIBLE);
+        binding.searchEmptyState.setVisibility(showEmpty ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
     private void handleFeatureNavigation(SearchViewModel.FeatureResult feature) {

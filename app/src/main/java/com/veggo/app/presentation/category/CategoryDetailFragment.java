@@ -123,6 +123,9 @@ public class CategoryDetailFragment extends Fragment {
         binding.layoutSearch.getRoot().setOnClickListener(openSearchClick);
         binding.layoutSearch.edtSearch.setFocusable(false);
         binding.layoutSearch.edtSearch.setOnClickListener(openSearchClick);
+        binding.categoryDetailBackButton.setOnClickListener(v ->
+                requireActivity().getOnBackPressedDispatcher().onBackPressed()
+        );
 
         binding.tabSubcategories.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -420,10 +423,19 @@ public class CategoryDetailFragment extends Fragment {
         });
 
         productAdapter.submitList(filtered);
+        updateEmptyState(filtered.isEmpty());
     }
 
     private void filterProductsByName(String query) {
         applyFiltersAndSort();
+    }
+
+    private void updateEmptyState(boolean showEmpty) {
+        if (binding == null) {
+            return;
+        }
+        binding.rvProducts.setVisibility(showEmpty ? View.GONE : View.VISIBLE);
+        binding.categoryEmptyState.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
     }
 
     @Override
