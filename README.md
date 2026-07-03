@@ -67,6 +67,16 @@ git push -u origin feature/<your-feature-name>
 - `core/`: Shared infrastructure such as network, database, Firebase, preferences, base UI, utilities.
 - `adapter/`: RecyclerView adapters.
 
+## AI Chatbot (Trợ lý AI)
+
+Feature documentation: [`docs/CHATBOT.md`](docs/CHATBOT.md)
+
+Covers backend API, intent handling, product/recipe suggestions, Android UI, env config, and how to run locally.
+
+Speech-to-Text module: [`docs/SPEECH.md`](docs/SPEECH.md)
+
+Covers voice input module, Samsung/Google setup, and how to test microphone on emulator and real devices.
+
 ## Asset Rules
 
 - UI icons and vector drawables: `app/src/main/res/drawable/`

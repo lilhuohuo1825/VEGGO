@@ -86,4 +86,29 @@ productSchema.pre('validate', function syncProductNames(next) {
   next();
 });
 
+productSchema.index({ status: 1, purchase_count: -1 });
+productSchema.index({ CategoryID: 1, status: 1, purchase_count: -1 });
+productSchema.index({ categoryId: 1, status: 1, purchase_count: -1 });
+productSchema.index({ SubcategoryID: 1, status: 1, purchase_count: -1 });
+productSchema.index({ subcategoryId: 1, status: 1, purchase_count: -1 });
+productSchema.index(
+  {
+    product_name: 'text',
+    name: 'text',
+    brand: 'text',
+    ingredients: 'text',
+    description: 'text',
+  },
+  {
+    weights: {
+      product_name: 10,
+      name: 10,
+      brand: 3,
+      ingredients: 5,
+      description: 2,
+    },
+    name: 'product_text_search',
+  }
+);
+
 module.exports = mongoose.model('Product', productSchema);

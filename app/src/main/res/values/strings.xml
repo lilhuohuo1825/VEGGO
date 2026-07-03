@@ -8,6 +8,7 @@
     <string name="nav_community">Cộng đồng</string>
     <string name="nav_account">Tài khoản</string>
     <string name="nav_scan">Quét</string>
+    <string name="chatbot_fab_content_description">Mở chatbot VEGGO</string>
     <string name="onboarding_next">Tiếp tục</string>
     <string name="onboarding_start">Bắt đầu</string>
     <string name="onboarding_skip">Bỏ qua</string>
@@ -30,6 +31,9 @@
     <string name="consultation_submit_retry">Thử lại</string>
     <string name="consultation_question_count_format">Câu hỏi (%1$d)</string>
     <string name="related_recipes">Công thức liên quan</string>
+    <string name="chat_suggested_recipes">Gợi ý món ăn</string>
+    <string name="chat_suggested_products">Gợi ý sản phẩm</string>
+    <string name="recipe_detail_load_error">Không tải được chi tiết công thức. Vui lòng thử lại.</string>
     <string name="recipe_cooking_time_format">Thời gian: %1$s</string>
     <string name="reviews_ratings">Đánh giá &amp; nhận xét</string>
     <string name="add_to_cart">Thêm vào giỏ</string>
@@ -398,4 +402,30 @@
     <string name="facebook_app_id">1010395904704906</string>
     <string name="fb_login_protocol_scheme">fb1010395904704906</string>
     <string name="facebook_client_token">75506c35e1de143248c5bf8ab9ddea7e</string>
+
+    <!-- Speech-to-Text -->
+    <string name="speech_error_network">Không có kết nối mạng. Vui lòng kiểm tra Internet và thử lại.</string>
+    <string name="speech_error_no_match">Không nhận diện được giọng nói. Vui lòng thử lại.</string>
+    <string name="speech_error_speech_timeout">Không phát hiện giọng nói. Vui lòng thử lại.</string>
+    <string name="speech_error_audio">Lỗi thu âm. Vui lòng kiểm tra micro và thử lại.</string>
+    <string name="speech_error_cancelled">Đã hủy nhận diện giọng nói.</string>
+    <string name="speech_error_permission">Thiếu quyền ghi âm. Vui lòng cấp quyền micro.</string>
+    <string name="speech_error_busy">Bộ nhận diện giọng nói đang bận. Vui lòng thử lại sau.</string>
+    <string name="speech_error_server">Lỗi máy chủ nhận diện giọng nói. Vui lòng thử lại.</string>
+    <string name="speech_error_unavailable">Không tìm thấy dịch vụ nhận diện giọng nói.\n\nSamsung: Cài đặt → Quản lý chung → Ngôn ngữ và nhập liệu → Bàn phím màn hình → Samsung Keyboard → Nhập liệu bằng giọng nói (bật)\n\nHoặc cài ứng dụng Google từ CH Play.</string>
+    <string name="speech_error_unknown">Đã xảy ra lỗi khi nhận diện giọng nói. Vui lòng thử lại.</string>
+
+    <!-- Chatbot voice input -->
+    <string name="chat_input_hint">Nhập tin nhắn hoặc dùng micro…</string>
+    <string name="chat_voice_input">Nhập bằng giọng nói</string>
+    <string name="chat_voice_hint_listening">Nói câu hỏi của bạn</string>
+    <string name="chat_voice_hint_processing">Vui lòng đợi trong giây lát</string>
+    <string name="chat_voice_hint_cancel">Nhấn micro lần nữa để hủy</string>
+    <string name="chat_voice_status_preparing">Đang khởi động micro…</string>
+    <string name="chat_voice_status_listening">Đang ghi âm</string>
+    <string name="chat_voice_status_processing">Đang chuyển thành chữ…</string>
+    <string name="chat_voice_status_recognized">Đã nhận diện</string>
+    <string name="chat_voice_status_sending">Đang gửi tin nhắn…</string>
+    <string name="chat_voice_preview_format">\"%1$s\"</string>
+    <string name="chat_voice_permission_denied">Cần cấp quyền micro để nhập bằng giọng nói</string>
 </resources>

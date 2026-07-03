@@ -127,6 +127,66 @@
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 
+            <!-- Voice status banner -->
+            <LinearLayout
+                android:id="@+id/layoutVoiceStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/bg_voice_status_banner"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:visibility="gone">
+
+                <View
+                    android:id="@+id/viewVoicePulse"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_voice_pulse_dot" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvVoiceStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/chat_voice_status_listening"
+                        android:textColor="@color/primary_hover"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvVoiceHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/chat_voice_hint_listening"
+                        android:textColor="@color/neutral_70"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/progressVoice"
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:indeterminateTint="@color/primary_main"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <!-- Input Area -->
             <LinearLayout
                 android:id="@+id/layoutInput"
@@ -136,6 +196,26 @@
                 android:orientation="horizontal"
                 android:padding="12dp">
 
+                <FrameLayout
+                    android:id="@+id/btnMic"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_home_mic"
+                    android:clickable="true"
+                    android:contentDescription="@string/chat_voice_input"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:id="@+id/imgMic"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_microphone"
+                        app:tint="@color/neutral_80" />
+                </FrameLayout>
+
                 <EditText
                     android:id="@+id/edtMessage"
                     android:layout_width="0dp"
@@ -143,7 +223,7 @@
                     android:layout_weight="1"
                     android:autofillHints="none"
                     android:background="@drawable/bg_chat_input"
-                    android:hint="..."
+                    android:hint="@string/chat_input_hint"
                     android:inputType="textShortMessage"
                     android:padding="12dp"
                     android:textSize="14sp" />

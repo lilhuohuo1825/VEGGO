@@ -16,6 +16,7 @@ public class CategoryDto {
     @SerializedName("Subcategories")
     private List<Subcategory> subcategories;
 
+    public Id getId() { return id; }
     public String getCategoryName() { return categoryName; }
     public String getCategoryID() { return categoryID; }
     public List<Subcategory> getSubcategories() { return subcategories; }

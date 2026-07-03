@@ -7,12 +7,17 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.tabs.TabLayout;
 import com.veggo.app.R;
@@ -28,7 +33,10 @@ import com.veggo.app.presentation.product.ProductDetailActivity;
 import com.veggo.app.presentation.profile.TastePreferenceStore;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CategoryDetailFragment extends Fragment {
     public static final String ARG_CATEGORY_ID = "arg_category_id";
@@ -43,6 +51,7 @@ public class CategoryDetailFragment extends Fragment {
     private TastePreferenceStore tasteStore;
 
     private List<AssetModels.Category> allCategories = new ArrayList<>();
+    private List<Product> catalogProducts = new ArrayList<>();
     private List<Product> currentProducts = new ArrayList<>();
     
     // Filter states
@@ -52,6 +61,7 @@ public class CategoryDetailFragment extends Fragment {
     
     private String selectedCategoryId = "";
     private String selectedSubcategoryId = ""; // empty means "Tất cả"
+    private String selectedBrand = ""; // empty means "Tất cả"
 
     private boolean isInitialLoad = true;
     private boolean isBuildingTabs = false;
@@ -71,6 +81,8 @@ public class CategoryDetailFragment extends Fragment {
         productRepository = AppModule.provideProductRepository(requireContext());
         tasteStore = new TastePreferenceStore(requireContext());
 
+        categoryRepository.refreshCategories();
+
         if (getArguments() != null) {
             selectedCategoryId = getArguments().getString(ARG_CATEGORY_ID, "");
             selectedSubcategoryId = getArguments().getString(ARG_SUBCATEGORY_ID, "");
@@ -78,6 +90,11 @@ public class CategoryDetailFragment extends Fragment {
 
         setupViews();
         observeData();
+        productRepository.observeCatalogProducts().observe(getViewLifecycleOwner(), products -> {
+            if (products != null) {
+                catalogProducts = products;
+            }
+        });
         tasteStore.syncFromMongo(() -> {
             if (binding != null) {
                 applyFiltersAndSort();
@@ -150,58 +167,74 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private void showFilterPopup() {
-        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme);
         PopupFilterBinding filterBinding = PopupFilterBinding.inflate(getLayoutInflater());
         dialog.setContentView(filterBinding.getRoot());
+        dialog.setCanceledOnTouchOutside(true);
+
+        dialog.setOnShowListener(d -> {
+            FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet == null) return;
+
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int sheetHeight = (int) (screenHeight * 0.92f);
+
+            bottomSheet.setBackgroundResource(R.drawable.bg_bottom_sheet_rounded);
+
+            ViewGroup.LayoutParams sheetParams = bottomSheet.getLayoutParams();
+            if (sheetParams == null) {
+                sheetParams = new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        sheetHeight
+                );
+            } else {
+                sheetParams.height = sheetHeight;
+            }
+            bottomSheet.setLayoutParams(sheetParams);
+            bottomSheet.requestLayout();
+
+            BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setPeekHeight(sheetHeight, true);
+            behavior.setSkipCollapsed(true);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+            filterBinding.scrollFilterContent.setOnScrollChangeListener(
+                    (NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) ->
+                            behavior.setDraggable(scrollY == 0)
+            );
+
+            int baseBottomPadding = getResources().getDimensionPixelSize(R.dimen.spacing_lg);
+            ViewCompat.setOnApplyWindowInsetsListener(filterBinding.layoutFilterFooter, (v, insets) -> {
+                int navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                v.setPadding(
+                        v.getPaddingLeft(),
+                        v.getPaddingTop(),
+                        v.getPaddingRight(),
+                        baseBottomPadding + navBarInset
+                );
+                return insets;
+            });
+            ViewCompat.requestApplyInsets(bottomSheet);
+        });
 
         // Sync UI with current state
-        filterBinding.chkPopular.setChecked("popular".equals(selectedSort));
-        filterBinding.chkDiscount.setChecked("discount".equals(selectedSort));
-        filterBinding.chkLowHigh.setChecked("low_high".equals(selectedSort));
-        filterBinding.chkHighLow.setChecked("high_low".equals(selectedSort));
-        filterBinding.chkOrganic.setChecked("organic".equals(selectedSort));
+        if ("popular".equals(selectedSort)) {
+            filterBinding.rbPopular.setChecked(true);
+        } else if ("discount".equals(selectedSort)) {
+            filterBinding.rbDiscount.setChecked(true);
+        } else if ("low_high".equals(selectedSort)) {
+            filterBinding.rbLowHigh.setChecked(true);
+        } else if ("high_low".equals(selectedSort)) {
+            filterBinding.rbHighLow.setChecked(true);
+        } else if ("organic".equals(selectedSort)) {
+            filterBinding.rbOrganic.setChecked(true);
+        }
 
         filterBinding.rangePrice.setValues((float) selectedMinPrice, (float) selectedMaxPrice);
         filterBinding.txtPrice.setText(String.format("%,dđ - %,dđ", selectedMinPrice, selectedMaxPrice));
 
-        // Populate Categories
-        for (AssetModels.Category category : allCategories) {
-            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) getLayoutInflater().inflate(com.veggo.app.R.layout.item_filter_chip, filterBinding.cgCategories, false);
-            chip.setText(category.categoryName);
-            chip.setTag(category.categoryId);
-            if (category.categoryId.equals(selectedCategoryId)) {
-                chip.setChecked(true);
-            }
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    updateSubcategories(filterBinding, category);
-                }
-            });
-            filterBinding.cgCategories.addView(chip);
-        }
-
-        // Initial Subcategories if category selected
-        for (AssetModels.Category cat : allCategories) {
-            if (cat.categoryId.equals(selectedCategoryId)) {
-                updateSubcategories(filterBinding, cat);
-                break;
-            }
-        }
-
-        // Handle mutual exclusivity for sort checkboxes
-        View.OnClickListener sortClickListener = v -> {
-            filterBinding.chkPopular.setChecked(v == filterBinding.chkPopular);
-            filterBinding.chkDiscount.setChecked(v == filterBinding.chkDiscount);
-            filterBinding.chkLowHigh.setChecked(v == filterBinding.chkLowHigh);
-            filterBinding.chkHighLow.setChecked(v == filterBinding.chkHighLow);
-            filterBinding.chkOrganic.setChecked(v == filterBinding.chkOrganic);
-        };
-
-        filterBinding.chkPopular.setOnClickListener(sortClickListener);
-        filterBinding.chkDiscount.setOnClickListener(sortClickListener);
-        filterBinding.chkLowHigh.setOnClickListener(sortClickListener);
-        filterBinding.chkHighLow.setOnClickListener(sortClickListener);
-        filterBinding.chkOrganic.setOnClickListener(sortClickListener);
+        populateCategories(filterBinding);
+        populateBrands(filterBinding, selectedCategoryId, selectedSubcategoryId);
 
         filterBinding.rangePrice.addOnChangeListener((slider, value, fromUser) -> {
             List<Float> values = slider.getValues();
@@ -212,19 +245,20 @@ public class CategoryDetailFragment extends Fragment {
 
         filterBinding.btnBack.setOnClickListener(v -> dialog.dismiss());
         filterBinding.btnApply.setOnClickListener(v -> {
-            // Save state
-            if (filterBinding.chkPopular.isChecked()) selectedSort = "popular";
-            else if (filterBinding.chkDiscount.isChecked()) selectedSort = "discount";
-            else if (filterBinding.chkLowHigh.isChecked()) selectedSort = "low_high";
-            else if (filterBinding.chkHighLow.isChecked()) selectedSort = "high_low";
-            else if (filterBinding.chkOrganic.isChecked()) selectedSort = "organic";
+            int checkedSortId = filterBinding.rgSort.getCheckedRadioButtonId();
+            if (checkedSortId == R.id.rbPopular) selectedSort = "popular";
+            else if (checkedSortId == R.id.rbDiscount) selectedSort = "discount";
+            else if (checkedSortId == R.id.rbLowHigh) selectedSort = "low_high";
+            else if (checkedSortId == R.id.rbHighLow) selectedSort = "high_low";
+            else if (checkedSortId == R.id.rbOrganic) selectedSort = "organic";
             else selectedSort = "";
 
-            // Category & Subcategory selection
             int checkedCatId = filterBinding.cgCategories.getCheckedChipId();
             if (checkedCatId != View.NO_ID) {
                 com.google.android.material.chip.Chip catChip = filterBinding.getRoot().findViewById(checkedCatId);
-                selectedCategoryId = (String) catChip.getTag();
+                selectedCategoryId = catChip.getTag() != null ? (String) catChip.getTag() : "";
+            } else {
+                selectedCategoryId = "";
             }
 
             int checkedSubId = filterBinding.cgSubcategories.getCheckedChipId();
@@ -235,60 +269,281 @@ public class CategoryDetailFragment extends Fragment {
                 selectedSubcategoryId = ""; // All
             }
 
+            int checkedBrandId = filterBinding.cgBrands.getCheckedChipId();
+            if (checkedBrandId != View.NO_ID) {
+                com.google.android.material.chip.Chip brandChip = filterBinding.getRoot().findViewById(checkedBrandId);
+                selectedBrand = (String) brandChip.getTag();
+            } else {
+                selectedBrand = "";
+            }
+
             List<Float> values = filterBinding.rangePrice.getValues();
             selectedMinPrice = values.get(0).intValue();
             selectedMaxPrice = values.get(1).intValue();
 
             // Find current category to update tabs
-            for (AssetModels.Category cat : allCategories) {
-                if (cat.categoryId.equals(selectedCategoryId)) {
-                    setupTabs(cat);
-                    break;
+            if (selectedCategoryId.isEmpty()) {
+                setupAllCategoryTabs();
+            } else {
+                for (AssetModels.Category cat : allCategories) {
+                    if (cat.categoryId != null && cat.categoryId.equals(selectedCategoryId)) {
+                        setupTabs(cat);
+                        break;
+                    }
                 }
             }
 
+            categoryAdapter.setSelectedCategoryId(selectedCategoryId);
+            loadProducts();
             applyFiltersAndSort();
             dialog.dismiss();
         });
 
         filterBinding.txtClear.setOnClickListener(v -> {
-            filterBinding.chkPopular.setChecked(false);
-            filterBinding.chkDiscount.setChecked(false);
-            filterBinding.chkLowHigh.setChecked(false);
-            filterBinding.chkHighLow.setChecked(false);
-            filterBinding.chkOrganic.setChecked(false);
+            filterBinding.rgSort.clearCheck();
             filterBinding.rangePrice.setValues(0f, 1000000f);
             filterBinding.txtPrice.setText("0đ - 1,000,000đ");
-            filterBinding.cgCategories.clearCheck();
+            selectedSort = "";
+            selectedMinPrice = 0;
+            selectedMaxPrice = 1000000;
+            selectedCategoryId = "";
+            selectedSubcategoryId = "";
+            selectedBrand = "";
+            filterBinding.cgCategories.removeAllViews();
             filterBinding.cgSubcategories.removeAllViews();
+            populateCategories(filterBinding);
+            populateBrands(filterBinding, "", "");
         });
 
         dialog.show();
     }
 
-    private void updateSubcategories(PopupFilterBinding filterBinding, AssetModels.Category category) {
+    private void populateCategories(PopupFilterBinding filterBinding) {
+        filterBinding.cgCategories.removeAllViews();
+
+        com.google.android.material.chip.Chip allCategoryChip = createFilterChip(
+                filterBinding.cgCategories, "Tất cả", "");
+        if (selectedCategoryId == null || selectedCategoryId.isEmpty()) {
+            allCategoryChip.setChecked(true);
+        }
+        allCategoryChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                updateSubcategories(filterBinding, null, "");
+                populateBrands(filterBinding, "", "");
+            }
+        });
+
+        for (AssetModels.Category category : allCategories) {
+            if (category.categoryId == null || category.categoryId.trim().isEmpty()) {
+                continue;
+            }
+            com.google.android.material.chip.Chip chip = createFilterChip(
+                    filterBinding.cgCategories, category.categoryName, category.categoryId);
+            if (category.categoryId.equals(selectedCategoryId)) {
+                chip.setChecked(true);
+            }
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    updateSubcategories(filterBinding, category, "");
+                    populateBrands(filterBinding, category.categoryId, "");
+                }
+            });
+        }
+
+        if (selectedCategoryId != null && !selectedCategoryId.isEmpty()) {
+            for (AssetModels.Category cat : allCategories) {
+                if (selectedCategoryId.equals(cat.categoryId)) {
+                    updateSubcategories(filterBinding, cat, selectedSubcategoryId);
+                    break;
+                }
+            }
+        } else {
+            updateSubcategories(filterBinding, null, selectedSubcategoryId);
+        }
+    }
+
+    private com.google.android.material.chip.Chip createFilterChip(
+            com.google.android.material.chip.ChipGroup group, String label, String tag) {
+        com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip)
+                getLayoutInflater().inflate(R.layout.item_filter_chip, group, false);
+        chip.setText(label);
+        chip.setTag(tag);
+        group.addView(chip);
+        return chip;
+    }
+
+    private String getSelectedCategoryId(PopupFilterBinding filterBinding) {
+        int checkedId = filterBinding.cgCategories.getCheckedChipId();
+        if (checkedId == View.NO_ID) return "";
+        com.google.android.material.chip.Chip chip = filterBinding.getRoot().findViewById(checkedId);
+        return chip != null && chip.getTag() != null ? (String) chip.getTag() : "";
+    }
+
+    private String getSelectedSubcategoryId(PopupFilterBinding filterBinding) {
+        int checkedId = filterBinding.cgSubcategories.getCheckedChipId();
+        if (checkedId == View.NO_ID) return "";
+        com.google.android.material.chip.Chip chip = filterBinding.getRoot().findViewById(checkedId);
+        return chip != null && chip.getTag() != null ? (String) chip.getTag() : "";
+    }
+
+    private void updateSubcategories(
+            PopupFilterBinding filterBinding,
+            @Nullable AssetModels.Category category,
+            @Nullable String activeSubcategoryId) {
         filterBinding.cgSubcategories.removeAllViews();
-        
-        // Add "All" option
-        com.google.android.material.chip.Chip allChip = (com.google.android.material.chip.Chip) getLayoutInflater().inflate(com.veggo.app.R.layout.item_filter_chip, filterBinding.cgSubcategories, false);
-        allChip.setText("Tất cả");
-        allChip.setTag("");
-        if (selectedSubcategoryId.isEmpty()) {
+        String subcategoryId = activeSubcategoryId != null ? activeSubcategoryId : selectedSubcategoryId;
+
+        com.google.android.material.chip.Chip allChip = createFilterChip(
+                filterBinding.cgSubcategories, "Tất cả", "");
+        if (subcategoryId == null || subcategoryId.isEmpty()) {
             allChip.setChecked(true);
         }
-        filterBinding.cgSubcategories.addView(allChip);
+        allChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                populateBrands(filterBinding, getSelectedCategoryId(filterBinding), "");
+            }
+        });
 
-        if (category.subcategories != null) {
-            for (AssetModels.Subcategory sub : category.subcategories) {
-                com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) getLayoutInflater().inflate(com.veggo.app.R.layout.item_filter_chip, filterBinding.cgSubcategories, false);
-                chip.setText(sub.subcategoryName);
-                chip.setTag(sub.subcategoryId);
-                if (sub.subcategoryId.equals(selectedSubcategoryId)) {
-                    chip.setChecked(true);
+        if (category == null || category.subcategories == null) {
+            return;
+        }
+
+        for (AssetModels.Subcategory sub : category.subcategories) {
+            if (sub.subcategoryId == null || sub.subcategoryId.trim().isEmpty()) {
+                continue;
+            }
+            com.google.android.material.chip.Chip chip = createFilterChip(
+                    filterBinding.cgSubcategories, sub.subcategoryName, sub.subcategoryId);
+            if (sub.subcategoryId.equals(subcategoryId)) {
+                chip.setChecked(true);
+            }
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    populateBrands(
+                            filterBinding,
+                            getSelectedCategoryId(filterBinding),
+                            sub.subcategoryId
+                    );
                 }
-                filterBinding.cgSubcategories.addView(chip);
+            });
+        }
+    }
+
+    private void populateBrands(PopupFilterBinding filterBinding, String categoryId, String subcategoryId) {
+        filterBinding.cgBrands.removeAllViews();
+
+        com.google.android.material.chip.Chip allChip = createFilterChip(
+                filterBinding.cgBrands, "Tất cả", "");
+
+        Set<String> brands = new LinkedHashSet<>();
+        for (Product product : getProductsForBrandFilter(categoryId, subcategoryId)) {
+            String brand = resolveBrandLabel(product);
+            if (brand != null) {
+                brands.add(brand);
             }
         }
+
+        List<String> sortedBrands = new ArrayList<>(brands);
+        Collections.sort(sortedBrands, String.CASE_INSENSITIVE_ORDER);
+
+        boolean hasSelectedBrand = false;
+        if (!selectedBrand.isEmpty()) {
+            for (String brand : sortedBrands) {
+                if (brand.equalsIgnoreCase(selectedBrand)) {
+                    hasSelectedBrand = true;
+                    break;
+                }
+            }
+        }
+        if (!hasSelectedBrand) {
+            selectedBrand = "";
+        }
+        if (selectedBrand.isEmpty()) {
+            allChip.setChecked(true);
+        }
+
+        for (String brand : sortedBrands) {
+            com.google.android.material.chip.Chip chip = createFilterChip(
+                    filterBinding.cgBrands, brand, brand);
+            if (brand.equalsIgnoreCase(selectedBrand)) {
+                chip.setChecked(true);
+            }
+        }
+    }
+
+    private List<Product> getProductsForBrandFilter(String categoryId, String subcategoryId) {
+        List<Product> source = resolveBrandSourceProducts(categoryId, subcategoryId);
+        if (source.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        if ((categoryId == null || categoryId.isEmpty())
+                && (subcategoryId == null || subcategoryId.isEmpty())) {
+            return source;
+        }
+
+        List<Product> filtered = new ArrayList<>();
+        for (Product product : source) {
+            if (product == null) continue;
+            if (categoryId != null && !categoryId.isEmpty()) {
+                String productCategoryId = product.getCategoryId();
+                if (productCategoryId == null || !categoryId.equals(productCategoryId)) {
+                    continue;
+                }
+            }
+            if (subcategoryId != null && !subcategoryId.isEmpty()) {
+                String productSubcategoryId = product.getSubcategoryId();
+                if (productSubcategoryId == null || !subcategoryId.equals(productSubcategoryId)) {
+                    continue;
+                }
+            }
+            filtered.add(product);
+        }
+        return filtered;
+    }
+
+    private List<Product> resolveBrandSourceProducts(String categoryId, String subcategoryId) {
+        if (!catalogProducts.isEmpty()) {
+            return catalogProducts;
+        }
+
+        if (subcategoryId != null && !subcategoryId.isEmpty()) {
+            List<Product> subcategoryProducts = productRepository
+                    .observeProductsBySubcategory(subcategoryId)
+                    .getValue();
+            if (subcategoryProducts != null && !subcategoryProducts.isEmpty()) {
+                return subcategoryProducts;
+            }
+        }
+
+        if (categoryId != null && !categoryId.isEmpty()) {
+            List<Product> categoryProducts = productRepository
+                    .observeProductsByCategory(categoryId)
+                    .getValue();
+            if (categoryProducts != null && !categoryProducts.isEmpty()) {
+                return categoryProducts;
+            }
+        }
+
+        return currentProducts != null ? currentProducts : Collections.emptyList();
+    }
+
+    private String resolveBrandLabel(Product product) {
+        if (product.getBrand() != null && !product.getBrand().trim().isEmpty()) {
+            return product.getBrand().trim();
+        }
+        if (product.getProducer() != null && !product.getProducer().trim().isEmpty()) {
+            return product.getProducer().trim();
+        }
+        return null;
+    }
+
+    private void setupAllCategoryTabs() {
+        isBuildingTabs = true;
+        binding.tabSubcategories.removeAllTabs();
+        binding.tabSubcategories.addTab(binding.tabSubcategories.newTab().setText("Tất cả").setTag(""));
+        selectedSubcategoryId = "";
+        isBuildingTabs = false;
     }
 
     private void observeData() {
@@ -357,7 +612,16 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private void loadProducts() {
-        if (selectedCategoryId == null || selectedCategoryId.isEmpty()) return;
+        if (selectedCategoryId == null || selectedCategoryId.isEmpty()) {
+            productRepository.observeProducts().removeObservers(getViewLifecycleOwner());
+            productRepository.observeProducts().observe(getViewLifecycleOwner(), products -> {
+                if (products != null) {
+                    currentProducts = products;
+                    applyFiltersAndSort();
+                }
+            });
+            return;
+        }
 
         if (selectedSubcategoryId == null || selectedSubcategoryId.isEmpty()) {
             // Observe products by Category
@@ -391,8 +655,10 @@ public class CategoryDetailFragment extends Fragment {
         for (Product product : currentProducts) {
             boolean matchesSearch = query.isEmpty() || product.getName().toLowerCase().contains(query);
             boolean matchesPrice = product.getPrice() >= selectedMinPrice && product.getPrice() <= selectedMaxPrice;
+            boolean matchesBrand = selectedBrand.isEmpty()
+                    || selectedBrand.equalsIgnoreCase(resolveBrandLabel(product));
 
-            if (matchesSearch && matchesPrice && !tasteStore.shouldHide(product)) {
+            if (matchesSearch && matchesPrice && matchesBrand && !tasteStore.shouldHide(product)) {
                 if ("discount".equals(selectedSort)) {
                     if (product.hasActiveDiscount()) {
                         filtered.add(product);

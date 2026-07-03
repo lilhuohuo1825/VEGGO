@@ -2,6 +2,7 @@ package com.veggo.app.presentation.community;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,8 +84,8 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         commentsContainer = findViewById(R.id.recipeCommentsContainer);
         findViewById(R.id.recipeBackButton).setOnClickListener(v -> finish());
 
-        instructionId = getIntent().getStringExtra(EXTRA_INSTRUCTION_ID);
-        recipeId = getIntent().getStringExtra(EXTRA_RECIPE_ID);
+        instructionId = normalizeId(getIntent().getStringExtra(EXTRA_INSTRUCTION_ID));
+        recipeId = normalizeId(getIntent().getStringExtra(EXTRA_RECIPE_ID));
 
         findViewById(R.id.recipeShopButton).setOnClickListener(v -> openIngredients());
         editButton = findViewById(R.id.recipeEditButton);
@@ -98,11 +99,41 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         findViewById(R.id.recipeShareButton).setOnClickListener(v -> shareRecipe());
         findViewById(R.id.recipeCommentSend).setOnClickListener(v -> submitComment());
 
-        if (instructionId != null && !instructionId.isEmpty()) {
+        if (!isBlank(instructionId)) {
             loadRemoteRecipeDetail(instructionId);
-        } else {
-            repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> bindDetail(data)));
+            return;
+        }
+
+        if (!isBlank(recipeId)) {
+            repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> {
+                if (!isActivityAlive()) {
+                    return;
+                }
+                bindDetail(data);
+            }));
             loadFavoriteState();
+            return;
+        }
+
+        showRecipeLoadError();
+    }
+
+    private String normalizeId(String raw) {
+        return raw == null ? "" : raw.trim();
+    }
+
+    private boolean isActivityAlive() {
+        if (isFinishing()) {
+            return false;
+        }
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1 || !isDestroyed();
+    }
+
+    private void showRecipeLoadError() {
+        Toast.makeText(this, R.string.recipe_detail_load_error, Toast.LENGTH_LONG).show();
+        TextView titleView = findViewById(R.id.recipeTitle);
+        if (titleView != null) {
+            titleView.setText(R.string.recipe_detail_load_error);
         }
     }
 
@@ -110,50 +141,91 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         recipeRepository.getRecipeDetail(id, new RecipeRepository.Callback<RecipeDetailDto>() {
             @Override
             public void onSuccess(RecipeDetailDto result) {
-                runOnUiThread(() -> bindRemoteDetail(result));
+                runOnUiThread(() -> {
+                    if (!isActivityAlive()) {
+                        return;
+                    }
+                    if (result == null || result.getInstruction() == null) {
+                        showRecipeLoadError();
+                        return;
+                    }
+                    bindRemoteDetail(result);
+                });
             }
 
             @Override
             public void onError(Throwable t) {
-                runOnUiThread(InstructionRecipeDetailActivity.this::finish);
+                runOnUiThread(() -> {
+                    if (!isActivityAlive()) {
+                        return;
+                    }
+                    showRecipeLoadError();
+                });
             }
         });
     }
 
     private void bindRemoteDetail(RecipeDetailDto data) {
+        if (!isActivityAlive()) {
+            return;
+        }
         if (data == null || data.getInstruction() == null) {
-            finish();
+            showRecipeLoadError();
             return;
         }
 
-        RecipeDetailDto.InstructionSummaryDto instruction = data.getInstruction();
-        videoUrl = instruction.getVideo();
-        currentFavoriteId = isBlank(instructionId) ? recipeId : instructionId;
-        currentRecipeTitle = instruction.getTitle();
-        currentRecipeImage = instruction.getImage();
-        currentRecipeSubtitle = recipeFavoriteSubtitle(
-                instruction.getCookingTime(),
-                countRemoteIngredients(data.getDishes()));
+        try {
+            RecipeDetailDto.InstructionSummaryDto instruction = data.getInstruction();
+            videoUrl = instruction.getVideo();
+            currentFavoriteId = isBlank(instructionId) ? recipeId : instructionId;
+            currentRecipeTitle = instruction.getTitle();
+            currentRecipeImage = instruction.getImage();
+            currentRecipeSubtitle = recipeFavoriteSubtitle(
+                    instruction.getCookingTime(),
+                    countRemoteIngredients(data.getDishes()));
 
-        ((TextView) findViewById(R.id.recipeTitle)).setText(instruction.getTitle());
-        String meta = buildMeta(instruction.getCookingTime(), data.getDishes());
-        ((TextView) findViewById(R.id.recipeMeta)).setText(meta);
+            TextView titleView = findViewById(R.id.recipeTitle);
+            if (titleView != null) {
+                titleView.setText(instruction.getTitle());
+            }
+            TextView metaView = findViewById(R.id.recipeMeta);
+            if (metaView != null) {
+                metaView.setText(buildMeta(instruction.getCookingTime(), data.getDishes()));
+            }
 
-        findViewById(R.id.recipeAuthorRow).setVisibility(View.GONE);
-        hideRemoteOnlyChrome();
-        Glide.with(this)
-                .load(instruction.getImage())
-                .transform(new CenterCrop(), new RoundedCorners(dp(10)))
-                .into((ImageView) findViewById(R.id.recipeHeroImage));
-        findViewById(R.id.recipePlay).setOnClickListener(v -> openVideo());
+            View authorRow = findViewById(R.id.recipeAuthorRow);
+            if (authorRow != null) {
+                authorRow.setVisibility(View.GONE);
+            }
+            hideRemoteOnlyChrome();
 
-        bindRemoteDescription(data);
-        bindRemoteIngredients(data.getDishes());
-        bindRemoteInstructions(data.getDishes(), instruction.getDescription());
-        bindRemoteUsage(data.getDishes());
-        galleryRow.removeAllViews();
-        commentsContainer.removeAllViews();
-        loadFavoriteState();
+            ImageView heroImage = findViewById(R.id.recipeHeroImage);
+            if (heroImage != null && !isBlank(instruction.getImage())) {
+                Glide.with(this)
+                        .load(instruction.getImage())
+                        .transform(new CenterCrop(), new RoundedCorners(dp(10)))
+                        .into(heroImage);
+            }
+
+            View playButton = findViewById(R.id.recipePlay);
+            if (playButton != null) {
+                playButton.setOnClickListener(v -> openVideo());
+            }
+
+            bindRemoteDescription(data);
+            bindRemoteIngredients(data.getDishes());
+            bindRemoteInstructions(data.getDishes(), instruction.getDescription());
+            bindRemoteUsage(data.getDishes());
+            if (galleryRow != null) {
+                galleryRow.removeAllViews();
+            }
+            if (commentsContainer != null) {
+                commentsContainer.removeAllViews();
+            }
+            loadFavoriteState();
+        } catch (Exception error) {
+            showRecipeLoadError();
+        }
     }
 
     private void hideRemoteOnlyChrome() {
@@ -239,13 +311,18 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
     }
 
     private void bindRemoteIngredients(List<RecipeDetailDto.DishDetailDto> dishes) {
+        if (ingredientsGrid == null) {
+            return;
+        }
         ingredientsGrid.removeAllViews();
         if (dishes == null) {
             return;
         }
         LayoutInflater inflater = LayoutInflater.from(this);
         for (RecipeDetailDto.DishDetailDto dish : dishes) {
-            if (dish.getIngredients() == null) continue;
+            if (dish == null || dish.getIngredients() == null) {
+                continue;
+            }
             for (String ingredient : dish.getIngredients()) {
                 addIngredientChecklistItem(inflater, ingredient);
             }
@@ -270,13 +347,18 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
     }
 
     private void bindRemoteInstructions(List<RecipeDetailDto.DishDetailDto> dishes, String description) {
+        if (instructionsContainer == null) {
+            return;
+        }
         instructionsContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
         int stepIndex = 1;
 
         if (dishes != null) {
             for (RecipeDetailDto.DishDetailDto dish : dishes) {
-                if (isBlank(dish.getSteps())) continue;
+                if (dish == null || isBlank(dish.getSteps())) {
+                    continue;
+                }
                 String[] steps = dish.getSteps().split("\\n");
                 for (String step : steps) {
                     if (isBlank(step)) continue;

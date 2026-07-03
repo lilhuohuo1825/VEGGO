@@ -46,12 +46,13 @@ public class Product {
     private final String fatContent;
     private final String categoryId;
     private final String subcategoryId;
+    private final String brand;
     private final double carbonSavingPoint;
 
     public Product(String id, String name, long price, String imageUrl) {
         this(id, name, null, price, 0, imageUrl, null, null, 0, 0, 0,
                 null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, 0.0);
+                null, null, null, null, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
@@ -59,7 +60,7 @@ public class Product {
                    String description, String origin, String condition, String fatContent) {
         this(id, name, sku, price, originalPrice, imageUrl, null, weight, rating, reviewCount, soldCount,
                 description, null, null, null, null, null, null, null, null,
-                origin, condition, fatContent, null, null, 0.0);
+                origin, condition, fatContent, null, null, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl, 
@@ -69,7 +70,7 @@ public class Product {
                    String categoryId, String subcategoryId) {
         this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount,
                 description, null, null, null, null, null, null, null, null,
-                origin, condition, fatContent, categoryId, subcategoryId, 0.0);
+                origin, condition, fatContent, categoryId, subcategoryId, null, 0.0);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl,
@@ -79,7 +80,7 @@ public class Product {
                    String categoryId, String subcategoryId, double carbonSavingPoint) {
         this(id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount,
                 description, null, null, null, null, null, null, null, null,
-                origin, condition, fatContent, categoryId, subcategoryId, carbonSavingPoint);
+                origin, condition, fatContent, categoryId, subcategoryId, null, carbonSavingPoint);
     }
 
     public Product(String id, String name, String sku, long price, long originalPrice, String imageUrl,
@@ -89,7 +90,7 @@ public class Product {
                    String producer, String responsibleOrg, String safetyWarning,
                    String manufactureDate, String expiryDate,
                    String origin, String condition, String fatContent,
-                   String categoryId, String subcategoryId, double carbonSavingPoint) {
+                   String categoryId, String subcategoryId, String brand, double carbonSavingPoint) {
         this.id = id;
         this.name = name;
         this.sku = sku;
@@ -116,6 +117,7 @@ public class Product {
         this.fatContent = fatContent;
         this.categoryId = categoryId;
         this.subcategoryId = subcategoryId;
+        this.brand = brand;
         this.carbonSavingPoint = carbonSavingPoint;
     }
 
@@ -154,5 +156,6 @@ public class Product {
     public String getFatContent() { return fatContent; }
     public String getCategoryId() { return categoryId; }
     public String getSubcategoryId() { return subcategoryId; }
+    public String getBrand() { return brand; }
     public double getCarbonSavingPoint() { return carbonSavingPoint; }
 }

@@ -36,7 +36,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         return Transformations.map(assetRecordDao.observeByCollection(AssetFiles.COLLECTION_CATEGORIES), records -> {
             List<AssetModels.Category> categories = new ArrayList<>();
             for (AssetRecordEntity record : records) {
-                categories.add(gson.fromJson(record.getJson(), AssetModels.Category.class));
+                AssetModels.Category category = gson.fromJson(record.getJson(), AssetModels.Category.class);
+                if (category != null
+                        && category.categoryId != null
+                        && !category.categoryId.trim().isEmpty()) {
+                    categories.add(category);
+                }
             }
             return categories;
         });
@@ -47,18 +52,29 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         executor.execute(() -> {
             try {
                 Response<List<CategoryDto>> response = categoryApi.getCategories().execute();
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     List<AssetRecordEntity> entities = new ArrayList<>();
                     for (CategoryDto dto : response.body()) {
+                        String documentId = dto.getCategoryID();
+                        if (documentId == null || documentId.trim().isEmpty()) {
+                            if (dto.getId() != null && dto.getId().getOid() != null) {
+                                documentId = dto.getId().getOid();
+                            } else {
+                                continue;
+                            }
+                        }
+
                         AssetRecordEntity entity = new AssetRecordEntity(
                                 AssetFiles.COLLECTION_CATEGORIES,
-                                dto.getCategoryID(),
+                                documentId,
                                 gson.toJson(dto),
                                 System.currentTimeMillis()
                         );
                         entities.add(entity);
                     }
-                    assetRecordDao.insertAll(entities);
+                    if (!entities.isEmpty()) {
+                        assetRecordDao.insertAll(entities);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

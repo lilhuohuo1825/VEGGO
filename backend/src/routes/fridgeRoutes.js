@@ -5,6 +5,7 @@ const FridgeItem = require('../models/FridgeItem');
 const FridgeLocation = require('../models/FridgeLocation');
 const Product = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
+const { AI_CONFIG } = require('../config/aiConfig');
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -51,7 +52,7 @@ Lưu ý:
       for (let i = 0; i < retries; i++) {
         try {
           return await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: AI_CONFIG.model,
             contents: [
               prompt,
               {

@@ -12,7 +12,10 @@ public class VeggoApplication extends Application {
         super.onCreate();
         FirebaseApp.initializeApp(this);
 
-        // Seed xong trước khi auth/profile thao tác để tránh bị tiến trình nền ghi đè.
+        // Seed xong trước khi auth/profile thao tác; mở DB trước để migration chạy,
+        // rồi seed lại nếu destructive migration vừa reset cờ seeded.
+        AssetDatabaseSeeder.seedIfNeededBlocking(this);
+        com.veggo.app.core.database.VeggoDatabase.getInstance(this);
         AssetDatabaseSeeder.seedIfNeededBlocking(this);
 
         com.veggo.app.core.network.FirebaseSyncManager.getInstance(this).syncProducts();
