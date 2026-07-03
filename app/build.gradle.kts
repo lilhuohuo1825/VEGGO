@@ -88,8 +88,9 @@ dependencies {
 
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
 
-    // Thư viện hỗ trợ Đăng nhập bằng tài khoản Google
+    // Google & Facebook Login
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.facebook.android:facebook-login:17.0.0")
 
     // Thư viện Room Database để chạy SQLite
     implementation("androidx.room:room-runtime:2.6.1")

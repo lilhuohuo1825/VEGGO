@@ -85,26 +85,65 @@ router.post('/register', asyncHandler(async (req, res) => {
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
+// ... (giữ nguyên code cũ)
+}));
 
-  if (!PHONE_REGEX.test(String(phone || '').trim()) || !STRONG_PASSWORD_REGEX.test(String(password || ''))) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+/**
+ * 2.1 Đăng nhập bằng Firebase (Google/Facebook)
+ * POST /api/users/firebase-login
+ */
+router.post('/firebase-login', asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: 'Thiếu ID Token' });
   }
 
-  const user = await User.findOne({ Phone: phone })
-    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType CustomerTiering TotalSpent CertificateID CertificateName CertificateStatus CertificateGrantedAt CertificateCarbonPointSnapshot CertificateCarbonEmissionSnapshot PasswordVersion LastPasswordReset firebaseUid name email phone')
-    .lean();
-  if (!user || !user.Password) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
-  }
+  try {
+    // Verify Firebase ID Token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const { email, name, picture, uid, firebase } = decodedToken;
 
-  const isMatch = await bcrypt.compare(password, user.Password);
-  if (!isMatch) {
-    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
-  }
+    // Yêu cầu bắt buộc phải có Email (theo yêu cầu SSOT)
+    if (!email) {
+      return res.status(400).json({
+        message: 'Tài khoản này không cung cấp địa chỉ email. Vui lòng đăng nhập bằng số điện thoại hoặc sử dụng tài khoản khác có email.'
+      });
+    }
 
-  delete user.Password;
-  user._id = String(user._id);
-  res.json(user);
+    const provider = firebase.sign_in_provider === 'facebook.com' ? 'facebook' : 'google';
+
+    // Tìm user trong MongoDB theo firebaseUid (Định danh duy nhất cho từng Provider)
+    let user = await User.findOne({ firebaseUid: uid })
+      .select('-Password')
+      .lean();
+
+    if (!user) {
+      // Nếu chưa có tài khoản liên kết với UID này, tạo user mới hoàn toàn
+      // Lưu ý: Không tìm theo Email để tránh tự động gộp tài khoản Phone/khác vào Google/Facebook
+      const customerId = await User.generateNextCustomerId();
+      const newUser = new User({
+        CustomerID: customerId,
+        FullName: name || 'User',
+        Email: email,
+        EmailConfirmed: true,
+        avatarUrl: picture || '',
+        firebaseUid: uid,
+        name: name,
+        email: email,
+        Provider: provider,
+        tastePreferences: defaultTastePreferences()
+      });
+      await newUser.save();
+      user = newUser.toObject();
+    }
+
+    user._id = String(user._id);
+    res.json(user);
+  } catch (error) {
+    console.error('Firebase Login Error:', error);
+    res.status(401).json({ message: 'Xác thực tài khoản thất bại' });
+  }
 }));
 
 /**

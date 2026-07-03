@@ -9,4 +9,5 @@ public interface AuthRepository {
     void register(String phone, String password, String fullName, String email, Callback<UserDto> callback);
     void forgotPassword(String phone, Callback<Map<String, String>> callback);
     void resetPassword(String phone, String otp, String newPassword, Callback<Map<String, String>> callback);
+    void firebaseLogin(String idToken, Callback<UserDto> callback);
 }

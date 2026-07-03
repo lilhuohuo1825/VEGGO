@@ -16,6 +16,7 @@ public interface PromotionApi {
     @GET("promotions")
     Call<List<PromotionDto>> getPromotions(
             @retrofit2.http.Query("customerId") String customerId,
+            @retrofit2.http.Query("code") String code,
             @retrofit2.http.Query("surface") String surface
     );
 

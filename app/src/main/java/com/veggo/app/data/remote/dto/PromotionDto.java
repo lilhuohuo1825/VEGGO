@@ -4,7 +4,8 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.Map;
 
-public class PromotionDto {
+public class PromotionDto implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     @SerializedName("_id")
     private Object id;
 
@@ -125,7 +126,8 @@ public class PromotionDto {
     public String getPromotionKind() { return promotionKind; }
 
 
-    public static class BannerDataDto {
+    public static class BannerDataDto implements java.io.Serializable {
+        private static final long serialVersionUID = 1L;
         private String imageUrl;
         private String src;
         private Boolean showOnApp;

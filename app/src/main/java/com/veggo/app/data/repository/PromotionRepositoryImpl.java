@@ -33,7 +33,7 @@ public class PromotionRepositoryImpl implements PromotionRepository {
 
     @Override
     public void refreshBanners() {
-        promotionApi.getPromotions(null, "home").enqueue(new Callback<List<PromotionDto>>() {
+        promotionApi.getPromotions(null, null, "home").enqueue(new Callback<List<PromotionDto>>() {
             @Override
             public void onResponse(@NonNull Call<List<PromotionDto>> call, @NonNull Response<List<PromotionDto>> response) {
                 if (!response.isSuccessful() || response.body() == null) {

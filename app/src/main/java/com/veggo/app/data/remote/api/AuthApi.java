@@ -1,6 +1,7 @@
 package com.veggo.app.data.remote.api;
 
 import com.veggo.app.data.remote.dto.UserDto;
+import com.veggo.app.data.remote.request.FirebaseLoginRequest;
 import com.veggo.app.data.remote.request.ForgotPasswordRequest;
 import com.veggo.app.data.remote.request.LoginRequest;
 import com.veggo.app.data.remote.request.RegisterRequest;
@@ -27,4 +28,7 @@ public interface AuthApi {
 
     @POST("users/sync")
     Call<UserDto> syncFirebaseUser(@Body UserDto user);
+
+    @POST("users/firebase-login")
+    Call<UserDto> firebaseLogin(@Body FirebaseLoginRequest request);
 }

@@ -168,7 +168,7 @@ public class CarbonPointsActivity extends BaseActivity {
         }
         if (status != null) status.setText("Đang tải");
         PromotionApi promotionApi = AppModule.providePromotionApi();
-        promotionApi.getPromotions(customerId, "carbon").enqueue(new Callback<List<PromotionDto>>() {
+        promotionApi.getPromotions(customerId, null, "carbon").enqueue(new Callback<List<PromotionDto>>() {
             @Override
             public void onResponse(Call<List<PromotionDto>> call, Response<List<PromotionDto>> response) {
                 bindPromotionOffers(response.isSuccessful() ? response.body() : null);
