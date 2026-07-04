@@ -45,4 +45,9 @@ public class AuthRepositoryImpl implements AuthRepository {
     public void firebaseLogin(String idToken, Callback<UserDto> callback) {
         authApi.firebaseLogin(new FirebaseLoginRequest(idToken)).enqueue(callback);
     }
+
+    @Override
+    public void firebaseLogin(String idToken, String avatarUrl, Callback<UserDto> callback) {
+        authApi.firebaseLogin(new FirebaseLoginRequest(idToken, avatarUrl)).enqueue(callback);
+    }
 }

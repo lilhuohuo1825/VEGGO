@@ -67,8 +67,12 @@ public class AuthViewModel extends ViewModel {
     }
 
     public void facebookLogin(String idToken) {
+        facebookLogin(idToken, null);
+    }
+
+    public void facebookLogin(String idToken, String avatarUrl) {
         _loading.setValue(true);
-        facebookLoginUseCase.execute(idToken, new Callback<UserDto>() {
+        facebookLoginUseCase.execute(idToken, avatarUrl, new Callback<UserDto>() {
             @Override
             public void onResponse(Call<UserDto> call, Response<UserDto> response) {
                 _loading.setValue(false);

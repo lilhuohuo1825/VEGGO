@@ -31,8 +31,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.SignInMethodQueryResult;
+import java.util.List;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -54,6 +57,37 @@ public class LoginActivity extends BaseActivity {
     private GoogleSignInClient mGoogleSignInClient;
     private CallbackManager mCallbackManager;
     private FirebaseAuth mAuth;
+    private AuthCredential pendingFacebookCredential;
+
+    private final ActivityResultLauncher<Intent> linkGoogleLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Task<GoogleSignInAccount> googleTask = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    try {
+                        GoogleSignInAccount account = googleTask.getResult(ApiException.class);
+                        AuthCredential googleCred = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+                        mAuth.signInWithCredential(googleCred).addOnCompleteListener(signInTask -> {
+                            if (signInTask.isSuccessful()) {
+                                FirebaseUser user = mAuth.getCurrentUser();
+                                if (user != null && pendingFacebookCredential != null) {
+                                    user.linkWithCredential(pendingFacebookCredential).addOnCompleteListener(linkTask -> {
+                                        user.getIdToken(true).addOnCompleteListener(tokenTask -> {
+                                            if (tokenTask.isSuccessful()) {
+                                                authViewModel.facebookLogin(tokenTask.getResult().getToken(), null);
+                                            }
+                                        });
+                                        pendingFacebookCredential = null;
+                                    });
+                                }
+                            }
+                        });
+                    } catch (ApiException e) {
+                        android.util.Log.e("VEGGO_AUTH", "Link Google failed", e);
+                    }
+                }
+            }
+    );
 
     private final ActivityResultLauncher<Intent> googleSignInLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -225,31 +259,94 @@ public class LoginActivity extends BaseActivity {
     }
 
     private void signInWithFacebook() {
+        // Đăng xuất Facebook và Firebase hiện tại để buộc hiển thị màn hình chọn tài khoản
+        LoginManager.getInstance().logOut();
+        mAuth.signOut();
         LoginManager.getInstance().logInWithReadPermissions(this, mCallbackManager, java.util.Arrays.asList("email", "public_profile"));
     }
 
     private void handleFacebookAccessToken(AccessToken token) {
-        android.util.Log.d("VEGGO_AUTH", "handleFacebookAccessToken:" + token);
+        android.util.Log.d("VEGGO_AUTH", "handleFacebookAccessToken started");
         AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        android.util.Log.d("VEGGO_AUTH", "Facebook Auth Success");
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
-                            user.getIdToken(true).addOnCompleteListener(tokenTask -> {
-                                if (tokenTask.isSuccessful()) {
-                                    String firebaseIdToken = tokenTask.getResult().getToken();
-                                    authViewModel.facebookLogin(firebaseIdToken);
-                                } else {
-                                    Toast.makeText(this, "Failed to get Firebase ID Token", Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                            fetchFacebookProfilePicture(token, user);
                         }
                     } else {
-                        android.util.Log.e("VEGGO_AUTH", "Firebase auth with Facebook failed", task.getException());
-                        Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                        Exception exception = task.getException();
+                        android.util.Log.e("VEGGO_AUTH", "Facebook Auth Failed", exception);
+                        if (exception instanceof FirebaseAuthUserCollisionException) {
+                            String email = ((FirebaseAuthUserCollisionException) exception).getEmail();
+                            android.util.Log.d("VEGGO_AUTH", "Collision detected for email: " + email);
+                            handleSignInCollision(email, credential);
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Xác thực thất bại: " + (exception != null ? exception.getMessage() : ""), Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
+    }
+
+    private void handleSignInCollision(String email, AuthCredential pendingCredential) {
+        // Hiển thị thông báo ngay lập tức khi phát hiện trùng email
+        Toast.makeText(this, "Email đã đăng ký bằng Google. Vui lòng xác nhận tài khoản Google để tiếp tục.", Toast.LENGTH_LONG).show();
+        
+        this.pendingFacebookCredential = pendingCredential;
+        
+        if (email != null) {
+            mAuth.fetchSignInMethodsForEmail(email).addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    List<String> methods = task.getResult().getSignInMethods();
+                    android.util.Log.d("VEGGO_AUTH", "SignIn Methods: " + methods);
+                }
+                // Dù lấy được methods hay không, vẫn cho tiến hành link để không bị kẹt
+                linkWithGoogle();
+            });
+        } else {
+            android.util.Log.e("VEGGO_AUTH", "Email is null, trying to link anyway");
+            linkWithGoogle();
+        }
+    }
+
+    private void linkWithGoogle() {
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+            linkGoogleLauncher.launch(mGoogleSignInClient.getSignInIntent());
+        });
+    }
+
+    private void fetchFacebookProfilePicture(AccessToken token, FirebaseUser firebaseUser) {
+        com.facebook.GraphRequest request = com.facebook.GraphRequest.newMeRequest(
+                token,
+                (object, response) -> {
+                    String avatarUrl = null;
+                    try {
+                        if (object != null && object.has("picture")) {
+                            avatarUrl = object.getJSONObject("picture")
+                                    .getJSONObject("data")
+                                    .getString("url");
+                        }
+                    } catch (Exception e) {
+                        android.util.Log.e("VEGGO_AUTH", "Error parsing Facebook profile picture", e);
+                    }
+                    
+                    final String finalAvatarUrl = avatarUrl;
+                    firebaseUser.getIdToken(true).addOnCompleteListener(tokenTask -> {
+                        if (tokenTask.isSuccessful()) {
+                            String firebaseIdToken = tokenTask.getResult().getToken();
+                            authViewModel.facebookLogin(firebaseIdToken, finalAvatarUrl);
+                        } else {
+                            Toast.makeText(this, "Failed to get Firebase ID Token", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                });
+
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "picture.type(large)");
+        request.setParameters(parameters);
+        request.executeAsync();
     }
 
     @Override
