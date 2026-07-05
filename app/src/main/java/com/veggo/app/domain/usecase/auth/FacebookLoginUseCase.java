@@ -14,4 +14,8 @@ public class FacebookLoginUseCase {
     public void execute(String idToken, Callback<UserDto> callback) {
         repository.firebaseLogin(idToken, callback);
     }
+
+    public void execute(String idToken, String avatarUrl, Callback<UserDto> callback) {
+        repository.firebaseLogin(idToken, avatarUrl, callback);
+    }
 }

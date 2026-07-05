@@ -85,7 +85,7 @@ router.post('/register', asyncHandler(async (req, res) => {
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
-// ... (giữ nguyên code cũ)
+  // ... (giữ nguyên code cũ)
 }));
 
 /**
@@ -93,7 +93,7 @@ router.post('/login', asyncHandler(async (req, res) => {
  * POST /api/users/firebase-login
  */
 router.post('/firebase-login', asyncHandler(async (req, res) => {
-  const { idToken } = req.body;
+  const { idToken, avatarUrl } = req.body;
 
   if (!idToken) {
     return res.status(400).json({ message: 'Thiếu ID Token' });
@@ -102,7 +102,17 @@ router.post('/firebase-login', asyncHandler(async (req, res) => {
   try {
     // Verify Firebase ID Token
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { email, name, picture, uid, firebase } = decodedToken;
+    const { uid, firebase } = decodedToken;
+
+    // Fetch full user record from Firebase to get details reliably
+    const userRecord = await admin.auth().getUser(uid);
+
+    const email = decodedToken.email || userRecord.email;
+    const name = decodedToken.name || userRecord.displayName;
+
+    // Prioritize avatarUrl from request body (fetched via Graph API on Android)
+    // then fallback to picture from token or userRecord
+    const picture = avatarUrl || decodedToken.picture || userRecord.photoURL;
 
     // Yêu cầu bắt buộc phải có Email (theo yêu cầu SSOT)
     if (!email) {
@@ -113,16 +123,13 @@ router.post('/firebase-login', asyncHandler(async (req, res) => {
 
     const provider = firebase.sign_in_provider === 'facebook.com' ? 'facebook' : 'google';
 
-    // Tìm user trong MongoDB theo firebaseUid (Định danh duy nhất cho từng Provider)
-    let user = await User.findOne({ firebaseUid: uid })
-      .select('-Password')
-      .lean();
+    // Tìm user trong MongoDB theo firebaseUid
+    let userDoc = await User.findOne({ firebaseUid: uid });
 
-    if (!user) {
+    if (!userDoc) {
       // Nếu chưa có tài khoản liên kết với UID này, tạo user mới hoàn toàn
-      // Lưu ý: Không tìm theo Email để tránh tự động gộp tài khoản Phone/khác vào Google/Facebook
       const customerId = await User.generateNextCustomerId();
-      const newUser = new User({
+      userDoc = new User({
         CustomerID: customerId,
         FullName: name || 'User',
         Email: email,
@@ -134,12 +141,34 @@ router.post('/firebase-login', asyncHandler(async (req, res) => {
         Provider: provider,
         tastePreferences: defaultTastePreferences()
       });
-      await newUser.save();
-      user = newUser.toObject();
+      await userDoc.save();
+    } else {
+      // Nếu đã có user, cập nhật avatar và tên nếu có sự thay đổi
+      const updateData = {};
+      let hasUpdate = false;
+
+      if (picture && userDoc.avatarUrl !== picture) {
+        updateData.avatarUrl = picture;
+        hasUpdate = true;
+      }
+      if (name && (userDoc.FullName !== name || userDoc.name !== name)) {
+        updateData.FullName = name;
+        updateData.name = name;
+        hasUpdate = true;
+      }
+
+      if (hasUpdate) {
+        await User.updateOne({ _id: userDoc._id }, { $set: updateData });
+        // Merge updates into the document for the response
+        Object.assign(userDoc, updateData);
+      }
     }
 
-    user._id = String(user._id);
-    res.json(user);
+    const userResponse = userDoc.toObject();
+    delete userResponse.Password;
+    userResponse._id = String(userResponse._id);
+
+    res.json(userResponse);
   } catch (error) {
     console.error('Firebase Login Error:', error);
     res.status(401).json({ message: 'Xác thực tài khoản thất bại' });
