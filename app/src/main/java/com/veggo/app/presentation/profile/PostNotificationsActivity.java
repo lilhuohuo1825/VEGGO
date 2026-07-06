@@ -11,26 +11,48 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.veggo.app.MainActivity;
 import com.veggo.app.R;
-import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.notification.RecurringInAppNotificationStore;
 import com.veggo.app.core.preferences.AppPreferences;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
 import com.veggo.app.data.repository.OrderNotificationRepository;
 import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.presentation.community.CommunityHomeActivity;
+import com.veggo.app.presentation.community.CommunityProfileActivity;
+import com.veggo.app.presentation.community.CommunityRecipeDetailActivity;
 import com.veggo.app.presentation.order.OrderDetailActivity;
+import com.veggo.app.presentation.order.RecurringConfirmOrderActivity;
+import com.veggo.app.presentation.order.ReviewsActivity;
+import com.veggo.app.presentation.product.ProductDetailActivity;
 import com.veggo.app.presentation.promotion.PromotionDetailActivity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PostNotificationsActivity extends BaseActivity {
     private static final String CATEGORY_ORDERS = "orders";
     private static final String CATEGORY_COMMUNITY = "community";
     private static final String CATEGORY_QA = "qa";
     private static final String CATEGORY_OTHER = "other";
+    private static final String TYPE_CONSULTATION_ANSWER = "consultation_answer";
+    private static final String TYPE_CONSULTATION_LIKE = "consultation_like";
+    private static final String TYPE_CONSULTATION_REPLY = "consultation_reply";
+    private static final String TYPE_COMMUNITY_FOLLOW = "community_follow";
+    private static final String TYPE_REVIEW = "review";
+    private static final String TYPE_CERTIFICATE_ELIGIBLE = "certificate_eligible";
+    private static final String TYPE_CERTIFICATE_APPROVED = "certificate_approved";
+    private static final String TYPE_RECURRING_CONFIRM = RecurringInAppNotificationStore.TYPE_CONFIRM;
+    private static final String TYPE_RECURRING_DELIVERY = RecurringInAppNotificationStore.TYPE_DELIVERY;
+    private static final String TYPE_RECURRING_SKIPPED = RecurringInAppNotificationStore.TYPE_SKIPPED;
+    private static final String TARGET_RECURRING_ORDER = "recurring_order";
+    private static final String TYPE_PROMOTION_AVAILABLE = "promotion_available";
+    private static final Pattern ORDER_ID_PATTERN = Pattern.compile("#(ORD\\d+)");
     private static final String LOCAL_NOTIFICATION_PREFS = "local_notification_read_state";
     private static final String KEY_LOCAL_NOTIFICATIONS_READ = "local_notifications_read";
 
@@ -38,6 +60,7 @@ public class PostNotificationsActivity extends BaseActivity {
     private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
     private LinearLayout notificationList;
     private String selectedCategory = CATEGORY_ORDERS;
+    private SwipeRefreshLayout notificationsRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,17 +74,30 @@ public class PostNotificationsActivity extends BaseActivity {
         findViewById(R.id.postNotificationTabOther).setOnClickListener(v -> showNotifications(CATEGORY_OTHER));
         findViewById(R.id.postNotificationsMarkAllRead).setOnClickListener(v -> markAllNotificationsRead());
         updateSelectedTab(selectedCategory);
+        setupPullToRefresh();
         loadNotifications();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadNotifications();
+    }
+
+    private void setupPullToRefresh() {
+        notificationsRefreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.postNotificationsScroll),
+                this::loadNotifications
+        );
     }
 
     private void loadNotifications() {
         new Thread(() -> {
-            AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
-            List<AssetModels.CommunityPost> posts = AssetScreenData.postsForCurrentUser(snapshot);
             List<OrderNotificationDto> orderNotifications = loadOrderNotifications();
             runOnUiThread(() -> {
-                buildNotifications(posts, orderNotifications);
+                buildNotifications(orderNotifications);
                 showNotifications(selectedCategory);
+                PullToRefreshHelper.finish(notificationsRefreshLayout);
             });
         }).start();
     }
@@ -70,13 +106,14 @@ public class PostNotificationsActivity extends BaseActivity {
         return orderNotificationRepository.getNotificationsSync(new AppPreferences(this).getCustomerId());
     }
 
-    private void buildNotifications(List<AssetModels.CommunityPost> posts, List<OrderNotificationDto> orderNotifications) {
+    private void buildNotifications(List<OrderNotificationDto> orderNotifications) {
         notificationItems.clear();
         boolean localUnread = areLocalNotificationsUnread();
         for (OrderNotificationDto notification : orderNotifications) {
             String category = firstNonBlank(notification.getCategory(), CATEGORY_ORDERS);
             String targetType = firstNonBlank(notification.getTargetType(), CATEGORY_ORDERS.equals(category) ? "order" : "");
-            String targetId = firstNonBlank(notification.getTargetId(), "");
+            String targetId = firstNonBlank(notification.getTargetId(), firstNonBlank(notification.getSku(), ""));
+            String type = firstNonBlank(notification.getType(), "");
             
             long ts = System.currentTimeMillis();
             if (notification.getCreatedAtText() != null) {
@@ -93,81 +130,41 @@ public class PostNotificationsActivity extends BaseActivity {
                     firstNonBlank(notification.getBody(), ""),
                     firstNonBlank(notification.getAction(), "Theo dõi đơn"),
                     AssetScreenData.dateText(notification.getCreatedAtText()),
-                    notificationIcon(category, notification.getType(), notification.getTitle(), notification.getBody()),
+                    notificationIcon(category, type, notification.getTitle(), notification.getBody()),
                     true,
                     !notification.isRead(),
                     targetType,
                     targetId,
+                    type,
                     ts
             ));
         }
-        LayoutInflater inflater = LayoutInflater.from(this);
-        for (AssetModels.CommunityPost post : posts) {
-            if (post.likeCount > 0) {
-                notificationItems.add(new PostNotificationItem(
-                        "",
-                        CATEGORY_COMMUNITY,
-                        post.likeCount + " người vừa thả tym",
-                        "Bài \"" + post.title + "\" đang được quan tâm.",
-                        "Xem bài viết",
-                        "Hôm nay",
-                        R.drawable.ic_profile_article,
-                        false,
-                        false,
-                        "community",
-                        ""
-                ));
-            }
-            if (post.commentCount > 0) {
-                notificationItems.add(new PostNotificationItem(
-                        "",
-                        CATEGORY_COMMUNITY,
-                        post.commentCount + " bình luận mới",
-                        latestCommentText(post),
-                        "Xem bình luận",
-                        "Hôm nay",
-                        R.drawable.ic_profile_article,
-                        false,
-                        false,
-                        "community",
-                        ""
-                ));
-            }
-            if (post.saveCount > 0) {
-                notificationItems.add(new PostNotificationItem(
-                        "",
-                        CATEGORY_COMMUNITY,
-                        "Bài viết được lưu " + post.saveCount + " lần",
-                        "Cộng đồng đang lưu bài \"" + post.title + "\".",
-                        "Xem thống kê",
-                        "Tuần này",
-                        R.drawable.ic_profile_article,
-                        false,
-                        false,
-                        "community",
-                        ""
-                ));
-            }
+
+        RecurringInAppNotificationStore recurringNotificationStore = new RecurringInAppNotificationStore(this);
+        for (RecurringInAppNotificationStore.Entry entry : recurringNotificationStore.all()) {
+            notificationItems.add(new PostNotificationItem(
+                    entry.id,
+                    CATEGORY_ORDERS,
+                    entry.title,
+                    entry.body,
+                    entry.action,
+                    RecurringInAppNotificationStore.formatTime(entry.createdAt),
+                    R.drawable.ic_order_recurring_option,
+                    false,
+                    !entry.read,
+                    TARGET_RECURRING_ORDER,
+                    RecurringInAppNotificationStore.targetId(entry.recurringOrderId, entry.occurrenceDate),
+                    entry.type,
+                    entry.createdAt
+            ));
         }
-        notificationItems.add(new PostNotificationItem(
-                "",
-                CATEGORY_OTHER,
-                "Ưu đãi cá nhân mới",
-                "Bạn có voucher freeship cho đơn rau củ từ 199.000đ.",
-                "Xem ưu đãi",
-                "Hôm nay",
-                R.drawable.ic_order_payment_receipt,
-                false,
-                false,
-                "promotion",
-                ""
-        ));
 
         // Đọc thông báo nhắc nhở giảm giá từ SharedPreferences để hiện trong tab "Khác"
         SharedPreferences reminderPrefs = getSharedPreferences("price_alert_reminders", MODE_PRIVATE);
         java.util.Map<String, ?> allEntries = reminderPrefs.getAll();
         for (java.util.Map.Entry<String, ?> entry : allEntries.entrySet()) {
             if (entry.getKey().startsWith("reminder_") && entry.getValue() instanceof String) {
+                String productId = entry.getKey().substring("reminder_".length());
                 String valueStr = (String) entry.getValue();
                 String[] parts = valueStr.split("\\|");
                 if (parts.length >= 4) {
@@ -184,13 +181,13 @@ public class PostNotificationsActivity extends BaseActivity {
                                     CATEGORY_OTHER,
                                     "⏰ Lời nhắc giảm giá đã tạo",
                                     "Bạn đã tạo lời nhắc cho \"" + pName + "\" (dự kiến giảm khoảng " + percent + "% vào " + days + " ngày tới).",
-                                    "Xem giỏ hàng",
+                                    "Xem sản phẩm",
                                     "Hôm nay",
                                     R.drawable.ic_order_list_menu,
                                     false,
                                     false,
-                                    "cart",
-                                    "",
+                                    "product",
+                                    productId,
                                     time
                             ));
                         }
@@ -322,6 +319,7 @@ public class PostNotificationsActivity extends BaseActivity {
             return;
         }
         Toast.makeText(this, "Đã đánh dấu tất cả là đã đọc", Toast.LENGTH_SHORT).show();
+        new RecurringInAppNotificationStore(this).markAllRead();
         getSharedPreferences(LOCAL_NOTIFICATION_PREFS, MODE_PRIVATE)
                 .edit()
                 .putBoolean(KEY_LOCAL_NOTIFICATIONS_READ, true)
@@ -351,6 +349,16 @@ public class PostNotificationsActivity extends BaseActivity {
         }
         item.unread = false;
         showNotifications(selectedCategory);
+        if (TARGET_RECURRING_ORDER.equals(item.targetType)) {
+            new RecurringInAppNotificationStore(this).markRead(item.id);
+            if (countUnreadLocalNotifications() == 0) {
+                getSharedPreferences(LOCAL_NOTIFICATION_PREFS, MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(KEY_LOCAL_NOTIFICATIONS_READ, true)
+                        .apply();
+            }
+            return;
+        }
         if (!item.remoteOrder || item.id == null || item.id.trim().isEmpty()) {
             if (countUnreadLocalNotifications() == 0) {
                 getSharedPreferences(LOCAL_NOTIFICATION_PREFS, MODE_PRIVATE)
@@ -380,43 +388,128 @@ public class PostNotificationsActivity extends BaseActivity {
     private Intent intentForNotification(PostNotificationItem item) {
         String targetType = safeLower(item.targetType);
         String targetId = item.targetId == null ? "" : item.targetId.trim();
-        if ("order".equals(targetType) || CATEGORY_ORDERS.equals(item.category)) {
-            if (targetId.isEmpty()) {
-                targetId = item.id;
-            }
-            Intent intent = new Intent(this, OrderDetailActivity.class);
-            intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, targetId);
-            return intent;
+        String type = safeLower(item.type);
+
+        if (TYPE_CONSULTATION_ANSWER.equals(type)
+                || TYPE_CONSULTATION_LIKE.equals(type)
+                || TYPE_CONSULTATION_REPLY.equals(type)
+                || CATEGORY_QA.equals(item.category)
+                || "support".equals(targetType)) {
+            return productDetailIntent(targetId, true);
         }
-        if ("certificate".equals(targetType)) {
+
+        if (TYPE_COMMUNITY_FOLLOW.equals(type)) {
+            if (!targetId.isEmpty()) {
+                Intent intent = new Intent(this, CommunityProfileActivity.class);
+                intent.putExtra(CommunityProfileActivity.EXTRA_CHEF_ID, targetId);
+                return intent;
+            }
+            return new Intent(this, CommunityHomeActivity.class);
+        }
+
+        if (type.startsWith("community_") || CATEGORY_COMMUNITY.equals(item.category) || "community".equals(targetType)) {
+            if (!targetId.isEmpty()) {
+                Intent intent = new Intent(this, CommunityRecipeDetailActivity.class);
+                intent.putExtra(CommunityRecipeDetailActivity.EXTRA_RECIPE_ID, targetId);
+                return intent;
+            }
+            return new Intent(this, CommunityHomeActivity.class);
+        }
+
+        if (TYPE_CERTIFICATE_ELIGIBLE.equals(type)
+                || TYPE_CERTIFICATE_APPROVED.equals(type)
+                || "certificate".equals(targetType)) {
             return new Intent(this, CarbonCertificateActivity.class);
         }
-        if ("fridge".equals(targetType)) {
-            return new Intent(this, SmartFridgeActivity.class);
-        }
-        if ("promotion".equals(targetType)) {
-            Intent intent = new Intent(this, PromotionDetailActivity.class);
+
+        if (TYPE_PROMOTION_AVAILABLE.equals(type) || "promotion".equals(targetType)) {
             if (!targetId.isEmpty()) {
+                Intent intent = new Intent(this, PromotionDetailActivity.class);
                 intent.putExtra(PromotionDetailActivity.EXTRA_PROMOTION_ID, targetId);
                 return intent;
             }
-            return new Intent(this, com.veggo.app.MainActivity.class);
+            return new Intent(this, CarbonPointsActivity.class);
         }
-        if ("community".equals(targetType) || CATEGORY_COMMUNITY.equals(item.category)) {
-            return new Intent(this, CommunityHomeActivity.class);
-        }
-        if ("support".equals(targetType) || CATEGORY_QA.equals(item.category)) {
-            return new Intent(this, SupportCustomersActivity.class);
-        }
-        if ("cart".equals(targetType)) {
-            Intent intent = new Intent(this, com.veggo.app.MainActivity.class);
-            intent.putExtra(com.veggo.app.MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_cart);
+
+        if (TYPE_REVIEW.equals(type)) {
+            Intent intent = new Intent(this, ReviewsActivity.class);
+            intent.putExtra(ReviewsActivity.EXTRA_SHOW_DONE_REVIEWS, true);
             return intent;
         }
+
+        if (TARGET_RECURRING_ORDER.equals(targetType)
+                || TYPE_RECURRING_CONFIRM.equals(type)
+                || TYPE_RECURRING_DELIVERY.equals(type)
+                || TYPE_RECURRING_SKIPPED.equals(type)) {
+            return recurringConfirmIntent(targetId);
+        }
+
+        if ("product".equals(targetType)) {
+            return productDetailIntent(targetId, false);
+        }
+
+        if ("order".equals(targetType) || CATEGORY_ORDERS.equals(item.category)) {
+            String orderId = resolveOrderId(item);
+            if (!orderId.isEmpty()) {
+                Intent intent = new Intent(this, OrderDetailActivity.class);
+                intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
+                return intent;
+            }
+            return mainActivityIntent(R.id.nav_orders);
+        }
+
+        if ("fridge".equals(targetType)) {
+            return new Intent(this, SmartFridgeActivity.class);
+        }
+
+        if ("cart".equals(targetType)) {
+            return mainActivityIntent(R.id.nav_cart);
+        }
+
         if (CATEGORY_OTHER.equals(item.category)) {
             return new Intent(this, CarbonPointsActivity.class);
         }
         return null;
+    }
+
+    private Intent recurringConfirmIntent(String targetId) {
+        if (targetId == null || !targetId.contains("|")) {
+            return new Intent(this, com.veggo.app.presentation.order.RecurringOrdersActivity.class);
+        }
+        String[] parts = targetId.split("\\|", 2);
+        Intent intent = new Intent(this, RecurringConfirmOrderActivity.class);
+        intent.putExtra(RecurringConfirmOrderActivity.EXTRA_RECURRING_ORDER_ID, parts[0]);
+        intent.putExtra(RecurringConfirmOrderActivity.EXTRA_OCCURRENCE_DATE, parts[1]);
+        return intent;
+    }
+
+    private Intent productDetailIntent(String productOrSku, boolean scrollToConsultation) {
+        if (productOrSku == null || productOrSku.trim().isEmpty()) {
+            return new Intent(this, SupportCustomersActivity.class);
+        }
+        Intent intent = new Intent(this, ProductDetailActivity.class);
+        intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, productOrSku.trim());
+        if (scrollToConsultation) {
+            intent.putExtra(ProductDetailActivity.EXTRA_SCROLL_TO_CONSULTATION, true);
+        }
+        return intent;
+    }
+
+    private Intent mainActivityIntent(int navItemId) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, navItemId);
+        return intent;
+    }
+
+    private String resolveOrderId(PostNotificationItem item) {
+        if (item.targetId != null && !item.targetId.trim().isEmpty()) {
+            return item.targetId.trim();
+        }
+        Matcher matcher = ORDER_ID_PATTERN.matcher(item.body == null ? "" : item.body);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
     }
 
     private int countUnreadLocalNotifications() {
@@ -449,34 +542,6 @@ public class PostNotificationsActivity extends BaseActivity {
         }
     }
 
-    private String latestCommentText(AssetModels.CommunityPost post) {
-        if (post.commentsDetail == null || post.commentsDetail.isEmpty()) {
-            return "Có bình luận mới trong bài \"" + post.title + "\".";
-        }
-        return "\"" + post.commentsDetail.get(post.commentsDetail.size() - 1).content + "\"";
-    }
-
-    private String mapText(Map<String, Object> map, String key, String fallback) {
-        Object value = map.get(key);
-        if (value == null) {
-            return fallback;
-        }
-        if (value instanceof Map) {
-            Object date = ((Map<?, ?>) value).get("$date");
-            if (date != null) {
-                return String.valueOf(date);
-            }
-            Object oid = ((Map<?, ?>) value).get("$oid");
-            return oid == null ? fallback : String.valueOf(oid);
-        }
-        String text = String.valueOf(value).trim();
-        return text.isEmpty() ? fallback : text;
-    }
-
-    private String mapNotificationId(Map<String, Object> map) {
-        return mapText(map, "_id", "");
-    }
-
     private String normalizeCategory(String category) {
         String value = safeLower(category);
         if (CATEGORY_COMMUNITY.equals(value) || CATEGORY_QA.equals(value) || CATEGORY_OTHER.equals(value)) {
@@ -486,6 +551,9 @@ public class PostNotificationsActivity extends BaseActivity {
     }
 
     private int notificationIcon(String category, String type, String title, String body) {
+        if (CATEGORY_COMMUNITY.equals(normalizeCategory(category))) {
+            return R.drawable.ic_profile_article;
+        }
         if (CATEGORY_QA.equals(normalizeCategory(category))) {
             return R.drawable.ic_order_list_menu;
         }
@@ -534,6 +602,7 @@ public class PostNotificationsActivity extends BaseActivity {
         final boolean remoteOrder;
         final String targetType;
         final String targetId;
+        final String type;
         final long timestamp;
         boolean unread;
 
@@ -548,7 +617,7 @@ public class PostNotificationsActivity extends BaseActivity {
                 boolean remoteOrder,
                 boolean unread
         ) {
-            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, "", "");
+            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, "", "", "", System.currentTimeMillis());
         }
 
         PostNotificationItem(
@@ -564,7 +633,7 @@ public class PostNotificationsActivity extends BaseActivity {
                 String targetType,
                 String targetId
         ) {
-            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, targetType, targetId, System.currentTimeMillis());
+            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, targetType, targetId, "", System.currentTimeMillis());
         }
 
         PostNotificationItem(
@@ -581,6 +650,24 @@ public class PostNotificationsActivity extends BaseActivity {
                 String targetId,
                 long timestamp
         ) {
+            this(id, category, title, body, action, time, iconResId, remoteOrder, unread, targetType, targetId, "", timestamp);
+        }
+
+        PostNotificationItem(
+                String id,
+                String category,
+                String title,
+                String body,
+                String action,
+                String time,
+                int iconResId,
+                boolean remoteOrder,
+                boolean unread,
+                String targetType,
+                String targetId,
+                String type,
+                long timestamp
+        ) {
             this.id = id;
             this.category = category;
             this.title = title;
@@ -592,6 +679,7 @@ public class PostNotificationsActivity extends BaseActivity {
             this.unread = unread;
             this.targetType = targetType;
             this.targetId = targetId;
+            this.type = type == null ? "" : type;
             this.timestamp = timestamp;
         }
     }

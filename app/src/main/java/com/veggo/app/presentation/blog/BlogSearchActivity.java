@@ -9,8 +9,10 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.local.entity.BlogEntity;
 
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ public class BlogSearchActivity extends AppCompatActivity {
     private LinearLayout container;
     private EditText searchInput;
     private final List<BlogEntity> blogs = new ArrayList<>();
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -32,6 +35,10 @@ public class BlogSearchActivity extends AppCompatActivity {
         container = findViewById(R.id.blogSearchContainer);
         searchInput = findViewById(R.id.blogSearchInput);
         findViewById(R.id.blogSearchBackButton).setOnClickListener(v -> finish());
+        refreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.blogSearchScroll),
+                this::reloadBlogs
+        );
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -40,10 +47,15 @@ public class BlogSearchActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { }
         });
 
+        reloadBlogs();
+    }
+
+    private void reloadBlogs() {
         repository.getAll(result -> runOnUiThread(() -> {
             blogs.clear();
             blogs.addAll(result);
             render();
+            PullToRefreshHelper.finish(refreshLayout);
         }));
     }
 

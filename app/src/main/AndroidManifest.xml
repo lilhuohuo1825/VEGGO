@@ -31,6 +31,11 @@
         <package android:name="com.samsung.android.honeyboard" />
         <package android:name="com.samsung.android.svoice" />
         <package android:name="com.samsung.android.app.spage" />
+        <!-- Facebook SDK: package visibility for API 30+ -->
+        <package android:name="com.facebook.katana" />
+        <package android:name="com.facebook.orca" />
+        <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
+        <provider android:authorities="com.facebook.orca.provider.PlatformProvider" />
     </queries>
 
     <application
@@ -74,6 +79,14 @@
 
         <receiver
             android:name=".core.notification.FridgeExpiryNotificationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".core.notification.RecurringConfirmationReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -174,6 +187,9 @@
             android:exported="false" />
         <activity
             android:name=".presentation.order.RecurringOrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.order.RecurringConfirmOrderActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.order.RecurringProductPickerActivity"

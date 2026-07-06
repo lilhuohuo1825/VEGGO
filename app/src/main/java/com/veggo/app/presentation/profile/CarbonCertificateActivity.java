@@ -1,28 +1,36 @@
 package com.veggo.app.presentation.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.view.LayoutInflater;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
+import androidx.annotation.Nullable;
+
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.promotion.PromotionDetailActivity;
 import com.bumptech.glide.Glide;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class CarbonCertificateActivity extends BaseActivity {
     private static final NumberFormat POINT_FORMAT = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+    @Nullable
+    private String activePromotionId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +40,10 @@ public class CarbonCertificateActivity extends BaseActivity {
         }
         setContentView(R.layout.activity_carbon_certificate);
         findViewById(R.id.carbonCertificateBackButton).setOnClickListener(v -> finish());
+        View useOfferButton = findViewById(R.id.carbonUseOfferButton);
+        if (useOfferButton != null) {
+            useOfferButton.setOnClickListener(v -> openCertificatePromotion());
+        }
         loadCertificate();
     }
 
@@ -62,15 +74,21 @@ public class CarbonCertificateActivity extends BaseActivity {
         View placeholder = findViewById(R.id.myCertificatePlaceholder);
         View content = findViewById(R.id.myCertificateContent);
         ImageView banner = findViewById(R.id.myCertificateBanner);
-        TextView rewardDetails = findViewById(R.id.myCertificateRewardDetails);
+        LinearLayout rewardContainer = findViewById(R.id.myCertificateRewardContainer);
         TextView statusView = findViewById(R.id.carbonCertificateStatus);
         TextView descView = findViewById(R.id.carbonCertificateDescription);
 
+        View useOfferButton = findViewById(R.id.carbonUseOfferButton);
+        View shareBtn = findViewById(R.id.carbonShareButton);
+
         if (current != null) {
+            activePromotionId = getPromotionIdForCertificate(current.certificateId);
             AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateName, current.certificateName);
             if (statusView != null) statusView.setVisibility(View.GONE);
             if (descView != null) descView.setVisibility(View.GONE);
-            View shareBtn = findViewById(R.id.carbonShareButton);
+            if (useOfferButton != null) {
+                useOfferButton.setVisibility(activePromotionId != null ? View.VISIBLE : View.GONE);
+            }
             if (shareBtn != null) {
                 shareBtn.setVisibility(View.VISIBLE);
             }
@@ -81,18 +99,43 @@ public class CarbonCertificateActivity extends BaseActivity {
                 String promoId = getPromotionIdForCertificate(current.certificateId);
                 String bannerUrl = buildPromotionBannerProxyUrl(promoId);
                 if (bannerUrl != null) {
+                    banner.setVisibility(View.INVISIBLE);
                     Glide.with(this)
                             .load(bannerUrl)
                             .fitCenter()
-                            .placeholder(R.drawable.banner_nam_rom)
-                            .error(R.drawable.banner_nam_rom)
+                            .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                @Override
+                                public boolean onLoadFailed(
+                                        @androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                        Object model,
+                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                        boolean isFirstResource
+                                ) {
+                                    banner.setVisibility(View.VISIBLE);
+                                    return false;
+                                }
+
+                                @Override
+                                public boolean onResourceReady(
+                                        android.graphics.drawable.Drawable resource,
+                                        Object model,
+                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                        com.bumptech.glide.load.DataSource dataSource,
+                                        boolean isFirstResource
+                                ) {
+                                    banner.setVisibility(View.VISIBLE);
+                                    return false;
+                                }
+                            })
                             .into(banner);
                 }
             }
-            if (rewardDetails != null) {
-                rewardDetails.setText("• Chi tiết ưu đãi: " + current.certificateDescription + "\n• Quà tặng đi kèm: " + current.rewardDescription);
-            }
+            bindCertificateRewards(rewardContainer, current);
         } else {
+            activePromotionId = null;
+            if (useOfferButton != null) {
+                useOfferButton.setVisibility(View.GONE);
+            }
             if (placeholder != null) placeholder.setVisibility(View.VISIBLE);
             if (content != null) content.setVisibility(View.GONE);
             if (statusView != null) statusView.setVisibility(View.VISIBLE);
@@ -105,7 +148,6 @@ public class CarbonCertificateActivity extends BaseActivity {
                         eligibilityStatus(request, eligible));
                 AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonCertificateDescription,
                         eligibilityDescription(request, eligible, points));
-                View shareBtn = findViewById(R.id.carbonShareButton);
                 if (shareBtn != null) {
                     shareBtn.setVisibility(View.GONE);
                 }
@@ -117,7 +159,6 @@ public class CarbonCertificateActivity extends BaseActivity {
                         next == null
                                 ? "Danh sách chứng nhận chưa sẵn sàng. Vui lòng thử lại sau."
                                 : "Tích lũy điểm carbon từ các đơn hàng xanh để mở mốc " + next.certificateName + ".");
-                View shareBtn = findViewById(R.id.carbonShareButton);
                 if (shareBtn != null) {
                     shareBtn.setVisibility(View.GONE);
                 }
@@ -125,6 +166,15 @@ public class CarbonCertificateActivity extends BaseActivity {
         }
 
         bindCertificatePath(snapshot.certificates, current, eligible, request, points);
+    }
+
+    private void openCertificatePromotion() {
+        if (activePromotionId == null || activePromotionId.trim().isEmpty()) {
+            return;
+        }
+        Intent intent = new Intent(this, PromotionDetailActivity.class);
+        intent.putExtra(PromotionDetailActivity.EXTRA_PROMOTION_ID, activePromotionId);
+        startActivity(intent);
     }
 
     private String getPromotionIdForCertificate(String certificateId) {
@@ -146,6 +196,83 @@ public class CarbonCertificateActivity extends BaseActivity {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
         return baseUrl + "/promotions/" + promotionId.trim() + "/banner-image";
+    }
+
+    private void bindCertificateRewards(LinearLayout container, AssetModels.Certificate certificate) {
+        if (container == null || certificate == null) {
+            return;
+        }
+        container.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(this);
+        List<RewardBenefitRow> rows = new ArrayList<>();
+        if (certificate.certificateDescription != null && !certificate.certificateDescription.trim().isEmpty()) {
+            rows.add(new RewardBenefitRow(
+                    R.drawable.ic_order_payment_receipt,
+                    "Chi tiết ưu đãi",
+                    certificate.certificateDescription
+            ));
+        }
+        if (certificate.rewardDescription != null && !certificate.rewardDescription.trim().isEmpty()) {
+            rows.add(new RewardBenefitRow(
+                    R.drawable.ic_voucher,
+                    "Quà tặng đi kèm",
+                    certificate.rewardDescription
+            ));
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            RewardBenefitRow row = rows.get(i);
+            addRewardBenefitRow(inflater, container, row.iconResId, row.label, row.value);
+            if (i < rows.size() - 1) {
+                View divider = new View(this);
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        dp(1)
+                );
+                dividerParams.setMargins(dp(20), 0, 0, 0);
+                divider.setLayoutParams(dividerParams);
+                divider.setBackgroundColor(ContextCompat.getColor(this, R.color.primary_light));
+                divider.setAlpha(0.35f);
+                container.addView(divider);
+            }
+        }
+    }
+
+    private void addRewardBenefitRow(
+            LayoutInflater inflater,
+            LinearLayout container,
+            int iconResId,
+            String label,
+            String value
+    ) {
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+        View row = inflater.inflate(R.layout.item_certificate_reward_benefit, container, false);
+        ImageView icon = row.findViewById(R.id.certificateRewardIcon);
+        TextView labelView = row.findViewById(R.id.certificateRewardLabel);
+        TextView valueView = row.findViewById(R.id.certificateRewardValue);
+        if (icon != null) {
+            icon.setImageResource(iconResId);
+        }
+        if (labelView != null) {
+            labelView.setText(label);
+        }
+        if (valueView != null) {
+            valueView.setText(value.trim());
+        }
+        container.addView(row);
+    }
+
+    private static class RewardBenefitRow {
+        final int iconResId;
+        final String label;
+        final String value;
+
+        RewardBenefitRow(int iconResId, String label, String value) {
+            this.iconResId = iconResId;
+            this.label = label;
+            this.value = value;
+        }
     }
 
     private void bindCertificatePath(List<AssetModels.Certificate> certificates,

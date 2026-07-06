@@ -14,6 +14,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -73,6 +74,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         View view;
         EditText nameInput, quantityInput, unitInput;
         TextView locationText, purchaseDateText, expiryDateText;
+        CheckBox reminderCheck;
         LinearLayout fridgeImageList;
         List<Uri> selectedImages = new ArrayList<>();
         Calendar purchaseCal = Calendar.getInstance();
@@ -88,6 +90,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
             locationText = view.findViewById(R.id.fridgeLocationText);
             purchaseDateText = view.findViewById(R.id.fridgePurchaseDateText);
             expiryDateText = view.findViewById(R.id.fridgeExpiryDateText);
+            reminderCheck = view.findViewById(R.id.fridgeReminderCheck);
             fridgeImageList = view.findViewById(R.id.fridgeImageList);
         }
     }
@@ -292,6 +295,11 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         // Images
         view.findViewById(R.id.fridgeAddImageBtn).setOnClickListener(v -> showImageSourceDialog(block));
 
+        View reminderRow = view.findViewById(R.id.fridgeReminderRow);
+        if (reminderRow != null && block.reminderCheck != null) {
+            reminderRow.setOnClickListener(v -> block.reminderCheck.setChecked(!block.reminderCheck.isChecked()));
+        }
+
         fillBlockWithItem(block, prefillData);
         updateTrashIconsVisibility();
     }
@@ -384,22 +392,19 @@ public class AddFridgeIngredientActivity extends BaseActivity {
     }
 
     private void showLocationDropdown(ManualBlockViewHolder block) {
-        List<String> displayOptions = new ArrayList<>(locationOptions);
-        displayOptions.add("+ Thêm vị trí mới...");
-        String[] items = displayOptions.toArray(new String[0]);
+        FridgeLocationPicker.show(this, locationOptions, block.selectedLocationIndex, new FridgeLocationPicker.Callback() {
+            @Override
+            public void onLocationSelected(int index, String name) {
+                block.selectedLocationIndex = index;
+                block.locationText.setText(name);
+                block.locationText.setTextColor(ContextCompat.getColor(AddFridgeIngredientActivity.this, R.color.neutral_100));
+            }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Chọn vị trí")
-                .setItems(items, (dialog, which) -> {
-                    if (which == displayOptions.size() - 1) {
-                        showAddLocationDialog(block);
-                    } else {
-                        block.selectedLocationIndex = which;
-                        block.locationText.setText(locationOptions.get(which));
-                        block.locationText.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
-                    }
-                })
-                .show();
+            @Override
+            public void onAddNewRequested() {
+                showAddLocationDialog(block);
+            }
+        });
     }
 
     private void showAddLocationDialog(ManualBlockViewHolder block) {
@@ -411,7 +416,10 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                 .setCancelable(false)
                 .create();
 
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            FridgeDialogUi.applyPopupWindowStyle(dialog.getWindow(), this);
+        }
 
         dialogView.findViewById(R.id.dialogLocationCancel).setOnClickListener(v -> dialog.dismiss());
         dialogView.findViewById(R.id.dialogLocationConfirm).setOnClickListener(v -> {
@@ -821,7 +829,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                 try { quantity = Double.parseDouble(quantityStr); } catch (Exception ignored) {}
             }
             
-            String purchaseDateIso = block.purchaseDateSet ? isoFormat.format(block.purchaseCal.getTime()) : null;
+            String purchaseDateIso = isoFormat.format(block.purchaseCal.getTime());
             String expiryDateIso = isoFormat.format(block.expiryCal.getTime());
             
             String selectedLoc = block.selectedLocationIndex >= 0 ? locationOptions.get(block.selectedLocationIndex) : null;
@@ -834,7 +842,8 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                     name, quantity, purchaseDateIso, expiryDateIso,
                     null, null, primaryImage, imageUris,
                     block.unitInput.getText().toString().trim(),
-                    "manual", selectedLoc
+                    "manual", selectedLoc,
+                    block.reminderCheck != null && block.reminderCheck.isChecked()
             ));
         }
 

@@ -14,6 +14,8 @@ public class AppPreferences {
     private static final String KEY_FULL_NAME = "currentFullName";
     private static final String KEY_EMAIL = "currentEmail";
     private static final String KEY_AVATAR_URL = "currentAvatarUrl";
+    private static final String KEY_BIRTHDAY = "currentBirthday";
+    private static final String KEY_GENDER = "currentGender";
 
     private final SharedPreferences sharedPreferences;
 
@@ -43,13 +45,26 @@ public class AppPreferences {
                 .apply();
     }
 
-    public void saveProfileSession(@NonNull String phone, String fullName, String email, @Nullable String avatarUrl) {
+    public void saveProfileSession(
+            @NonNull String phone,
+            String fullName,
+            String email,
+            @Nullable String avatarUrl,
+            @Nullable String birthday,
+            @Nullable String gender
+    ) {
         sharedPreferences.edit()
                 .putString(KEY_CURRENT_PHONE, phone)
                 .putString(KEY_FULL_NAME, fullName)
                 .putString(KEY_EMAIL, email)
                 .putString(KEY_AVATAR_URL, avatarUrl)
+                .putString(KEY_BIRTHDAY, birthday)
+                .putString(KEY_GENDER, gender)
                 .apply();
+    }
+
+    public void saveProfileSession(@NonNull String phone, String fullName, String email, @Nullable String avatarUrl) {
+        saveProfileSession(phone, fullName, email, avatarUrl, null, null);
     }
 
     public void saveLoginSession(@NonNull String phone) {
@@ -85,6 +100,16 @@ public class AppPreferences {
         return sharedPreferences.getString(KEY_AVATAR_URL, null);
     }
 
+    @Nullable
+    public String getBirthday() {
+        return sharedPreferences.getString(KEY_BIRTHDAY, null);
+    }
+
+    @Nullable
+    public String getGender() {
+        return sharedPreferences.getString(KEY_GENDER, null);
+    }
+
     public void logout() {
         clearLoginSession();
     }
@@ -97,6 +122,8 @@ public class AppPreferences {
                 .remove(KEY_FULL_NAME)
                 .remove(KEY_EMAIL)
                 .remove(KEY_AVATAR_URL)
+                .remove(KEY_BIRTHDAY)
+                .remove(KEY_GENDER)
                 .apply();
     }
 }

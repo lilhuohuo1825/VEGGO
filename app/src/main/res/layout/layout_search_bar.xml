@@ -1,50 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/layoutSearch"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="44dp"
-    android:background="@drawable/bg_home_search"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingStart="14dp"
-    android:paddingEnd="6dp"
-    android:clickable="true"
-    android:focusable="true">
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
 
-    <ImageView
-        android:layout_width="22dp"
-        android:layout_height="22dp"
-        android:src="@drawable/ic_search"
-        app:tint="@color/primary_hover"
-        android:contentDescription="Search Icon" />
-
-    <EditText
-        android:id="@+id/edtSearch"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_weight="1"
-        android:fontFamily="@font/inter"
-        android:hint="Tìm kiếm"
-        android:textColorHint="#66167728"
-        android:background="@null"
-        android:textColor="@color/neutral_100"
-        android:textSize="16sp"
-        android:singleLine="true"
-        android:imeOptions="actionSearch" />
-
-    <FrameLayout
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:background="@drawable/bg_home_mic">
+    <LinearLayout
+        android:id="@+id/layoutSearch"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_home_search"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="6dp">
 
         <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Search Icon"
+            android:src="@drawable/ic_search"
+            app:tint="@color/primary_hover" />
+
+        <EditText
+            android:id="@+id/edtSearch"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:fontFamily="@font/inter"
+            android:hint="Tìm kiếm"
+            android:imeOptions="actionSearch"
+            android:singleLine="true"
+            android:textColor="@color/neutral_100"
+            android:textColorHint="#66167728"
+            android:textSize="16sp" />
+
+        <FrameLayout
+            android:id="@+id/btnMic"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_home_mic"
+            android:clickable="true"
+            android:contentDescription="@string/chat_voice_input"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:id="@+id/imgMic"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="Voice Search"
+                android:src="@drawable/ic_microphone"
+                app:tint="@color/neutral_80" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutVoiceStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_voice_status_banner"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <View
+            android:id="@+id/viewVoicePulse"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/bg_voice_pulse_dot" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvVoiceStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="@string/chat_voice_status_listening"
+                android:textColor="@color/primary_hover"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvVoiceHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/inter"
+                android:text="@string/chat_voice_hint_cancel"
+                android:textColor="@color/neutral_70"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressVoice"
+            style="?android:attr/progressBarStyleSmall"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_microphone"
-            app:tint="@color/neutral_80"
-            android:contentDescription="Voice Search" />
-    </FrameLayout>
+            android:indeterminateTint="@color/primary_main"
+            android:visibility="gone" />
+    </LinearLayout>
 </LinearLayout>

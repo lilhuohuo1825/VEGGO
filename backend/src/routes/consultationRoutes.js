@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
+const ADMIN_DISPLAY_NAME = 'VEGGO Admin';
 
 function sortQuestionsByCreatedAt(consultation) {
   if (!consultation || !consultation.questions) {
@@ -14,6 +16,71 @@ function sortQuestionsByCreatedAt(consultation) {
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
   return consultation;
+}
+
+async function findUserByCustomerId(customerId) {
+  if (!customerId || customerId === 'anonymous') {
+    return null;
+  }
+  return User.findOne({ CustomerID: customerId }).select('FullName avatarUrl name').lean();
+}
+
+async function resolveAvatarUrl(customerId, fallbackUrl) {
+  const trimmedFallback = typeof fallbackUrl === 'string' ? fallbackUrl.trim() : '';
+  if (trimmedFallback) {
+    return trimmedFallback;
+  }
+  const user = await findUserByCustomerId(customerId);
+  return user?.avatarUrl || '';
+}
+
+function sanitizeQuestion(question) {
+  const plain = question.toObject ? question.toObject() : { ...question };
+  if (plain.answer && plain.answer.trim()) {
+    plain.answeredBy = ADMIN_DISPLAY_NAME;
+  }
+  plain.helpfulCount = Array.isArray(plain.helpfulLikes) ? plain.helpfulLikes.length : 0;
+  if (Array.isArray(plain.replies)) {
+    plain.replies = plain.replies.map((reply) => ({
+      ...reply,
+      customerName: reply.isAdmin ? ADMIN_DISPLAY_NAME : (reply.customerName || 'Khách hàng'),
+      customerAvatarUrl: reply.isAdmin ? '' : (reply.customerAvatarUrl || ''),
+    }));
+  }
+  return plain;
+}
+
+async function enrichConsultation(consultation) {
+  if (!consultation) {
+    return consultation;
+  }
+  const plain = consultation.toObject ? consultation.toObject() : { ...consultation };
+  if (!Array.isArray(plain.questions)) {
+    return plain;
+  }
+
+  const enrichedQuestions = [];
+  for (const question of plain.questions) {
+    const sanitized = sanitizeQuestion(question);
+    if (!sanitized.customerAvatarUrl) {
+      sanitized.customerAvatarUrl = await resolveAvatarUrl(sanitized.customerId, '');
+    }
+    if (Array.isArray(sanitized.replies)) {
+      for (const reply of sanitized.replies) {
+        if (!reply.isAdmin && !reply.customerAvatarUrl) {
+          reply.customerAvatarUrl = await resolveAvatarUrl(reply.customerId, '');
+        }
+      }
+    }
+    enrichedQuestions.push(sanitized);
+  }
+  plain.questions = enrichedQuestions;
+  return plain;
+}
+
+async function consultationResponse(consultation) {
+  const sorted = sortQuestionsByCreatedAt(consultation);
+  return enrichConsultation(sorted);
 }
 
 async function createConsultationAdminNotification({ sku, productName, customerName, customerId, questionId }) {
@@ -42,9 +109,71 @@ async function createConsultationAnswerNotification({ customerId, sku, productNa
     CustomerID: customerId,
     category: 'qa',
     type: 'consultation_answer',
-    title: 'Admin đã phản hồi câu hỏi',
+    title: `${ADMIN_DISPLAY_NAME} đã phản hồi câu hỏi`,
     body: `Câu hỏi về sản phẩm "${productName}" đã được trả lời.`,
     action: 'Xem trả lời',
+    iconText: '?',
+    targetType: 'support',
+    targetId: sku,
+    sku,
+    productName,
+    questionId,
+    questionText,
+    isRead: false,
+    createdAt: new Date(),
+  });
+}
+
+async function createConsultationLikeNotification({
+  customerId,
+  sku,
+  productName,
+  questionId,
+  questionText,
+  likerName,
+}) {
+  if (!customerId || customerId === 'anonymous') {
+    return;
+  }
+
+  await mongoose.connection.db.collection('notifications').insertOne({
+    CustomerID: customerId,
+    category: 'qa',
+    type: 'consultation_like',
+    title: 'Câu hỏi của bạn được đánh dấu hữu ích',
+    body: `${likerName} thấy câu hỏi về "${productName}" rất hữu ích.`,
+    action: 'Xem câu hỏi',
+    iconText: '?',
+    targetType: 'support',
+    targetId: sku,
+    sku,
+    productName,
+    questionId,
+    questionText,
+    isRead: false,
+    createdAt: new Date(),
+  });
+}
+
+async function createConsultationReplyNotification({
+  customerId,
+  sku,
+  productName,
+  questionId,
+  questionText,
+  replierName,
+}) {
+  if (!customerId || customerId === 'anonymous') {
+    return;
+  }
+
+  await mongoose.connection.db.collection('notifications').insertOne({
+    CustomerID: customerId,
+    category: 'qa',
+    type: 'consultation_reply',
+    title: 'Có phản hồi mới cho câu hỏi của bạn',
+    body: `${replierName} đã trả lời câu hỏi về "${productName}".`,
+    action: 'Xem phản hồi',
     iconText: '?',
     targetType: 'support',
     targetId: sku,
@@ -60,17 +189,24 @@ async function createConsultationAnswerNotification({ customerId, sku, productNa
 // GET /api/consultations
 router.get('/', asyncHandler(async (req, res) => {
   const allConsultations = await Consultation.find({});
-  allConsultations.forEach(sortQuestionsByCreatedAt);
-  res.json(allConsultations);
+  const enriched = [];
+  for (const item of allConsultations) {
+    enriched.push(await consultationResponse(item));
+  }
+  res.json(enriched);
 }));
 
 // GET /api/consultations/:sku
 router.get('/:sku', asyncHandler(async (req, res) => {
   const result = await Consultation.findOne({ sku: req.params.sku });
   if (!result) {
-    return res.status(404).json({ message: 'No consultations found for this SKU' });
+    return res.json({
+      sku: req.params.sku,
+      productName: '',
+      questions: [],
+    });
   }
-  res.json(sortQuestionsByCreatedAt(result));
+  res.json(await consultationResponse(result));
 }));
 
 // POST /api/consultations/:sku/questions
@@ -100,14 +236,23 @@ router.post('/:sku/questions', asyncHandler(async (req, res) => {
     : 'Khách hàng';
   const customerId = typeof req.body.customerId === 'string' && req.body.customerId.trim()
     ? req.body.customerId.trim()
-    : 'anonymous';
+    : '';
+
+  if (!customerId || customerId === 'anonymous') {
+    return res.status(401).json({ message: 'Vui lòng đăng nhập để gửi câu hỏi tư vấn' });
+  }
+
+  const customerAvatarUrl = await resolveAvatarUrl(customerId, req.body.customerAvatarUrl);
 
   consultation.questions.push({
     question,
     customerName,
     customerId,
+    customerAvatarUrl,
     answer: '',
     status: 'pending',
+    helpfulLikes: [],
+    replies: [],
   });
 
   await consultation.save();
@@ -120,15 +265,114 @@ router.post('/:sku/questions', asyncHandler(async (req, res) => {
     questionId: createdQuestion._id.toString(),
   });
 
-  res.status(201).json(sortQuestionsByCreatedAt(consultation));
+  res.status(201).json(await consultationResponse(consultation));
+}));
+
+// POST /api/consultations/:sku/questions/:questionId/like
+router.post('/:sku/questions/:questionId/like', asyncHandler(async (req, res) => {
+  const customerId = typeof req.body.customerId === 'string' ? req.body.customerId.trim() : '';
+  const customerName = typeof req.body.customerName === 'string' && req.body.customerName.trim()
+    ? req.body.customerName.trim()
+    : 'Khách hàng';
+
+  if (!customerId || customerId === 'anonymous') {
+    return res.status(401).json({ message: 'Vui lòng đăng nhập để đánh dấu hữu ích' });
+  }
+
+  const consultation = await Consultation.findOne({ sku: req.params.sku });
+  if (!consultation) {
+    return res.status(404).json({ success: false, message: 'No consultations found for this SKU' });
+  }
+
+  const question = consultation.questions.id(req.params.questionId);
+  if (!question) {
+    return res.status(404).json({ success: false, message: 'Question not found' });
+  }
+
+  if (!Array.isArray(question.helpfulLikes)) {
+    question.helpfulLikes = [];
+  }
+
+  const existingIndex = question.helpfulLikes.findIndex((like) => like.customerId === customerId);
+  let liked = false;
+  if (existingIndex >= 0) {
+    question.helpfulLikes.splice(existingIndex, 1);
+  } else {
+    question.helpfulLikes.push({ customerId, customerName });
+    liked = true;
+    if (question.customerId && question.customerId !== customerId) {
+      await createConsultationLikeNotification({
+        customerId: question.customerId,
+        sku: consultation.sku,
+        productName: consultation.productName,
+        questionId: question._id.toString(),
+        questionText: question.question,
+        likerName: customerName,
+      });
+    }
+  }
+
+  await consultation.save();
+  res.json(await consultationResponse(consultation));
+}));
+
+// POST /api/consultations/:sku/questions/:questionId/replies
+router.post('/:sku/questions/:questionId/replies', asyncHandler(async (req, res) => {
+  const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  const customerId = typeof req.body.customerId === 'string' ? req.body.customerId.trim() : '';
+  const customerName = typeof req.body.customerName === 'string' && req.body.customerName.trim()
+    ? req.body.customerName.trim()
+    : 'Khách hàng';
+
+  if (!content) {
+    return res.status(400).json({ success: false, message: 'Reply cannot be empty' });
+  }
+  if (!customerId || customerId === 'anonymous') {
+    return res.status(401).json({ message: 'Vui lòng đăng nhập để trả lời' });
+  }
+
+  const consultation = await Consultation.findOne({ sku: req.params.sku });
+  if (!consultation) {
+    return res.status(404).json({ success: false, message: 'No consultations found for this SKU' });
+  }
+
+  const question = consultation.questions.id(req.params.questionId);
+  if (!question) {
+    return res.status(404).json({ success: false, message: 'Question not found' });
+  }
+
+  const customerAvatarUrl = await resolveAvatarUrl(customerId, req.body.customerAvatarUrl);
+  if (!Array.isArray(question.replies)) {
+    question.replies = [];
+  }
+
+  question.replies.push({
+    customerId,
+    customerName,
+    customerAvatarUrl,
+    content,
+    isAdmin: false,
+  });
+
+  await consultation.save();
+
+  if (question.customerId && question.customerId !== customerId) {
+    await createConsultationReplyNotification({
+      customerId: question.customerId,
+      sku: consultation.sku,
+      productName: consultation.productName,
+      questionId: question._id.toString(),
+      questionText: question.question,
+      replierName: customerName,
+    });
+  }
+
+  res.status(201).json(await consultationResponse(consultation));
 }));
 
 // POST /api/consultations/:sku/answer/:questionId
 router.post('/:sku/answer/:questionId', asyncHandler(async (req, res) => {
   const answer = typeof req.body.answer === 'string' ? req.body.answer.trim() : '';
-  const answeredBy = typeof req.body.answeredBy === 'string' && req.body.answeredBy.trim()
-    ? req.body.answeredBy.trim()
-    : 'Admin';
 
   if (!answer) {
     return res.status(400).json({ success: false, message: 'Answer cannot be empty' });
@@ -145,7 +389,7 @@ router.post('/:sku/answer/:questionId', asyncHandler(async (req, res) => {
   }
 
   question.answer = answer;
-  question.answeredBy = answeredBy;
+  question.answeredBy = ADMIN_DISPLAY_NAME;
   question.answeredAt = new Date();
   question.status = 'answered';
 
@@ -174,7 +418,7 @@ router.post('/:sku/answer/:questionId', asyncHandler(async (req, res) => {
     }
   );
 
-  res.json({ success: true, data: sortQuestionsByCreatedAt(consultation) });
+  res.json({ success: true, data: await consultationResponse(consultation) });
 }));
 
 // DELETE /api/consultations/:sku/question/:questionId

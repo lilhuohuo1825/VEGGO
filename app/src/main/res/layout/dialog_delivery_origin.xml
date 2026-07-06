@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutWarehouseDialogRoot"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/bg_bottom_sheet_rounded"
     android:orientation="vertical">
 
@@ -10,7 +11,7 @@
         android:layout_height="52dp"
         android:fontFamily="@font/inter_medium"
         android:gravity="center"
-        android:text="Thông tin giao hàng"
+        android:text="Chọn kho giao hàng"
         android:textColor="#1E1E1E"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -20,62 +21,18 @@
         android:layout_height="0.5dp"
         android:background="#616161" />
 
-    <LinearLayout
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvWarehouseOptions"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_selected"
-            android:gravity="top"
-            android:orientation="horizontal"
-            android:padding="12dp">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_delivery_map" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Giao từ"
-                    android:textColor="#1E1E1E"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDeliveryOriginAddress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/inter_regular"
-                    android:lineSpacingExtra="2dp"
-                    android:text="123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh"
-                    android:textColor="#616161"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/tvDeliveryOriginDistance"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="20 km ~ 45 phút"
-                    android:textColor="#57AF37"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fadeScrollbars="false"
+        android:nestedScrollingEnabled="true"
+        android:overScrollMode="always"
+        android:padding="16dp"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollbars="vertical" />
 
     <View
         android:layout_width="match_parent"
@@ -94,12 +51,23 @@
             android:id="@+id/btnCloseDeliveryOrigin"
             android:layout_width="110dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_button_primary"
+            android:background="@drawable/bg_order_cancel_button"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
             android:text="Đóng"
+            android:textColor="@color/primary_main"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/btnConfirmWarehouse"
+            android:layout_width="130dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_button_primary"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Xác nhận"
             android:textColor="#FFFFFF"
             android:textSize="14sp" />
     </LinearLayout>
-
 </LinearLayout>

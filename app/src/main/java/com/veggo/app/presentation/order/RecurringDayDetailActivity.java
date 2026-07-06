@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.notification.RecurringConfirmationHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 
@@ -44,26 +45,32 @@ public class RecurringDayDetailActivity extends BaseActivity {
         String deliveryDate = getIntent().getStringExtra(EXTRA_DELIVERY_DATE);
         Date date = parseDate(deliveryDate);
         String customerId = new AppPreferences(this).getCustomerId();
+        RecurringOrderStore store = new RecurringOrderStore(this);
         List<RecurringOrderStore.RecurringOrder> orders =
-                new RecurringOrderStore(this).occurrencesForCustomerOnDate(customerId, deliveryDate);
+                store.occurrencesForCustomerOnDate(customerId, deliveryDate);
 
         ((TextView) findViewById(R.id.recurringDayTitle)).setText(date == null ? "" : titleFormat.format(date));
 
         LinearLayout container = findViewById(R.id.recurringDayOrdersContainer);
         container.removeAllViews();
         for (RecurringOrderStore.RecurringOrder order : orders) {
-            container.addView(createOrderCard(order));
+            container.addView(createOrderCard(store, order, deliveryDate));
         }
     }
 
-    private LinearLayout createOrderCard(RecurringOrderStore.RecurringOrder order) {
+    private LinearLayout createOrderCard(
+            RecurringOrderStore store,
+            RecurringOrderStore.RecurringOrder order,
+            String deliveryDate
+    ) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(16), dp(8), dp(16), dp(8));
         card.setBackgroundResource(R.drawable.bg_order_card);
         card.setOnClickListener(v -> {
-            Intent intent = new Intent(this, RecurringOrderDetailActivity.class);
-            intent.putExtra(RecurringOrderDetailActivity.EXTRA_RECURRING_ORDER_ID, order.id);
+            Intent intent = new Intent(this, RecurringConfirmOrderActivity.class);
+            intent.putExtra(RecurringConfirmOrderActivity.EXTRA_RECURRING_ORDER_ID, order.id);
+            intent.putExtra(RecurringConfirmOrderActivity.EXTRA_OCCURRENCE_DATE, deliveryDate);
             startActivity(intent);
         });
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
@@ -89,12 +96,33 @@ public class RecurringDayDetailActivity extends BaseActivity {
         header.addView(id, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         TextView status = new TextView(this);
-        status.setText("Định kỳ");
+        RecurringOrderStore.OccurrenceState state = store.getOccurrence(order.id, deliveryDate);
+        String occurrenceStatus = state == null ? null : state.status;
+        if (RecurringConfirmationHelper.hasOrderPlaced(occurrenceStatus)) {
+            status.setText(R.string.recurring_day_status_placed);
+            status.setTextColor(getColor(R.color.primary_hover));
+            status.setBackgroundResource(R.drawable.bg_recurring_event_green);
+        } else if (RecurringConfirmationHelper.STATUS_CANCELLED.equals(occurrenceStatus)) {
+            status.setText(R.string.recurring_day_status_cancelled);
+            status.setTextColor(getColor(R.color.danger_main));
+            status.setBackgroundResource(R.drawable.bg_order_cancel_button);
+        } else if (RecurringConfirmationHelper.STATUS_SKIPPED.equals(occurrenceStatus)) {
+            status.setText(R.string.recurring_day_status_skipped);
+            status.setTextColor(getColor(R.color.neutral_70));
+            status.setBackgroundResource(R.drawable.bg_recurring_event_yellow);
+        } else if (RecurringConfirmationHelper.isActionable(occurrenceStatus)
+                && RecurringConfirmationHelper.isConfirmWindowOpen(deliveryDate)) {
+            status.setText(R.string.recurring_day_status_pending);
+            status.setTextColor(getColor(R.color.order_status_pending));
+            status.setBackgroundResource(R.drawable.bg_order_pending_chip);
+        } else {
+            status.setText(R.string.recurring_day_status_skipped);
+            status.setTextColor(getColor(R.color.neutral_70));
+            status.setBackgroundResource(R.drawable.bg_recurring_event_yellow);
+        }
         status.setGravity(Gravity.CENTER);
         status.setMinWidth(dp(90));
-        status.setTextColor(getColor(R.color.order_status_pending));
         status.setTextSize(12);
-        status.setBackgroundResource(R.drawable.bg_order_pending_chip);
         header.addView(status, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(24)));
 
         TextView title = new TextView(this);

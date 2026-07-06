@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/carbonHistoryScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_main"
@@ -23,7 +24,7 @@
     android:scaleType="centerInside"
     android:src="@drawable/ic_left"
     android:tint="@color/primary_hover" />
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/carbon_history_title" android:textColor="@color/neutral_100" android:textSize="@dimen/text_xl" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/carbon_history_title" android:textColor="@color/neutral_100" android:textSize="20sp" android:textStyle="bold" />
             <Space android:layout_width="40dp" android:layout_height="40dp" />
         </LinearLayout>
 

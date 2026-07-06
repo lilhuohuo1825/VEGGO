@@ -6,6 +6,11 @@ const multer = require('multer');
 
 const Product = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
+const {
+  notifyRecipeComment,
+  notifyCommentLike,
+  notifyNewFollower,
+} = require('../utils/communityNotification');
 
 const router = express.Router();
 
@@ -674,6 +679,15 @@ router.post('/follows/toggle', asyncHandler(async (req, res) => {
     ),
   ]);
 
+  if (!currentlyFollowing) {
+    const followerName = follower.FullName || follower.name || followerCustomerId;
+    await notifyNewFollower({
+      followedCustomerId: followingCustomerId,
+      followerId: followerCustomerId,
+      followerName,
+    });
+  }
+
   res.json({
     ok: true,
     isFollowing: !currentlyFollowing,
@@ -717,6 +731,18 @@ router.post('/comments', asyncHandler(async (req, res) => {
     { _id: data._id },
     { $push: { recipeComments: comment } }
   );
+
+  const recipeOwnerId = recipe.CustomerID || recipe.customerId || recipe.chefId || '';
+  const commenterName = user.FullName || user.name || customerId;
+  await notifyRecipeComment({
+    recipeOwnerId,
+    commenterId: customerId,
+    commenterName,
+    recipeId,
+    recipeTitle: recipe.Title || recipe.title || '',
+    commentPreview: content,
+  });
+
   res.status(201).json(normalizeRecipeComment(comment, user, customerId));
 }));
 
@@ -755,6 +781,20 @@ router.post('/comments/:commentId/like', asyncHandler(async (req, res) => {
       },
     }
   );
+
+  if (!currentlyLiked) {
+    const recipeId = recipeRef(comment);
+    const recipe = (data.recipes || []).find((item) => recipeRef(item) === recipeId);
+    const liker = await mongoose.connection.db.collection('users').findOne({ CustomerID: customerId });
+    const likerName = liker?.FullName || liker?.name || customerId;
+    await notifyCommentLike({
+      commentOwnerId: comment.CustomerID || comment.customerId || '',
+      likerId: customerId,
+      likerName,
+      recipeId,
+      recipeTitle: recipe?.Title || recipe?.title || '',
+    });
+  }
 
   const user = await mongoose.connection.db.collection('users').findOne({ CustomerID: nextComment.CustomerID });
   res.json(normalizeRecipeComment(nextComment, user, customerId));

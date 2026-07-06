@@ -8,6 +8,7 @@ import com.veggo.app.data.remote.request.ForgotPasswordRequest;
 import com.veggo.app.data.remote.request.LoginRequest;
 import com.veggo.app.data.remote.request.RegisterRequest;
 import com.veggo.app.data.remote.request.ResetPasswordRequest;
+import com.veggo.app.data.remote.request.VerifyForgotPasswordOtpRequest;
 import com.veggo.app.domain.repository.AuthRepository;
 
 import java.util.Map;
@@ -34,6 +35,11 @@ public class AuthRepositoryImpl implements AuthRepository {
     @Override
     public void forgotPassword(String phone, Callback<Map<String, String>> callback) {
         authApi.forgotPassword(new ForgotPasswordRequest(phone)).enqueue(callback);
+    }
+
+    @Override
+    public void verifyForgotPasswordOtp(String phone, String otp, Callback<Map<String, String>> callback) {
+        authApi.verifyForgotPasswordOtp(new VerifyForgotPasswordOtpRequest(phone, otp)).enqueue(callback);
     }
 
     @Override

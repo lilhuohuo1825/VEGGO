@@ -45,14 +45,19 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/reviewOrderHintText"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="wrap_content"
         android:background="#FFF8D8"
         android:fontFamily="@font/inter_regular"
         android:gravity="center_vertical"
+        android:lineSpacingExtra="2dp"
+        android:minHeight="42dp"
         android:paddingStart="16dp"
+        android:paddingTop="10dp"
         android:paddingEnd="16dp"
-        android:text="Xem hướng dẫn đánh giá chuẩn để nhận đến 2 điểm carbon!"
+        android:paddingBottom="10dp"
+        android:text="@string/review_order_carbon_hint"
         android:textColor="@color/neutral_100"
         android:textSize="@dimen/text_sm" />
 

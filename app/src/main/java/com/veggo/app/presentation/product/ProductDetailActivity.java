@@ -32,6 +32,7 @@ import com.veggo.app.core.network.ApiHttpException;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
@@ -59,6 +60,7 @@ public class ProductDetailActivity extends BaseActivity {
     public static final String EXTRA_FLASH_SALE_PRICE = "extra_flash_sale_price";
     public static final String EXTRA_FLASH_SALE_ORIGINAL_PRICE = "extra_flash_sale_original_price";
     public static final String EXTRA_FLASH_SALE_DISCOUNT_LABEL = "extra_flash_sale_discount_label";
+    public static final String EXTRA_SCROLL_TO_CONSULTATION = "extra_scroll_to_consultation";
 
     private ProductViewModel viewModel;
     private Product currentProduct;
@@ -103,6 +105,8 @@ public class ProductDetailActivity extends BaseActivity {
     private final List<TableRow> descriptionRows = new ArrayList<>();
     private boolean descriptionExpanded = false;
     private boolean openAddToCartPending;
+    private boolean scrollToConsultationPending;
+    private int consultationScrollAttempts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +119,8 @@ public class ProductDetailActivity extends BaseActivity {
         observeViewModel();
         refreshCartBadge(false);
         openAddToCartPending = getIntent().getBooleanExtra(EXTRA_OPEN_ADD_TO_CART, false);
+        scrollToConsultationPending = getIntent().getBooleanExtra(EXTRA_SCROLL_TO_CONSULTATION, false);
+        consultationScrollAttempts = 0;
         flashSalePrice = getIntent().getLongExtra(EXTRA_FLASH_SALE_PRICE, 0);
         flashSaleOriginalPrice = getIntent().getLongExtra(EXTRA_FLASH_SALE_ORIGINAL_PRICE, 0);
         flashSaleDiscountLabel = getIntent().getStringExtra(EXTRA_FLASH_SALE_DISCOUNT_LABEL);
@@ -140,6 +146,7 @@ public class ProductDetailActivity extends BaseActivity {
                     openAddToCartPending = false;
                     showAddToCartPopup(product, false);
                 }
+                maybeScrollToConsultationSection();
             }
         });
 
@@ -166,12 +173,44 @@ public class ProductDetailActivity extends BaseActivity {
             if (reviews != null) {
                 updateReviews(reviews);
                 updateRatingSummary(reviews);
+                maybeScrollToConsultationSection();
             }
         });
 
         viewModel.getConsultations().observe(this, questions -> {
-            if (questions != null) {
-                consultationAdapter.setQuestions(questions);
+            AppPreferences prefs = new AppPreferences(this);
+            consultationAdapter.setCurrentCustomerId(prefs.getCustomerId());
+            java.util.List<com.veggo.app.domain.model.Consultation> display =
+                    ConsultationUiHelper.filterForUser(questions, prefs.getCustomerId());
+            java.util.List<com.veggo.app.domain.model.Consultation> preview =
+                    ConsultationUiHelper.limit(display, ConsultationUiHelper.PREVIEW_LIMIT);
+            consultationAdapter.setQuestions(preview);
+
+            android.widget.TextView tvEmpty = findViewById(R.id.tvConsultationEmpty);
+            android.widget.TextView tvShowMore = findViewById(R.id.tvShowMoreConsultation);
+            if (tvEmpty != null) {
+                tvEmpty.setVisibility(display.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+            if (rvConsultations != null) {
+                rvConsultations.setVisibility(display.isEmpty() ? View.GONE : View.VISIBLE);
+            }
+            if (tvShowMore != null) {
+                tvShowMore.setVisibility(display.isEmpty() ? View.GONE : View.VISIBLE);
+            }
+            if (scrollToConsultationPending) {
+                View section = findViewById(R.id.consultationSectionContainer);
+                if (section != null) {
+                    section.getViewTreeObserver().addOnGlobalLayoutListener(
+                            new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+                                @Override
+                                public void onGlobalLayout() {
+                                    section.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                    maybeScrollToConsultationSection();
+                                }
+                            });
+                } else {
+                    maybeScrollToConsultationSection();
+                }
             }
         });
 
@@ -209,6 +248,16 @@ public class ProductDetailActivity extends BaseActivity {
     private void submitConsultationQuestion() {
         if (edtQuestion == null) return;
 
+        AppPreferences appPreferences = new AppPreferences(this);
+        if (!appPreferences.isLoggedIn()
+                || appPreferences.getCustomerId() == null
+                || appPreferences.getCustomerId().isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.consultation_login_required,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            startActivity(new android.content.Intent(this, LoginActivity.class));
+            return;
+        }
+
         String questionText = edtQuestion.getText().toString().trim();
         if (questionText.isEmpty()) {
             android.widget.Toast.makeText(this, R.string.consultation_submit_empty,
@@ -223,13 +272,13 @@ public class ProductDetailActivity extends BaseActivity {
             return;
         }
 
-        AppPreferences appPreferences = new AppPreferences(this);
         viewModel.submitQuestion(
                 product.getSku(),
                 questionText,
                 appPreferences.getCustomerId(),
                 appPreferences.getFullName(),
                 product.getName(),
+                appPreferences.getAvatarUrl(),
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
                     public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
@@ -248,6 +297,93 @@ public class ProductDetailActivity extends BaseActivity {
                 });
     }
 
+    private void setupConsultationAdapterListener() {
+        consultationAdapter.setActionListener(new com.veggo.app.adapter.ConsultationAdapter.ActionListener() {
+            @Override
+            public void onToggleLike(com.veggo.app.domain.model.Consultation question) {
+                toggleConsultationLike(question);
+            }
+
+            @Override
+            public void onSubmitReply(com.veggo.app.domain.model.Consultation question, String content) {
+                submitConsultationReply(question, content);
+            }
+
+            @Override
+            public void onLoginRequired() {
+                android.widget.Toast.makeText(ProductDetailActivity.this,
+                        R.string.consultation_login_required,
+                        android.widget.Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(ProductDetailActivity.this, LoginActivity.class));
+            }
+        });
+    }
+
+    private void toggleConsultationLike(com.veggo.app.domain.model.Consultation question) {
+        if (question == null || question.getId() == null || question.getId().isEmpty()) {
+            return;
+        }
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            return;
+        }
+        AppPreferences prefs = new AppPreferences(this);
+        viewModel.toggleQuestionLike(
+                product.getSku(),
+                question.getId(),
+                prefs.getCustomerId(),
+                prefs.getFullName(),
+                new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
+                        // List refreshed via LiveData observer.
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        runOnUiThread(() -> android.widget.Toast.makeText(
+                                ProductDetailActivity.this,
+                                R.string.consultation_submit_network_error,
+                                android.widget.Toast.LENGTH_SHORT).show());
+                    }
+                });
+    }
+
+    private void submitConsultationReply(com.veggo.app.domain.model.Consultation question, String content) {
+        if (question == null || question.getId() == null || question.getId().isEmpty()) {
+            return;
+        }
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            return;
+        }
+        AppPreferences prefs = new AppPreferences(this);
+        viewModel.submitReply(
+                product.getSku(),
+                question.getId(),
+                content,
+                prefs.getCustomerId(),
+                prefs.getFullName(),
+                prefs.getAvatarUrl(),
+                new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
+                        runOnUiThread(() -> android.widget.Toast.makeText(
+                                ProductDetailActivity.this,
+                                R.string.consultation_reply_success,
+                                android.widget.Toast.LENGTH_SHORT).show());
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        runOnUiThread(() -> android.widget.Toast.makeText(
+                                ProductDetailActivity.this,
+                                R.string.consultation_submit_network_error,
+                                android.widget.Toast.LENGTH_SHORT).show());
+                    }
+                });
+    }
+
     private void showConsultationSubmitError(Throwable t, String questionText) {
         String message;
         if (t instanceof ApiHttpException) {
@@ -256,6 +392,8 @@ public class ProductDetailActivity extends BaseActivity {
                 message = getString(R.string.consultation_submit_not_found);
             } else if (code == 400) {
                 message = getString(R.string.consultation_submit_empty);
+            } else if (code == 401) {
+                message = getString(R.string.consultation_login_required);
             } else {
                 message = getString(R.string.consultation_submit_network_error);
             }
@@ -275,6 +413,48 @@ public class ProductDetailActivity extends BaseActivity {
             });
         }
         snackbar.show();
+    }
+
+    private void maybeScrollToConsultationSection() {
+        if (!scrollToConsultationPending) {
+            return;
+        }
+        View section = findViewById(R.id.consultationSectionContainer);
+        androidx.core.widget.NestedScrollView scrollView = findViewById(R.id.productDetailScroll);
+        if (section == null || scrollView == null) {
+            return;
+        }
+
+        section.post(() -> {
+            if (!scrollToConsultationPending) {
+                return;
+            }
+
+            if (section.getHeight() <= 0 && consultationScrollAttempts < 8) {
+                consultationScrollAttempts++;
+                section.postDelayed(this::maybeScrollToConsultationSection, 150);
+                return;
+            }
+
+            int scrollY = computeScrollOffset(section, scrollView);
+            scrollToConsultationPending = false;
+            consultationScrollAttempts = 0;
+            int topPadding = (int) (12 * getResources().getDisplayMetrics().density);
+            scrollView.smoothScrollTo(0, Math.max(0, scrollY - topPadding));
+        });
+    }
+
+    private int computeScrollOffset(View target, androidx.core.widget.NestedScrollView scrollView) {
+        int offset = 0;
+        View current = target;
+        while (current != null && current != scrollView) {
+            offset += current.getTop();
+            if (!(current.getParent() instanceof View)) {
+                break;
+            }
+            current = (View) current.getParent();
+        }
+        return offset;
     }
 
     private void updateRatingSummary(java.util.List<com.veggo.app.domain.model.Review> reviews) {
@@ -358,15 +538,48 @@ public class ProductDetailActivity extends BaseActivity {
         com.veggo.app.adapter.ReviewAdapter adapter = (com.veggo.app.adapter.ReviewAdapter) rvReviews.getAdapter();
         if (adapter == null) {
             adapter = new com.veggo.app.adapter.ReviewAdapter();
+            setupReviewAdapterListener(adapter);
             rvReviews.setAdapter(adapter);
         }
+        AppPreferences prefs = new AppPreferences(this);
+        adapter.setCurrentCustomerId(prefs.getCustomerId());
         if (reviews != null && !reviews.isEmpty()) {
             int previewCount = Math.min(2, reviews.size());
             adapter.setReviews(new java.util.ArrayList<>(reviews.subList(0, previewCount)));
             rvReviews.setVisibility(View.VISIBLE);
         } else {
+            adapter.setReviews(new java.util.ArrayList<>());
             rvReviews.setVisibility(View.GONE);
         }
+    }
+
+    private void setupReviewAdapterListener(com.veggo.app.adapter.ReviewAdapter adapter) {
+        adapter.setActionListener(new com.veggo.app.adapter.ReviewAdapter.ActionListener() {
+            @Override
+            public void onToggleLike(com.veggo.app.domain.model.Review review) {
+                toggleReviewLike(review);
+            }
+
+            @Override
+            public void onLoginRequired() {
+                android.widget.Toast.makeText(ProductDetailActivity.this,
+                        R.string.consultation_like_login_required,
+                        android.widget.Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(ProductDetailActivity.this, LoginActivity.class));
+            }
+        });
+    }
+
+    private void toggleReviewLike(com.veggo.app.domain.model.Review review) {
+        if (review == null || review.getId() == null || review.getId().isEmpty()) {
+            return;
+        }
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            return;
+        }
+        AppPreferences prefs = new AppPreferences(this);
+        viewModel.toggleReviewLike(product.getSku(), review.getId(), prefs.getCustomerId());
     }
 
     private void updateRecipes(java.util.List<com.veggo.app.domain.model.Recipe> recipes) {
@@ -407,6 +620,7 @@ public class ProductDetailActivity extends BaseActivity {
 
         rvConsultations = findViewById(R.id.rvConsultations);
         consultationAdapter = new com.veggo.app.adapter.ConsultationAdapter();
+        setupConsultationAdapterListener();
         rvConsultations.setAdapter(consultationAdapter);
 
         edtQuestion = findViewById(R.id.edtQuestion);
@@ -588,7 +802,7 @@ public class ProductDetailActivity extends BaseActivity {
         TextView btnConfirmText = view.findViewById(R.id.btnConfirmAddToCart);
 
         // Bind data
-        Glide.with(this).load(product.getImageUrl()).into(ivThumb);
+        loadProductImage(ivThumb, product.getImageUrl());
         tvName.setText(product.getName());
         long displayPrice = effectivePrice(product);
         long displayOriginalPrice = effectiveOriginalPrice(product);
@@ -917,8 +1131,12 @@ public class ProductDetailActivity extends BaseActivity {
         viewModel = new ViewModelProvider(this, factory).get(ProductViewModel.class);
     }
 
+    private void loadProductImage(ImageView target, String imageUrl) {
+        ProductImageUtils.loadInto(this, target, imageUrl, R.drawable.ic_vegetable, R.drawable.ic_vegetable);
+    }
+
     private void bindProductData(Product product) {
-        Glide.with(this).load(product.getImageUrl()).into(ivProductImage);
+        loadProductImage(ivProductImage, product.getImageUrl());
         tvProductName.setText(product.getName());
         tvWeight.setText(product.getWeight());
         

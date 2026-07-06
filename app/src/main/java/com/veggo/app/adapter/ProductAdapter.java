@@ -7,9 +7,9 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.databinding.ItemProductGridBinding;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.presentation.profile.TastePreferenceStore;
@@ -87,12 +87,22 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         return products.size();
     }
 
+    @Override
+    public void onViewRecycled(@NonNull ProductViewHolder holder) {
+        super.onViewRecycled(holder);
+        holder.clearImage();
+    }
+
     static class ProductViewHolder extends RecyclerView.ViewHolder {
         private final ItemProductGridBinding binding;
 
         public ProductViewHolder(@NonNull ItemProductGridBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
+        }
+
+        void clearImage() {
+            ProductImageUtils.clear(binding.imgProduct);
         }
 
         public void bind(
@@ -124,11 +134,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 binding.tvTasteTag.setText(tasteWarning);
             }
 
-            Glide.with(binding.getRoot().getContext())
-                    .load(product.getImageUrl())
-                    .placeholder(R.drawable.ic_leaf)
-                    .error(R.drawable.ic_leaf)
-                    .into(binding.imgProduct);
+            ProductImageUtils.loadInto(binding.getRoot().getContext(), binding.imgProduct, product.getImageUrl());
 
             binding.getRoot().setOnClickListener(v -> {
                 if (listener != null) {

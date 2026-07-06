@@ -300,6 +300,8 @@ public final class AssetModels {
         public List<OrderDetailItem> items;
         @SerializedName("promotion_id")
         public String promotionId;
+        @SerializedName("shippingPromotionId")
+        public String shippingPromotionId;
         @SerializedName("TotalCarbonEmission")
         public double totalCarbonEmission;
         @SerializedName("CarbonPointEarned")

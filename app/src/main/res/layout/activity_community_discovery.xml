@@ -1,51 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/discoveryRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/neutral_10"
     android:clipChildren="false"
-    android:clipToPadding="false"
-    android:fitsSystemWindows="true">
+    android:clipToPadding="false">
 
-    <FrameLayout
-        android:id="@+id/discoveryBackButton"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_marginStart="18dp"
-        android:layout_marginTop="12dp"
-        android:clickable="true"
-        android:contentDescription="Back"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackgroundBorderless"
+    <LinearLayout
+        android:id="@+id/discoveryTopHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/neutral_10"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="8dp"
+        android:translationZ="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.appcompat.widget.AppCompatImageView
-            android:layout_width="26dp"
-            android:layout_height="27dp"
-            android:layout_gravity="center"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_left"
-            app:tint="#57AF37" />
-    </FrameLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:minHeight="44dp"
+            android:orientation="horizontal">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/discoverySearchBar"
-        android:layout_width="0dp"
-        android:layout_height="44dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="11dp"
-        android:layout_marginEnd="18dp"
-        android:background="@drawable/bg_home_search"
-        android:minHeight="44dp"
-        android:paddingStart="14dp"
-        android:paddingTop="0dp"
-        android:paddingEnd="6dp"
-        android:paddingBottom="0dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/discoveryBackButton"
-        app:layout_constraintTop_toTopOf="parent">
+            <FrameLayout
+                android:id="@+id/discoveryBackButton"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:clickable="true"
+                android:contentDescription="Back"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="26dp"
+                    android:layout_height="27dp"
+                    android:layout_gravity="center"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_left"
+                    app:tint="#57AF37" />
+            </FrameLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/discoverySearchBar"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_home_search"
+                android:minHeight="44dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="6dp">
 
         <ImageView
             android:id="@+id/discoverySearchIcon"
@@ -74,43 +86,105 @@
             android:textColorHint="#66167728"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/discoveryVoiceButton"
+            app:layout_constraintEnd_toStartOf="@id/btnMic"
             app:layout_constraintStart_toEndOf="@id/discoverySearchIcon"
             app:layout_constraintTop_toTopOf="parent" />
 
         <FrameLayout
-            android:id="@+id/discoveryVoiceButton"
+            android:id="@+id/btnMic"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="@drawable/bg_home_mic"
             android:clickable="true"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:contentDescription="@string/chat_voice_input"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:clipChildren="false"
-            android:clipToPadding="false">
+            app:layout_constraintTop_toTopOf="parent">
+
             <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/imgMic"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="Voice Search"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_microphone"
-                app:tint="@color/neutral_80"
-                android:contentDescription="" />
+                app:tint="@color/neutral_80" />
         </FrameLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutVoiceStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_voice_status_banner"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp"
+            android:visibility="gone">
+
+        <View
+            android:id="@+id/viewVoicePulse"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/bg_voice_pulse_dot" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvVoiceStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="@string/chat_voice_status_listening"
+                android:textColor="@color/primary_hover"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvVoiceHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/inter"
+                android:text="@string/chat_voice_hint_cancel"
+                android:textColor="@color/neutral_70"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressVoice"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:indeterminateTint="@color/primary_main"
+            android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/discoveryTabs"
         android:layout_width="0dp"
         android:layout_height="52dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="6dp"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/discoverySearchBar">
+        app:layout_constraintTop_toBottomOf="@id/discoveryTopHeader">
 
         <LinearLayout
             android:id="@+id/discoveryRecipesTab"
@@ -187,8 +261,8 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="14dp"
-        app:layout_constraintBottom_toTopOf="@id/communityBottomNavHost"
+        android:paddingBottom="100dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/discoveryTabDivider">

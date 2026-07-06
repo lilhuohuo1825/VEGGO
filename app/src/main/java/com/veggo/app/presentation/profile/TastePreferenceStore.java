@@ -385,7 +385,7 @@ public class TastePreferenceStore {
     private void seedIfNeeded() {
         if (prefs.getBoolean(KEY_SEEDED, false)) return;
         saveTagsInternal(Arrays.asList(
-                new TasteTag("ca cao", ACTION_BLOCK, "ca cao,cacao,socola,chocolate", true),
+                new TasteTag("ca cao", ACTION_BLOCK, "ca cao,cacao,socola,chocolate", false),
                 new TasteTag("trái cây nhiệt đới", ACTION_BLOCK, "xoài,dưa hấu,đu đủ,sầu riêng,thanh long,chuối,dứa,thơm", true),
                 new TasteTag("đào", ACTION_ALLERGY, "đào,peach", true),
                 new TasteTag("đậu phộng", ACTION_ALLERGY, "đậu phộng,peanut,lạc", true),

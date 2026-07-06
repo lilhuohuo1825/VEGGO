@@ -37,6 +37,8 @@ import com.veggo.app.data.remote.dto.ProductDto;
 import com.veggo.app.data.remote.dto.RecipeDetailDto;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.repository.RecipeRepository;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.presentation.dialog.VeggoDialog;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 
@@ -68,6 +70,7 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
     private View editButton;
     private View deleteButton;
     private View bookmarkButton;
+    private SwipeRefreshLayout recipeRefreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -98,7 +101,18 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
         bookmarkButton.setOnClickListener(v -> toggleRecipeFavorite());
         findViewById(R.id.recipeShareButton).setOnClickListener(v -> shareRecipe());
         findViewById(R.id.recipeCommentSend).setOnClickListener(v -> submitComment());
+        setupPullToRefresh();
+        loadRecipeContent();
+    }
 
+    private void setupPullToRefresh() {
+        recipeRefreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.recipeDetailScroll),
+                this::reloadRecipeDetail
+        );
+    }
+
+    private void loadRecipeContent() {
         if (!isBlank(instructionId)) {
             loadRemoteRecipeDetail(instructionId);
             return;
@@ -110,12 +124,31 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
                     return;
                 }
                 bindDetail(data);
+                PullToRefreshHelper.finish(recipeRefreshLayout);
             }));
             loadFavoriteState();
             return;
         }
 
         showRecipeLoadError();
+    }
+
+    private void reloadRecipeDetail() {
+        if (!isBlank(instructionId)) {
+            loadRemoteRecipeDetail(instructionId);
+            return;
+        }
+        if (!isBlank(recipeId)) {
+            repository.loadRecipeDetail(recipeId, data -> runOnUiThread(() -> {
+                if (isActivityAlive()) {
+                    bindDetail(data);
+                }
+                PullToRefreshHelper.finish(recipeRefreshLayout);
+            }));
+            loadFavoriteState();
+            return;
+        }
+        PullToRefreshHelper.finish(recipeRefreshLayout);
     }
 
     private String normalizeId(String raw) {
@@ -147,9 +180,11 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
                     }
                     if (result == null || result.getInstruction() == null) {
                         showRecipeLoadError();
+                        PullToRefreshHelper.finish(recipeRefreshLayout);
                         return;
                     }
                     bindRemoteDetail(result);
+                    PullToRefreshHelper.finish(recipeRefreshLayout);
                 });
             }
 
@@ -160,6 +195,7 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
                         return;
                     }
                     showRecipeLoadError();
+                    PullToRefreshHelper.finish(recipeRefreshLayout);
                 });
             }
         });
@@ -698,7 +734,7 @@ public class InstructionRecipeDetailActivity extends AppCompatActivity {
             return;
         }
 
-        productApi.getProducts().enqueue(new Callback<List<ProductDto>>() {
+        productApi.getProducts("true").enqueue(new Callback<List<ProductDto>>() {
             @Override
             public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
                 String foundProductId = findMatchingProductId(response.body(), query);

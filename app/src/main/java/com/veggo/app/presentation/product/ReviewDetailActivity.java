@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.veggo.app.R;
 import com.veggo.app.adapter.ReviewAdapter;
 import com.veggo.app.adapter.ReviewPhotoAdapter;
+import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
@@ -61,6 +62,7 @@ public class ReviewDetailActivity extends BaseActivity {
         
         RecyclerView rvReviewsDetail = findViewById(R.id.rvReviews);
         adapter = new ReviewAdapter();
+        setupReviewAdapterListener();
         rvReviewsDetail.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
         rvReviewsDetail.setAdapter(adapter);
 
@@ -153,12 +155,39 @@ public class ReviewDetailActivity extends BaseActivity {
         viewModel.getProductReviews().observe(this, reviews -> {
             if (reviews != null) {
                 this.allReviews = reviews;
+                adapter.setCurrentCustomerId(new AppPreferences(this).getCustomerId());
                 updateFilterLabels(reviews);
                 if (currentFilterView != null && (currentFilterView.getId() == R.id.filterAll || currentFilterView == findViewById(R.id.filterAll))) {
                     adapter.setReviews(reviews);
                 }
                 updateRatingSummary(reviews);
                 updatePhotoGallery(reviews);
+            }
+        });
+    }
+
+    private void setupReviewAdapterListener() {
+        adapter.setActionListener(new ReviewAdapter.ActionListener() {
+            @Override
+            public void onToggleLike(Review review) {
+                if (review == null || review.getId() == null || review.getId().isEmpty()) {
+                    return;
+                }
+                com.veggo.app.domain.model.Product product = viewModel.getProduct().getValue();
+                if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+                    return;
+                }
+                viewModel.toggleReviewLike(product.getSku(), review.getId(),
+                        new AppPreferences(ReviewDetailActivity.this).getCustomerId());
+            }
+
+            @Override
+            public void onLoginRequired() {
+                android.widget.Toast.makeText(ReviewDetailActivity.this,
+                        R.string.consultation_like_login_required,
+                        android.widget.Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(ReviewDetailActivity.this,
+                        com.veggo.app.presentation.auth.LoginActivity.class));
             }
         });
     }

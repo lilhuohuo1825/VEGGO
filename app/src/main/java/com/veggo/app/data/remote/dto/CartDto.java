@@ -40,6 +40,9 @@ public class CartDto {
         @SerializedName(value = "originalPrice", alternate = {"base_price"})
         private long originalPrice;
 
+        @SerializedName("updatedAt")
+        private String updatedAt;
+
         public String getSku() { return sku; }
         public void setSku(String sku) { this.sku = sku; }
         public ProductDto getProduct() { return product; }
@@ -52,5 +55,7 @@ public class CartDto {
         public void setPrice(long price) { this.price = price; }
         public long getOriginalPrice() { return originalPrice; }
         public void setOriginalPrice(long originalPrice) { this.originalPrice = originalPrice; }
+        public String getUpdatedAt() { return updatedAt; }
+        public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
     }
 }

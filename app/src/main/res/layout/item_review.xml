@@ -114,16 +114,22 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/btnHelpful"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingEnd="8dp">
 
         <ImageView
+            android:id="@+id/ivHelpfulIcon"
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:src="@drawable/ic_heart_grey"
+            android:src="@drawable/ic_heart_outline_green"
             app:tint="@color/neutral_60" />
 
         <TextView

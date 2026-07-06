@@ -340,6 +340,32 @@
             </div>
           </div>
 
+          <div class="info-section" *ngIf="!isNewOrder && !isEditMode">
+            <h4 class="section-subtitle">Loại giao hàng</h4>
+            <div class="info-row">
+              <span class="order-source-badge" [ngClass]="'order-source-' + orderData.deliveryInfo.orderSource">
+                {{ orderData.deliveryInfo.orderSourceLabel }}
+              </span>
+            </div>
+            <div class="info-row" *ngIf="orderData.deliveryInfo.deliveryTimeText">
+              <span class="info-label">Khung giờ giao</span>
+              <span class="info-value">{{ orderData.deliveryInfo.deliveryTimeText }}</span>
+            </div>
+            <div class="info-row" *ngIf="orderData.deliveryInfo.isRecurring">
+              <span class="info-label">Lịch định kỳ</span>
+              <span class="info-value">
+                {{ orderData.deliveryInfo.recurringOrderName || '—' }}
+                <span *ngIf="orderData.deliveryInfo.recurringFrequency">
+                  • {{ orderData.deliveryInfo.recurringFrequency }}
+                </span>
+              </span>
+            </div>
+            <div class="info-row" *ngIf="orderData.deliveryInfo.isRecurring && orderData.deliveryInfo.occurrenceDate">
+              <span class="info-label">Ngày giao lần này</span>
+              <span class="info-value">{{ orderData.deliveryInfo.occurrenceDate }}</span>
+            </div>
+          </div>
+
           <!-- Edit mode (new order or edit mode) -->
           <!-- Thông tin nhận hàng -->
           <div class="info-section" *ngIf="isNewOrder || isEditMode">

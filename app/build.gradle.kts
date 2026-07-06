@@ -1,6 +1,31 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+fun resolveApiBaseUrl(): String {
+    localProperties.getProperty("api.base.url")?.trim()?.takeIf { it.isNotEmpty() }?.let { url ->
+        return if (url.endsWith("/")) url else "$url/"
+    }
+    val mode = localProperties.getProperty("dev.api.mode")?.trim()?.lowercase() ?: "emulator"
+    val host = localProperties.getProperty("dev.api.host")?.trim()?.takeIf { it.isNotEmpty() }
+    val resolvedHost = when (mode) {
+        "physical", "device", "real" -> host ?: error(
+            "local.properties: set dev.api.host=<LAN-IP-máy-Mac> khi dev.api.mode=physical"
+        )
+        else -> "10.0.2.2"
+    }
+    return "http://$resolvedHost:5001/api/"
+}
+
+val apiBaseUrl = resolveApiBaseUrl()
 
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
@@ -22,6 +47,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -46,6 +73,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -90,7 +118,8 @@ dependencies {
 
     // Google & Facebook Login
     implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.facebook.android:facebook-login:17.0.0")
+    // 16.3.0: stable AccessToken format for FirebaseAuth (17.x can break signInWithCredential)
+    implementation("com.facebook.android:facebook-login:16.3.0")
 
     // Thư viện Room Database để chạy SQLite
     implementation("androidx.room:room-runtime:2.6.1")

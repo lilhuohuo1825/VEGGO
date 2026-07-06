@@ -21,6 +21,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.OrderApi;
 import com.veggo.app.data.remote.dto.CartItemRequestDto;
@@ -91,10 +92,7 @@ public class ReturnsActivity extends BaseActivity {
         returnListScroll = findViewById(R.id.returnListScroll);
         swipeRefreshLayout = findViewById(R.id.returnsSwipeRefresh);
         if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-            swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) ->
-                    returnListScroll != null && returnListScroll.canScrollVertically(-1));
-            swipeRefreshLayout.setOnRefreshListener(() -> loadReturns(true));
+            PullToRefreshHelper.bind(swipeRefreshLayout, returnListScroll, () -> loadReturns(true));
         }
 
         findViewById(R.id.returnPendingTab).setOnClickListener(v -> showReturnState("pending"));
@@ -184,7 +182,7 @@ public class ReturnsActivity extends BaseActivity {
 
 
     private void setActive(TextView textView, TextView badge, boolean active) {
-        int colorRes = active ? R.color.danger_main : R.color.neutral_60;
+        int colorRes = active ? R.color.primary_main : R.color.neutral_60;
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
         textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
         if (badge != null) {
@@ -204,7 +202,7 @@ public class ReturnsActivity extends BaseActivity {
             runOnUiThread(() -> {
                 bindReturnLists(snapshot);
                 if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    PullToRefreshHelper.finish(swipeRefreshLayout);
                 }
             });
         }).start();

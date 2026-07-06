@@ -96,8 +96,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:fontFamily="@font/encodesans_bold"
                     android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
                     android:text="@string/recurring_month_title"
                     android:textColor="@color/neutral_100"
                     android:textSize="@dimen/text_xl"
@@ -127,12 +132,23 @@
                 android:textColor="@color/neutral_100"
                 android:textSize="@dimen/text_md" />
 
-            <LinearLayout
-                android:id="@+id/recurringScheduledOrdersContainer"
+            <ScrollView
+                android:id="@+id/recurringScheduledOrdersScroll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_sm"
-                android:orientation="vertical" />
+                android:fillViewport="false"
+                android:nestedScrollingEnabled="true"
+                android:overScrollMode="ifContentScrolls"
+                android:scrollbars="vertical"
+                android:maxHeight="@dimen/recurring_scheduled_list_max_height">
+
+                <LinearLayout
+                    android:id="@+id/recurringScheduledOrdersContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
 
             <TextView
                 android:id="@+id/recurringEmptyListText"

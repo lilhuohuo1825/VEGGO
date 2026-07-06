@@ -25,13 +25,20 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE categoryId = :categoryId")
     LiveData<List<ProductEntity>> observeProductsByCategory(String categoryId);
 
-    @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId AND id != :excludeId LIMIT :limit")
+    @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId AND id != :excludeId "
+            + "AND name IS NOT NULL AND length(name) >= 3 AND price > 0 AND price <= 50000000 "
+            + "AND imageUrl IS NOT NULL AND length(imageUrl) > 10 LIMIT :limit")
     LiveData<List<ProductEntity>> observeRelatedBySubcategory(String subcategoryId, String excludeId, int limit);
 
-    @Query("SELECT * FROM products WHERE categoryId = :categoryId AND id != :excludeId LIMIT :limit")
+    @Query("SELECT * FROM products WHERE categoryId = :categoryId AND id != :excludeId "
+            + "AND name IS NOT NULL AND length(name) >= 3 AND price > 0 AND price <= 50000000 "
+            + "AND imageUrl IS NOT NULL AND length(imageUrl) > 10 LIMIT :limit")
     LiveData<List<ProductEntity>> observeRelatedByCategory(String categoryId, String excludeId, int limit);
 
-    @Query("SELECT * FROM products WHERE (subcategoryId = :subcategoryId OR categoryId = :categoryId) AND id != :excludeId ORDER BY (CASE WHEN subcategoryId = :subcategoryId THEN 0 ELSE 1 END) ASC, rating DESC LIMIT :limit")
+    @Query("SELECT * FROM products WHERE (subcategoryId = :subcategoryId OR categoryId = :categoryId) AND id != :excludeId "
+            + "AND name IS NOT NULL AND length(name) >= 3 AND price > 0 AND price <= 50000000 "
+            + "AND imageUrl IS NOT NULL AND length(imageUrl) > 10 "
+            + "ORDER BY (CASE WHEN subcategoryId = :subcategoryId THEN 0 ELSE 1 END) ASC, rating DESC LIMIT :limit")
     LiveData<List<ProductEntity>> observeRelatedMerged(String categoryId, String subcategoryId, String excludeId, int limit);
 
     @Query("SELECT * FROM products WHERE subcategoryId = :subcategoryId")
@@ -51,6 +58,9 @@ public interface ProductDao {
 
     @Query("DELETE FROM products")
     void clearAll();
+
+    @Query("DELETE FROM products WHERE id IN (:ids)")
+    void deleteByIds(List<String> ids);
 
     @Query("SELECT * FROM recipes WHERE productId = :productId")
     LiveData<List<com.veggo.app.data.local.entity.RecipeEntity>> observeRelatedRecipes(String productId);

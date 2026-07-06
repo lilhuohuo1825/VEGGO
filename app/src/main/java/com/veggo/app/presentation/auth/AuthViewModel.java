@@ -39,10 +39,17 @@ public class AuthViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _resetPasswordSuccess = new MutableLiveData<>();
     public LiveData<Boolean> getResetPasswordSuccess() { return _resetPasswordSuccess; }
 
+    private final MutableLiveData<Boolean> _verifyForgotOtpSuccess = new MutableLiveData<>();
+    public LiveData<Boolean> getVerifyForgotOtpSuccess() { return _verifyForgotOtpSuccess; }
+
     public AuthViewModel() {
         this.authRepository = new AuthRepositoryImpl();
         this.googleLoginUseCase = new GoogleLoginUseCase(authRepository);
         this.facebookLoginUseCase = new FacebookLoginUseCase(authRepository);
+    }
+
+    public void resetLoading() {
+        _loading.setValue(false);
     }
 
     public void googleLogin(String idToken) {
@@ -116,7 +123,7 @@ public class AuthViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     _user.setValue(response.body());
                 } else {
-                    _error.setValue("Số điện thoại hoặc mật khẩu không đúng");
+                    handleError(response);
                 }
             }
 
@@ -191,6 +198,42 @@ public class AuthViewModel extends ViewModel {
         });
     }
 
+    private void handleMapError(Response<Map<String, String>> response, String fallback) {
+        String errorMsg = fallback;
+        if (response.errorBody() != null) {
+            try {
+                String errorJson = response.errorBody().string();
+                org.json.JSONObject jsonObj = new org.json.JSONObject(errorJson);
+                if (jsonObj.has("message")) {
+                    errorMsg = jsonObj.getString("message");
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        _error.setValue(errorMsg);
+    }
+
+    public void verifyForgotPasswordOtp(String phone, String otp) {
+        _loading.setValue(true);
+        authRepository.verifyForgotPasswordOtp(phone, otp, new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                _loading.setValue(false);
+                if (response.isSuccessful()) {
+                    _verifyForgotOtpSuccess.setValue(true);
+                } else {
+                    handleMapError(response, "Mã xác thực không đúng hoặc đã hết hạn");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, String>> call, Throwable t) {
+                _loading.setValue(false);
+                _error.setValue("Lỗi kết nối: " + t.getMessage());
+            }
+        });
+    }
+
     public void resetPassword(String phone, String otp, String newPassword) {
         _loading.setValue(true);
         authRepository.resetPassword(phone, otp, newPassword, new Callback<Map<String, String>>() {
@@ -200,7 +243,7 @@ public class AuthViewModel extends ViewModel {
                 if (response.isSuccessful()) {
                     _resetPasswordSuccess.setValue(true);
                 } else {
-                    _error.setValue("Mã xác thực không đúng hoặc đã hết hạn");
+                    handleMapError(response, "Mã xác thực không đúng hoặc đã hết hạn");
                 }
             }
 

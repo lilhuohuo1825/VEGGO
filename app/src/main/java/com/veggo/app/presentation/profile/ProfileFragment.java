@@ -43,9 +43,6 @@ public class ProfileFragment extends BaseFragment {
         view.findViewById(R.id.profileSmartFridgeRow).setOnClickListener(v ->
                 LoginRequiredActivity.open(requireContext(), "tủ lạnh thông minh")
         );
-        view.findViewById(R.id.profileTasteRow).setOnClickListener(v ->
-                LoginRequiredActivity.open(requireContext(), "khẩu vị của tôi")
-        );
         view.findViewById(R.id.profileNotificationsRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PostNotificationsActivity.class))
         );

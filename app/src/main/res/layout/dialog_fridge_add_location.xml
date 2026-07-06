@@ -2,8 +2,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="32dp"
-    android:layout_marginEnd="32dp"
     android:background="@drawable/bg_popup_rounded_8"
     android:orientation="vertical"
     android:padding="24dp">
@@ -21,6 +19,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:fontFamily="@font/inter"
+        android:lineSpacingExtra="2dp"
+        android:text="Đặt tên ngăn tủ để dễ tìm nguyên liệu sau này."
+        android:textColor="@color/neutral_60"
+        android:textSize="13sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
         android:fontFamily="@font/inter_medium"
         android:text="Tên vị trí"
         android:textColor="@color/neutral_100"

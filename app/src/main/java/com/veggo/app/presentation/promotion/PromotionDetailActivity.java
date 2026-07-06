@@ -12,6 +12,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.ui.BaseActivity;
@@ -28,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.widget.ScrollView;
@@ -662,32 +667,148 @@ public class PromotionDetailActivity extends BaseActivity {
         tvUsage.setText(formatLimit(dto.getUsageLimit()));
         tvLimitPerUser.setText(formatLimit(dto.getUserLimit()));
 
-        String imageUrl = getPromotionImageUrl(dto);
-        String fullImageUrl = imageUrl == null || imageUrl.trim().isEmpty()
-                ? null
-                : buildPromotionBannerProxyUrl(dto);
-        if (fullImageUrl != null && !fullImageUrl.isEmpty()) {
-            if (promotionId != null && promotionId.matches("PROMO01[7-9]|PROMO02[0-1]")) {
-                imgBanner.post(() -> {
-                    int w = imgBanner.getWidth();
-                    if (w > 0) {
-                        int h = (int) (w / 1.414);
-                        android.view.ViewGroup.LayoutParams params = imgBanner.getLayoutParams();
-                        params.height = h;
-                        imgBanner.setLayoutParams(params);
-                        imgBanner.setScaleType(ImageView.ScaleType.FIT_XY);
-                    }
-                });
-            } else {
-                imgBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            }
-            Glide.with(this)
-                    .load(fullImageUrl)
-                    .fitCenter()
-                    .placeholder(R.drawable.banner_nam_rom)
-                    .error(R.drawable.banner_nam_rom)
-                    .into(imgBanner);
+        bindPromotionBanner(dto);
+    }
+
+    private boolean isCertificatePromotion(String promoId) {
+        return promoId != null && promoId.matches("PROMO01[7-9]|PROMO02[0-1]");
+    }
+
+    private boolean isCertificateCode(String value) {
+        return value != null && value.matches("CER00[1-5]");
+    }
+
+    private String certificateCodeToPromotionId(String certificateCode) {
+        if (certificateCode == null) {
+            return null;
         }
+        switch (certificateCode.toUpperCase(Locale.US)) {
+            case "CER001": return "PROMO017";
+            case "CER002": return "PROMO018";
+            case "CER003": return "PROMO019";
+            case "CER004": return "PROMO020";
+            case "CER005": return "PROMO021";
+            default: return null;
+        }
+    }
+
+    private String resolveBannerRequestId(PromotionDto dto) {
+        String promoId = firstNonBlank(dto.getPromotionId(), promotionId);
+        if (isCertificatePromotion(promoId)) {
+            return promoId;
+        }
+        if (isCertificateCode(promoId)) {
+            return firstNonBlank(certificateCodeToPromotionId(promoId), promoId);
+        }
+        String code = dto.getCode();
+        if (isCertificateCode(code)) {
+            return firstNonBlank(certificateCodeToPromotionId(code), code);
+        }
+        return firstNonBlank(promoId, code);
+    }
+
+    private boolean isCertificateBanner(PromotionDto dto) {
+        String requestId = resolveBannerRequestId(dto);
+        return isCertificatePromotion(requestId) || isCertificateCode(dto.getCode());
+    }
+
+    private String resolveBannerUrl(PromotionDto dto) {
+        String directUrl = buildFullImageUrl(getPromotionImageUrl(dto));
+        if (directUrl != null && !directUrl.isEmpty()) {
+            return directUrl;
+        }
+        String requestId = resolveBannerRequestId(dto);
+        if (requestId == null || requestId.isEmpty()) {
+            return null;
+        }
+        return removeTrailingSlash(Constants.API_BASE_URL) + "/promotions/" + requestId.trim() + "/banner-image";
+    }
+
+    private void configureBannerLayout(boolean certificateBanner) {
+        android.view.ViewGroup.LayoutParams params = imgBanner.getLayoutParams();
+        float density = getResources().getDisplayMetrics().density;
+        if (certificateBanner) {
+            imgBanner.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            imgBanner.post(() -> {
+                int width = imgBanner.getWidth();
+                if (width <= 0) {
+                    return;
+                }
+                android.view.ViewGroup.LayoutParams layoutParams = imgBanner.getLayoutParams();
+                layoutParams.height = Math.round(width / 1.414f);
+                imgBanner.setLayoutParams(layoutParams);
+            });
+        } else {
+            imgBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            params.height = Math.round(126f * density);
+            imgBanner.setLayoutParams(params);
+        }
+    }
+
+    private void bindPromotionBanner(PromotionDto dto) {
+        if (imgBanner == null) {
+            return;
+        }
+
+        boolean certificateBanner = isCertificateBanner(dto);
+        String bannerUrl = resolveBannerUrl(dto);
+        if (bannerUrl == null || bannerUrl.isEmpty()) {
+            imgBanner.setVisibility(View.GONE);
+            return;
+        }
+
+        configureBannerLayout(certificateBanner);
+        imgBanner.setVisibility(View.INVISIBLE);
+
+        com.bumptech.glide.RequestBuilder<android.graphics.drawable.Drawable> request =
+                Glide.with(this).load(bannerUrl);
+        if (certificateBanner) {
+            request = request.fitCenter();
+        } else {
+            request = request.centerCrop()
+                    .placeholder(R.drawable.banner_nam_rom)
+                    .error(R.drawable.banner_nam_rom);
+            imgBanner.setVisibility(View.VISIBLE);
+        }
+
+        request.listener(new RequestListener<android.graphics.drawable.Drawable>() {
+            @Override
+            public boolean onLoadFailed(
+                    @Nullable GlideException e,
+                    Object model,
+                    Target<android.graphics.drawable.Drawable> target,
+                    boolean isFirstResource
+            ) {
+                if (!certificateBanner) {
+                    imgBanner.setVisibility(View.VISIBLE);
+                } else {
+                    imgBanner.setVisibility(View.GONE);
+                }
+                return false;
+            }
+
+            @Override
+            public boolean onResourceReady(
+                    android.graphics.drawable.Drawable resource,
+                    Object model,
+                    Target<android.graphics.drawable.Drawable> target,
+                    DataSource dataSource,
+                    boolean isFirstResource
+            ) {
+                imgBanner.setVisibility(View.VISIBLE);
+                return false;
+            }
+        }).into(imgBanner);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) {
+            return first.trim();
+        }
+        if (second != null && !second.trim().isEmpty()) {
+            return second.trim();
+        }
+        return "";
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
@@ -743,13 +864,7 @@ public class PromotionDetailActivity extends BaseActivity {
     }
 
     private String buildPromotionBannerProxyUrl(PromotionDto dto) {
-        String id = dto.getPromotionId() != null && !dto.getPromotionId().trim().isEmpty()
-                ? dto.getPromotionId()
-                : dto.getCode();
-        if (id == null || id.trim().isEmpty()) {
-            return buildFullImageUrl(getPromotionImageUrl(dto));
-        }
-        return removeTrailingSlash(Constants.API_BASE_URL) + "/promotions/" + id.trim() + "/banner-image";
+        return resolveBannerUrl(dto);
     }
 
     private String buildFullImageUrl(String imageUrl) {

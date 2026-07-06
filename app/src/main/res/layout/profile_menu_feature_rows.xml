@@ -49,17 +49,6 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/profileTasteRow"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-        <ImageView android:layout_width="@dimen/profile_menu_icon_size" android:layout_height="@dimen/profile_menu_icon_size" android:contentDescription="@string/profile_taste" android:scaleType="centerInside" android:src="@drawable/ic_profile_menu_taste" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="@string/profile_taste" android:textColor="@color/veggo_text_secondary" android:fontFamily="@font/inter" android:textSize="16sp" />
-        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="@string/profile_taste" android:src="@drawable/ic_chevron_right" />
-    </LinearLayout>
-
-    <LinearLayout
         android:id="@+id/profileNotificationsRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"

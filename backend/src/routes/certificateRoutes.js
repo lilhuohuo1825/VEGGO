@@ -6,6 +6,7 @@ const {
   evaluateCustomerCertificate,
   evaluateAllDeliveredCustomers
 } = require('../services/certificateService');
+const { matchesUserPromotionTarget } = require('../utils/promotionEligibility');
 
 const router = express.Router();
 
@@ -19,29 +20,6 @@ const mapRequest = (request) => ({
   requestedCer: request.requestedCertificateName || request.requestedCertificateID,
   totalPoints: request.carbonPointSnapshot || 0
 });
-
-const matchesUserPromotionTarget = (target, user) => {
-  if (!target || target.target_type !== 'User' || !user) return false;
-  const refs = Array.isArray(target.target_ref) ? target.target_ref : [];
-  if (!refs.length) return false;
-
-  return refs.some((ref) => {
-    const value = String(ref || '').trim();
-    if (value.startsWith('tier:')) {
-      const tier = value.slice('tier:'.length).toLowerCase();
-      const tiering = String(user.CustomerTiering || user.CustomerType || '').trim().toLowerCase();
-      return (
-        (tier === 'bronze' && ['đồng', 'dong', 'bronze', 'regular'].includes(tiering)) ||
-        (tier === 'silver' && ['bạc', 'bac', 'silver', 'premium'].includes(tiering)) ||
-        (tier === 'gold' && ['vàng', 'vang', 'gold', 'vip'].includes(tiering))
-      );
-    }
-    if (value.startsWith('certificate:')) {
-      return String(user.CertificateID || '').trim() === value.slice('certificate:'.length);
-    }
-    return false;
-  });
-};
 
 const notifyCertificateApproved = async (request) => {
   if (!request?.CustomerID) return;
@@ -80,7 +58,12 @@ const notifyEligiblePromotions = async (customerId) => {
 
   const targets = await mongoose.connection.db
     .collection('promotion_targets')
-    .find({ target_type: 'User' })
+    .find({
+      $or: [
+        { target_type: 'User' },
+        { 'target_groups.target_type': 'User' }
+      ]
+    })
     .toArray();
   const matchedPromotionIds = targets
     .filter((target) => matchesUserPromotionTarget(target, user))

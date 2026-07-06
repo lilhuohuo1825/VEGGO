@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema(
     Password: { type: String },
     FullName: { type: String, default: '' },
     Email: { type: String, default: '' },
+    BirthDay: { type: String, default: '' },
+    Gender: { type: String, default: '' },
     Address: { type: String, default: null },
     CustomerType: { type: String, default: '' },
     CustomerTiering: { type: String, default: 'Đồng' },

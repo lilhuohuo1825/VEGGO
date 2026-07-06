@@ -6,31 +6,45 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
+
 import com.veggo.app.R;
+import com.veggo.app.core.notification.RecurringConfirmationScheduler;
 import com.veggo.app.core.preferences.AppPreferences;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class RecurringOrdersActivity extends BaseActivity {
+    private static final int SCHEDULED_LIST_VISIBLE_ROWS = 3;
+    private static final int SCHEDULED_ROW_HEIGHT_DP = 48;
     private final SimpleDateFormat storageFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     private final SimpleDateFormat dayFormat = new SimpleDateFormat("dd/MM", new Locale("vi", "VN"));
     private AppPreferences preferences;
     private RecurringOrderStore store;
     private String customerId;
     private Calendar visibleMonth;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (com.veggo.app.presentation.profile.LoginRequiredActivity.redirectIfGuest(this, "đơn hàng định kỳ")) {
+            return;
+        }
         setContentView(R.layout.activity_recurring_orders);
         preferences = new AppPreferences(this);
         store = new RecurringOrderStore(this);
@@ -53,6 +67,11 @@ public class RecurringOrdersActivity extends BaseActivity {
             visibleMonth.add(Calendar.MONTH, 1);
             bindRecurringOrders();
         });
+        findViewById(R.id.recurringMonthTitle).setOnClickListener(v -> showYearPicker());
+        refreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.recurringOrdersScroll),
+                this::bindRecurringOrders
+        );
 
         if (!preferences.isLoggedIn()) {
             findViewById(R.id.recurringCalendarCard).setVisibility(android.view.View.GONE);
@@ -66,6 +85,7 @@ public class RecurringOrdersActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         if (preferences != null && preferences.isLoggedIn()) {
+            RecurringConfirmationScheduler.runCheckNow(this);
             bindRecurringOrders();
         }
     }
@@ -81,6 +101,74 @@ public class RecurringOrdersActivity extends BaseActivity {
         );
         bindCalendar(calendar, orders);
         bindScheduledList(orders, calendar);
+        PullToRefreshHelper.finish(refreshLayout);
+    }
+
+    private void showYearPicker() {
+        Calendar current = visibleMonth == null ? Calendar.getInstance() : (Calendar) visibleMonth.clone();
+        NumberPicker yearPicker = new NumberPicker(this);
+        int thisYear = Calendar.getInstance().get(Calendar.YEAR);
+        int minYear = thisYear - 50;
+        int maxYear = thisYear + 50;
+        yearPicker.setMinValue(minYear);
+        yearPicker.setMaxValue(maxYear);
+        yearPicker.setValue(current.get(Calendar.YEAR));
+        yearPicker.setWrapSelectorWheel(false);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setGravity(Gravity.CENTER);
+        container.setPadding(dp(24), dp(16), dp(24), dp(8));
+        container.addView(yearPicker);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.recurring_pick_year_title)
+                .setView(container)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) ->
+                        showMonthPicker(yearPicker.getValue())
+                )
+                .show();
+    }
+
+    private void showMonthPicker(int year) {
+        String[] monthLabels = {
+                "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4",
+                "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8",
+                "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+        };
+        int currentMonth = visibleMonth == null
+                ? Calendar.getInstance().get(Calendar.MONTH)
+                : visibleMonth.get(Calendar.MONTH);
+        int selectedMonth = visibleMonth != null && year == visibleMonth.get(Calendar.YEAR)
+                ? currentMonth
+                : 0;
+
+        NumberPicker monthPicker = new NumberPicker(this);
+        monthPicker.setMinValue(0);
+        monthPicker.setMaxValue(11);
+        monthPicker.setDisplayedValues(monthLabels);
+        monthPicker.setValue(selectedMonth);
+        monthPicker.setWrapSelectorWheel(false);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setGravity(Gravity.CENTER);
+        container.setPadding(dp(24), dp(16), dp(24), dp(8));
+        container.addView(monthPicker);
+
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.recurring_pick_month_title, year))
+                .setView(container)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    if (visibleMonth == null) {
+                        visibleMonth = Calendar.getInstance();
+                    }
+                    visibleMonth.set(Calendar.YEAR, year);
+                    visibleMonth.set(Calendar.MONTH, monthPicker.getValue());
+                    visibleMonth.set(Calendar.DAY_OF_MONTH, 1);
+                    bindRecurringOrders();
+                })
+                .show();
     }
 
     private void bindCalendar(Calendar month, List<RecurringOrderStore.RecurringOrder> orders) {
@@ -164,15 +252,39 @@ public class RecurringOrdersActivity extends BaseActivity {
     }
 
     private void bindScheduledList(List<RecurringOrderStore.RecurringOrder> orders, Calendar month) {
+        View scheduledScroll = findViewById(R.id.recurringScheduledOrdersScroll);
         LinearLayout container = findViewById(R.id.recurringScheduledOrdersContainer);
         TextView emptyText = findViewById(R.id.recurringEmptyListText);
         container.removeAllViews();
-        emptyText.setVisibility(orders.isEmpty() ? View.VISIBLE : View.GONE);
 
         Map<String, Integer> countByDate = countOccurrencesInMonth(month);
+        List<String> sortedDates = new ArrayList<>(countByDate.keySet());
+        Collections.sort(sortedDates);
 
-        for (Map.Entry<String, Integer> entry : countByDate.entrySet()) {
-            container.addView(createScheduledRow(entry.getKey(), entry.getValue()));
+        for (String date : sortedDates) {
+            Integer count = countByDate.get(date);
+            if (count == null || count <= 0) {
+                continue;
+            }
+            container.addView(createScheduledRow(date, count));
+        }
+
+        boolean hasScheduledRows = container.getChildCount() > 0;
+        scheduledScroll.setVisibility(hasScheduledRows ? View.VISIBLE : View.GONE);
+        emptyText.setVisibility(orders.isEmpty() ? View.VISIBLE : View.GONE);
+        updateScheduledListHeight(scheduledScroll, container.getChildCount());
+    }
+
+    private void updateScheduledListHeight(View scheduledScroll, int rowCount) {
+        if (scheduledScroll == null) {
+            return;
+        }
+        int visibleRows = Math.min(rowCount, SCHEDULED_LIST_VISIBLE_ROWS);
+        int targetHeight = visibleRows > 0 ? dp(SCHEDULED_ROW_HEIGHT_DP) * visibleRows : 0;
+        android.view.ViewGroup.LayoutParams params = scheduledScroll.getLayoutParams();
+        if (params != null && params.height != targetHeight) {
+            params.height = targetHeight;
+            scheduledScroll.setLayoutParams(params);
         }
     }
 

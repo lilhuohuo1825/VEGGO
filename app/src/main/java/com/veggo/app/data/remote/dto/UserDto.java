@@ -46,6 +46,12 @@ public class UserDto {
     @SerializedName("avatarUrl")
     private String avatarUrl;
 
+    @SerializedName("BirthDay")
+    private String birthDay;
+
+    @SerializedName("Gender")
+    private String gender;
+
     @SerializedName("addresses")
     private List<AddressDto> addresses;
 
@@ -90,6 +96,12 @@ public class UserDto {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getBirthDay() { return birthDay; }
+    public void setBirthDay(String birthDay) { this.birthDay = birthDay; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
     public List<AddressDto> getAddresses() { return addresses; }
     public void setAddresses(List<AddressDto> addresses) { this.addresses = addresses; }

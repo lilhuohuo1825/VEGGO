@@ -4,7 +4,9 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.databinding.ActivityBlogAllpostsBinding;
 
@@ -18,6 +20,7 @@ public class BlogAllPostsActivity extends AppCompatActivity {
     private BlogRepository repository;
     private List<BlogEntity> allBlogs = new ArrayList<>();
     private String selectedCategory = ALL_CATEGORY;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -25,7 +28,16 @@ public class BlogAllPostsActivity extends AppCompatActivity {
         binding = ActivityBlogAllpostsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new BlogRepository(this);
+        refreshLayout = PullToRefreshHelper.wrap(
+                binding.blogAllPostsScroll,
+                () -> loadBlogs(true)
+        );
+        loadBlogs(false);
+    }
+
+    private void loadBlogs(boolean fromRefresh) {
         repository.getAll(blogs -> runOnUiThread(() -> {
+            PullToRefreshHelper.finish(refreshLayout);
             allBlogs = new ArrayList<>(blogs);
             render();
         }));

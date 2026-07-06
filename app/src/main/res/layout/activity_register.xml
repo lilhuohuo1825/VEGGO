@@ -3,15 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:clipChildren="false">
 
     <ImageView
+        android:id="@+id/authCoverImage"
         android:layout_width="match_parent"
         android:layout_height="210dp"
         android:scaleType="centerCrop"
         android:src="@drawable/bg_auth" />
 
     <View
+        android:id="@+id/authCoverOverlay"
         android:layout_width="match_parent"
         android:layout_height="210dp"
         android:background="#80FFFFFF" />

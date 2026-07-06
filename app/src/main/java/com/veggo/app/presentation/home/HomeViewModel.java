@@ -9,6 +9,7 @@ import com.google.gson.reflect.TypeToken;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.utils.JsonUtils;
+import com.veggo.app.core.utils.ProductDisplayValidator;
 import com.veggo.app.core.database.AssetRepository;
 import com.veggo.app.data.remote.api.ProductApi;
 import com.veggo.app.data.remote.api.PromotionApi;
@@ -153,6 +154,9 @@ public class HomeViewModel extends ViewModel {
                     List<Product> newProducts = new ArrayList<>();
                     if (dtos != null) {
                         for (ProductDto dto : dtos) {
+                            if (!ProductDisplayValidator.isDisplayable(dto)) {
+                                continue;
+                            }
                             newProducts.add(mapDtoToProduct(dto));
                         }
                     }
@@ -210,7 +214,7 @@ public class HomeViewModel extends ViewModel {
         List<Utility> utilityList = new ArrayList<>();
         utilityList.add(new Utility("1", "Tủ lạnh", R.drawable.ic_refrigerator));
         utilityList.add(new Utility("2", "Trợ lý AI", R.drawable.ic_ai));
-        utilityList.add(new Utility("3", "Khẩu vị", R.drawable.ic_taste));
+        utilityList.add(new Utility("3", "Yêu thích", R.drawable.ic_heart_outline_white));
         utilityList.add(new Utility("4", "Điểm xanh", R.drawable.ic_yellow_cert));
         utilityList.add(new Utility("5", "Bài viết", R.drawable.ic_blog));
         _utilities.setValue(utilityList);

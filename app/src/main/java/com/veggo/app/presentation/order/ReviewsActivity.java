@@ -21,6 +21,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.dto.CartItemRequestDto;
 import com.veggo.app.presentation.cart.CartFragment;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class ReviewsActivity extends BaseActivity {
+    public static final String EXTRA_SHOW_DONE_REVIEWS = "extra_show_done_reviews";
+
     private TextView waitingTabText;
     private TextView doneTabText;
     private TextView waitingTabBadge;
@@ -69,10 +72,7 @@ public class ReviewsActivity extends BaseActivity {
         reviewListScroll = findViewById(R.id.reviewListScroll);
         swipeRefreshLayout = findViewById(R.id.reviewsSwipeRefresh);
         if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-            swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) ->
-                    reviewListScroll != null && reviewListScroll.canScrollVertically(-1));
-            swipeRefreshLayout.setOnRefreshListener(() -> loadReviews(true));
+            PullToRefreshHelper.bind(swipeRefreshLayout, reviewListScroll, () -> loadReviews(true));
         }
 
         findViewById(R.id.reviewWaitingTab).setOnClickListener(v -> showWaitingReviews());
@@ -103,6 +103,10 @@ public class ReviewsActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         loadReviews();
+        if (getIntent().getBooleanExtra(EXTRA_SHOW_DONE_REVIEWS, false)) {
+            getIntent().removeExtra(EXTRA_SHOW_DONE_REVIEWS);
+            showDoneReviews();
+        }
     }
 
     private void showWaitingReviews() {
@@ -166,7 +170,7 @@ public class ReviewsActivity extends BaseActivity {
             runOnUiThread(() -> {
                 bindReviews(loaded);
                 if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    PullToRefreshHelper.finish(swipeRefreshLayout);
                 }
             });
         }).start();
@@ -267,7 +271,17 @@ public class ReviewsActivity extends BaseActivity {
         View reviewButton = item.findViewById(R.id.reviewActionButton);
         if (reviewButton != null) {
             reviewButton.setVisibility(waitingReview ? View.VISIBLE : View.GONE);
-            reviewButton.setOnClickListener(v -> openReviewForm(order.orderId));
+            if (waitingReview) {
+                reviewButton.setOnClickListener(v -> openReviewForm(order.orderId));
+            }
+        }
+
+        View viewReviewButton = item.findViewById(R.id.reviewViewButton);
+        if (viewReviewButton != null) {
+            viewReviewButton.setVisibility(waitingReview ? View.GONE : View.VISIBLE);
+            if (!waitingReview) {
+                viewReviewButton.setOnClickListener(v -> openReviewForm(order.orderId));
+            }
         }
     }
 

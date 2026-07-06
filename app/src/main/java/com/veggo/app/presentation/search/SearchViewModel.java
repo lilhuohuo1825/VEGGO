@@ -87,6 +87,14 @@ public class SearchViewModel extends ViewModel {
         return searchQuery;
     }
 
+    public void refresh() {
+        categoryRepository.refreshCategories();
+        String current = searchQuery.getValue();
+        if (current != null && !current.trim().isEmpty()) {
+            searchQuery.setValue(current);
+        }
+    }
+
     public static class FeatureResult {
         private final String name;
         private final String type;

@@ -14,6 +14,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -49,6 +50,7 @@ import java.util.Locale;
 public class FridgeIngredientDetailActivity extends BaseActivity {
 
     private EditText nameInput, quantityInput, unitInput;
+    private CheckBox reminderCheck;
     private TextView locationText, purchaseDateText, expiryDateText;
     private LinearLayout fridgeImageList;
 
@@ -147,6 +149,7 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
         locationText = findViewById(R.id.fridgeLocationText);
         purchaseDateText = findViewById(R.id.fridgePurchaseDateText);
         expiryDateText = findViewById(R.id.fridgeExpiryDateText);
+        reminderCheck = findViewById(R.id.fridgeReminderCheck);
         fridgeImageList = findViewById(R.id.fridgeImageList);
     }
 
@@ -220,6 +223,10 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
             selectedImages.add(Uri.parse(currentItem.getImage()));
         }
         refreshImageList();
+
+        if (reminderCheck != null) {
+            reminderCheck.setChecked(currentItem.isRemindBeforeExpiry());
+        }
     }
 
     private void setupListeners() {
@@ -230,6 +237,10 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
         findViewById(R.id.fridgeExpiryDatePicker).setOnClickListener(v -> showExpiryDatePicker());
         findViewById(R.id.fridgeLocationDropdown).setOnClickListener(v -> showLocationDropdown());
         findViewById(R.id.fridgeAddImageBtn).setOnClickListener(v -> showImageSourceDialog());
+        View reminderRow = findViewById(R.id.fridgeReminderRow);
+        if (reminderRow != null && reminderCheck != null) {
+            reminderRow.setOnClickListener(v -> reminderCheck.setChecked(!reminderCheck.isChecked()));
+        }
     }
 
     private void showPurchaseDatePicker() {
@@ -253,22 +264,19 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
     }
 
     private void showLocationDropdown() {
-        List<String> displayOptions = new ArrayList<>(locationOptions);
-        displayOptions.add("+ Thêm vị trí mới...");
-        String[] items = displayOptions.toArray(new String[0]);
+        FridgeLocationPicker.show(this, locationOptions, selectedLocationIndex, new FridgeLocationPicker.Callback() {
+            @Override
+            public void onLocationSelected(int index, String name) {
+                selectedLocationIndex = index;
+                locationText.setText(name);
+                locationText.setTextColor(ContextCompat.getColor(FridgeIngredientDetailActivity.this, R.color.neutral_100));
+            }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Chọn vị trí")
-                .setItems(items, (dialog, which) -> {
-                    if (which == displayOptions.size() - 1) {
-                        showAddLocationDialog();
-                    } else {
-                        selectedLocationIndex = which;
-                        locationText.setText(locationOptions.get(which));
-                        locationText.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
-                    }
-                })
-                .show();
+            @Override
+            public void onAddNewRequested() {
+                showAddLocationDialog();
+            }
+        });
     }
 
     private void showAddLocationDialog() {
@@ -276,7 +284,10 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
         EditText input = dialogView.findViewById(R.id.dialogLocationNameInput);
 
         AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).setCancelable(false).create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            FridgeDialogUi.applyPopupWindowStyle(dialog.getWindow(), this);
+        }
 
         dialogView.findViewById(R.id.dialogLocationCancel).setOnClickListener(v -> dialog.dismiss());
         dialogView.findViewById(R.id.dialogLocationConfirm).setOnClickListener(v -> {
@@ -445,6 +456,7 @@ public class FridgeIngredientDetailActivity extends BaseActivity {
                 currentItem.setLocationCode(locationCode);
                 currentItem.setImage(primaryImage);
                 currentItem.setImages(imageUriStrings);
+                currentItem.setRemindBeforeExpiry(reminderCheck != null && reminderCheck.isChecked());
 
                 retrofit2.Response<FridgeItemDto> response = api.updateFridgeItem(customerId, currentItem.getId(), currentItem).execute();
                 runOnUiThread(() -> {

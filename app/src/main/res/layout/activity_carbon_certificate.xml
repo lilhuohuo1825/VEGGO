@@ -33,7 +33,7 @@
     android:scaleType="centerInside"
     android:src="@drawable/ic_left"
     android:tint="@color/primary_hover" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/carbon_certificate_title" android:textColor="@color/neutral_100" android:textSize="@dimen/text_xl" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/encodesans_bold" android:gravity="center" android:text="@string/carbon_certificate_title" android:textColor="@color/neutral_100" android:textSize="20sp" android:textStyle="bold" />
                 <Space android:layout_width="40dp" android:layout_height="40dp" />
             </LinearLayout>
 
@@ -54,45 +54,119 @@
                 <TextView android:id="@+id/carbonCertificateDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_lg" android:lineSpacingExtra="3dp" android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_lg" android:background="@drawable/bg_profile_card" android:orientation="vertical" android:padding="@dimen/spacing_lg">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/encodesans_bold" android:text="Chứng nhận của tôi" android:textColor="@color/neutral_100" android:textSize="@dimen/text_lg" android:textStyle="bold" />
-                
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:background="@drawable/bg_profile_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/encodesans_bold"
+                        android:text="Chứng nhận của tôi"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_md"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_carbon_soft_chip"
+                        android:fontFamily="@font/inter_semibold"
+                        android:paddingStart="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="4dp"
+                        android:text="VINH DANH"
+                        android:textColor="@color/secondary_hover"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/myCertificatePlaceholder"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <FrameLayout android:layout_width="match_parent" android:layout_height="180dp" android:layout_marginTop="@dimen/spacing_md" android:background="@drawable/bg_carbon_image_placeholder">
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
-                            <ImageView android:layout_width="42dp" android:layout_height="42dp" android:contentDescription="@string/carbon_certificate_title" android:src="@drawable/ic_profile_leaf" android:tint="@color/primary_main" />
-                            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_sm" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="Khung ảnh chứng nhận" android:textColor="@color/neutral_80" android:textSize="@dimen/text_sm" />
-                        </LinearLayout>
-                    </FrameLayout>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/spacing_md" android:lineSpacingExtra="3dp" android:text="Khi đạt mốc và được duyệt, chứng nhận vinh danh và ưu đãi đặc quyền của bạn sẽ hiển thị tại đây." android:textColor="@color/neutral_70" android:textSize="@dimen/text_sm" />
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:background="@drawable/bg_certificate_frame"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_lg">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:contentDescription="@string/carbon_certificate_title"
+                        android:src="@drawable/ic_profile_leaf"
+                        android:tint="@color/primary_main" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:text="Chưa có chứng nhận"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Khi đạt mốc và được duyệt, chứng nhận vinh danh sẽ hiển thị tại đây."
+                        android:textColor="@color/neutral_60"
+                        android:textSize="@dimen/text_xs" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/myCertificateContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:orientation="vertical"
                     android:visibility="gone">
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/myCertificateBanner"
+
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="220dp"
-                        android:layout_marginTop="@dimen/spacing_md"
-                        android:scaleType="fitCenter"
-                        android:background="@color/neutral_20"
-                        app:shapeAppearanceOverlay="@style/RoundedCornersImage" />
-                    <TextView
-                        android:id="@+id/myCertificateRewardDetails"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_certificate_frame"
+                        android:padding="10dp">
+
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/myCertificateBanner"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:adjustViewBounds="true"
+                            android:background="@color/neutral_20"
+                            android:minHeight="160dp"
+                            android:scaleType="fitCenter"
+                            app:shapeAppearanceOverlay="@style/RoundedCornersImage" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:id="@+id/myCertificateRewardContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_md"
-                        android:lineSpacingExtra="3dp"
-                        android:textColor="@color/neutral_80"
-                        android:textSize="@dimen/text_sm" />
+                        android:background="@drawable/bg_certificate_benefits_panel"
+                        android:orientation="vertical"
+                        android:paddingStart="@dimen/spacing_md"
+                        android:paddingTop="@dimen/spacing_sm"
+                        android:paddingEnd="@dimen/spacing_md"
+                        android:paddingBottom="@dimen/spacing_sm" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -104,7 +178,44 @@
         </LinearLayout>
     </ScrollView>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="84dp" android:layout_gravity="bottom" android:background="@color/background_main" android:elevation="8dp" android:gravity="center" android:paddingStart="@dimen/spacing_xl" android:paddingEnd="@dimen/spacing_xl">
-        <TextView android:id="@+id/carbonShareButton" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_order_primary_button" android:fontFamily="@font/inter_semibold" android:gravity="center" android:text="@string/carbon_share_certificate" android:textColor="@color/background_main" android:textSize="@dimen/text_md" android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="84dp"
+        android:layout_gravity="bottom"
+        android:background="@color/background_main"
+        android:elevation="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <TextView
+            android:id="@+id/carbonUseOfferButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_order_primary_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/carbon_use_offer"
+            android:textColor="@color/background_main"
+            android:textSize="@dimen/text_sm"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/carbonShareButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:layout_weight="1"
+            android:background="@drawable/bg_order_cancel_button"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/carbon_share_certificate"
+            android:textColor="@color/primary_main"
+            android:textSize="@dimen/text_sm"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

@@ -25,6 +25,7 @@ public class FridgeBatchRequestDto {
         private final String unit;
         private final String source;
         private String locationCode;
+        private final boolean remindBeforeExpiry;
 
         public FridgeItemRequestDto(
                 String name,
@@ -37,7 +38,8 @@ public class FridgeBatchRequestDto {
                 List<String> images,
                 String unit,
                 String source,
-                String locationCode
+                String locationCode,
+                boolean remindBeforeExpiry
         ) {
             this.name = name;
             this.quantity = quantity;
@@ -50,6 +52,7 @@ public class FridgeBatchRequestDto {
             this.unit = unit;
             this.source = source;
             this.locationCode = locationCode;
+            this.remindBeforeExpiry = remindBeforeExpiry;
         }
 
         public String getName() { return name; }
@@ -63,6 +66,7 @@ public class FridgeBatchRequestDto {
         public String getUnit() { return unit; }
         public String getSource() { return source; }
         public String getLocationCode() { return locationCode; }
+        public boolean isRemindBeforeExpiry() { return remindBeforeExpiry; }
         public void setLocationCode(String locationCode) { this.locationCode = locationCode; }
     }
 }

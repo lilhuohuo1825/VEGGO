@@ -13,6 +13,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { ApiService } from '../services/api.service';
+import {
+  formatDeliveryWindowText,
+  getOrderSourceLabel,
+  resolveOrderSource,
+} from '../utils/order-source.util';
 
 @Component({
   selector: 'app-orderdetail',
@@ -1192,6 +1197,18 @@ export class OrderDetail implements OnInit, OnDestroy {
         this.order.shippingInfo?.warehouseAddress ||
         this.order.shippingInfo?.warehouse_address ||
         '',
+      orderSource: resolveOrderSource(this.order.shippingInfo),
+      orderSourceLabel: getOrderSourceLabel(resolveOrderSource(this.order.shippingInfo)),
+      deliveryTimeText: formatDeliveryWindowText(this.order.shippingInfo),
+      isRecurring: Boolean(
+        this.order.shippingInfo?.isRecurring
+          || String(this.order.shippingInfo?.orderSource || '').toLowerCase() === 'recurring'
+      ),
+      recurringOrderId: this.order.shippingInfo?.recurringOrderId || '',
+      recurringOrderName: this.order.shippingInfo?.recurringOrderName || '',
+      recurringFrequency: this.order.shippingInfo?.recurringFrequency || '',
+      occurrenceDate: this.order.shippingInfo?.occurrenceDate || '',
+      deliverySlot: this.order.shippingInfo?.deliverySlot || '',
     };
 
     // If in edit mode, set selected address values after address data is loaded

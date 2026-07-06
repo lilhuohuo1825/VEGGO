@@ -23,6 +23,8 @@ public class PendingCheckoutStore {
     private static final String KEY_SELECTED_LINES = "selectedLines";
     private static final String KEY_VOUCHER_ID = "voucherId";
     private static final String KEY_VOUCHER_TITLE = "voucherTitle";
+    private static final String KEY_SHIPPING_VOUCHER_ID = "shippingVoucherId";
+    private static final String KEY_SHIPPING_VOUCHER_TITLE = "shippingVoucherTitle";
     private static final String KEY_GUEST_ID = "guestId";
     private static CartDto transferredCheckoutCart;
 
@@ -37,8 +39,10 @@ public class PendingCheckoutStore {
     }
 
     public void saveCartCheckout(@Nullable ArrayList<String> selectedLines,
-                                 @Nullable String voucherId,
-                                 @Nullable String voucherTitle) {
+                                 @Nullable String productVoucherId,
+                                 @Nullable String productVoucherTitle,
+                                 @Nullable String shippingVoucherId,
+                                 @Nullable String shippingVoucherTitle) {
         Set<String> lines = new HashSet<>();
         if (selectedLines != null) {
             lines.addAll(selectedLines);
@@ -47,9 +51,17 @@ public class PendingCheckoutStore {
                 .putBoolean(KEY_PENDING, true)
                 .putBoolean(KEY_BUY_NOW, false)
                 .putStringSet(KEY_SELECTED_LINES, lines)
-                .putString(KEY_VOUCHER_ID, voucherId)
-                .putString(KEY_VOUCHER_TITLE, voucherTitle)
+                .putString(KEY_VOUCHER_ID, productVoucherId)
+                .putString(KEY_VOUCHER_TITLE, productVoucherTitle)
+                .putString(KEY_SHIPPING_VOUCHER_ID, shippingVoucherId)
+                .putString(KEY_SHIPPING_VOUCHER_TITLE, shippingVoucherTitle)
                 .apply();
+    }
+
+    public void saveCartCheckout(@Nullable ArrayList<String> selectedLines,
+                                 @Nullable String voucherId,
+                                 @Nullable String voucherTitle) {
+        saveCartCheckout(selectedLines, voucherId, voucherTitle, null, null);
     }
 
     public void saveBuyNowIntent(@NonNull Intent sourceIntent) {
@@ -105,6 +117,10 @@ public class PendingCheckoutStore {
         }
         Set<String> lines = prefs.getStringSet(KEY_SELECTED_LINES, new HashSet<>());
         intent.putStringArrayListExtra(CheckoutActivity.EXTRA_SELECTED_CART_LINE_KEYS, new ArrayList<>(lines));
+        intent.putExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_ID, prefs.getString(KEY_VOUCHER_ID, null));
+        intent.putExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_TITLE, prefs.getString(KEY_VOUCHER_TITLE, null));
+        intent.putExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_ID, prefs.getString(KEY_SHIPPING_VOUCHER_ID, null));
+        intent.putExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_TITLE, prefs.getString(KEY_SHIPPING_VOUCHER_TITLE, null));
         intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID, prefs.getString(KEY_VOUCHER_ID, null));
         intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE, prefs.getString(KEY_VOUCHER_TITLE, null));
         return intent;

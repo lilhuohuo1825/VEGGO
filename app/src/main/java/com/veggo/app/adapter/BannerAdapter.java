@@ -87,20 +87,15 @@ public class BannerAdapter extends ListAdapter<Banner, BannerAdapter.BannerViewH
         void bind(Banner banner) {
             imgBanner.setScaleType(scaleType);
             if (banner.getImageUrl() != null && !banner.getImageUrl().isEmpty()) {
+                com.bumptech.glide.RequestBuilder<android.graphics.drawable.Drawable> request =
+                        Glide.with(imgBanner.getContext()).load(banner.getImageUrl());
+                if (banner.getImageRes() != 0) {
+                    request = request.placeholder(banner.getImageRes()).error(banner.getImageRes());
+                }
                 if (scaleType == ImageView.ScaleType.FIT_CENTER || scaleType == ImageView.ScaleType.CENTER_INSIDE) {
-                    Glide.with(imgBanner.getContext())
-                            .load(banner.getImageUrl())
-                            .fitCenter()
-                            .placeholder(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
-                            .error(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
-                            .into(imgBanner);
+                    request.fitCenter().into(imgBanner);
                 } else {
-                    Glide.with(imgBanner.getContext())
-                            .load(banner.getImageUrl())
-                            .centerCrop()
-                            .placeholder(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
-                            .error(banner.getImageRes() != 0 ? banner.getImageRes() : R.drawable.banner_freeship)
-                            .into(imgBanner);
+                    request.centerCrop().into(imgBanner);
                 }
             } else if (banner.getImageRes() != 0) {
                 imgBanner.setImageResource(banner.getImageRes());

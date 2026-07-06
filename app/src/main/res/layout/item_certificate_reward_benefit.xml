@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingTop="@dimen/spacing_md"
+    android:paddingBottom="@dimen/spacing_md">
+
+    <View
+        android:layout_width="4dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="@dimen/spacing_md"
+        android:background="@drawable/bg_certificate_accent_bar" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/certificateRewardIcon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_profile_leaf"
+                android:tint="@color/primary_hover" />
+
+            <TextView
+                android:id="@+id/certificateRewardLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:fontFamily="@font/inter_semibold"
+                android:textColor="@color/primary_hover"
+                android:textSize="@dimen/text_sm" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/certificateRewardValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/neutral_80"
+            android:textSize="@dimen/text_sm" />
+    </LinearLayout>
+</LinearLayout>

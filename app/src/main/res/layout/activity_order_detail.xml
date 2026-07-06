@@ -349,20 +349,33 @@
                     android:textSize="@dimen/text_md"
                     android:textStyle="bold" />
 
-                <CheckBox
-                    android:id="@+id/orderDetailSelectAllCheckBox"
+                <LinearLayout
+                    android:id="@+id/orderDetailSelectAllRow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
-                    android:button="@null"
-                    android:drawableStart="@drawable/selector_checkbox"
-                    android:drawablePadding="8dp"
                     android:gravity="center_vertical"
-                    android:text="Chọn tất cả"
-                    android:fontFamily="@font/inter_medium"
-                    android:textColor="@color/neutral_80"
-                    android:textSize="@dimen/text_sm"
-                    android:visibility="gone" />
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <CheckBox
+                        android:id="@+id/orderDetailSelectAllCheckBox"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:button="@null"
+                        android:background="@drawable/selector_checkbox"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Chọn tất cả"
+                        android:textColor="@color/neutral_80"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

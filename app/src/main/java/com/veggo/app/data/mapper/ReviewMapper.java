@@ -14,15 +14,18 @@ public final class ReviewMapper {
         List<String> imageUrls = entity.getImageUrlsJson() != null && !entity.getImageUrlsJson().isEmpty()
                 ? Arrays.asList(entity.getImageUrlsJson().split(","))
                 : Collections.emptyList();
-        
+
         return new Review(
+                entity.getId(),
+                null,
                 entity.getReviewerName(),
                 entity.getReviewTime(),
                 entity.getRating(),
                 entity.getContent(),
                 entity.getAvatarUrl(),
                 imageUrls,
-                0 // Helpful count not stored in entity yet
+                0,
+                Collections.emptyList()
         );
     }
 
@@ -40,14 +43,19 @@ public final class ReviewMapper {
             // Fallback to original string
         }
 
+        List<String> likes = dto.getLikes() != null ? dto.getLikes() : Collections.emptyList();
+
         return new Review(
+                dto.getId(),
+                dto.getCustomerId(),
                 dto.getFullName(),
                 formattedTime,
                 dto.getRating(),
                 dto.getContent(),
-                null, // Avatar URL not provided in MongoDB schema yet
+                null,
                 dto.getImages(),
-                dto.getLikes() != null ? dto.getLikes().size() : 0
+                likes.size(),
+                likes
         );
     }
 

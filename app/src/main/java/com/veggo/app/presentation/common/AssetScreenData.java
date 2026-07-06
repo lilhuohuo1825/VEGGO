@@ -13,7 +13,7 @@ import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.database.AssetRepository;
 import com.veggo.app.core.preferences.AppPreferences;
-import com.veggo.app.presentation.auth.UserAssetRepository;
+import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.auth.model.User;
 
 import java.text.NumberFormat;
@@ -84,6 +84,14 @@ public final class AssetScreenData {
                     user.certificateId = userDto.getCertificateId();
                     user.address = userDto.getAddress();
                     user.avatarUrl = userDto.getAvatarUrl();
+                    user.birthDay = userDto.getBirthDay();
+                    user.gender = userDto.getGender();
+                    if (!hasText(user.birthDay)) {
+                        user.birthDay = appPreferences.getBirthday();
+                    }
+                    if (!hasText(user.gender)) {
+                        user.gender = appPreferences.getGender();
+                    }
                     // Add addresses from addresses list in UserDto
                     if (userDto.getAddresses() != null && !userDto.getAddresses().isEmpty()) {
                         for (com.veggo.app.data.remote.dto.UserDto.AddressDto addrDto : userDto.getAddresses()) {
@@ -110,6 +118,8 @@ public final class AssetScreenData {
                 user.fullName = appPreferences.getFullName();
                 user.email = appPreferences.getEmail();
                 user.avatarUrl = appPreferences.getAvatarUrl();
+                user.birthDay = appPreferences.getBirthday();
+                user.gender = appPreferences.getGender();
                 user.carbonPoint = 0;
             } else {
                 enrichUserFromPreferences(user, appPreferences);
@@ -254,6 +264,7 @@ public final class AssetScreenData {
         order.totalAmount = orderDto.getTotal();
         order.status = orderDto.getStatus();
         order.rejectReason = orderDto.getRejectReason();
+        order.code = orderDto.getCode();
         order.createdAt = new AssetModels.MongoDate();
         order.createdAt.date = hasText(orderDto.getCreatedAt())
                 ? orderDto.getCreatedAt()
@@ -267,6 +278,8 @@ public final class AssetScreenData {
     ) {
         AssetModels.OrderDetail detail = new AssetModels.OrderDetail();
         detail.orderId = orderId;
+        detail.promotionId = orderDto.getPromotionId();
+        detail.shippingPromotionId = orderDto.getShippingPromotionId();
         detail.carbonPointEarned = orderDto.getCarbonPointEarned();
         detail.totalCarbonEmission = orderDto.getTotalCarbonEmission();
         detail.items = new ArrayList<>();
@@ -384,6 +397,12 @@ public final class AssetScreenData {
         }
         if (!hasText(user.avatarUrl) && hasText(appPreferences.getAvatarUrl())) {
             user.avatarUrl = appPreferences.getAvatarUrl();
+        }
+        if (!hasText(user.birthDay) && hasText(appPreferences.getBirthday())) {
+            user.birthDay = appPreferences.getBirthday();
+        }
+        if (!hasText(user.gender) && hasText(appPreferences.getGender())) {
+            user.gender = appPreferences.getGender();
         }
     }
 
@@ -622,6 +641,9 @@ public final class AssetScreenData {
         } else if ("shipping".equals(cleanStatus)) {
             backgroundRes = R.drawable.bg_order_shipping_chip;
             textColorRes = R.color.order_status_shipping;
+        } else if ("unreview".equals(cleanStatus)) {
+            backgroundRes = R.drawable.bg_order_cancelled_chip;
+            textColorRes = R.color.order_status_unreview;
         } else {
             backgroundRes = R.drawable.bg_order_delivered_chip;
             textColorRes = R.color.order_status_delivered;
@@ -888,6 +910,10 @@ public final class AssetScreenData {
         });
         sheet.findViewById(R.id.orderOptionRecurring).setOnClickListener(v -> {
             dialog.dismiss();
+            if (!new AppPreferences(context).isLoggedIn()) {
+                LoginRequiredActivity.open(context, "đơn hàng định kỳ");
+                return;
+            }
             if (!(context instanceof com.veggo.app.presentation.order.RecurringOrdersActivity)) {
                 android.content.Intent intent = new android.content.Intent(context, com.veggo.app.presentation.order.RecurringOrdersActivity.class);
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);

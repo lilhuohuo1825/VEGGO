@@ -33,12 +33,16 @@ public class UserRepositoryImpl implements UserRepository {
             String name,
             String phone,
             String email,
+            String birthday,
+            String gender,
             @Nullable File avatarFile,
             Callback<UserProfileDto> callback
     ) {
         RequestBody nameBody = RequestBody.create(name, TEXT_PLAIN);
         RequestBody phoneBody = RequestBody.create(phone, TEXT_PLAIN);
         RequestBody emailBody = RequestBody.create(email == null ? "" : email, TEXT_PLAIN);
+        RequestBody birthdayBody = RequestBody.create(birthday == null ? "" : birthday, TEXT_PLAIN);
+        RequestBody genderBody = RequestBody.create(gender == null ? "" : gender, TEXT_PLAIN);
 
         MultipartBody.Part avatarPart = null;
         if (avatarFile != null) {
@@ -46,7 +50,7 @@ public class UserRepositoryImpl implements UserRepository {
             avatarPart = MultipartBody.Part.createFormData("avatar", avatarFile.getName(), fileBody);
         }
 
-        userApi.updateProfile(currentPhone, nameBody, phoneBody, emailBody, avatarPart)
+        userApi.updateProfile(currentPhone, nameBody, phoneBody, emailBody, birthdayBody, genderBody, avatarPart)
                 .enqueue(new retrofit2.Callback<UserProfileDto>() {
                     @Override
                     public void onResponse(Call<UserProfileDto> call, Response<UserProfileDto> response) {

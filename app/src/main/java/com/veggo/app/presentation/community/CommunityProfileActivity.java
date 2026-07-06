@@ -312,7 +312,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
         }
         String name = firstNonBlank(preferences.getFullName(), ((TextView) findViewById(R.id.profileName)).getText().toString());
         String email = firstNonBlank(preferences.getEmail(), "");
-        userRepository.updateProfile(phone, name, phone, email, pendingAvatarFile, new UserRepository.Callback<UserProfileDto>() {
+        userRepository.updateProfile(phone, name, phone, email, "", "", pendingAvatarFile, new UserRepository.Callback<UserProfileDto>() {
             @Override
             public void onSuccess(UserProfileDto profile) {
                 runOnUiThread(() -> onAvatarUploaded(profile));

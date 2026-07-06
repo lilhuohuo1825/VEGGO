@@ -10,7 +10,7 @@ import com.veggo.app.assets.AssetFiles;
 public final class DatabaseManager {
     public static final String DATABASE_NAME = "veggo.db";
     public static final int DATABASE_VERSION = 38;
-    public static final int ASSET_SEED_VERSION = 40;
+    public static final int ASSET_SEED_VERSION = 42;
 
     private DatabaseManager() {
     }

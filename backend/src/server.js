@@ -26,6 +26,9 @@ const warehouseRoutes = require('./routes/warehouseRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const { migrateUserAvatarField } = require('./utils/userAvatarMigration');
+const { migrateUserDateFields } = require('./utils/userDateFieldMigration');
+const { seedConsultationsIfEmpty } = require('./utils/consultationSeed');
+const { processScheduledDeliveryReminders } = require('./services/scheduledDeliveryReminderService');
 const paymentRoutes = require('./routes/paymentRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -152,6 +155,7 @@ connectMongo()
     // Seed default warehouses if empty
     const db = mongoose.connection.db;
     await migrateUserAvatarField(db);
+    await migrateUserDateFields(db);
 
     const warehouseCount = await db.collection('warehouses').countDocuments();
     if (warehouseCount === 0) {
@@ -186,6 +190,21 @@ connectMongo()
         }
       ]);
     }
+
+    await seedConsultationsIfEmpty();
+
+    const runDeliveryReminders = async () => {
+      try {
+        const created = await processScheduledDeliveryReminders(mongoose.connection.db);
+        if (created > 0) {
+          console.log(`[delivery-reminder] Created ${created} admin reminder(s)`);
+        }
+      } catch (error) {
+        console.error('[delivery-reminder] Failed:', error.message);
+      }
+    };
+    await runDeliveryReminders();
+    setInterval(runDeliveryReminders, 5 * 60 * 1000);
 
     app.listen(port, '0.0.0.0', () => {
       console.log(`VEGGO API running on http://0.0.0.0:${port}`);

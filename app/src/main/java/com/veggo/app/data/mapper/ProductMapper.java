@@ -3,6 +3,7 @@ package com.veggo.app.data.mapper;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.data.local.projection.ProductItemProjection;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.domain.model.Product;
 
 import com.google.gson.Gson;
@@ -126,7 +127,7 @@ public final class ProductMapper {
                 dto.getPrice(),
                 dto.getOriginalPrice(),
                 dto.getSku(),
-                dto.getImageUrl(),
+                ProductImageUtils.resolveImageUrl(dto),
                 serializeWeightOptions(dto.getWeightOptions()),
                 dto.getWeight(),
                 dto.getRating(),

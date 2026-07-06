@@ -18,6 +18,7 @@ import com.veggo.app.R;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeEntity;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
+import com.veggo.app.speech.SearchVoiceInputController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
     private View recipesIndicator;
     private View chefsIndicator;
     private SwipeRefreshLayout refreshLayout;
+    private SearchVoiceInputController voiceInputController;
     private int activeTab = TAB_RECIPES;
     private final List<CommunityRecipeEntity> recipes = new ArrayList<>();
     private final List<CommunityChefEntity> chefs = new ArrayList<>();
@@ -53,6 +55,13 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         chefsIndicator = findViewById(R.id.discoveryChefsIndicator);
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
         refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.discoveryScroll, this::loadDiscoveryData);
+
+        voiceInputController = SearchVoiceInputController.attach(
+                this,
+                findViewById(R.id.discoveryRoot),
+                searchInput,
+                this::renderActiveTab
+        );
 
         findViewById(R.id.discoveryBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.discoveryRecipesTab).setOnClickListener(v -> showRecipes());
@@ -118,11 +127,39 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         }
         List<CommunityRecipeEntity> filtered = new ArrayList<>();
         for (CommunityRecipeEntity recipe : recipes) {
-            if (recipe.getTitle() != null && recipe.getTitle().toLowerCase(Locale.ROOT).contains(query)) {
+            if (matchesRecipeQuery(recipe, query)) {
                 filtered.add(recipe);
             }
         }
         return filtered;
+    }
+
+    private boolean matchesRecipeQuery(CommunityRecipeEntity recipe, String query) {
+        if (recipe == null) {
+            return false;
+        }
+        return containsNormalized(recipe.getTitle(), query)
+                || containsNormalized(resolveChefName(recipe.getChefId()), query);
+    }
+
+    @Nullable
+    private String resolveChefName(@Nullable String chefId) {
+        if (chefId == null) {
+            return null;
+        }
+        for (CommunityChefEntity chef : chefs) {
+            if (chefId.equals(chef.getId())) {
+                return chef.getName();
+            }
+        }
+        return null;
+    }
+
+    private boolean containsNormalized(@Nullable String value, String query) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        return value.toLowerCase(Locale.ROOT).contains(query);
     }
 
     private List<CommunityChefEntity> filteredChefs() {
@@ -173,6 +210,32 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         chefsText.setTypeface(null, recipesActive ? Typeface.NORMAL : Typeface.BOLD);
         recipesIndicator.setVisibility(recipesActive ? View.VISIBLE : View.INVISIBLE);
         chefsIndicator.setVisibility(recipesActive ? View.INVISIBLE : View.VISIBLE);
+        searchInput.setHint(recipesActive ? "Tìm kiếm công thức" : "Tìm kiếm đầu bếp");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (voiceInputController != null) {
+            voiceInputController.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (voiceInputController != null) {
+            voiceInputController.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (voiceInputController != null) {
+            voiceInputController.release();
+            voiceInputController = null;
+        }
+        super.onDestroy();
     }
 
     private int dp(int value) {

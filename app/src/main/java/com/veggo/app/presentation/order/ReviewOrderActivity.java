@@ -55,7 +55,10 @@ public class ReviewOrderActivity extends BaseActivity {
     private final List<ProductReviewForm> forms = new ArrayList<>();
     private LinearLayout formsContainer;
     private TextView submitButton;
+    private TextView hintText;
     private String orderId;
+    private boolean canEditExisting;
+    private boolean hasExistingReviews;
     private ProductReviewForm activeMediaForm;
     private boolean activeMediaIsVideo;
     private ActivityResultLauncher<String> mediaPicker;
@@ -71,6 +74,7 @@ public class ReviewOrderActivity extends BaseActivity {
         orderId = getIntent().getStringExtra(AssetScreenData.EXTRA_ORDER_ID);
         formsContainer = findViewById(R.id.reviewOrderProductForms);
         submitButton = findViewById(R.id.reviewOrderSubmitButton);
+        hintText = findViewById(R.id.reviewOrderHintText);
 
         setupMediaPickers();
         findViewById(R.id.reviewOrderBackButton).setOnClickListener(v -> finish());
@@ -151,11 +155,54 @@ public class ReviewOrderActivity extends BaseActivity {
         new Thread(() -> {
             AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
             AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(orderId);
-            runOnUiThread(() -> bindForms(detail));
+            String customerId = new AppPreferences(this).getCustomerId();
+            Map<String, Object> reviewsBySku = new HashMap<>();
+            boolean editable = false;
+            try {
+                if (customerId != null && !customerId.trim().isEmpty()) {
+                    ReviewApi reviewApi = ApiClient.createService(ReviewApi.class);
+                    Response<Map<String, Object>> response = reviewApi.getOrderReviews(orderId, customerId).execute();
+                    if (response.isSuccessful() && response.body() != null) {
+                        Map<String, Object> body = response.body();
+                        Object canEditValue = body.get("canEdit");
+                        if (canEditValue instanceof Boolean) {
+                            editable = (Boolean) canEditValue;
+                        }
+                        Object reviewsValue = body.get("reviewsBySku");
+                        if (reviewsValue instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> parsed = (Map<String, Object>) reviewsValue;
+                            reviewsBySku = parsed;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // Fall back to blank forms when review lookup fails.
+            }
+
+            String orderStatus = "";
+            if (snapshot.orders != null) {
+                for (AssetModels.Order order : snapshot.orders) {
+                    if (orderId != null && orderId.equals(order.orderId)) {
+                        orderStatus = order.status == null ? "" : order.status;
+                        break;
+                    }
+                }
+            }
+
+            final boolean finalEditable = editable;
+            final Map<String, Object> finalReviewsBySku = reviewsBySku;
+            final String finalOrderStatus = orderStatus;
+            runOnUiThread(() -> bindForms(detail, finalReviewsBySku, finalEditable, finalOrderStatus));
         }).start();
     }
 
-    private void bindForms(AssetModels.OrderDetail detail) {
+    private void bindForms(
+            AssetModels.OrderDetail detail,
+            Map<String, Object> reviewsBySku,
+            boolean canEdit,
+            String orderStatus
+    ) {
         forms.clear();
         formsContainer.removeAllViews();
 
@@ -163,6 +210,21 @@ public class ReviewOrderActivity extends BaseActivity {
             Toast.makeText(this, "Không tìm thấy sản phẩm trong đơn hàng", Toast.LENGTH_SHORT).show();
             finish();
             return;
+        }
+
+        hasExistingReviews = reviewsBySku != null && !reviewsBySku.isEmpty();
+        canEditExisting = canEdit;
+        if ("reviewed".equals(orderStatus) && !hasExistingReviews) {
+            Toast.makeText(this, "Không tìm thấy đánh giá của đơn hàng này", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        if (hasExistingReviews && !canEditExisting) {
+            hintText.setText(R.string.review_order_readonly_hint);
+        } else if (hasExistingReviews) {
+            hintText.setText(R.string.review_order_edit_hint);
+        } else {
+            hintText.setText(R.string.review_order_carbon_hint);
         }
 
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -180,16 +242,74 @@ public class ReviewOrderActivity extends BaseActivity {
                     formView.findViewById(R.id.reviewVideoContainer),
                     formView.findViewById(R.id.reviewVideoPlaceholder)
             );
-            form.photoContainer.setOnClickListener(v -> showMediaSourceDialog(form, false));
-            form.videoContainer.setOnClickListener(v -> showMediaSourceDialog(form, true));
-            form.renderMedia(this);
-            form.attachCharacterCounter();
+            Map<String, Object> existing = skuReviewMap(reviewsBySku, item.sku);
+            boolean formEditable = !hasExistingReviews || (existing == null ? canEditExisting : canEditExisting);
+            if (existing != null) {
+                applyExistingToForm(form, existing, formEditable);
+            } else {
+                form.photoContainer.setOnClickListener(v -> showMediaSourceDialog(form, false));
+                form.videoContainer.setOnClickListener(v -> showMediaSourceDialog(form, true));
+                form.renderMedia(this, formEditable);
+                form.attachCharacterCounter();
+            }
+            if (!formEditable) {
+                form.setReadOnly();
+            }
             forms.add(form);
             formsContainer.addView(formView);
         }
+
+        if (hasExistingReviews && !canEditExisting) {
+            submitButton.setVisibility(View.GONE);
+        } else {
+            submitButton.setVisibility(View.VISIBLE);
+            submitButton.setText(hasExistingReviews
+                    ? getString(R.string.review_order_update)
+                    : "Gửi đánh giá");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> skuReviewMap(Map<String, Object> reviewsBySku, String sku) {
+        if (reviewsBySku == null || sku == null || sku.trim().isEmpty()) {
+            return null;
+        }
+        Object value = reviewsBySku.get(sku.trim());
+        return value instanceof Map ? (Map<String, Object>) value : null;
+    }
+
+    private void applyExistingToForm(ProductReviewForm form, Map<String, Object> data, boolean editable) {
+        Object rating = data.get("rating");
+        if (rating instanceof Number) {
+            form.ratingBar.setRating(((Number) rating).floatValue());
+        }
+        Object content = data.get("content");
+        if (content != null) {
+            form.contentInput.setText(String.valueOf(content));
+        }
+        Object imagesObj = data.get("images");
+        if (imagesObj instanceof List) {
+            for (Object imageObj : (List<?>) imagesObj) {
+                String url = String.valueOf(imageObj);
+                if (url.trim().isEmpty()) {
+                    continue;
+                }
+                String lower = url.toLowerCase();
+                String mimeType = lower.contains(".mp4") || lower.contains(".mov") || lower.contains(".webm")
+                        ? "video/mp4" : "image/jpeg";
+                form.media.add(new ReviewMedia(Uri.parse(url), "remote", mimeType, url));
+            }
+        }
+        form.photoContainer.setOnClickListener(v -> showMediaSourceDialog(form, false));
+        form.videoContainer.setOnClickListener(v -> showMediaSourceDialog(form, true));
+        form.renderMedia(this, editable);
+        form.attachCharacterCounter();
     }
 
     private void showMediaSourceDialog(ProductReviewForm form, boolean isVideo) {
+        if (hasExistingReviews && !canEditExisting) {
+            return;
+        }
         activeMediaForm = form;
         activeMediaIsVideo = isVideo;
         if (!isVideo && form.imageCount() >= 3) {
@@ -267,11 +387,19 @@ public class ReviewOrderActivity extends BaseActivity {
         new Thread(() -> {
             boolean success = true;
             String error = "Không thể gửi đánh giá";
+            int carbonEarned = 0;
+            int sessionCarbon = 0;
             try {
                 ReviewApi reviewApi = ApiClient.createService(ReviewApi.class);
                 for (ProductReviewForm form : forms) {
+                    if (form.item.sku == null || form.item.sku.trim().isEmpty()) {
+                        success = false;
+                        error = "Không tìm thấy mã SKU cho sản phẩm: "
+                                + (form.item.productName == null ? "" : form.item.productName);
+                        break;
+                    }
                     Map<String, Object> body = new HashMap<>();
-                    body.put("sku", form.item.sku);
+                    body.put("sku", form.item.sku.trim());
                     body.put("customer_id", customerId);
                     body.put("order_id", orderId);
                     body.put("fullname", fullName == null || fullName.trim().isEmpty() ? "Khách hàng VEGGO" : fullName);
@@ -283,10 +411,24 @@ public class ReviewOrderActivity extends BaseActivity {
                     if (!response.isSuccessful()) {
                         success = false;
                         if (response.errorBody() != null) {
-                            error = response.errorBody().string();
+                            error = parseApiError(response.errorBody().string());
                         }
                         break;
                     }
+                    Map<String, Object> responseBody = response.body();
+                    if (responseBody != null) {
+                        Object singlePoints = responseBody.get("carbonPoints");
+                        if (singlePoints instanceof Number) {
+                            sessionCarbon += ((Number) singlePoints).intValue();
+                        }
+                        Object orderPoints = responseBody.get("reviewCarbonPointEarned");
+                        if (orderPoints instanceof Number && ((Number) orderPoints).intValue() > 0) {
+                            carbonEarned = ((Number) orderPoints).intValue();
+                        }
+                    }
+                }
+                if (carbonEarned == 0) {
+                    carbonEarned = sessionCarbon;
                 }
             } catch (Exception exception) {
                 success = false;
@@ -295,19 +437,45 @@ public class ReviewOrderActivity extends BaseActivity {
 
             boolean finalSuccess = success;
             String finalError = error;
+            int finalCarbonEarned = carbonEarned;
             runOnUiThread(() -> {
                 submitButton.setEnabled(true);
-                submitButton.setText("Gửi đánh giá");
+                submitButton.setText(hasExistingReviews
+                        ? getString(R.string.review_order_update)
+                        : "Gửi đánh giá");
                 if (finalSuccess) {
-                    Toast.makeText(this,
-                            "Đã đánh giá thành công và nhận được " + (forms.size() * 2) + " điểm carbon",
-                            Toast.LENGTH_LONG).show();
+                    String message;
+                    if (hasExistingReviews) {
+                        message = getString(R.string.review_update_success);
+                    } else if (finalCarbonEarned > 0) {
+                        message = "Đã đánh giá thành công và nhận được " + finalCarbonEarned + " điểm carbon";
+                    } else {
+                        message = "Đã gửi đánh giá thành công";
+                    }
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
                     finish();
                 } else {
                     Toast.makeText(this, finalError, Toast.LENGTH_LONG).show();
                 }
             });
         }).start();
+    }
+
+    private String parseApiError(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return "Không thể gửi đánh giá";
+        }
+        String trimmed = raw.trim();
+        if (trimmed.startsWith("{") && trimmed.contains("\"message\"")) {
+            int start = trimmed.indexOf("\"message\"");
+            int colon = trimmed.indexOf(':', start);
+            int quoteStart = trimmed.indexOf('"', colon + 1);
+            int quoteEnd = trimmed.indexOf('"', quoteStart + 1);
+            if (quoteStart >= 0 && quoteEnd > quoteStart) {
+                return trimmed.substring(quoteStart + 1, quoteEnd);
+            }
+        }
+        return trimmed.length() > 120 ? trimmed.substring(0, 120) + "..." : trimmed;
     }
 
     private List<String> uploadReviewMedia(ReviewApi reviewApi, List<ReviewMedia> media) throws Exception {
@@ -318,6 +486,10 @@ public class ReviewOrderActivity extends BaseActivity {
 
         List<MultipartBody.Part> parts = new ArrayList<>();
         for (ReviewMedia item : media) {
+            if (item.remoteUrl != null && !item.remoteUrl.trim().isEmpty()) {
+                urls.add(item.remoteUrl);
+                continue;
+            }
             byte[] bytes = readBytes(item.uri);
             RequestBody requestBody = RequestBody.create(MediaType.parse(item.mimeType), bytes);
             parts.add(MultipartBody.Part.createFormData("media", item.fileName, requestBody));
@@ -374,6 +546,7 @@ public class ReviewOrderActivity extends BaseActivity {
         final View videoContainer;
         final TextView videoLabel;
         final List<ReviewMedia> media = new ArrayList<>();
+        boolean mediaEditable = true;
 
         ProductReviewForm(
                 AssetModels.OrderDetailItem item,
@@ -395,6 +568,17 @@ public class ReviewOrderActivity extends BaseActivity {
             this.photoLabel = photoLabel;
             this.videoContainer = videoContainer;
             this.videoLabel = videoLabel;
+        }
+
+        void setReadOnly() {
+            mediaEditable = false;
+            ratingBar.setIsIndicator(true);
+            contentInput.setEnabled(false);
+            contentInput.setFocusable(false);
+            photoContainer.setEnabled(false);
+            photoContainer.setClickable(false);
+            videoContainer.setEnabled(false);
+            videoContainer.setClickable(false);
         }
 
         void attachCharacterCounter() {
@@ -437,12 +621,17 @@ public class ReviewOrderActivity extends BaseActivity {
         }
 
         void renderMedia(Context context) {
+            renderMedia(context, mediaEditable);
+        }
+
+        void renderMedia(Context context, boolean editable) {
+            mediaEditable = editable;
             while (mediaContainer.getChildCount() > 2) {
                 mediaContainer.removeViewAt(0);
             }
             int insertIndex = 0;
             for (ReviewMedia item : media) {
-                mediaContainer.addView(createMediaThumb(context, item), insertIndex++);
+                mediaContainer.addView(createMediaThumb(context, item, editable), insertIndex++);
             }
             int imageCount = imageCount();
             int videoCount = videoCount();
@@ -454,7 +643,7 @@ public class ReviewOrderActivity extends BaseActivity {
             videoLabel.setText(videoCount + "/1");
         }
 
-        private View createMediaThumb(Context context, ReviewMedia mediaItem) {
+        private View createMediaThumb(Context context, ReviewMedia mediaItem, boolean editable) {
             FrameLayout frame = new FrameLayout(context);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(context, 96), LinearLayout.LayoutParams.MATCH_PARENT);
             params.setMarginEnd(dp(context, 10));
@@ -469,31 +658,40 @@ public class ReviewOrderActivity extends BaseActivity {
             ));
 
             if (mediaItem.isVideo()) {
-                Bitmap thumbnail = getVideoThumbnail(context, mediaItem.uri);
-                if (thumbnail != null) {
-                    image.setImageBitmap(thumbnail);
+                if (mediaItem.remoteUrl != null && !mediaItem.remoteUrl.trim().isEmpty()) {
+                    Glide.with(context).load(mediaItem.remoteUrl).into(image);
+                    frame.addView(overlayLabel(context, "Video"));
                 } else {
-                    image.setImageResource(R.drawable.ic_camera);
+                    Bitmap thumbnail = getVideoThumbnail(context, mediaItem.uri);
+                    if (thumbnail != null) {
+                        image.setImageBitmap(thumbnail);
+                    } else {
+                        image.setImageResource(R.drawable.ic_camera);
+                    }
+                    frame.addView(overlayLabel(context, "Video"));
                 }
-                frame.addView(overlayLabel(context, "Video"));
+            } else if (mediaItem.remoteUrl != null && !mediaItem.remoteUrl.trim().isEmpty()) {
+                Glide.with(context).load(mediaItem.remoteUrl).into(image);
             } else {
                 image.setImageURI(mediaItem.uri);
             }
 
-            TextView removeButton = new TextView(context);
-            removeButton.setText("×");
-            removeButton.setTextColor(context.getColor(R.color.background_main));
-            removeButton.setTextSize(18);
-            removeButton.setGravity(android.view.Gravity.CENTER);
-            removeButton.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            removeButton.setBackgroundColor(0x99000000);
-            FrameLayout.LayoutParams removeParams = new FrameLayout.LayoutParams(dp(context, 24), dp(context, 24));
-            removeParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
-            frame.addView(removeButton, removeParams);
-            removeButton.setOnClickListener(v -> {
-                media.remove(mediaItem);
-                renderMedia(context);
-            });
+            if (editable) {
+                TextView removeButton = new TextView(context);
+                removeButton.setText("×");
+                removeButton.setTextColor(context.getColor(R.color.background_main));
+                removeButton.setTextSize(18);
+                removeButton.setGravity(android.view.Gravity.CENTER);
+                removeButton.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                removeButton.setBackgroundColor(0x99000000);
+                FrameLayout.LayoutParams removeParams = new FrameLayout.LayoutParams(dp(context, 24), dp(context, 24));
+                removeParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+                frame.addView(removeButton, removeParams);
+                removeButton.setOnClickListener(v -> {
+                    media.remove(mediaItem);
+                    renderMedia(context, editable);
+                });
+            }
 
             return frame;
         }
@@ -537,11 +735,17 @@ public class ReviewOrderActivity extends BaseActivity {
         final Uri uri;
         final String fileName;
         final String mimeType;
+        final String remoteUrl;
 
         ReviewMedia(Uri uri, String fileName, String mimeType) {
+            this(uri, fileName, mimeType, null);
+        }
+
+        ReviewMedia(Uri uri, String fileName, String mimeType, String remoteUrl) {
             this.uri = uri;
             this.fileName = fileName;
             this.mimeType = mimeType;
+            this.remoteUrl = remoteUrl;
         }
 
         boolean isVideo() {

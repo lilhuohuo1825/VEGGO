@@ -50,6 +50,8 @@ public class PersonalInfoViewModel extends ViewModel {
             String name,
             String phone,
             String email,
+            String birthday,
+            String gender,
             @Nullable File avatarFile
     ) {
         String validationError = validate(name, phone, email);
@@ -65,6 +67,8 @@ public class PersonalInfoViewModel extends ViewModel {
                 name.trim(),
                 phone.trim(),
                 email == null ? "" : email.trim(),
+                birthday == null ? "" : birthday.trim(),
+                gender == null ? "" : gender.trim(),
                 avatarFile,
                 new UserRepository.Callback<UserProfileDto>() {
                     @Override

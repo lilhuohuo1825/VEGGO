@@ -5,6 +5,12 @@ import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { Subscription, filter, interval } from 'rxjs';
+import {
+  formatDeliveryWindowText,
+  getOrderSourceClass,
+  getOrderSourceLabel,
+  resolveOrderSource,
+} from '../utils/order-source.util';
 
 @Component({
   selector: 'app-ordersmanage',
@@ -82,6 +88,9 @@ export class OrdersManage implements OnInit, OnDestroy {
           'cancelled',
           'confirmed',
           'paid',
+          'recurring',
+          'standard',
+          'fast',
         ];
         if (validFilters.includes(filterType)) {
           console.log(`🔍 [OrdersManage] Applying filter from query param: ${filterType}`);
@@ -471,6 +480,9 @@ export class OrdersManage implements OnInit, OnDestroy {
 
     // Use OrderID as order ID
     const orderId = orderData.OrderID || orderData._id?.$oid || 'N/A';
+    const shippingInfo = orderData.shippingInfo || {};
+    const orderSource = resolveOrderSource(shippingInfo);
+    const deliveryTimeText = formatDeliveryWindowText(shippingInfo);
 
     return {
       id: orderId,
@@ -481,6 +493,8 @@ export class OrdersManage implements OnInit, OnDestroy {
       delivery: delivery,
       refund: refund,
       total: formattedAmount,
+      orderSource,
+      deliveryTimeText,
       selected: false,
       cancelReason: orderData.cancelReason || '', // Lý do hủy/trả hàng
       rawData: orderData, // Keep raw data for detail page
@@ -961,10 +975,22 @@ export class OrdersManage implements OnInit, OnDestroy {
       case 'paid':
         return orders.filter((o) => o.payment === 'paid');
 
+      case 'recurring':
+        return orders.filter((o) => o.orderSource === 'recurring');
+
+      case 'standard':
+        return orders.filter((o) => o.orderSource === 'standard');
+
+      case 'fast':
+        return orders.filter((o) => o.orderSource === 'fast');
+
       default:
         return orders;
     }
   }
+
+  orderSourceLabel = getOrderSourceLabel;
+  orderSourceClass = getOrderSourceClass;
 
   /**
    * Clear all filters

@@ -89,16 +89,10 @@ public class FridgeExpiryNotificationReceiver extends BroadcastReceiver {
                     long diffMs = expDay.getTimeInMillis() - today.getTimeInMillis();
                     long diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-                    // Cảnh báo nếu còn 0, 1, 2 hoặc 3 ngày
-                    if (diffDays >= 0 && diffDays <= 3) {
+                    // Cảnh báo khi bật nhắc hạn và còn 0–1 ngày (ngày mai / hôm nay hết hạn)
+                    if (FridgeExpiryReminderHelper.shouldNotify(item, diffDays)) {
                         String label = item.getName() != null ? item.getName() : "Nguyên liệu";
-                        if (diffDays == 0) {
-                            expiringNames.add(label + " (hôm nay)");
-                        } else if (diffDays == 1) {
-                            expiringNames.add(label + " (ngày mai)");
-                        } else {
-                            expiringNames.add(label + " (còn " + diffDays + " ngày)");
-                        }
+                        expiringNames.add(label + FridgeExpiryReminderHelper.formatReminderLabel(diffDays));
                     }
                 } catch (Exception ignored) {}
             }

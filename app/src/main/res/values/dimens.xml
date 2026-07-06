@@ -29,4 +29,7 @@
     <dimen name="text_xl">24sp</dimen>
     <dimen name="text_display">32sp</dimen>
 
+    <!-- 3 hàng lịch giao định kỳ (48dp/hàng) -->
+    <dimen name="recurring_scheduled_list_max_height">144dp</dimen>
+
 </resources>

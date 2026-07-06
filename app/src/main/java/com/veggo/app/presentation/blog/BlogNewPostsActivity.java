@@ -5,14 +5,17 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.databinding.ActivityBlogNewpostsBinding;
 
 import java.util.List;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class BlogNewPostsActivity extends AppCompatActivity {
     private ActivityBlogNewpostsBinding binding;
     private BlogRepository repository;
+    private SwipeRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -20,7 +23,18 @@ public class BlogNewPostsActivity extends AppCompatActivity {
         binding = ActivityBlogNewpostsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new BlogRepository(this);
-        repository.getLatest(6, blogs -> runOnUiThread(() -> render(blogs)));
+        refreshLayout = PullToRefreshHelper.wrap(
+                binding.blogNewPostsScroll,
+                () -> loadPosts(true)
+        );
+        loadPosts(false);
+    }
+
+    private void loadPosts(boolean fromRefresh) {
+        repository.getLatest(6, blogs -> runOnUiThread(() -> {
+            PullToRefreshHelper.finish(refreshLayout);
+            render(blogs);
+        }));
     }
 
     private void render(List<BlogEntity> blogs) {

@@ -3,6 +3,9 @@ package com.veggo.app.presentation.order;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.Gravity;
 import android.view.View;
@@ -25,6 +28,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.veggo.app.R;
 import com.veggo.app.adapter.LocationOptionAdapter;
+import com.veggo.app.core.notification.RecurringConfirmationScheduler;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.di.AppModule;
@@ -48,6 +52,7 @@ public class CreateRecurringOrderActivity extends BaseActivity {
     private final SimpleDateFormat displayFormat = new SimpleDateFormat("EEEE, dd/MM/yyyy", new Locale("vi", "VN"));
     private final TextView[] frequencyButtons = new TextView[5];
     private final List<LocationOptionAdapter.LocationItemUiModel> locationItems = new ArrayList<>();
+    private final List<Address> savedAddresses = new ArrayList<>();
     private final List<RecurringOrderStore.RecurringProductItem> selectedProductItems = new ArrayList<>();
     private final Gson gson = new Gson();
     private EditText nameInput;
@@ -95,11 +100,15 @@ public class CreateRecurringOrderActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (com.veggo.app.presentation.profile.LoginRequiredActivity.redirectIfGuest(this, "đơn hàng định kỳ")) {
+            return;
+        }
         setContentView(R.layout.activity_create_recurring_order);
         preferences = new AppPreferences(this);
         store = new RecurringOrderStore(this);
         addressRepository = AppModule.provideAddressRepository(this);
         bindViews();
+        setupRequiredLabels();
         setupDefaults();
         setupFrequencyButtons();
         loadEditingOrderIfNeeded();
@@ -155,6 +164,33 @@ public class CreateRecurringOrderActivity extends BaseActivity {
         }
     }
 
+    private void setupRequiredLabels() {
+        tintRequiredMarker(findViewById(R.id.createRecurringNameLabel));
+        tintRequiredMarker(findViewById(R.id.createRecurringAddressLabel));
+        tintRequiredMarker(findViewById(R.id.createRecurringProductsLabel));
+        tintRequiredMarker(findViewById(R.id.createRecurringDeliveryDayLabel));
+        tintRequiredMarker(findViewById(R.id.createRecurringDeliverySlotLabel));
+    }
+
+    private void tintRequiredMarker(TextView label) {
+        if (label == null) {
+            return;
+        }
+        String text = label.getText().toString();
+        int markerIndex = text.indexOf('*');
+        if (markerIndex < 0) {
+            return;
+        }
+        SpannableString spannable = new SpannableString(text);
+        spannable.setSpan(
+                new ForegroundColorSpan(getColor(R.color.danger_main)),
+                markerIndex,
+                markerIndex + 1,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+        label.setText(spannable);
+    }
+
     private void showDeliveryDatePicker() {
         Calendar initial = Calendar.getInstance();
         Date selectedDate = parseDate(selectedDeliveryDate);
@@ -165,7 +201,16 @@ public class CreateRecurringOrderActivity extends BaseActivity {
                 this,
                 (view, year, month, dayOfMonth) -> {
                     Calendar picked = Calendar.getInstance();
-                    picked.set(year, month, dayOfMonth);
+                    picked.set(year, month, dayOfMonth, 0, 0, 0);
+                    picked.set(Calendar.MILLISECOND, 0);
+                    if (isDeliveryDateInPast(picked)) {
+                        Toast.makeText(
+                                this,
+                                R.string.recurring_error_past_delivery_date,
+                                Toast.LENGTH_SHORT
+                        ).show();
+                        return;
+                    }
                     selectedDeliveryDate = storageFormat.format(picked.getTime());
                     deliveryDayText.setText(displayFormat.format(picked.getTime()));
                 },
@@ -173,7 +218,9 @@ public class CreateRecurringOrderActivity extends BaseActivity {
                 initial.get(Calendar.MONTH),
                 initial.get(Calendar.DAY_OF_MONTH)
         );
-        dialog.getDatePicker().setMinDate(System.currentTimeMillis());
+        Calendar minDate = Calendar.getInstance();
+        clearTime(minDate);
+        dialog.getDatePicker().setMinDate(minDate.getTimeInMillis());
         dialog.show();
     }
 
@@ -211,13 +258,15 @@ public class CreateRecurringOrderActivity extends BaseActivity {
             @Override
             public void onSuccess(List<Address> addresses) {
                 locationItems.clear();
+                savedAddresses.clear();
                 selectedLocationIndex = 0;
                 if (addresses != null) {
                     for (int i = 0; i < addresses.size(); i++) {
                         Address address = addresses.get(i);
+                        savedAddresses.add(address);
                         locationItems.add(new LocationOptionAdapter.LocationItemUiModel(
                                 joinNameAndPhone(address.getName(), address.getPhone()),
-                                joinAddress(address.getDetail(), address.getWard(), address.getDistrict(), address.getProvince()),
+                                address.getFullAddressLine(),
                                 address.isDefault()
                         ));
                         if (address.isDefault()) {
@@ -347,24 +396,37 @@ public class CreateRecurringOrderActivity extends BaseActivity {
         if (selectedLocationIndex < 0 || selectedLocationIndex >= locationItems.size()) {
             selectedLocationIndex = 0;
         }
+        if (!savedAddresses.isEmpty() && selectedLocationIndex < savedAddresses.size()) {
+            Address address = savedAddresses.get(selectedLocationIndex);
+            selectedReceiverName = defaultIfBlank(address.getName(), "");
+            selectedReceiverPhone = defaultIfBlank(address.getPhone(), "");
+            selectedDetailAddress = defaultIfBlank(address.getDetail(), "");
+            selectedWard = defaultIfBlank(address.getWard(), "");
+            selectedDistrict = defaultIfBlank(address.getDistrict(), "");
+            selectedCity = defaultIfBlank(address.getProvince(), "");
+            selectedAddressLine = address.getFullAddressLine();
+            addressNameText.setText(joinNameAndPhone(selectedReceiverName, selectedReceiverPhone));
+            addressLineText.setText(selectedAddressLine);
+            return;
+        }
         LocationOptionAdapter.LocationItemUiModel item = locationItems.get(selectedLocationIndex);
         selectedAddressLine = item.address;
         String[] nameParts = item.name.split("\\s*-\\s*", 2);
         selectedReceiverName = nameParts.length > 0 ? nameParts[0] : "";
         selectedReceiverPhone = nameParts.length > 1 ? nameParts[1] : "";
-
-        String[] addressParts = item.address.split("\\s*,\\s*");
-        selectedDetailAddress = addressParts.length > 0 ? addressParts[0] : "";
-        selectedWard = addressParts.length > 1 ? addressParts[1] : "";
-        selectedDistrict = addressParts.length > 2 ? addressParts[2] : "";
-        selectedCity = addressParts.length > 3 ? addressParts[3] : "";
-
         addressNameText.setText(item.name);
         addressLineText.setText(item.address);
     }
 
     private void openProductPicker() {
-        productPickerLauncher.launch(new Intent(this, RecurringProductPickerActivity.class));
+        Intent intent = new Intent(this, RecurringProductPickerActivity.class);
+        if (!selectedProductItems.isEmpty()) {
+            intent.putExtra(
+                    RecurringProductPickerActivity.EXTRA_EXISTING_PRODUCTS_JSON,
+                    gson.toJson(selectedProductItems)
+            );
+        }
+        productPickerLauncher.launch(intent);
     }
 
     private void bindSelectedProduct(Intent data) {
@@ -508,16 +570,7 @@ public class CreateRecurringOrderActivity extends BaseActivity {
             Toast.makeText(this, "Vui lòng đăng nhập để tạo đơn định kỳ", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (isBlank(textOf(nameInput))) {
-            Toast.makeText(this, "Vui lòng nhập tên đơn", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (isBlank(selectedAddressLine) || selectedAddressLine.contains("Vui lòng chọn")) {
-            Toast.makeText(this, "Vui lòng chọn địa chỉ giao", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (selectedProductItems.isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn sản phẩm", Toast.LENGTH_SHORT).show();
+        if (!validateForm()) {
             return;
         }
 
@@ -545,15 +598,130 @@ public class CreateRecurringOrderActivity extends BaseActivity {
 
         if (editingOrder == null) {
             store.add(order);
+            RecurringConfirmationScheduler.scheduleDailyCheck(this);
+            RecurringConfirmationScheduler.runCheckNow(this);
             Toast.makeText(this, "Đã tạo đơn định kỳ", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(this, RecurringOrdersActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
         } else {
             store.update(order);
+            RecurringConfirmationScheduler.scheduleDailyCheck(this);
+            RecurringConfirmationScheduler.runCheckNow(this);
             Toast.makeText(this, "Đã cập nhật đơn định kỳ", Toast.LENGTH_SHORT).show();
         }
         finish();
+    }
+
+    private boolean validateForm() {
+        List<String> missingFields = new ArrayList<>();
+
+        if (isBlank(textOf(nameInput))) {
+            missingFields.add(getString(R.string.recurring_form_name));
+        }
+        if (!hasValidAddress()) {
+            missingFields.add(getString(R.string.recurring_address));
+        }
+        if (selectedProductItems.isEmpty()) {
+            missingFields.add(getString(R.string.recurring_products_label));
+        }
+        if (isBlank(selectedFrequency)) {
+            missingFields.add(getString(R.string.recurring_time_title));
+        }
+        if (isBlank(selectedDeliveryDate)) {
+            missingFields.add(getString(R.string.recurring_delivery_day));
+        } else if (isDeliveryDateInPast(selectedDeliveryDate)) {
+            Toast.makeText(this, R.string.recurring_error_past_delivery_date, Toast.LENGTH_LONG).show();
+            deliveryDayText.requestFocus();
+            return false;
+        }
+        if (isBlank(selectedDeliverySlot)) {
+            missingFields.add(getString(R.string.recurring_delivery_slot));
+        }
+
+        if (!missingFields.isEmpty()) {
+            List<String> displayNames = new ArrayList<>();
+            for (String field : missingFields) {
+                displayNames.add(stripRequiredMarker(field));
+            }
+            String message = getString(
+                    R.string.recurring_error_required_fields,
+                    String.join(", ", displayNames)
+            );
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            highlightFirstMissingField(missingFields);
+            return false;
+        }
+        return true;
+    }
+
+    private String stripRequiredMarker(String label) {
+        return label == null ? "" : label.replace(" *", "").replace("*", "").trim();
+    }
+
+    private void highlightFirstMissingField(List<String> missingFields) {
+        String first = missingFields.get(0);
+        if (getString(R.string.recurring_form_name).equals(first)) {
+            nameInput.requestFocus();
+        } else if (getString(R.string.recurring_address).equals(first)) {
+            showLocationDialog();
+        } else if (getString(R.string.recurring_products_label).equals(first)) {
+            openProductPicker();
+        } else if (getString(R.string.recurring_delivery_day).equals(first)) {
+            deliveryDayText.requestFocus();
+        } else if (getString(R.string.recurring_delivery_slot).equals(first)) {
+            deliverySlotText.requestFocus();
+        }
+    }
+
+    private boolean hasValidAddress() {
+        if (isPlaceholderAddress(selectedAddressLine)) {
+            return false;
+        }
+        if (!savedAddresses.isEmpty()
+                && selectedLocationIndex >= 0
+                && selectedLocationIndex < savedAddresses.size()) {
+            Address address = savedAddresses.get(selectedLocationIndex);
+            return address != null && !isBlank(address.getFullAddressLine());
+        }
+        if (editingOrder != null && !isBlank(editingOrder.displayAddress())) {
+            return true;
+        }
+        return !isBlank(selectedAddressLine)
+                && (!isBlank(selectedDetailAddress) || !isBlank(selectedCity));
+    }
+
+    private boolean isPlaceholderAddress(String line) {
+        if (isBlank(line)) {
+            return true;
+        }
+        return line.contains("Vui lòng chọn")
+                || line.contains("Chưa chọn địa chỉ")
+                || line.contains("Chọn địa chỉ trong sổ địa chỉ");
+    }
+
+    private boolean isDeliveryDateInPast(String dateValue) {
+        Date date = parseDate(dateValue);
+        if (date == null) {
+            return true;
+        }
+        Calendar delivery = Calendar.getInstance();
+        delivery.setTime(date);
+        return isDeliveryDateInPast(delivery);
+    }
+
+    private boolean isDeliveryDateInPast(Calendar delivery) {
+        Calendar today = Calendar.getInstance();
+        clearTime(today);
+        clearTime(delivery);
+        return delivery.before(today);
+    }
+
+    private void clearTime(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
     }
 
     private String buildItemSummary() {

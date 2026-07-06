@@ -26,8 +26,9 @@ public interface ProductApi {
             @Query("skip") int skip
     );
 
+    /** Catalog sync — bắt buộc lite=true để backend trả kèm image/imageUrl. */
     @GET("products")
-    Call<List<ProductDto>> getProducts();
+    Call<List<ProductDto>> getProducts(@Query("lite") String lite);
 
     @GET("products/{id}")
     Call<ProductDto> getProductById(@Path("id") String productId);

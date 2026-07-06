@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
 export interface AdminNotification {
   _id?: string;
   id?: string;
-  type: 'order_cancellation_request' | 'new_order' | 'return_request' | 'consultation' | 'system' | 'other';
+  type: 'order_cancellation_request' | 'new_order' | 'return_request' | 'scheduled_delivery_reminder' | 'consultation' | 'system' | 'other';
   customerId?: string;
   customerName?: string;
   orderId?: string;

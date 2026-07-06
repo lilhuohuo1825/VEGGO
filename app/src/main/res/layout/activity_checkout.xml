@@ -191,20 +191,22 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutDeliveryOriginAddress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
-                            android:text="123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh"
+                            android:text="Đang tải kho gần nhất..."
                             android:textColor="#616161"
                             android:textSize="12sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutDeliveryOriginDistance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:text="20 km ~ 45 phút"
+                            android:text="-- km ~ -- phút"
                             android:textColor="#57AF37"
                             android:textSize="12sp" />
 
@@ -348,16 +350,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_medium"
-                            android:text="Giao nhanh trong 2 giờ"
+                            android:text="Giao hàng nhanh"
                             android:textColor="#1E1E1E"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvFastDeliveryTime"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Dự kiến nhận hàng hôm nay, 14:00 - 16:00"
+                            android:text="Đang tính thời gian giao..."
                             android:textColor="#616161"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -454,8 +457,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:buttonTint="@color/payment_radio_button_tint"
-                        app:buttonTint="@color/payment_radio_button_tint"
-                        android:checked="true" />
+                        app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -554,7 +556,8 @@
                         android:id="@+id/radioPaymentVnpay"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:buttonTint="#57AF37" />
+                        android:buttonTint="@color/payment_radio_button_tint"
+                        app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
             </LinearLayout>
 

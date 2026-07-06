@@ -62,7 +62,12 @@ async function getActiveFlashSaleBySku(skus) {
 
   const db = mongoose.connection.db;
   const targets = await db.collection('promotion_targets')
-    .find({ target_type: 'Product', target_ref: { $in: cleanSkus } })
+    .find({
+      $or: [
+        { target_type: 'Product', target_ref: { $in: cleanSkus } },
+        { 'target_groups.target_type': 'Product', 'target_groups.target_ref': { $in: cleanSkus } },
+      ],
+    })
     .toArray();
   const promotionIds = [...new Set(targets.map(target => target.promotion_id).filter(Boolean))];
   if (!promotionIds.length) return result;
@@ -77,12 +82,36 @@ async function getActiveFlashSaleBySku(skus) {
       .map(promo => [promo.promotion_id, promo])
   );
 
+  const getPromotionTargetGroups = (target) => {
+    if (!target) return [];
+    if (Array.isArray(target.target_groups) && target.target_groups.length) {
+      return target.target_groups
+        .map(group => ({
+          target_type: group?.target_type,
+          target_ref: Array.isArray(group?.target_ref) ? group.target_ref : [],
+        }))
+        .filter(group => group.target_type);
+    }
+    if (target.target_type) {
+      return [{
+        target_type: target.target_type,
+        target_ref: Array.isArray(target.target_ref) ? target.target_ref : [],
+      }];
+    }
+    return [];
+  };
+
+  const getTargetRefsByType = (target, targetType) => getPromotionTargetGroups(target)
+    .filter(group => group.target_type === targetType)
+    .flatMap(group => group.target_ref);
+
   targets.forEach(target => {
     const promo = activePromoById.get(target.promotion_id);
-    if (!promo || !Array.isArray(target.target_ref)) return;
-    target.target_ref.forEach(sku => {
-      if (cleanSkus.includes(String(sku)) && !result.has(String(sku))) {
-        result.set(String(sku), promo);
+    if (!promo) return;
+    getTargetRefsByType(target, 'Product').forEach(sku => {
+      const skuKey = String(sku);
+      if (cleanSkus.includes(skuKey) && !result.has(skuKey)) {
+        result.set(skuKey, promo);
       }
     });
   });
@@ -92,12 +121,11 @@ async function getActiveFlashSaleBySku(skus) {
 
 function applyFlashSalePricing(product, promo) {
   if (!product || !promo) return product;
-  const originalPrice = Number(product.price || 0);
+  const listPrice = Number(product.price || 0);
   return {
     ...product,
-    price: calculateFlashSalePrice(originalPrice, promo),
-    originalPrice,
-    base_price: originalPrice,
+    price: calculateFlashSalePrice(listPrice, promo),
+    originalPrice: listPrice,
     activePromotionId: promo.promotion_id,
     activePromotionKind: promo.promotion_kind,
   };
@@ -143,7 +171,7 @@ async function populateCart(cart) {
     applyFlashSalePricing(product, flashSaleBySku.get(String(product.sku)))
   ]));
 
-  cartObject.items = cartObject.items.map((item) => {
+  cartObject.items = sortCartItemsByRecent(cartObject.items).map((item) => {
     const product = productBySku.get(item.sku) || null;
     const productSnapshot = buildProductSnapshot(product);
 
@@ -194,6 +222,20 @@ function findCartItemIndex(items, sku, selectedWeight) {
 
 function findCartItem(items, sku, selectedWeight) {
   return items.find((item) => item.sku === sku && weightsEqual(item.selectedWeight, selectedWeight));
+}
+
+function touchCartItem(item) {
+  if (item) {
+    item.updatedAt = new Date();
+  }
+}
+
+function sortCartItemsByRecent(items) {
+  return [...(items || [])].sort((left, right) => {
+    const leftTime = left?.updatedAt ? new Date(left.updatedAt).getTime() : 0;
+    const rightTime = right?.updatedAt ? new Date(right.updatedAt).getTime() : 0;
+    return rightTime - leftTime;
+  });
 }
 
 exports.getCart = async (req, res) => {
@@ -256,11 +298,13 @@ exports.addItem = async (req, res) => {
   const itemIndex = findCartItemIndex(cart.items, resolvedSku, resolvedWeight);
   if (itemIndex > -1) {
     cart.items[itemIndex].quantity += resolvedQuantity;
+    touchCartItem(cart.items[itemIndex]);
   } else {
     cart.items.push({
       sku: resolvedSku,
       quantity: resolvedQuantity,
       selectedWeight: resolvedWeight,
+      updatedAt: new Date(),
     });
   }
 
@@ -285,6 +329,7 @@ exports.updateItemQuantity = async (req, res) => {
   }
 
   item.quantity = quantity;
+  touchCartItem(item);
   await cart.save();
 
   const populatedCart = await populateCart(cart);

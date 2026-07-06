@@ -15,6 +15,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.data.local.entity.BlogCommentEntity;
 import com.veggo.app.data.local.entity.BlogEntity;
@@ -45,9 +46,7 @@ public class BlogDetailActivity extends AppCompatActivity {
         binding.blogDetailCommentIcon.setOnClickListener(v -> binding.blogDetailScroll.post(() ->
                 binding.blogDetailScroll.smoothScrollTo(0, binding.blogCommentsTitle.getTop())));
         binding.blogDetailCommentIcon.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary_main)));
-        binding.blogDetailRefresh.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-        binding.blogDetailRefresh.setOnChildScrollUpCallback((parent, child) -> binding.blogDetailScroll.canScrollVertically(-1));
-        binding.blogDetailRefresh.setOnRefreshListener(this::loadBlog);
+        PullToRefreshHelper.bind(binding.blogDetailRefresh, binding.blogDetailScroll, this::loadBlog);
 
         if (blogId == null) {
             renderMissing();
@@ -58,11 +57,11 @@ public class BlogDetailActivity extends AppCompatActivity {
 
     private void loadBlog() {
         if (blogId == null) {
-            binding.blogDetailRefresh.setRefreshing(false);
+            PullToRefreshHelper.finish(binding.blogDetailRefresh);
             return;
         }
         repository.getById(blogId, blog -> runOnUiThread(() -> {
-            binding.blogDetailRefresh.setRefreshing(false);
+            PullToRefreshHelper.finish(binding.blogDetailRefresh);
             if (blog == null) {
                 renderMissing();
             } else {

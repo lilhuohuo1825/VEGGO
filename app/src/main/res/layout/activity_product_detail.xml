@@ -7,6 +7,7 @@
     android:background="@color/white">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/productDetailScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
@@ -342,10 +343,17 @@
                     tools:listitem="@layout/item_review" />
 
                 <!-- Phần tư vấn -->
-                <RelativeLayout
+                <LinearLayout
+                    android:id="@+id/consultationSectionContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp">
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                <RelativeLayout
+                    android:id="@+id/sectionConsultation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -413,6 +421,19 @@
                     android:nestedScrollingEnabled="false"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     tools:listitem="@layout/item_consultation" />
+
+                <TextView
+                    android:id="@+id/tvConsultationEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/consultation_empty_state"
+                    android:textColor="@color/neutral_60"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                </LinearLayout>
 
                 <!-- Related products -->
                 <TextView

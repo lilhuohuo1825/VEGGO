@@ -5,6 +5,8 @@ import android.app.Application;
 import com.google.firebase.FirebaseApp;
 import com.veggo.app.core.database.AssetDatabaseSeeder;
 import com.veggo.app.core.notification.FridgeExpiryScheduler;
+import com.veggo.app.core.notification.RecurringConfirmationScheduler;
+import com.veggo.app.di.AppModule;
 
 public class VeggoApplication extends Application {
     @Override
@@ -18,9 +20,11 @@ public class VeggoApplication extends Application {
         com.veggo.app.core.database.VeggoDatabase.getInstance(this);
         AssetDatabaseSeeder.seedIfNeededBlocking(this);
 
-        com.veggo.app.core.network.FirebaseSyncManager.getInstance(this).syncProducts();
+        AppModule.provideProductRepository(this).refreshProducts();
 
         // Lên lịch kiểm tra nguyên liệu sắp hết hạn mỗi ngày
         FridgeExpiryScheduler.scheduleDailyCheck(this);
+        RecurringConfirmationScheduler.scheduleDailyCheck(this);
+        RecurringConfirmationScheduler.runCheckNow(this);
     }
 }

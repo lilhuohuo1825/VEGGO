@@ -9,15 +9,16 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.veggo.app.R;
 import com.veggo.app.adapter.BannerAdapter;
 import com.veggo.app.assets.AssetModels;
-import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.utils.Constants;
 import com.veggo.app.core.ui.BaseActivity;
-import com.veggo.app.data.remote.api.PromotionApi;
-import com.veggo.app.data.remote.dto.PromotionDto;
-import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Banner;
 import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.presentation.promotion.PromotionDetailActivity;
@@ -25,14 +26,15 @@ import com.veggo.app.presentation.promotion.PromotionDetailActivity;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.Nullable;
 import androidx.viewpager2.widget.ViewPager2;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class CarbonPointsActivity extends BaseActivity {
     private BannerAdapter carbonPromotionAdapter;
     private View[] carbonPromotionIndicators;
+    private View carbonPromotionBannerCard;
+    private LinearLayout carbonPromotionIndicatorRow;
+    private List<Banner> boundCertificateBanners = new ArrayList<>();
     private final Handler carbonPromotionHandler = new Handler(Looper.getMainLooper());
     private final Runnable carbonPromotionRunnable = () -> {
         ViewPager2 pager = findViewById(R.id.carbonPromotionBanners);
@@ -58,14 +60,12 @@ public class CarbonPointsActivity extends BaseActivity {
         );
         setupPromotionBannerCarousel();
         loadCarbonData();
-        loadCertificatePromotions();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         loadCarbonData();
-        loadCertificatePromotions();
         if (carbonPromotionAdapter != null && carbonPromotionAdapter.getRealCount() > 0) {
             carbonPromotionHandler.postDelayed(carbonPromotionRunnable, 4000);
         }
@@ -93,6 +93,7 @@ public class CarbonPointsActivity extends BaseActivity {
             AssetScreenData.setText(findViewById(android.R.id.content), R.id.carbonProgressLeft, "");
             setStatusColors(R.color.neutral_70, R.color.neutral_70);
             updateProgressFill(0f);
+            bindCertificateBanners(snapshot.certificates);
             return;
         }
         int points = snapshot.user.carbonPoint;
@@ -126,9 +127,12 @@ public class CarbonPointsActivity extends BaseActivity {
             bindProgress(points, next);
             setStatusColors(R.color.primary_hover, R.color.neutral_70);
         }
+        bindCertificateBanners(snapshot.certificates);
     }
 
     private void setupPromotionBannerCarousel() {
+        carbonPromotionBannerCard = findViewById(R.id.carbonPromotionBannerCard);
+        carbonPromotionIndicatorRow = findViewById(R.id.carbonPromotionIndicators);
         carbonPromotionAdapter = new BannerAdapter();
         ViewPager2 pager = findViewById(R.id.carbonPromotionBanners);
         if (pager == null) return;
@@ -159,67 +163,126 @@ public class CarbonPointsActivity extends BaseActivity {
         });
     }
 
-    private void loadCertificatePromotions() {
-        String customerId = new AppPreferences(this).getCustomerId();
-        TextView status = findViewById(R.id.carbonPromotionOfferStatus);
-        if (customerId == null || customerId.trim().isEmpty()) {
-            bindPromotionOffers(null);
+    private void bindCertificateBanners(List<AssetModels.Certificate> certificates) {
+        List<Banner> banners = new ArrayList<>();
+        if (certificates != null) {
+            for (AssetModels.Certificate certificate : certificates) {
+                if (certificate == null || certificate.certificateId == null) continue;
+                String promotionId = getPromotionIdForCertificate(certificate.certificateId);
+                if (promotionId == null || promotionId.isEmpty()) continue;
+                String imageUrl = buildPromotionBannerProxyUrl(promotionId);
+                if (imageUrl == null || imageUrl.isEmpty()) continue;
+                banners.add(new Banner(promotionId, 0, imageUrl));
+            }
+        }
+        if (sameBanners(boundCertificateBanners, banners)) {
             return;
         }
-        if (status != null) status.setText("Đang tải");
-        PromotionApi promotionApi = AppModule.providePromotionApi();
-        promotionApi.getPromotions(customerId, null, "carbon").enqueue(new Callback<List<PromotionDto>>() {
-            @Override
-            public void onResponse(Call<List<PromotionDto>> call, Response<List<PromotionDto>> response) {
-                bindPromotionOffers(response.isSuccessful() ? response.body() : null);
-            }
+        boundCertificateBanners = banners;
+        preloadAndShowCertificateBanners(banners);
+    }
 
-            @Override
-            public void onFailure(Call<List<PromotionDto>> call, Throwable t) {
-                bindPromotionOffers(null);
+    private boolean sameBanners(List<Banner> current, List<Banner> next) {
+        if (current.size() != next.size()) {
+            return false;
+        }
+        for (int i = 0; i < current.size(); i++) {
+            Banner left = current.get(i);
+            Banner right = next.get(i);
+            if (!left.getId().equals(right.getId())) {
+                return false;
             }
+            String leftUrl = left.getImageUrl() == null ? "" : left.getImageUrl();
+            String rightUrl = right.getImageUrl() == null ? "" : right.getImageUrl();
+            if (!leftUrl.equals(rightUrl)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void preloadAndShowCertificateBanners(List<Banner> banners) {
+        ViewPager2 pager = findViewById(R.id.carbonPromotionBanners);
+        if (carbonPromotionAdapter == null || pager == null) {
+            return;
+        }
+
+        carbonPromotionHandler.removeCallbacks(carbonPromotionRunnable);
+        if (banners.isEmpty()) {
+            carbonPromotionAdapter.submitList(new ArrayList<>());
+            setCertificateBannerSectionVisible(false);
+            return;
+        }
+
+        setCertificateBannerSectionVisible(false);
+
+        Glide.with(this)
+                .load(banners.get(0).getImageUrl())
+                .listener(new RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(
+                            @Nullable GlideException e,
+                            Object model,
+                            Target<android.graphics.drawable.Drawable> target,
+                            boolean isFirstResource
+                    ) {
+                        runOnUiThread(() -> showCertificateBanners(banners));
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(
+                            android.graphics.drawable.Drawable resource,
+                            Object model,
+                            Target<android.graphics.drawable.Drawable> target,
+                            DataSource dataSource,
+                            boolean isFirstResource
+                    ) {
+                        runOnUiThread(() -> showCertificateBanners(banners));
+                        return false;
+                    }
+                })
+                .preload();
+    }
+
+    private void showCertificateBanners(List<Banner> banners) {
+        ViewPager2 pager = findViewById(R.id.carbonPromotionBanners);
+        if (carbonPromotionAdapter == null || pager == null) {
+            return;
+        }
+
+        carbonPromotionAdapter.submitList(banners);
+        setCertificateBannerSectionVisible(true);
+        pager.post(() -> {
+            int realCount = carbonPromotionAdapter.getRealCount();
+            if (realCount == 0) return;
+            int startPos = (Integer.MAX_VALUE / 2) - ((Integer.MAX_VALUE / 2) % realCount);
+            pager.setCurrentItem(startPos, false);
+            updatePromotionIndicators(0);
+            carbonPromotionHandler.removeCallbacks(carbonPromotionRunnable);
+            carbonPromotionHandler.postDelayed(carbonPromotionRunnable, 4000);
         });
     }
 
-    private void bindPromotionOffers(List<PromotionDto> promotions) {
-        TextView status = findViewById(R.id.carbonPromotionOfferStatus);
-        ViewPager2 pager = findViewById(R.id.carbonPromotionBanners);
-        LinearLayout indicators = findViewById(R.id.carbonPromotionIndicators);
-        if (carbonPromotionAdapter == null || pager == null) return;
-
-        if (promotions == null || promotions.isEmpty()) {
-            if (status != null) status.setText("Chưa có");
-            carbonPromotionAdapter.submitList(new ArrayList<>());
-            if (indicators != null) indicators.setVisibility(View.GONE);
-            return;
+    private void setCertificateBannerSectionVisible(boolean visible) {
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        if (carbonPromotionBannerCard != null) {
+            carbonPromotionBannerCard.setVisibility(visibility);
         }
-
-        List<Banner> banners = new ArrayList<>();
-        for (PromotionDto promotion : promotions) {
-            if (promotion == null || !Boolean.TRUE.equals(promotion.getActive())) continue;
-            String promotionId = nonEmpty(promotion.getPromotionId(), promotion.getCode());
-            if (promotionId == null || promotionId.isEmpty()) continue;
-            String imageUrl = buildPromotionBannerProxyUrl(promotionId);
-            banners.add(new Banner(promotionId, R.drawable.banner_freeship, imageUrl));
+        if (carbonPromotionIndicatorRow != null) {
+            carbonPromotionIndicatorRow.setVisibility(visibility);
         }
+    }
 
-        if (banners.isEmpty()) {
-            if (status != null) status.setText("Chưa có");
-            carbonPromotionAdapter.submitList(new ArrayList<>());
-            if (indicators != null) indicators.setVisibility(View.GONE);
-        } else if (status != null) {
-            status.setText(banners.size() + " ưu đãi");
-            if (indicators != null) indicators.setVisibility(View.VISIBLE);
-            carbonPromotionAdapter.submitList(banners);
-            pager.post(() -> {
-                int realCount = carbonPromotionAdapter.getRealCount();
-                if (realCount == 0) return;
-                int startPos = (Integer.MAX_VALUE / 2) - ((Integer.MAX_VALUE / 2) % realCount);
-                pager.setCurrentItem(startPos, false);
-                updatePromotionIndicators(0);
-                carbonPromotionHandler.removeCallbacks(carbonPromotionRunnable);
-                carbonPromotionHandler.postDelayed(carbonPromotionRunnable, 4000);
-            });
+    private String getPromotionIdForCertificate(String certificateId) {
+        if (certificateId == null) return null;
+        switch (certificateId) {
+            case "CER001": return "PROMO017";
+            case "CER002": return "PROMO018";
+            case "CER003": return "PROMO019";
+            case "CER004": return "PROMO020";
+            case "CER005": return "PROMO021";
+            default: return null;
         }
     }
 
@@ -246,34 +309,9 @@ public class CarbonPointsActivity extends BaseActivity {
         }
     }
 
-    private String getPromotionImageUrl(PromotionDto promotion) {
-        PromotionDto.BannerDataDto bannerData = promotion.getBannerData();
-        if (bannerData != null) {
-            if (bannerData.getSrc() != null && !bannerData.getSrc().trim().isEmpty()) {
-                return bannerData.getSrc();
-            }
-            if (bannerData.getImageUrl() != null && !bannerData.getImageUrl().trim().isEmpty()) {
-                return bannerData.getImageUrl();
-            }
-        }
-        return promotion.getImageUrl();
-    }
-
     private String buildPromotionBannerProxyUrl(String promotionId) {
         if (promotionId == null || promotionId.trim().isEmpty()) return null;
         return removeTrailingSlash(Constants.API_BASE_URL) + "/promotions/" + promotionId.trim() + "/banner-image";
-    }
-
-    private String buildFullImageUrl(String imageUrl) {
-        if (imageUrl == null || imageUrl.trim().isEmpty()) return null;
-        String trimmedUrl = imageUrl.trim();
-        if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) return trimmedUrl;
-
-        String baseUrl = Constants.API_BASE_URL;
-        int apiIndex = baseUrl.indexOf("/api/");
-        String serverRoot = apiIndex >= 0 ? baseUrl.substring(0, apiIndex) : removeTrailingSlash(baseUrl);
-        if (trimmedUrl.startsWith("/")) return serverRoot + trimmedUrl;
-        return removeTrailingSlash(baseUrl) + "/" + trimmedUrl;
     }
 
     private String removeTrailingSlash(String value) {
@@ -282,14 +320,6 @@ public class CarbonPointsActivity extends BaseActivity {
             value = value.substring(0, value.length() - 1);
         }
         return value;
-    }
-
-    private String nonEmpty(String value, String fallback) {
-        return value == null || value.trim().isEmpty() ? fallback : value.trim();
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void bindProgress(int points, AssetModels.Certificate target) {

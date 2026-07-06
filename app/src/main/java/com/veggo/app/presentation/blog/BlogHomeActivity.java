@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.veggo.app.R;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.databinding.ActivityBlogHomeBinding;
 
@@ -31,16 +32,14 @@ public class BlogHomeActivity extends AppCompatActivity {
         binding = ActivityBlogHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new BlogRepository(this);
-        binding.blogHomeRefresh.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-        binding.blogHomeRefresh.setOnChildScrollUpCallback((parent, child) -> binding.blogHomeScroll.canScrollVertically(-1));
-        binding.blogHomeRefresh.setOnRefreshListener(() -> loadBlogs(true));
+        PullToRefreshHelper.bind(binding.blogHomeRefresh, binding.blogHomeScroll, () -> loadBlogs(true));
         renderLoading();
         loadBlogs(false);
     }
 
     private void loadBlogs(boolean fromRefresh) {
         repository.getAll(blogs -> runOnUiThread(() -> {
-            binding.blogHomeRefresh.setRefreshing(false);
+            PullToRefreshHelper.finish(binding.blogHomeRefresh);
             allBlogs = new ArrayList<>(blogs);
             randomizePostBlogs();
             render();

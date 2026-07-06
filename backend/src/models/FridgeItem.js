@@ -16,6 +16,7 @@ const fridgeItemSchema = new mongoose.Schema(
       required: true,
     },
     locationCode: { type: String, default: '' },
+    remindBeforeExpiry: { type: Boolean, default: true },
     purchaseDate: { type: Date, required: true },
     expiryDate: { type: Date, required: true },
   },

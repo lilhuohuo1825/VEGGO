@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +16,8 @@ import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.ProductRepository;
 import com.veggo.app.core.preferences.AppPreferences;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.product.ProductDetailActivity;
@@ -23,12 +26,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchActivity extends AppCompatActivity {
+    public static final String EXTRA_START_VOICE = "extra_start_voice";
+
     private ActivitySearchBinding binding;
     private SearchViewModel viewModel;
     private GlobalSearchAdapter searchAdapter;
     private CategorySearchAdapter categoryAdapter;
     private ProductRepository productRepository;
     private com.veggo.app.domain.repository.CategoryRepository categoryRepository;
+    private com.veggo.app.speech.SearchVoiceInputController voiceInputController;
+    private SwipeRefreshLayout searchRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +49,66 @@ public class SearchActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this, factory).get(SearchViewModel.class);
 
         setupViews();
+        setupPullToRefresh();
+        setupVoiceSearch();
         observeData();
+
+        if (getIntent().getBooleanExtra(EXTRA_START_VOICE, false)) {
+            binding.layoutSearch.edtSearch.post(() -> {
+                if (voiceInputController != null) {
+                    voiceInputController.startVoiceInputIfPermitted();
+                }
+            });
+        }
+    }
+
+    private void setupPullToRefresh() {
+        searchRefreshLayout = PullToRefreshHelper.wrap(binding.searchContentHost, () -> {
+            viewModel.refresh();
+            binding.getRoot().postDelayed(() -> PullToRefreshHelper.finish(searchRefreshLayout), 400);
+        });
+        if (searchRefreshLayout != null) {
+            searchRefreshLayout.setOnChildScrollUpCallback((parent, child) -> {
+                View scrollTarget = binding.rvSearchResults.getVisibility() == View.VISIBLE
+                        ? binding.rvSearchResults
+                        : binding.rvCategories;
+                return scrollTarget.canScrollVertically(-1);
+            });
+        }
+    }
+
+    private void setupVoiceSearch() {
+        voiceInputController = com.veggo.app.speech.SearchVoiceInputController.attach(
+                this,
+                binding.layoutSearch.getRoot(),
+                binding.layoutSearch.edtSearch,
+                () -> viewModel.setSearchQuery(binding.layoutSearch.edtSearch.getText().toString().trim())
+        );
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (voiceInputController != null) {
+            voiceInputController.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (voiceInputController != null) {
+            voiceInputController.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (voiceInputController != null) {
+            voiceInputController.release();
+            voiceInputController = null;
+        }
+        super.onDestroy();
     }
 
     private void setupViews() {

@@ -25,6 +25,8 @@ import com.veggo.app.adapter.FlashSaleAdapter;
 import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
 import com.veggo.app.data.remote.dto.CartDto;
@@ -102,6 +104,8 @@ public class HomeFragment extends Fragment {
     private android.widget.HorizontalScrollView stickyTabsHsv;
 
     private View[] bannerIndicators;
+    private SwipeRefreshLayout homeRefreshLayout;
+    private boolean homeRefreshPending;
 
     private final Handler bannerHandler = new Handler(Looper.getMainLooper());
     private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
@@ -135,6 +139,7 @@ public class HomeFragment extends Fragment {
         setupStickyBehavior();
         setupHeaderActions();
         observeViewModel();
+        setupPullToRefresh();
 
         homeViewModel.loadHomeData(requireContext());
         if (getArguments() != null
@@ -164,13 +169,20 @@ public class HomeFragment extends Fragment {
         if (binding == null) return false;
         int currentScrollY = binding.homeScrollView.getScrollY();
         if (currentScrollY == 0) {
-            // Đã ở đầu trang → reload toàn bộ dữ liệu
+            homeRefreshPending = true;
             homeViewModel.loadHomeData(requireContext());
         } else {
             // Đang ở giữa trang → scroll smooth về top
             binding.homeScrollView.smoothScrollTo(0, 0);
         }
         return true;
+    }
+
+    private void setupPullToRefresh() {
+        homeRefreshLayout = PullToRefreshHelper.wrap(binding.homeScrollView, () -> {
+            homeRefreshPending = true;
+            homeViewModel.loadHomeData(requireContext());
+        });
     }
 
     public void scrollToProductsSection() {
@@ -204,11 +216,25 @@ public class HomeFragment extends Fragment {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
             startActivity(intent);
         };
+        View.OnClickListener openSearchWithVoice = v -> {
+            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
+            intent.putExtra(com.veggo.app.presentation.search.SearchActivity.EXTRA_START_VOICE, true);
+            startActivity(intent);
+        };
         binding.layoutSearch.setOnClickListener(openSearchClick);
         binding.stickyHeader.layoutStickySearch.setOnClickListener(openSearchClick);
         if (binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch) != null) {
             binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch).setFocusable(false);
             binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch).setOnClickListener(openSearchClick);
+        }
+
+        View homeMic = binding.layoutSearch.findViewById(R.id.btnHomeMic);
+        if (homeMic != null) {
+            homeMic.setOnClickListener(openSearchWithVoice);
+        }
+        View stickyMic = binding.stickyHeader.getRoot().findViewById(R.id.btnStickyMic);
+        if (stickyMic != null) {
+            stickyMic.setOnClickListener(openSearchWithVoice);
         }
 
         binding.btnChatbot.setOnClickListener(v -> startActivity(
@@ -376,10 +402,10 @@ public class HomeFragment extends Fragment {
                 case "2": intent = new Intent(requireContext(), com.veggo.app.presentation.chatbot.ChatbotActivity.class); break;
                 case "3":
                     if (!new AppPreferences(requireContext()).isLoggedIn()) {
-                        LoginRequiredActivity.open(requireContext(), "khẩu vị của tôi");
+                        LoginRequiredActivity.open(requireContext(), "yêu thích");
                         return;
                     }
-                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.TastePreferencesActivity.class);
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.FavoritesActivity.class);
                     break;
                 case "4":
                     if (!new AppPreferences(requireContext()).isLoggedIn()) {
@@ -745,6 +771,10 @@ public class HomeFragment extends Fragment {
         // Loading indicator
         homeViewModel.getLoadingProducts().observe(getViewLifecycleOwner(), isLoading -> {
             if (binding == null) return;
+            if (homeRefreshPending && !Boolean.TRUE.equals(isLoading)) {
+                homeRefreshPending = false;
+                PullToRefreshHelper.finish(homeRefreshLayout);
+            }
             binding.progressProducts.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             // Hide RecyclerView if it's the initial load (products list is empty)
             boolean isInitialLoad = isLoading && productAdapter.getItemCount() == 0;

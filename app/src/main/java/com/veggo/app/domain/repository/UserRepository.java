@@ -18,6 +18,8 @@ public interface UserRepository {
             String name,
             String phone,
             String email,
+            String birthday,
+            String gender,
             @Nullable File avatarFile,
             Callback<UserProfileDto> callback
     );

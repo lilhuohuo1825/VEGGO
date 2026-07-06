@@ -2,6 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const { refreshCustomerOrderMetrics, isDeliveredStatus } = require('../services/certificateService');
+const { validatePromotionForCustomer } = require('../utils/promotionEligibility');
+const {
+  processReminderForOrder,
+  isRecurringShipping,
+  formatDeliveryWindow,
+} = require('../services/scheduledDeliveryReminderService');
 
 const router = express.Router();
 
@@ -205,6 +211,7 @@ const attachOrderDetails = async (orders) => {
       o.shippingInfo = d.shippingInfo || {};
       o.items = d.items || [];
       o.promotion_id = d.promotion_id || null;
+      o.shippingPromotionId = d.shippingPromotionId || d.shipping_promotion_id || null;
       o.TotalCarbonEmission = d.TotalCarbonEmission || 0;
       o.CarbonPointEarned = d.CarbonPointEarned || 0;
     }
@@ -256,6 +263,7 @@ router.get('/id/:id', asyncHandler(async (req, res) => {
     order.items = orderDetail.items || [];
     order.shippingInfo = orderDetail.shippingInfo || {};
     order.promotion_id = orderDetail.promotion_id || null;
+    order.shippingPromotionId = orderDetail.shippingPromotionId || orderDetail.shipping_promotion_id || null;
     order.TotalCarbonEmission = orderDetail.TotalCarbonEmission || 0;
     order.CarbonPointEarned = orderDetail.CarbonPointEarned || 0;
   } else {
@@ -487,6 +495,18 @@ router.post('/', asyncHandler(async (req, res) => {
   const requestedTotalCarbonEmission = toNumber(req.body.TotalCarbonEmission ?? req.body.totalCarbonEmission);
   const requestedCarbonPointEarned = toNumber(req.body.CarbonPointEarned ?? req.body.carbonPointEarned);
 
+  const promotionId = req.body.promotion_id || req.body.promotionId || null;
+  const shippingPromotionId = req.body.shippingPromotionId || req.body.shipping_promotion_id || null;
+
+  const productPromotionCheck = await validatePromotionForCustomer(promotionId, customerId);
+  if (!productPromotionCheck.ok) {
+    return res.status(400).json({ message: productPromotionCheck.message });
+  }
+  const shippingPromotionCheck = await validatePromotionForCustomer(shippingPromotionId, customerId);
+  if (!shippingPromotionCheck.ok) {
+    return res.status(400).json({ message: shippingPromotionCheck.message });
+  }
+
   const orderDoc = {
     OrderID: orderId,
     CustomerID: customerId,
@@ -499,8 +519,10 @@ router.post('/', asyncHandler(async (req, res) => {
     vatRate: toNumber(req.body.vatRate),
     vatAmount: toNumber(req.body.vatAmount),
     totalAmount,
-    code: req.body.code || '',
+    code: req.body.code || promotionId || '',
     promotionName: req.body.promotionName || '',
+    shippingPromotionId: shippingPromotionId || null,
+    shippingPromotionName: req.body.shippingPromotionName || '',
     wantInvoice: Boolean(req.body.wantInvoice),
     invoiceInfo: req.body.invoiceInfo || {},
     consultantCode: req.body.consultantCode || '',
@@ -549,7 +571,9 @@ router.post('/', asyncHandler(async (req, res) => {
     OrderID: orderId,
     shippingInfo: req.body.shippingInfo || {},
     items: detailItems,
-    promotion_id: req.body.promotion_id || req.body.promotionId || null,
+    promotion_id: promotionId,
+    shippingPromotionId: shippingPromotionId || null,
+    shippingPromotionName: req.body.shippingPromotionName || '',
     TotalCarbonEmission: totalCarbonEmission,
     CarbonPointEarned: carbonPointEarned,
   };
@@ -568,15 +592,30 @@ router.post('/', asyncHandler(async (req, res) => {
     statusNotificationBody(status, orderId),
     'created'
   );
+
+  const shippingInfo = orderDetailDoc.shippingInfo || {};
+  const recurringOrder = isRecurringShipping(shippingInfo);
+  const deliveryText = formatDeliveryWindow(shippingInfo);
+  const recurringLabel = shippingInfo.recurringOrderName
+    ? ` "${shippingInfo.recurringOrderName}"`
+    : '';
+
   await createAdminNotification({
     type: 'new_order',
     customerId,
     orderId,
     orderTotal: totalAmount,
-    title: `Đơn hàng mới #${orderId}`,
-    message: `Có đơn hàng mới từ khách hàng ${customerId} với tổng giá trị ${totalAmount.toLocaleString('vi-VN')}₫.`,
+    isRecurring: recurringOrder,
+    title: recurringOrder
+      ? `Đơn định kỳ mới #${orderId}`
+      : `Đơn hàng mới #${orderId}`,
+    message: recurringOrder
+      ? `Đơn định kỳ${recurringLabel} #${orderId}${deliveryText ? ` - giao ${deliveryText}` : ''}. Tổng ${totalAmount.toLocaleString('vi-VN')}₫.`
+      : `Có đơn hàng mới từ khách hàng ${customerId} với tổng giá trị ${totalAmount.toLocaleString('vi-VN')}₫${deliveryText ? ` - giao ${deliveryText}` : ''}.`,
   });
+  await processReminderForOrder(db, orderId);
   await recordPromotionUsage(orderDetailDoc.promotion_id, orderId, customerId);
+  await recordPromotionUsage(orderDetailDoc.shippingPromotionId, orderId, customerId);
   await refreshCustomerMetricsAfterOrderChange(customerId, orderId, isDeliveredStatus(status));
 
   res.status(201).json({

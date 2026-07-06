@@ -16,8 +16,27 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 const PHONE_REGEX = /^0\d{9}$/;
 const STRONG_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
 const OTP_TTL_MS = 60 * 1000;
+const RESET_PASSWORD_WINDOW_MS = 10 * 60 * 1000;
 const MAX_OTP_ATTEMPTS = 3;
 const buildOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+async function validateForgotPasswordOtp(phone, otp) {
+  const otpRecord = await Otp.findOne({ phone, purpose: 'forgot_password' });
+  if (!otpRecord || otpRecord.expiresAt < new Date()) {
+    if (otpRecord) await Otp.deleteOne({ _id: otpRecord._id });
+    return { ok: false, status: 400, message: 'Mã xác thực đã hết hạn' };
+  }
+  if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    await Otp.deleteOne({ _id: otpRecord._id });
+    return { ok: false, status: 400, message: 'Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã' };
+  }
+  if (otpRecord.otp !== String(otp || '').trim()) {
+    otpRecord.attempts += 1;
+    await otpRecord.save();
+    return { ok: false, status: 400, message: 'Mã xác thực không đúng' };
+  }
+  return { ok: true, otpRecord };
+}
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: AVATAR_MAX_BYTES },
@@ -85,7 +104,29 @@ router.post('/register', asyncHandler(async (req, res) => {
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
-  // ... (giữ nguyên code cũ)
+
+  if (!PHONE_REGEX.test(String(phone || '').trim()) || !STRONG_PASSWORD_REGEX.test(String(password || ''))) {
+    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+  }
+
+  const user = await User.findOne({ Phone: phone })
+    .select('Password FullName Email CustomerID Phone CarbonPoint avatarUrl addresses Address CustomerType CustomerTiering TotalSpent CertificateID CertificateName CertificateStatus CertificateGrantedAt CertificateCarbonPointSnapshot CertificateCarbonEmissionSnapshot PasswordVersion LastPasswordReset firebaseUid name email phone')
+    .lean();
+  if (!user) {
+    return res.status(401).json({ message: 'Số điện thoại chưa được đăng ký' });
+  }
+  if (!user.Password) {
+    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.Password);
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Số điện thoại hoặc mật khẩu không đúng' });
+  }
+
+  delete user.Password;
+  user._id = String(user._id);
+  res.json(user);
 }));
 
 /**
@@ -193,9 +234,10 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
 
   const otp = buildOtp();
   await Otp.findOneAndUpdate(
-    { phone },
+    { phone, purpose: 'forgot_password' },
     {
       phone,
+      purpose: 'forgot_password',
       otp,
       attempts: 0,
       createdAt: new Date(),
@@ -211,6 +253,29 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * 3b. Xác thực OTP quên mật khẩu (gia hạn thời gian để đặt lại mật khẩu)
+ * POST /api/users/verify-forgot-password-otp
+ */
+router.post('/verify-forgot-password-otp', asyncHandler(async (req, res) => {
+  const { phone, otp } = req.body;
+
+  if (!PHONE_REGEX.test(String(phone || '').trim())) {
+    return res.status(400).json({ message: 'Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số' });
+  }
+
+  const result = await validateForgotPasswordOtp(phone, otp);
+  if (!result.ok) {
+    return res.status(result.status).json({ message: result.message });
+  }
+
+  result.otpRecord.expiresAt = new Date(Date.now() + RESET_PASSWORD_WINDOW_MS);
+  result.otpRecord.attempts = 0;
+  await result.otpRecord.save();
+
+  res.json({ message: 'Xác thực thành công' });
+}));
+
+/**
  * 4. Đặt lại mật khẩu
  * POST /api/users/reset-password
  */
@@ -221,7 +286,81 @@ router.post('/reset-password', asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 8 ký tự, 1 chữ in hoa và 1 ký tự đặc biệt' });
   }
 
-  const otpRecord = await Otp.findOne({ phone });
+  const result = await validateForgotPasswordOtp(phone, otp);
+  if (!result.ok) {
+    return res.status(result.status).json({ message: result.message });
+  }
+
+  const user = await User.findOne({ Phone: phone });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        Password: hashedPassword,
+        PasswordVersion: 3,
+        LastPasswordReset: new Date(),
+      },
+    }
+  );
+  await Otp.deleteOne({ _id: result.otpRecord._id });
+
+  res.json({ message: 'Đặt lại mật khẩu thành công' });
+}));
+
+/**
+ * Guest checkout OTP - send
+ * POST /api/users/guest-order-otp
+ */
+router.post('/guest-order-otp', asyncHandler(async (req, res) => {
+  const phone = String(req.body.phone || '').trim();
+
+  if (!PHONE_REGEX.test(phone)) {
+    return res.status(400).json({ message: 'Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số' });
+  }
+
+  const otp = buildOtp();
+  await Otp.findOneAndUpdate(
+    { phone, purpose: 'guest_order' },
+    {
+      phone,
+      purpose: 'guest_order',
+      otp,
+      attempts: 0,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
+  res.json({
+    message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
+    otp,
+  });
+}));
+
+/**
+ * Guest checkout OTP - verify
+ * POST /api/users/guest-order-otp/verify
+ */
+router.post('/guest-order-otp/verify', asyncHandler(async (req, res) => {
+  const phone = String(req.body.phone || '').trim();
+  const otp = String(req.body.otp || '').trim();
+
+  if (!PHONE_REGEX.test(phone)) {
+    return res.status(400).json({ message: 'Số điện thoại không hợp lệ' });
+  }
+  if (!/^\d{6}$/.test(otp)) {
+    return res.status(400).json({ message: 'Mã OTP không chính xác' });
+  }
+
+  const otpRecord = await Otp.findOne({ phone, purpose: 'guest_order' });
   if (!otpRecord || otpRecord.expiresAt < new Date()) {
     if (otpRecord) await Otp.deleteOne({ _id: otpRecord._id });
     return res.status(400).json({ message: 'Mã xác thực đã hết hạn' });
@@ -230,30 +369,14 @@ router.post('/reset-password', asyncHandler(async (req, res) => {
     await Otp.deleteOne({ _id: otpRecord._id });
     return res.status(400).json({ message: 'Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã' });
   }
-  if (otpRecord.otp !== String(otp || '').trim()) {
+  if (otpRecord.otp !== otp) {
     otpRecord.attempts += 1;
     await otpRecord.save();
-    return res.status(400).json({ message: 'Mã xác thực không đúng' });
+    return res.status(400).json({ message: 'Mã OTP không chính xác' });
   }
 
-  const user = await User.findOne({ Phone: phone });
-  if (!user) {
-    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-  }
-
-  // Hash mật khẩu mới
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-  // Cập nhật thông tin mật khẩu
-  user.Password = hashedPassword;
-  user.PasswordVersion = 3;
-  user.LastPasswordReset = new Date();
-
-  await user.save();
   await Otp.deleteOne({ _id: otpRecord._id });
-
-  res.json({ message: 'Đặt lại mật khẩu thành công' });
+  res.json({ success: true, message: 'Xác thực OTP thành công' });
 }));
 
 /**
@@ -333,6 +456,8 @@ router.put('/profile', upload.single('avatar'), asyncHandler(async (req, res) =>
     name: req.body.name,
     phone: req.body.phone,
     email: req.body.email,
+    birthday: req.body.birthday,
+    gender: req.body.gender,
   });
   if (!validation.valid) {
     return res.status(validation.status).json({ message: validation.message });
@@ -345,7 +470,7 @@ router.put('/profile', upload.single('avatar'), asyncHandler(async (req, res) =>
     return res.status(404).json({ message: 'Không tìm thấy người dùng' });
   }
 
-  const { name, phone, email } = validation.data;
+  const { name, phone, email, birthday, gender } = validation.data;
   if (phone !== currentPhone) {
     const phoneTaken = await User.findOne({ Phone: phone, _id: { $ne: existingUser._id } })
       .select('_id')
@@ -359,6 +484,8 @@ router.put('/profile', upload.single('avatar'), asyncHandler(async (req, res) =>
     FullName: name,
     Phone: phone,
     Email: email,
+    BirthDay: birthday,
+    Gender: gender,
     name,
     phone,
     email,

@@ -84,7 +84,7 @@ public class CommunityRepository {
 
     public void loadProducts(Callback<List<ProductDto>> callback) {
         executor.execute(() -> {
-            List<ProductDto> remote = execute(productApi.getProducts());
+            List<ProductDto> remote = execute(productApi.getProducts("true"));
             callback.onResult(isEmpty(remote) ? assetProducts() : remote);
         });
     }

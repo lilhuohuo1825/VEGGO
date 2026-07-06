@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getReviewCarbonPoints } = require('../utils/reviewCarbonRules');
 
 const DEFAULT_CERTIFICATES = [
   {
@@ -316,7 +317,7 @@ async function recalculateCustomerCarbon(customerId) {
   const reviewDocs = await db().collection('reviews')
     .find({ 'reviews.customer_id': customerId })
     .toArray();
-  const reviewedSkuByOrder = new Map();
+  const reviewedReviewByOrder = new Map();
   reviewDocs.forEach((doc) => {
     const sku = String(doc.sku || '').trim();
     if (!sku || !Array.isArray(doc.reviews)) return;
@@ -324,10 +325,10 @@ async function recalculateCustomerCarbon(customerId) {
       if (String(review.customer_id || '').trim() !== customerId) return;
       const orderId = String(review.order_id || '').trim();
       if (!orderId) return;
-      if (!reviewedSkuByOrder.has(orderId)) {
-        reviewedSkuByOrder.set(orderId, new Set());
+      if (!reviewedReviewByOrder.has(orderId)) {
+        reviewedReviewByOrder.set(orderId, new Map());
       }
-      reviewedSkuByOrder.get(orderId).add(sku);
+      reviewedReviewByOrder.get(orderId).set(sku, review);
     });
   });
 
@@ -338,7 +339,7 @@ async function recalculateCustomerCarbon(customerId) {
   for (const order of orders) {
     const detail = detailMap.get(order.OrderID) || {};
     const items = Array.isArray(detail.items) ? detail.items : Array.isArray(order.items) ? order.items : [];
-    const reviewedSkus = reviewedSkuByOrder.get(order.OrderID) || new Set();
+    const orderReviews = reviewedReviewByOrder.get(order.OrderID) || new Map();
 
     let orderCarbonEmission = 0;
     let orderCarbonPoint = 0;
@@ -346,7 +347,8 @@ async function recalculateCustomerCarbon(customerId) {
       const product = resolveProduct(item, productLookup);
       const calculation = calculateItemCarbon(item, product);
       const sku = String(item.sku || item.SKU || product?.sku || '').trim();
-      const reviewBonusPoint = sku && reviewedSkus.has(sku) ? 2 : 0;
+      const reviewForSku = orderReviews.get(sku);
+      const reviewBonusPoint = reviewForSku ? getReviewCarbonPoints(reviewForSku) : 0;
       orderCarbonEmission += calculation.carbonEmission;
       orderCarbonPoint += calculation.carbonPoint + reviewBonusPoint;
 

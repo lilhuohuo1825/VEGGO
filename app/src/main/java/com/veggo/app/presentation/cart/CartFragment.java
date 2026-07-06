@@ -1,6 +1,7 @@
 package com.veggo.app.presentation.cart;
 
 import android.content.Intent;
+import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -16,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,7 +28,9 @@ import com.veggo.app.adapter.CartAdapter;
 import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseFragment;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.data.remote.api.PromotionApi;
 import com.veggo.app.data.remote.dto.ApiListResponseDto;
@@ -36,13 +40,19 @@ import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.PromotionTargetDto;
 import com.veggo.app.data.remote.dto.PromotionUsageDto;
 import com.veggo.app.di.AppModule;
+import com.veggo.app.presentation.auth.LoginActivity;
 import com.veggo.app.presentation.dialog.VeggoDialog;
 import com.veggo.app.presentation.checkout.CheckoutActivity;
 import com.veggo.app.presentation.checkout.CheckoutGuestActivity;
 import com.veggo.app.presentation.checkout.PendingCheckoutStore;
-import com.veggo.app.presentation.auth.LoginActivity;
+import com.veggo.app.data.repository.OrderNotificationRepository;
+import com.veggo.app.presentation.profile.PostNotificationsActivity;
+import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.presentation.product.ProductDetailActivity;
+import com.bumptech.glide.Glide;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -66,6 +76,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
     private final List<CartAdapter.CartItemUiModel> cartItems = new ArrayList<>();
     private final List<VoucherOptionAdapter.VoucherItemUiModel> voucherItems = new ArrayList<>();
+    private final List<VoucherOptionAdapter.VoucherItemUiModel> allVoucherItems = new ArrayList<>();
     private View rootView;
     private PopupWindow activePopup;
     private View scrimView;
@@ -79,11 +90,17 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     private TextView btnCheckout;
     private TextView tvSelectedVoucher;
     private TextView tvCartCarbonQuote;
+    private TextView cartNotificationBadge;
     private boolean isAllChecked = true;
     private CartViewModel viewModel;
+    private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
     private String customerId;
-    private VoucherOptionAdapter.VoucherItemUiModel selectedVoucher;
+    private VoucherOptionAdapter.VoucherItemUiModel selectedProductVoucher;
+    private VoucherOptionAdapter.VoucherItemUiModel selectedShippingVoucher;
+    private VoucherFilter activeVoucherFilter = VoucherFilter.PRODUCT;
     private Set<String> selectedSkuFilter;
+    private SwipeRefreshLayout cartRefreshLayout;
+    private boolean cartRefreshPending;
 
     private List<PromotionTargetDto> cachedTargets = new ArrayList<>();
     private List<PromotionUsageDto> cachedUsages = new ArrayList<>();
@@ -110,6 +127,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         imgCbAll = rootView.findViewById(R.id.imgCbAll);
         imgPaymentChevron = rootView.findViewById(R.id.imgPaymentChevron);
         layoutCartEmptyState = rootView.findViewById(R.id.layoutCartEmptyState);
+        cartNotificationBadge = rootView.findViewById(R.id.cartNotificationBadge);
 
         customerId = resolveCustomerId();
         ArrayList<String> selectedSkus = getArguments() == null
@@ -123,8 +141,11 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         
         setupViewModel();
         setupCartList();
+        setupPullToRefresh();
+        setupNotificationAction();
         observeViewModel();
         prefetchVoucherData();
+        refreshNotificationBadge();
         
         viewModel.fetchCart(customerId);
 
@@ -150,6 +171,58 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         return rootView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshNotificationBadge();
+    }
+
+    private void setupPullToRefresh() {
+        cartRefreshLayout = PullToRefreshHelper.wrap(layoutCartItemsContainer, () -> {
+            cartRefreshPending = true;
+            viewModel.fetchCart(customerId);
+        });
+    }
+
+    private void setupNotificationAction() {
+        View notifyButton = rootView.findViewById(R.id.cartNotifyButton);
+        if (notifyButton == null) {
+            return;
+        }
+        notifyButton.setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) requireActivity()).openNotificationsScreen();
+            } else {
+                startActivity(new Intent(requireContext(), PostNotificationsActivity.class));
+            }
+        });
+    }
+
+    private void refreshNotificationBadge() {
+        if (!isAdded() || cartNotificationBadge == null) {
+            return;
+        }
+        if (customerId == null || customerId.trim().isEmpty()) {
+            updateNotificationBadge(0);
+            return;
+        }
+        orderNotificationRepository.getNotifications(customerId, notifications -> {
+            if (!isAdded() || cartNotificationBadge == null) {
+                return;
+            }
+            requireActivity().runOnUiThread(() ->
+                    updateNotificationBadge(OrderNotificationRepository.countUnread(notifications)));
+        });
+    }
+
+    private void updateNotificationBadge(int count) {
+        if (cartNotificationBadge == null) {
+            return;
+        }
+        cartNotificationBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+        cartNotificationBadge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+    }
+
     private void openShoppingCategoryList() {
         if (getActivity() instanceof MainActivity) {
             MainActivity activity = (MainActivity) getActivity();
@@ -166,11 +239,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     private void startAccountCheckout(ArrayList<String> selectedCartLineKeys) {
         Intent intent = new Intent(requireContext(), CheckoutActivity.class);
         intent.putStringArrayListExtra(CheckoutActivity.EXTRA_SELECTED_CART_LINE_KEYS, selectedCartLineKeys);
-        if (selectedVoucher != null) {
-            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID, selectedVoucher.promotionId);
-            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE, selectedVoucher.title);
-            intent.putExtra("extra_selected_voucher_dto", selectedVoucher.promotion);
-        }
+        putSelectedVoucherExtras(intent);
         startActivity(intent);
     }
 
@@ -181,8 +250,10 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         dialogView.findViewById(R.id.btnOpenCheckout).setOnClickListener(v -> {
             new PendingCheckoutStore(requireContext()).saveCartCheckout(
                     selectedCartLineKeys,
-                    selectedVoucher == null ? null : selectedVoucher.promotionId,
-                    selectedVoucher == null ? null : selectedVoucher.title
+                    selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                    selectedProductVoucher == null ? null : selectedProductVoucher.title,
+                    selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
+                    selectedShippingVoucher == null ? null : selectedShippingVoucher.title
             );
             dialog.dismiss();
             startActivity(new Intent(requireContext(), LoginActivity.class));
@@ -190,11 +261,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         dialogView.findViewById(R.id.btnOpenCheckoutGuest).setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), CheckoutGuestActivity.class);
             intent.putStringArrayListExtra(CheckoutActivity.EXTRA_SELECTED_CART_LINE_KEYS, selectedCartLineKeys);
-            if (selectedVoucher != null) {
-                intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID, selectedVoucher.promotionId);
-                intent.putExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE, selectedVoucher.title);
-                intent.putExtra("extra_selected_voucher_dto", selectedVoucher.promotion);
-            }
+            putSelectedVoucherExtras(intent);
             dialog.dismiss();
             startActivity(intent);
         });
@@ -220,7 +287,10 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         });
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            // Có thể thêm loading state UI ở đây
+            if (cartRefreshPending && !Boolean.TRUE.equals(isLoading)) {
+                cartRefreshPending = false;
+                PullToRefreshHelper.finish(cartRefreshLayout);
+            }
         });
     }
 
@@ -233,7 +303,12 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
         cartItems.clear();
         if (cartDto.getItems() != null) {
-            for (CartDto.CartItemDto itemDto : cartDto.getItems()) {
+            List<CartDto.CartItemDto> sortedItems = new ArrayList<>(cartDto.getItems());
+            sortedItems.sort((left, right) -> Long.compare(
+                    parseCartItemUpdatedAtMillis(right),
+                    parseCartItemUpdatedAtMillis(left)
+            ));
+            for (CartDto.CartItemDto itemDto : sortedItems) {
                 ProductDto product = itemDto.getProduct();
                 String sku = itemDto.getSku();
 
@@ -349,6 +424,27 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         return String.format(Locale.US, "%.0fg", weight * 1000);
     }
 
+    private long parseCartItemUpdatedAtMillis(CartDto.CartItemDto item) {
+        if (item == null || item.getUpdatedAt() == null || item.getUpdatedAt().trim().isEmpty()) {
+            return 0L;
+        }
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat(
+                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                    Locale.US
+            );
+            format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date date = format.parse(item.getUpdatedAt());
+            return date != null ? date.getTime() : 0L;
+        } catch (Exception ignored) {
+            try {
+                return java.time.Instant.parse(item.getUpdatedAt()).toEpochMilli();
+            } catch (Exception ignoredAgain) {
+                return 0L;
+            }
+        }
+    }
+
     private String trimTrailingZeros(double value) {
         String text = String.format(Locale.US, "%.3f", value);
         while (text.contains(".") && (text.endsWith("0") || text.endsWith("."))) {
@@ -408,15 +504,181 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
     @Override
     public void onItemClicked(int position) {
-        openProductDetail(position, false);
+        openProductDetail(position);
     }
 
     @Override
     public void onItemLongClicked(int position) {
-        openProductDetail(position, true);
+        showEditCartItemDialog(position);
     }
 
-    private void openProductDetail(int position, boolean openAddToCart) {
+    private void showEditCartItemDialog(int position) {
+        if (position < 0 || position >= cartItems.size()) {
+            return;
+        }
+
+        CartAdapter.CartItemUiModel item = cartItems.get(position);
+        ProductDto productDto = item.product;
+        if (productDto == null) {
+            Toast.makeText(requireContext(), "Không tìm thấy thông tin sản phẩm", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme);
+        View view = getLayoutInflater().inflate(R.layout.layout_add_to_cart_bottom_sheet, null, false);
+        dialog.setContentView(view);
+
+        ImageView ivThumb = view.findViewById(R.id.ivProductThumb);
+        TextView tvName = view.findViewById(R.id.tvProductNamePopup);
+        TextView tvPrice = view.findViewById(R.id.tvPricePopup);
+        TextView tvOriginalPrice = view.findViewById(R.id.tvOriginalPricePopup);
+        TextView tvPriceUnit = view.findViewById(R.id.tvPriceUnitPopup);
+        TextView tvQuantity = view.findViewById(R.id.tvQuantityPopup);
+        TextView tvTotal = view.findViewById(R.id.tvTotalPopup);
+        View btnDecrease = view.findViewById(R.id.tvDecrease);
+        View btnIncrease = view.findViewById(R.id.tvIncrease);
+        TextView btnConfirm = view.findViewById(R.id.btnConfirmAddToCart);
+        View btnClose = view.findViewById(R.id.btnClose);
+        TextView tvWeightTitle = view.findViewById(R.id.tvWeightTitle);
+        ChipGroup weightGroup = view.findViewById(R.id.cgWeight);
+
+        long displayPrice = item.price;
+        long displayOriginalPrice = item.oldPrice > item.price ? item.oldPrice : item.price;
+        Glide.with(this).load(item.imageUrl).placeholder(R.drawable.ic_vegetable).into(ivThumb);
+        tvName.setText(item.name);
+        tvPrice.setText(CurrencyFormatter.formatVnd(displayPrice));
+        bindEditDialogOriginalPrice(tvOriginalPrice, displayOriginalPrice, displayPrice);
+        btnConfirm.setText("Lưu thay đổi");
+
+        final int[] quantity = {Math.max(MIN_QUANTITY, item.quantity)};
+        final double[] selectedWeight = {item.selectedWeightValue};
+        final double previousWeight = item.selectedWeightValue;
+        boolean hasWeightOptions = item.hasWeightOptions;
+        if (tvPriceUnit != null) {
+            tvPriceUnit.setVisibility(hasWeightOptions ? View.VISIBLE : View.GONE);
+            tvPriceUnit.setText("/ kg");
+        }
+
+        tvQuantity.setText(String.valueOf(quantity[0]));
+        bindEditWeightOptions(
+                tvWeightTitle,
+                weightGroup,
+                productDto.getWeightOptions(),
+                selectedWeight,
+                previousWeight,
+                () -> updateEditDialogTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions)
+        );
+        updateEditDialogTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
+
+        btnDecrease.setOnClickListener(v -> {
+            if (quantity[0] > MIN_QUANTITY) {
+                quantity[0]--;
+                tvQuantity.setText(String.valueOf(quantity[0]));
+                updateEditDialogTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
+            }
+        });
+        btnIncrease.setOnClickListener(v -> {
+            quantity[0]++;
+            tvQuantity.setText(String.valueOf(quantity[0]));
+            updateEditDialogTotal(tvTotal, displayPrice, quantity[0], selectedWeight[0], hasWeightOptions);
+        });
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        btnConfirm.setOnClickListener(v -> {
+            viewModel.replaceCartItem(customerId, item.sku, previousWeight, quantity[0], selectedWeight[0]);
+            dialog.dismiss();
+        });
+        dialog.show();
+    }
+
+    private void bindEditDialogOriginalPrice(TextView originalPriceView, long originalPrice, long salePrice) {
+        if (originalPriceView == null) {
+            return;
+        }
+        if (originalPrice > salePrice && salePrice > 0) {
+            originalPriceView.setVisibility(View.VISIBLE);
+            originalPriceView.setText(CurrencyFormatter.formatVnd(originalPrice));
+            originalPriceView.setPaintFlags(originalPriceView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+        } else {
+            originalPriceView.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateEditDialogTotal(TextView totalView, long unitPrice, int quantity, double selectedWeight, boolean hasWeightOptions) {
+        if (totalView == null) {
+            return;
+        }
+        double multiplier = hasWeightOptions ? selectedWeight : 1.0;
+        long total = Math.round(unitPrice * multiplier * quantity);
+        totalView.setText(CurrencyFormatter.formatVnd(total));
+    }
+
+    private void bindEditWeightOptions(TextView titleView, ChipGroup chipGroup, List<Double> weightOptions,
+                                       double[] selectedWeight, double currentWeight, Runnable onSelectionChanged) {
+        if (chipGroup == null) {
+            return;
+        }
+
+        chipGroup.removeAllViews();
+        List<Double> resolvedOptions = new ArrayList<>();
+        if (weightOptions != null) {
+            for (Double option : weightOptions) {
+                if (option != null && option > 0) {
+                    resolvedOptions.add(option);
+                }
+            }
+        }
+
+        if (resolvedOptions.isEmpty()) {
+            selectedWeight[0] = currentWeight > 0 ? currentWeight : 1.0;
+            chipGroup.setVisibility(View.GONE);
+            if (titleView != null) {
+                titleView.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        chipGroup.setVisibility(View.VISIBLE);
+        if (titleView != null) {
+            titleView.setVisibility(View.VISIBLE);
+        }
+
+        int initialIndex = 0;
+        for (int i = 0; i < resolvedOptions.size(); i++) {
+            if (weightsEqual(resolvedOptions.get(i), currentWeight)) {
+                initialIndex = i;
+                break;
+            }
+        }
+
+        for (int i = 0; i < resolvedOptions.size(); i++) {
+            double option = resolvedOptions.get(i);
+            Chip chip = new Chip(requireContext());
+            chip.setCheckable(true);
+            chip.setText(formatWeight(option));
+            chip.setChipBackgroundColorResource(R.color.chip_choice_background_color);
+            chip.setChipStrokeColorResource(R.color.chip_choice_stroke_color);
+            chip.setChipStrokeWidth(1f);
+            chip.setTextColor(ContextCompat.getColor(requireContext(), R.color.chip_choice_text_color));
+            chip.setChecked(i == initialIndex);
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedWeight[0] = option;
+                    if (onSelectionChanged != null) {
+                        onSelectionChanged.run();
+                    }
+                }
+            });
+            chipGroup.addView(chip);
+        }
+
+        selectedWeight[0] = resolvedOptions.get(initialIndex);
+    }
+
+    private boolean weightsEqual(double left, double right) {
+        return Math.abs(left - right) < 0.0005d;
+    }
+
+    private void openProductDetail(int position) {
         if (position < 0 || position >= cartItems.size()) {
             return;
         }
@@ -433,7 +695,6 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
         Intent intent = new Intent(requireContext(), ProductDetailActivity.class);
         intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
-        intent.putExtra(ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, openAddToCart);
         startActivity(intent);
     }
 
@@ -601,19 +862,41 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         TextView btnSearchVoucher = dialogView.findViewById(R.id.btnSearchVoucher);
         TextView tvEmptyState = dialogView.findViewById(R.id.tvVoucherEmptyState);
         TextView tvListTitle = dialogView.findViewById(R.id.tvVoucherListTitle);
+        TextView tvFilterProduct = dialogView.findViewById(R.id.tvVoucherFilterProduct);
+        TextView tvFilterShipping = dialogView.findViewById(R.id.tvVoucherFilterShipping);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         tvSelectedCount.setText("Đang tải khuyến mãi...");
         tvSelectedTitle.setText("");
-        
-        // Gán adapter ngay từ đầu
-        VoucherOptionAdapter adapter = new VoucherOptionAdapter(voucherItems, selectedVoucherPosition(), item -> {
-            selectedVoucher = item;
-            updateSelectedVoucherUi();
-            updateCartSummary();
-            updateVoucherSelectionText(tvSelectedCount, tvSelectedTitle);
-        });
+
+        VoucherOptionAdapter adapter = new VoucherOptionAdapter(
+                voucherItems,
+                selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
+                (productVoucher, shippingVoucher) -> {
+                    selectedProductVoucher = productVoucher;
+                    selectedShippingVoucher = shippingVoucher;
+                    updateSelectedVoucherUi();
+                    updateCartSummary();
+                    updateVoucherSelectionText(tvSelectedCount, tvSelectedTitle);
+                }
+        );
         recyclerView.setAdapter(adapter);
+
+        Runnable refreshFilteredList = () -> applyVoucherFilter(
+                recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle
+        );
+        tvFilterProduct.setOnClickListener(v -> {
+            activeVoucherFilter = VoucherFilter.PRODUCT;
+            updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
+            refreshFilteredList.run();
+        });
+        tvFilterShipping.setOnClickListener(v -> {
+            activeVoucherFilter = VoucherFilter.SHIPPING;
+            updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
+            refreshFilteredList.run();
+        });
+        updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
 
         isSearchingVoucher = false;
         loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
@@ -632,7 +915,115 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         });
     }
 
+    private void updateVoucherFilterTags(TextView productTag, TextView shippingTag) {
+        boolean productSelected = activeVoucherFilter == VoucherFilter.PRODUCT;
+        productTag.setBackground(null);
+        shippingTag.setBackground(null);
+        productTag.setTextColor(ContextCompat.getColor(
+                requireContext(),
+                productSelected ? R.color.primary_main : R.color.neutral_60
+        ));
+        shippingTag.setTextColor(ContextCompat.getColor(
+                requireContext(),
+                productSelected ? R.color.neutral_60 : R.color.primary_main
+        ));
+    }
+
+    private void applyVoucherFilter(
+            RecyclerView recyclerView,
+            TextView selectedCountView,
+            TextView selectedTitleView,
+            TextView tvEmptyState,
+            TextView tvListTitle
+    ) {
+        voucherItems.clear();
+        for (VoucherOptionAdapter.VoucherItemUiModel item : allVoucherItems) {
+            boolean showProduct = activeVoucherFilter == VoucherFilter.PRODUCT && !item.shipping;
+            boolean showShipping = activeVoucherFilter == VoucherFilter.SHIPPING && item.shipping;
+            if (showProduct || showShipping) {
+                voucherItems.add(item);
+            }
+        }
+        syncSelectedVoucherReferences();
+
+        if (voucherItems.isEmpty()) {
+            tvEmptyState.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            if (tvListTitle != null) {
+                tvListTitle.setVisibility(View.GONE);
+            }
+        } else {
+            tvEmptyState.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+            if (tvListTitle != null) {
+                tvListTitle.setVisibility(View.VISIBLE);
+            }
+        }
+
+        RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+        if (adapter instanceof VoucherOptionAdapter) {
+            ((VoucherOptionAdapter) adapter).setSelectedPromotionIds(
+                    selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                    selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId
+            );
+        } else if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+        updateVoucherSelectionText(selectedCountView, selectedTitleView);
+    }
+
+    private void syncSelectedVoucherReferences() {
+        if (selectedProductVoucher != null) {
+            VoucherOptionAdapter.VoucherItemUiModel resolved =
+                    findVoucherItem(selectedProductVoucher.promotionId, false);
+            if (resolved == null || !resolved.enabled) {
+                selectedProductVoucher = null;
+            } else {
+                selectedProductVoucher = resolved;
+            }
+        }
+        if (selectedShippingVoucher != null) {
+            VoucherOptionAdapter.VoucherItemUiModel resolved =
+                    findVoucherItem(selectedShippingVoucher.promotionId, true);
+            if (resolved == null || !resolved.enabled) {
+                selectedShippingVoucher = null;
+            } else {
+                selectedShippingVoucher = resolved;
+            }
+        }
+    }
+
+    @Nullable
+    private VoucherOptionAdapter.VoucherItemUiModel findVoucherItem(
+            @Nullable String promotionId,
+            boolean shipping
+    ) {
+        if (promotionId == null) {
+            return null;
+        }
+        for (VoucherOptionAdapter.VoucherItemUiModel item : allVoucherItems) {
+            if (promotionId.equals(item.promotionId) && item.shipping == shipping) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private void putSelectedVoucherExtras(Intent intent) {
+        if (selectedProductVoucher != null) {
+            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_ID, selectedProductVoucher.promotionId);
+            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_TITLE, selectedProductVoucher.title);
+            intent.putExtra("extra_selected_product_voucher_dto", selectedProductVoucher.promotion);
+        }
+        if (selectedShippingVoucher != null) {
+            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_ID, selectedShippingVoucher.promotionId);
+            intent.putExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_TITLE, selectedShippingVoucher.title);
+            intent.putExtra("extra_selected_shipping_voucher_dto", selectedShippingVoucher.promotion);
+        }
+    }
+
     private void showVoucherEmptyState(String message, RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView, TextView tvEmptyState, TextView tvListTitle) {
+        allVoucherItems.clear();
         voucherItems.clear();
         if (recyclerView.getAdapter() != null) recyclerView.getAdapter().notifyDataSetChanged();
         tvEmptyState.setText(message);
@@ -647,9 +1038,11 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         PromotionApi promotionApi = AppModule.providePromotionApi();
         
         // Xóa list cũ và hiện loading ngay lập tức
+        allVoucherItems.clear();
         voucherItems.clear();
-        if (recyclerView.getAdapter() != null) recyclerView.getAdapter().notifyDataSetChanged();
-        
+        if (recyclerView.getAdapter() != null) {
+            recyclerView.getAdapter().notifyDataSetChanged();
+        }
         recyclerView.setVisibility(View.GONE);
         tvListTitle.setVisibility(View.VISIBLE);
         tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
@@ -674,7 +1067,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
                                 tvListTitle.setVisibility(View.VISIBLE);
                                 tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
                                 recyclerView.setVisibility(View.VISIBLE);
-                                renderVoucherOptions(foundPromotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                                renderVoucherOptions(foundPromotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
                             }
                         });
                     }
@@ -721,7 +1114,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
                         tvListTitle.setVisibility(View.VISIBLE);
                         tvListTitle.setText("Mã giảm giá");
                     }
-                    renderVoucherOptions(promotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                    renderVoucherOptions(promotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
                 });
             }
         };
@@ -763,8 +1156,9 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
 
     private void renderVoucherOptions(List<PromotionDto> promotions, List<PromotionTargetDto> targets,
                                       List<PromotionUsageDto> usages, RecyclerView recyclerView,
-                                      TextView selectedCountView, TextView selectedTitleView) {
-        voucherItems.clear();
+                                      TextView selectedCountView, TextView selectedTitleView,
+                                      TextView tvEmptyState, TextView tvListTitle) {
+        allVoucherItems.clear();
 
         Map<String, PromotionTargetDto> targetByPromotion = new HashMap<>();
         for (PromotionTargetDto target : targets) {
@@ -791,7 +1185,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
             String disabledReason = disabledReason(promotion, target, usage, subtotal);
             boolean enabled = disabledReason == null;
 
-            voucherItems.add(new VoucherOptionAdapter.VoucherItemUiModel(
+            allVoucherItems.add(new VoucherOptionAdapter.VoucherItemUiModel(
                     voucherTitle(promotion),
                     voucherCondition(promotion, target, disabledReason),
                     voucherExpiry(promotion),
@@ -802,7 +1196,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
             ));
         }
 
-        java.util.Collections.sort(voucherItems, (v1, v2) -> {
+        java.util.Collections.sort(allVoucherItems, (v1, v2) -> {
             if (v1.enabled && !v2.enabled) {
                 return -1;
             } else if (!v1.enabled && v2.enabled) {
@@ -811,27 +1205,19 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
             return 0;
         });
 
-        int selectedPosition = selectedVoucherPosition();
-        if (selectedPosition == RecyclerView.NO_POSITION && selectedVoucher != null) {
-            selectedVoucher = null;
-            updateSelectedVoucherUi();
-            updateCartSummary();
-        }
-        updateVoucherSelectionText(selectedCountView, selectedTitleView);
-        recyclerView.setAdapter(new VoucherOptionAdapter(voucherItems, selectedPosition, item -> {
-            selectedVoucher = item;
-            updateVoucherSelectionText(selectedCountView, selectedTitleView);
-            updateSelectedVoucherUi();
-            updateCartSummary();
-        }));
+        syncSelectedVoucherReferences();
+        applyVoucherFilter(recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
+        updateSelectedVoucherUi();
+        updateCartSummary();
     }
 
     private void updateSelectedVoucherUi() {
         if (tvSelectedVoucher == null) {
             return;
         }
-        if (selectedVoucher != null) {
-            tvSelectedVoucher.setText(selectedVoucher.title);
+        int selectedCount = countSelectedVouchers();
+        if (selectedCount > 0) {
+            tvSelectedVoucher.setText(buildSelectedVoucherSummary());
             tvSelectedVoucher.setTextColor(getResources().getColor(R.color.primary_main, requireContext().getTheme()));
         } else {
             tvSelectedVoucher.setText("Chọn hoặc nhập mã");
@@ -848,40 +1234,52 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
                 RecyclerView recyclerView = contentView.findViewById(R.id.rvVoucherOptions);
                 if (recyclerView != null && recyclerView.getAdapter() instanceof VoucherOptionAdapter) {
                     VoucherOptionAdapter adapter = (VoucherOptionAdapter) recyclerView.getAdapter();
-                    int selectedPos = selectedVoucherPosition();
-                    if (adapter.getSelectedPosition() != selectedPos) {
-                        adapter.setSelectedPosition(selectedPos);
-                    }
+                    adapter.setSelectedPromotionIds(
+                            selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                            selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId
+                    );
                 }
             }
         }
     }
 
+    private int countSelectedVouchers() {
+        int count = 0;
+        if (selectedProductVoucher != null) {
+            count++;
+        }
+        if (selectedShippingVoucher != null) {
+            count++;
+        }
+        return count;
+    }
+
+    @NonNull
+    private String buildSelectedVoucherSummary() {
+        if (selectedProductVoucher != null && selectedShippingVoucher != null) {
+            return selectedProductVoucher.title + " + " + selectedShippingVoucher.title;
+        }
+        if (selectedProductVoucher != null) {
+            return selectedProductVoucher.title;
+        }
+        if (selectedShippingVoucher != null) {
+            return selectedShippingVoucher.title;
+        }
+        return "Chọn hoặc nhập mã";
+    }
+
     private void updateVoucherSelectionText(TextView selectedCountView, TextView selectedTitleView) {
-        if (selectedVoucher != null) {
-            selectedCountView.setText("1 mã đã được chọn");
-            selectedTitleView.setText(selectedVoucher.title);
-        } else if (voucherItems.isEmpty()) {
+        int selectedCount = countSelectedVouchers();
+        if (selectedCount > 0) {
+            selectedCountView.setText(selectedCount + " mã đã được chọn");
+            selectedTitleView.setText(buildSelectedVoucherSummary());
+        } else if (allVoucherItems.isEmpty()) {
             selectedCountView.setText("Không có mã khuyến mãi khả dụng");
             selectedTitleView.setText("");
         } else {
             selectedCountView.setText("Chưa chọn mã khuyến mãi");
             selectedTitleView.setText("");
         }
-    }
-
-    private int selectedVoucherPosition() {
-        if (selectedVoucher == null || selectedVoucher.promotionId == null) {
-            return RecyclerView.NO_POSITION;
-        }
-        for (int i = 0; i < voucherItems.size(); i++) {
-            VoucherOptionAdapter.VoucherItemUiModel item = voucherItems.get(i);
-            if (item.enabled && selectedVoucher.promotionId.equals(item.promotionId)) {
-                selectedVoucher = item;
-                return i;
-            }
-        }
-        return RecyclerView.NO_POSITION;
     }
 
     private String disabledReason(PromotionDto promotion, PromotionTargetDto target,
@@ -1031,7 +1429,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         if (discountValue != null && discountValue > 0) {
             boolean fixed = "fixed".equalsIgnoreCase(promotion.getDiscountType());
             text.append(fixed ? "Giảm " + formatCurrency(discountValue.longValue()) : "Giảm " + trimTrailingZeros(discountValue) + "%");
-        } else if (isShippingPromotion(promotion)) {
+        } else if (VoucherOptionAdapter.isShippingPromotion(promotion)) {
             text.append("Miễn phí vận chuyển");
         } else {
             text.append(promotion.getDescription() != null ? promotion.getDescription() : "Khuyến mãi");
@@ -1056,11 +1454,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     }
 
     private boolean isShippingPromotion(PromotionDto promotion) {
-        String haystack = ((promotion.getName() == null ? "" : promotion.getName()) + " "
-                + (promotion.getDescription() == null ? "" : promotion.getDescription()) + " "
-                + (promotion.getScope() == null ? "" : promotion.getScope()) + " "
-                + (promotion.getCode() == null ? "" : promotion.getCode())).toLowerCase(Locale.US);
-        return haystack.contains("ship") || haystack.contains("vận chuyển") || haystack.contains("shipping");
+        return VoucherOptionAdapter.isShippingPromotion(promotion);
     }
 
     private long selectedSubtotal() {
@@ -1093,13 +1487,16 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
         long shippingFee = selectedShippingFee(subtotal);
         long voucherDiscount = 0;
         long shippingDiscount = subtotal >= FREE_SHIPPING_THRESHOLD && shippingFee > 0 ? shippingFee : 0;
-        if (selectedVoucher != null && selectedVoucher.promotion != null) {
-            if (isShippingPromotion(selectedVoucher.promotion)) {
-                long voucherShippingDiscount = calculatePromotionDiscount(selectedVoucher.promotion, shippingFee);
-                shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount, voucherShippingDiscount));
-            } else {
-                voucherDiscount = Math.min(subtotal, calculatePromotionDiscount(selectedVoucher.promotion, subtotal));
-            }
+        if (selectedProductVoucher != null && selectedProductVoucher.promotion != null) {
+            voucherDiscount = Math.min(subtotal,
+                    calculatePromotionDiscount(selectedProductVoucher.promotion, subtotal));
+        }
+        if (selectedShippingVoucher != null && selectedShippingVoucher.promotion != null) {
+            long voucherShippingDiscount = calculatePromotionDiscount(
+                    selectedShippingVoucher.promotion,
+                    shippingFee
+            );
+            shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount, voucherShippingDiscount));
         }
 
         long total = Math.max(0, subtotal + shippingFee - voucherDiscount - shippingDiscount);
@@ -1285,25 +1682,38 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     }
 
     private void validateAppliedVoucher() {
-        if (selectedVoucher == null || selectedVoucher.promotion == null) {
-            return;
+        long subtotal = selectedSubtotal();
+        boolean changed = false;
+
+        if (selectedProductVoucher != null && selectedProductVoucher.promotion != null) {
+            PromotionTargetDto target = findTargetForPromotion(selectedProductVoucher.promotionId);
+            PromotionUsageDto usage = findUsageForPromotion(selectedProductVoucher.promotionId);
+            String reason = disabledReason(selectedProductVoucher.promotion, target, usage, subtotal);
+            if (reason != null) {
+                selectedProductVoucher = null;
+                changed = true;
+            }
         }
 
-        long subtotal = selectedSubtotal();
-        PromotionTargetDto target = findTargetForPromotion(selectedVoucher.promotionId);
-        PromotionUsageDto usage = findUsageForPromotion(selectedVoucher.promotionId);
+        if (selectedShippingVoucher != null && selectedShippingVoucher.promotion != null) {
+            PromotionTargetDto target = findTargetForPromotion(selectedShippingVoucher.promotionId);
+            PromotionUsageDto usage = findUsageForPromotion(selectedShippingVoucher.promotionId);
+            String reason = disabledReason(selectedShippingVoucher.promotion, target, usage, subtotal);
+            if (reason != null) {
+                selectedShippingVoucher = null;
+                changed = true;
+            }
+        }
 
-        String reason = disabledReason(selectedVoucher.promotion, target, usage, subtotal);
-        if (reason != null) {
-            clearSelectedVoucher();
+        if (changed) {
+            clearSelectedVoucherUi();
             updatePaymentSummary();
             refreshCartUI();
             Toast.makeText(requireContext(), "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
         }
     }
 
-    private void clearSelectedVoucher() {
-        selectedVoucher = null;
+    private void clearSelectedVoucherUi() {
         updateSelectedVoucherUi();
     }
 
@@ -1336,5 +1746,10 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
             this.shippingDiscount = shippingDiscount;
             this.total = total;
         }
+    }
+
+    private enum VoucherFilter {
+        PRODUCT,
+        SHIPPING
     }
 }

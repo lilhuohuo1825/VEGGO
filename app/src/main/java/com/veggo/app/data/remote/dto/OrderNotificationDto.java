@@ -11,6 +11,7 @@ public class OrderNotificationDto {
     private String targetType;
     @SerializedName(value = "targetId", alternate = {"OrderID", "orderId"})
     private String targetId;
+    private String sku;
     private String title;
     private String body;
     private String action;
@@ -32,6 +33,10 @@ public class OrderNotificationDto {
 
     public String getTargetId() {
         return targetId;
+    }
+
+    public String getSku() {
+        return sku;
     }
 
     public String getTitle() {

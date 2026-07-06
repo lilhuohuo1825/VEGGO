@@ -24,7 +24,9 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.data.local.entity.BlogEntity;
 import com.veggo.app.data.remote.api.BlogApi;
@@ -50,6 +52,8 @@ public class FavoritesActivity extends BaseActivity {
     private View sectionProducts, sectionBlogs, sectionDishes;
     private FavoriteStore favoriteStore;
     private boolean isEnrichingFavorites;
+    private SwipeRefreshLayout favoritesRefreshLayout;
+    private boolean favoritesRefreshPending;
 
     private enum FavTab {
         PRODUCTS, BLOGS, DISHES
@@ -93,8 +97,25 @@ public class FavoritesActivity extends BaseActivity {
 
         // Set default tab
         selectTab(FavTab.PRODUCTS);
-
+        setupPullToRefresh();
         loadFavorites();
+    }
+
+    private void setupPullToRefresh() {
+        favoritesRefreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.favoritesScroll),
+                () -> {
+                    favoritesRefreshPending = true;
+                    loadFavorites();
+                }
+        );
+    }
+
+    private void finishFavoritesRefreshIfReady() {
+        if (favoritesRefreshPending && !isEnrichingFavorites) {
+            favoritesRefreshPending = false;
+            PullToRefreshHelper.finish(favoritesRefreshLayout);
+        }
     }
 
     @Override
@@ -309,6 +330,7 @@ public class FavoritesActivity extends BaseActivity {
             List<FavoriteStore.FavoriteItem> recipes
     ) {
         if (isEnrichingFavorites) {
+            finishFavoritesRefreshIfReady();
             return;
         }
         isEnrichingFavorites = true;
@@ -334,6 +356,7 @@ public class FavoritesActivity extends BaseActivity {
                     if (shouldReload) {
                         loadFavorites();
                     }
+                    finishFavoritesRefreshIfReady();
                 });
             }
         }).start();

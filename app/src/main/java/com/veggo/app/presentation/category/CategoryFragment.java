@@ -11,7 +11,9 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.veggo.app.MainActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseFragment;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.databinding.FragmentCategoryBinding;
 import com.veggo.app.di.AppModule;
@@ -23,6 +25,7 @@ public class CategoryFragment extends BaseFragment {
     private CategoryViewModel viewModel;
     private CategoryAdapter categoryAdapter;
     private SubcategoryAdapter subcategoryAdapter;
+    private SwipeRefreshLayout categoryRefreshLayout;
 
     @Nullable
     @Override
@@ -37,6 +40,7 @@ public class CategoryFragment extends BaseFragment {
 
         setupViewModel();
         setupRecyclerViews();
+        setupPullToRefresh();
         observeViewModel();
     }
 
@@ -60,6 +64,13 @@ public class CategoryFragment extends BaseFragment {
                 String parentCategoryId = viewModel.getSelectedCategoryId().getValue();
                 ((MainActivity) getActivity()).openCategoryDetail(parentCategoryId, subcategory.subcategoryId);
             }
+        });
+    }
+
+    private void setupPullToRefresh() {
+        categoryRefreshLayout = PullToRefreshHelper.wrap(binding.rvSubcategories, () -> {
+            viewModel.refresh();
+            binding.getRoot().postDelayed(() -> PullToRefreshHelper.finish(categoryRefreshLayout), 400);
         });
     }
 

@@ -18,6 +18,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.FridgeApi;
 import com.veggo.app.data.remote.api.OrderApi;
@@ -61,10 +62,7 @@ public class OrderDetailActivity extends BaseActivity {
         orderDetailScroll = findViewById(R.id.orderDetailScroll);
         swipeRefreshLayout = findViewById(R.id.orderDetailSwipeRefresh);
         if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-            swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) ->
-                    orderDetailScroll != null && orderDetailScroll.canScrollVertically(-1));
-            swipeRefreshLayout.setOnRefreshListener(() -> loadOrderDetail(true));
+            PullToRefreshHelper.bind(swipeRefreshLayout, orderDetailScroll, () -> loadOrderDetail(true));
         }
     }
 
@@ -119,7 +117,7 @@ public class OrderDetailActivity extends BaseActivity {
             runOnUiThread(() -> {
                 bindDetail(snapshot, order, detail, skuToIdMap, finalFridgeItems);
                 if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    PullToRefreshHelper.finish(swipeRefreshLayout);
                 }
             });
         }).start();
@@ -177,10 +175,13 @@ public class OrderDetailActivity extends BaseActivity {
                     break;
                 case "delivered":
                 case "completed":
-                case "unreview":
                 case "reviewed":
                     bgRes = R.drawable.bg_order_delivered_chip;
                     textColorRes = R.color.order_status_delivered;
+                    break;
+                case "unreview":
+                    bgRes = R.drawable.bg_order_cancelled_chip;
+                    textColorRes = R.color.order_status_unreview;
                     break;
                 case "processing_return":
                 case "returning":
@@ -307,6 +308,12 @@ public class OrderDetailActivity extends BaseActivity {
                     btnBuyAgain.setVisibility(View.VISIBLE);
                     btnBuyAgain.setOnClickListener(v -> buyAgainCurrentOrder());
                     btnReview.setVisibility(View.VISIBLE);
+                    if (btnReview instanceof TextView) {
+                        String reviewLabel = "unreview".equals(status)
+                                ? "Đánh giá"
+                                : getString(R.string.reviews_view_action);
+                        ((TextView) btnReview).setText(reviewLabel);
+                    }
                     btnReview.setOnClickListener(v -> openReviewForm(order.orderId));
                     if (btnAddToFridge != null) {
                         btnAddToFridge.setVisibility(hasAddableFridgeItems ? View.VISIBLE : View.GONE);
@@ -546,6 +553,11 @@ public class OrderDetailActivity extends BaseActivity {
             }
             AssetScreenData.bindDetailProduct(this, row, item);
 
+            View clickArea = row.findViewById(R.id.orderDetailProductClickArea);
+            if (clickArea != null) {
+                clickArea.setOnClickListener(v -> openProductDetail(item, skuToIdMap));
+            }
+
             boolean alreadyAdded = false;
             for (com.veggo.app.data.remote.dto.FridgeItemDto fItem : fridgeItems) {
                 if (sameText(orderId, fItem.getOrderId()) && sameText(item.sku, fItem.getSku())) {
@@ -555,32 +567,25 @@ public class OrderDetailActivity extends BaseActivity {
             }
 
             // Checkbox cho tủ lạnh
+            View checkBoxContainer = row.findViewById(R.id.orderDetailProductCheckBoxContainer);
             CheckBox checkBox = row.findViewById(R.id.orderDetailProductCheckBox);
             TextView addedBadge = row.findViewById(R.id.orderDetailProductAddedBadge);
 
             if (isDeliveredOrder) {
                 if (alreadyAdded) {
+                    if (checkBoxContainer != null) checkBoxContainer.setVisibility(View.GONE);
                     if (checkBox != null) checkBox.setVisibility(View.GONE);
                     if (addedBadge != null) addedBadge.setVisibility(View.VISIBLE);
                     row.setAlpha(0.6f);
                 } else {
                     totalAddable++;
                     if (addedBadge != null) addedBadge.setVisibility(View.GONE);
+                    if (checkBoxContainer != null) checkBoxContainer.setVisibility(View.VISIBLE);
                     if (checkBox != null) {
                         checkBox.setVisibility(View.VISIBLE);
                         final int itemIndex = index;
-                        // Khi bấm vào cả row thì toggle checkbox
-                        row.setOnClickListener(v -> {
-                            checkBox.setChecked(!checkBox.isChecked());
-                            if (checkBox.isChecked()) {
-                                selectedItems.put(itemIndex, item);
-                            } else {
-                                selectedItems.remove(itemIndex);
-                            }
-                            updateSelectAllCheckboxState();
-                        });
-                        checkBox.setOnClickListener(v -> {
-                            if (checkBox.isChecked()) {
+                        checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                            if (isChecked) {
                                 selectedItems.put(itemIndex, item);
                             } else {
                                 selectedItems.remove(itemIndex);
@@ -589,29 +594,20 @@ public class OrderDetailActivity extends BaseActivity {
                         });
                     }
                 }
-            } else {
-                // Đơn chưa giao: click vào để xem chi tiết sản phẩm
-                row.setOnClickListener(v -> {
-                    Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
-                    String productId = item.sku != null ? skuToIdMap.get(item.sku) : null;
-                    if (productId == null && item.objectId != null) {
-                        productId = item.objectId.oid;
-                    }
-                    if (productId == null) {
-                        productId = item.sku;
-                    }
-                    intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
-                    startActivity(intent);
-                });
             }
 
             container.addView(row);
         }
 
+        View selectAllRow = findViewById(R.id.orderDetailSelectAllRow);
         CheckBox selectAllBox = findViewById(R.id.orderDetailSelectAllCheckBox);
         if (selectAllBox != null) {
             if (isDeliveredOrder && totalAddable > 0) {
-                selectAllBox.setVisibility(View.VISIBLE);
+                if (selectAllRow != null) {
+                    selectAllRow.setVisibility(View.VISIBLE);
+                } else {
+                    selectAllBox.setVisibility(View.VISIBLE);
+                }
                 selectAllBox.setOnCheckedChangeListener(null);
                 selectAllBox.setChecked(false);
                 selectAllBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -629,10 +625,30 @@ public class OrderDetailActivity extends BaseActivity {
                     }
                 });
             } else {
-                selectAllBox.setVisibility(View.GONE);
+                if (selectAllRow != null) {
+                    selectAllRow.setVisibility(View.GONE);
+                } else {
+                    selectAllBox.setVisibility(View.GONE);
+                }
             }
         }
         hasAddableFridgeItems = isDeliveredOrder && totalAddable > 0;
+    }
+
+    private void openProductDetail(
+            AssetModels.OrderDetailItem item,
+            java.util.Map<String, String> skuToIdMap
+    ) {
+        Intent intent = new Intent(this, com.veggo.app.presentation.product.ProductDetailActivity.class);
+        String productId = item.sku != null ? skuToIdMap.get(item.sku) : null;
+        if (productId == null && item.objectId != null) {
+            productId = item.objectId.oid;
+        }
+        if (productId == null) {
+            productId = item.sku;
+        }
+        intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
+        startActivity(intent);
     }
 
     private boolean sameText(String left, String right) {
@@ -712,7 +728,8 @@ public class OrderDetailActivity extends BaseActivity {
                     null,
                     item.unit != null ? item.unit : "kg",
                     "history",
-                    null
+                    null,
+                    true
             ));
         }
 

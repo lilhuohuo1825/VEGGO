@@ -24,7 +24,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.veggo.app.R;
 import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.utils.CarbonPointsUtils;
 import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.core.utils.ProductCarbonMetadata;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.domain.model.Product;
@@ -37,6 +39,7 @@ import java.util.Locale;
 
 public class RecurringProductPickerActivity extends BaseActivity {
     public static final String EXTRA_SELECTED_PRODUCTS_JSON = "extra_selected_products_json";
+    public static final String EXTRA_EXISTING_PRODUCTS_JSON = "extra_existing_products_json";
 
     private final ProductAdapter productAdapter = new ProductAdapter();
     private final CategoryAdapter categoryAdapter = new CategoryAdapter(CategoryAdapter.TYPE_HORIZONTAL);
@@ -66,8 +69,23 @@ public class RecurringProductPickerActivity extends BaseActivity {
         selectedCountText = findViewById(R.id.recurringProductSelectedCount);
         doneButton = findViewById(R.id.recurringProductDoneButton);
         doneButton.setOnClickListener(v -> finishWithSelectedProducts());
+        loadExistingProducts();
         updateDoneBar();
         loadData();
+    }
+
+    private void loadExistingProducts() {
+        String json = getIntent().getStringExtra(EXTRA_EXISTING_PRODUCTS_JSON);
+        if (json == null || json.trim().isEmpty()) {
+            return;
+        }
+        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<List<RecurringOrderStore.RecurringProductItem>>() {}.getType();
+        List<RecurringOrderStore.RecurringProductItem> existing =
+                new Gson().fromJson(json, type);
+        selectedItems.clear();
+        if (existing != null) {
+            selectedItems.addAll(existing);
+        }
     }
 
     private void setupCategories() {
@@ -251,20 +269,56 @@ public class RecurringProductPickerActivity extends BaseActivity {
     }
 
     private void addSelectedProduct(Product product, int quantity, double selectedWeight) {
-        long unitPrice = variantPrice(product.getPrice(), selectedWeight, hasWeightOptions(product));
-        double carbonPoints = calculateCarbonPoints(product, quantity, selectedWeight, hasWeightOptions(product));
+        boolean weighted = hasWeightOptions(product);
+        ProductCarbonMetadata.Info carbonMeta = ProductCarbonMetadata.resolve(
+                this,
+                product.getSku(),
+                product.getId(),
+                product.getCarbonSavingPoint()
+        );
+        double baseCarbon = product.getCarbonSavingPoint() > 0
+                ? product.getCarbonSavingPoint()
+                : carbonMeta.carbonSavingPoint;
+        double emissionFactor = carbonMeta.emissionFactor;
+        long baseUnitPrice = product.getPrice();
+        long unitPrice = variantPrice(baseUnitPrice, selectedWeight, weighted);
+        String itemKey = buildItemKey(product.getId(), product.getSku(), selectedWeight);
+        for (RecurringOrderStore.RecurringProductItem item : selectedItems) {
+            if (itemKey.equals(buildItemKey(item.productId, item.sku, item.selectedWeight))) {
+                item.quantity += quantity;
+                item.unitPrice = variantPrice(item.baseUnitPrice, selectedWeight, item.hasWeightOptions);
+                item.carbonPoints = calculateLineCarbonPoints(item);
+                updateDoneBar();
+                return;
+            }
+        }
         RecurringOrderStore.RecurringProductItem item = new RecurringOrderStore.RecurringProductItem();
         item.productId = product.getId();
         item.sku = product.getSku();
         item.name = product.getName();
         item.imageUrl = product.getImageUrl();
-        item.unit = hasWeightOptions(product) ? formatWeight(selectedWeight) : safe(product.getWeight());
+        item.unit = weighted ? formatWeight(selectedWeight) : safe(product.getWeight());
         item.quantity = quantity;
         item.selectedWeight = selectedWeight;
+        item.baseUnitPrice = baseUnitPrice;
+        item.baseCarbonSavingPoint = baseCarbon;
+        item.emissionFactor = emissionFactor;
+        item.hasWeightOptions = weighted;
         item.unitPrice = unitPrice;
-        item.carbonPoints = carbonPoints;
+        item.carbonPoints = calculateLineCarbonPoints(item);
         selectedItems.add(item);
         updateDoneBar();
+    }
+
+    private double calculateLineCarbonPoints(RecurringOrderStore.RecurringProductItem item) {
+        return CarbonPointsUtils.calculatePoints(
+                item.baseCarbonSavingPoint,
+                item.emissionFactor,
+                item.quantity,
+                item.selectedWeight,
+                item.hasWeightOptions,
+                item.unit
+        );
     }
 
     private void finishWithSelectedProducts() {
@@ -344,17 +398,6 @@ public class RecurringProductPickerActivity extends BaseActivity {
         return product.getWeightOptions() != null && !product.getWeightOptions().isEmpty();
     }
 
-    private double calculateCarbonPoints(Product product, int quantity, double selectedWeight, boolean hasWeightOptions) {
-        if (product == null || quantity <= 0) {
-            return 0;
-        }
-        double basePoint = product.getCarbonSavingPoint();
-        if (basePoint <= 0) {
-            return 0;
-        }
-        return hasWeightOptions ? basePoint * selectedWeight * quantity : basePoint * quantity;
-    }
-
     private double resolveDefaultWeight(Product product) {
         if (hasWeightOptions(product)) {
             return product.getWeightOptions().get(0);
@@ -385,6 +428,10 @@ public class RecurringProductPickerActivity extends BaseActivity {
             return String.format(Locale.US, weight == Math.round(weight) ? "%.0fkg" : "%.2fkg", weight);
         }
         return String.format(Locale.US, "%.0fg", weight * 1000);
+    }
+
+    private String buildItemKey(String productId, String sku, double selectedWeight) {
+        return safe(productId) + "#" + safe(sku) + "#" + selectedWeight;
     }
 
     private String safe(String value) {

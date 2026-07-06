@@ -13,6 +13,7 @@ import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.OrderApi;
+import com.veggo.app.presentation.order.RecurringOrderStore;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -31,6 +32,8 @@ public class QrPaymentActivity extends BaseActivity {
     public static final String EXTRA_CART_CLEANUP_WEIGHTS = "extra_cart_cleanup_weights";
     public static final String EXTRA_IS_GUEST_ORDER = "extra_is_guest_order";
     public static final String EXTRA_GUEST_PHONE = "extra_guest_phone";
+    public static final String EXTRA_RECURRING_ORDER_ID = "extra_recurring_order_id";
+    public static final String EXTRA_RECURRING_OCCURRENCE_DATE = "extra_recurring_occurrence_date";
 
     private View layoutQrPayment;
     private View layoutOrderSuccess;
@@ -50,30 +53,41 @@ public class QrPaymentActivity extends BaseActivity {
         TextView btnContinueShopping = findViewById(R.id.btnContinueShopping);
         TextView btnTrackOrder = findViewById(R.id.btnTrackOrder);
         bindPaymentInfo();
-        if (getIntent().getBooleanExtra(EXTRA_SHOW_SUCCESS_IMMEDIATELY, false)) {
+        boolean showSuccessImmediately = getIntent().getBooleanExtra(EXTRA_SHOW_SUCCESS_IMMEDIATELY, false);
+        if (showSuccessImmediately) {
             showOrderSuccess();
         }
 
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> {
+            if (layoutOrderSuccess.getVisibility() == View.VISIBLE) {
+                openMainTab(R.id.nav_home, true);
+            } else {
+                finish();
+            }
+        });
         btnConfirmPaid.setOnClickListener(v -> confirmBankTransferPaid());
         btnContinueShopping.setOnClickListener(v -> openMainTab(R.id.nav_home, true));
         btnTrackOrder.setOnClickListener(v -> openMainTab(R.id.nav_orders, false));
     }
 
     private void confirmBankTransferPaid() {
-        String orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
-        if (orderId == null || orderId.trim().isEmpty()) {
-            showOrderSuccess();
+        if (layoutOrderSuccess.getVisibility() == View.VISIBLE) {
             return;
         }
+        String orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
+        TextView btnConfirmPaid = findViewById(R.id.btnConfirmPaid);
+        btnConfirmPaid.setEnabled(false);
+        btnConfirmPaid.setText("Đang xác nhận...");
         new Thread(() -> {
-            try {
-                OrderApi orderApi = ApiClient.createService(OrderApi.class);
-                Map<String, String> body = new HashMap<>();
-                body.put("paymentStatus", "paid");
-                orderApi.updatePaymentStatus(orderId, body).execute();
-            } catch (Exception ignored) {
-                // Payment screen is simulated; still let the user continue after local confirmation.
+            if (orderId != null && !orderId.trim().isEmpty()) {
+                try {
+                    OrderApi orderApi = ApiClient.createService(OrderApi.class);
+                    Map<String, String> body = new HashMap<>();
+                    body.put("paymentStatus", "paid");
+                    orderApi.updatePaymentStatus(orderId, body).execute();
+                } catch (Exception ignored) {
+                    // Payment screen is simulated; still let the user continue after local confirmation.
+                }
             }
             runOnUiThread(this::showOrderSuccess);
         }).start();
@@ -82,8 +96,38 @@ public class QrPaymentActivity extends BaseActivity {
     private void showOrderSuccess() {
         layoutQrPayment.setVisibility(View.GONE);
         layoutOrderSuccess.setVisibility(View.VISIBLE);
+        TextView btnConfirmPaid = findViewById(R.id.btnConfirmPaid);
+        if (btnConfirmPaid != null) {
+            btnConfirmPaid.setEnabled(true);
+            btnConfirmPaid.setText("Xác nhận thanh toán");
+        }
         clearCartAfterOrderSuccess();
+        markRecurringOccurrenceCompletedIfNeeded();
         notifyGuestOrderCodeIfNeeded();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (layoutOrderSuccess.getVisibility() == View.VISIBLE) {
+            openMainTab(R.id.nav_home, true);
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    private void markRecurringOccurrenceCompletedIfNeeded() {
+        String recurringOrderId = getIntent().getStringExtra(EXTRA_RECURRING_ORDER_ID);
+        String occurrenceDate = getIntent().getStringExtra(EXTRA_RECURRING_OCCURRENCE_DATE);
+        if (recurringOrderId == null || recurringOrderId.trim().isEmpty()
+                || occurrenceDate == null || occurrenceDate.trim().isEmpty()) {
+            return;
+        }
+        String placedOrderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
+        new RecurringOrderStore(this).markOccurrenceCompleted(
+                recurringOrderId,
+                occurrenceDate,
+                placedOrderId == null ? "" : placedOrderId
+        );
     }
 
     private void notifyGuestOrderCodeIfNeeded() {

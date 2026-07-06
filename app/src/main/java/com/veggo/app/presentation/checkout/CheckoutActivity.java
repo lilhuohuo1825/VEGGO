@@ -19,6 +19,8 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatRadioButton;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -33,6 +35,9 @@ import com.veggo.app.adapter.PaymentItemAdapter;
 import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
+import com.veggo.app.core.notification.RecurringConfirmationHelper;
+import com.veggo.app.core.utils.DeliveryTimeUtils;
+import com.veggo.app.core.utils.WarehouseDistanceUtils;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.data.remote.dto.CartDto;
@@ -49,8 +54,11 @@ import com.veggo.app.domain.model.Address;
 import com.veggo.app.domain.repository.AddressRepository;
 import com.veggo.app.presentation.cart.CartViewModel;
 import com.veggo.app.presentation.profile.AddressFormActivity;
+import com.veggo.app.presentation.order.RecurringCheckoutStore;
+import com.veggo.app.presentation.order.RecurringOrderStore;
 
 import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -68,6 +76,10 @@ import retrofit2.Response;
 public class CheckoutActivity extends BaseActivity {
     public static final String EXTRA_SELECTED_VOUCHER_ID = "extra_selected_voucher_id";
     public static final String EXTRA_SELECTED_VOUCHER_TITLE = "extra_selected_voucher_title";
+    public static final String EXTRA_SELECTED_PRODUCT_VOUCHER_ID = "extra_selected_product_voucher_id";
+    public static final String EXTRA_SELECTED_PRODUCT_VOUCHER_TITLE = "extra_selected_product_voucher_title";
+    public static final String EXTRA_SELECTED_SHIPPING_VOUCHER_ID = "extra_selected_shipping_voucher_id";
+    public static final String EXTRA_SELECTED_SHIPPING_VOUCHER_TITLE = "extra_selected_shipping_voucher_title";
     public static final String EXTRA_SELECTED_CART_LINE_KEYS = "extra_selected_cart_line_keys";
     public static final String EXTRA_TRANSFERRED_CHECKOUT = "extra_transferred_checkout";
     public static final String EXTRA_BUY_NOW = "extra_buy_now";
@@ -84,16 +96,22 @@ public class CheckoutActivity extends BaseActivity {
     public static final String EXTRA_BUY_NOW_CATEGORY_ID = "extra_buy_now_category_id";
     public static final String EXTRA_BUY_NOW_SUBCATEGORY_ID = "extra_buy_now_subcategory_id";
     public static final String EXTRA_BUY_NOW_CARBON_POINT = "extra_buy_now_carbon_point";
+    public static final String EXTRA_RECURRING_CHECKOUT = "extra_recurring_checkout";
+    public static final String EXTRA_RECURRING_ORDER_ID = "extra_recurring_order_id";
+    public static final String EXTRA_RECURRING_OCCURRENCE_DATE = "extra_recurring_occurrence_date";
 
     private static final long FREE_SHIPPING_THRESHOLD = 300_000L;
     private static final long DEFAULT_SHIPPING_FEE = 30_000L;
 
     private TextView tvCheckoutNote;
+    private TextView tvFastDeliveryTime;
     private TextView tvScheduleDeliveryTime;
     private TextView tvAddressName;
     private TextView tvAddressPhone;
     private TextView tvAddressDetail;
     private TextView tvAddressDefaultBadge;
+    private TextView tvCheckoutDeliveryOriginAddress;
+    private TextView tvCheckoutDeliveryOriginDistance;
     private TextView tvCheckoutSubtotal;
     private TextView tvCheckoutVoucherDiscount;
     private TextView tvCheckoutProductDiscount;
@@ -124,7 +142,8 @@ public class CheckoutActivity extends BaseActivity {
     private double currentCarbonPoints;
     private double currentCarbonEmission;
     private int currentProductCount;
-    private VoucherOptionAdapter.VoucherItemUiModel selectedVoucher;
+    private VoucherOptionAdapter.VoucherItemUiModel selectedProductVoucher;
+    private VoucherOptionAdapter.VoucherItemUiModel selectedShippingVoucher;
     private final List<PaymentItemAdapter.PaymentItemUiModel> previewItems = new ArrayList<>();
     private final List<CartDto.CartItemDto> cartItems = new ArrayList<>();
     private final List<VoucherOptionAdapter.VoucherItemUiModel> voucherItems = new ArrayList<>();
@@ -133,7 +152,15 @@ public class CheckoutActivity extends BaseActivity {
     private int selectedLocationIndex;
     private boolean buyNowMode;
     private boolean transferredCheckoutMode;
+    private boolean recurringCheckoutMode;
+    private String recurringOrderId;
+    private String recurringOccurrenceDate;
+    private RecurringCheckoutStore.CheckoutContext recurringCheckoutContext;
+    private boolean isFastDeliveryMode = true;
+    private DeliveryTimeUtils.DeliveryWindow fastDeliveryWindow;
+    private DeliveryTimeUtils.DeliveryWindow scheduledDeliveryWindow;
     private boolean isSearchingVoucher = false;
+    private final CheckoutWarehouseHelper warehouseHelper = new CheckoutWarehouseHelper();
     private final ActivityResultLauncher<Intent> addAddressLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() != RESULT_OK) {
@@ -165,12 +192,15 @@ public class CheckoutActivity extends BaseActivity {
         }
 
         tvCheckoutNote = findViewById(R.id.tvCheckoutNote);
+        tvFastDeliveryTime = findViewById(R.id.tvFastDeliveryTime);
         tvScheduleDeliveryTime = findViewById(R.id.tvScheduleDeliveryTime);
         layoutToggleProducts = findViewById(R.id.layoutToggleProducts);
         tvAddressName = findViewById(R.id.tvAddressName);
         tvAddressPhone = findViewById(R.id.tvAddressPhone);
         tvAddressDetail = findViewById(R.id.tvAddressDetail);
         tvAddressDefaultBadge = findViewById(R.id.tvAddressDefaultBadge);
+        tvCheckoutDeliveryOriginAddress = findViewById(R.id.tvCheckoutDeliveryOriginAddress);
+        tvCheckoutDeliveryOriginDistance = findViewById(R.id.tvCheckoutDeliveryOriginDistance);
         tvCheckoutSubtotal = findViewById(R.id.tvCheckoutSubtotal);
         tvCheckoutVoucherDiscount = findViewById(R.id.tvCheckoutVoucherDiscount);
         tvCheckoutProductDiscount = findViewById(R.id.tvCheckoutProductDiscount);
@@ -190,6 +220,9 @@ public class CheckoutActivity extends BaseActivity {
         tvCheckoutNote.setHint("Nhập ghi chú");
         buyNowMode = getIntent().getBooleanExtra(EXTRA_BUY_NOW, false);
         transferredCheckoutMode = getIntent().getBooleanExtra(EXTRA_TRANSFERRED_CHECKOUT, false);
+        recurringCheckoutMode = getIntent().getBooleanExtra(EXTRA_RECURRING_CHECKOUT, false);
+        recurringOrderId = getIntent().getStringExtra(EXTRA_RECURRING_ORDER_ID);
+        recurringOccurrenceDate = getIntent().getStringExtra(EXTRA_RECURRING_OCCURRENCE_DATE);
         ArrayList<String> selectedLineKeys = getIntent().getStringArrayListExtra(EXTRA_SELECTED_CART_LINE_KEYS);
         selectedCartLineKeys = selectedLineKeys == null || selectedLineKeys.isEmpty()
                 ? null
@@ -204,7 +237,7 @@ public class CheckoutActivity extends BaseActivity {
         selectDeliveryMode(true);
         prefetchVoucherData();
         layoutAddress.setOnClickListener(v -> showPopup(R.layout.dialog_location));
-        layoutDeliveryOrigin.setOnClickListener(v -> showPopup(R.layout.dialog_delivery_origin));
+        layoutDeliveryOrigin.setOnClickListener(v -> warehouseHelper.showSelectionDialog(this, this::bindSelectedWarehouseUi, null));
         layoutVoucher.setOnClickListener(v -> showPopup(R.layout.dialog_voucher));
         layoutNote.setOnClickListener(v -> showNoteDialog());
         layoutFastDelivery.setOnClickListener(v -> selectDeliveryMode(true));
@@ -219,6 +252,8 @@ public class CheckoutActivity extends BaseActivity {
 
         if (buyNowMode) {
             bindBuyNowItemFromIntent();
+        } else if (recurringCheckoutMode) {
+            bindRecurringCheckoutFromStore();
         } else if (transferredCheckoutMode) {
             CartDto transferredCart = PendingCheckoutStore.consumeTransferredCart();
             if (transferredCart != null && transferredCart.getItems() != null && !transferredCart.getItems().isEmpty()) {
@@ -253,21 +288,42 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void restoreSelectedVoucherFromIntent() {
-        String promotionId = getIntent().getStringExtra(EXTRA_SELECTED_VOUCHER_ID);
-        String title = getIntent().getStringExtra(EXTRA_SELECTED_VOUCHER_TITLE);
-        PromotionDto promotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_voucher_dto");
-        if (title != null && !title.trim().isEmpty()) {
-            selectedVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
-                    title,
-                    "",
-                    "",
-                    R.drawable.ic_voucher,
-                    promotionId,
-                    true,
-                    promotion
+        PromotionDto productPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_product_voucher_dto");
+        PromotionDto shippingPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_shipping_voucher_dto");
+        String productId = getIntent().getStringExtra(EXTRA_SELECTED_PRODUCT_VOUCHER_ID);
+        String productTitle = getIntent().getStringExtra(EXTRA_SELECTED_PRODUCT_VOUCHER_TITLE);
+        String shippingId = getIntent().getStringExtra(EXTRA_SELECTED_SHIPPING_VOUCHER_ID);
+        String shippingTitle = getIntent().getStringExtra(EXTRA_SELECTED_SHIPPING_VOUCHER_TITLE);
+
+        if (hasVoucherText(productTitle)) {
+            selectedProductVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
+                    productTitle, "", "", R.drawable.ic_voucher, productId, true, productPromotion
             );
         }
+        if (hasVoucherText(shippingTitle)) {
+            selectedShippingVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
+                    shippingTitle, "", "", R.drawable.ic_voucher, shippingId, true, shippingPromotion
+            );
+        }
+
+        String legacyId = getIntent().getStringExtra(EXTRA_SELECTED_VOUCHER_ID);
+        String legacyTitle = getIntent().getStringExtra(EXTRA_SELECTED_VOUCHER_TITLE);
+        PromotionDto legacyPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_voucher_dto");
+        if (hasVoucherText(legacyTitle) && selectedProductVoucher == null && selectedShippingVoucher == null) {
+            VoucherOptionAdapter.VoucherItemUiModel legacy = new VoucherOptionAdapter.VoucherItemUiModel(
+                    legacyTitle, "", "", R.drawable.ic_voucher, legacyId, true, legacyPromotion
+            );
+            if (legacy.shipping) {
+                selectedShippingVoucher = legacy;
+            } else {
+                selectedProductVoucher = legacy;
+            }
+        }
         updateSelectedVoucherUi();
+    }
+
+    private boolean hasVoucherText(@Nullable String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private void setupPaymentMethods() {
@@ -303,8 +359,8 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void createOrderAndOpenPaymentStep() {
-        if ("momo".equals(selectedPaymentMethod) || "bank".equals(selectedPaymentMethod)) {
-            Toast.makeText(this, "Hệ thống đang phát triển", Toast.LENGTH_SHORT).show();
+        if ("momo".equals(selectedPaymentMethod)) {
+            Toast.makeText(this, "Liên kết Ví MoMo đang được phát triển", Toast.LENGTH_SHORT).show();
             findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
@@ -318,29 +374,8 @@ public class CheckoutActivity extends BaseActivity {
             Toast.makeText(this, "Vui lòng chọn địa chỉ giao hàng hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (selectedVoucher != null) {
-            PromotionTargetDto target = null;
-            for (PromotionTargetDto t : cachedTargets) {
-                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
-                    target = t;
-                    break;
-                }
-            }
-            PromotionUsageDto usage = null;
-            for (PromotionUsageDto u : cachedUsages) {
-                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
-                    usage = u;
-                    break;
-                }
-            }
-            String reason = disabledReason(selectedVoucher.promotion, target, usage);
-            if (reason != null) {
-                Toast.makeText(this, "Voucher không còn hợp lệ: " + reason, Toast.LENGTH_LONG).show();
-                selectedVoucher = null;
-                updateSelectedVoucherUi();
-                bindPaymentSummary();
-                return;
-            }
+        if (!validateSelectedVouchersBeforeCheckout()) {
+            return;
         }
         if (customerId == null || customerId.trim().isEmpty()) {
             Toast.makeText(this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
@@ -377,6 +412,28 @@ public class CheckoutActivity extends BaseActivity {
                     findViewById(R.id.btnPlaceOrder).setEnabled(true);
                 }
             });
+        }
+    }
+
+    private void bindRecurringCheckoutFromStore() {
+        RecurringCheckoutStore checkoutStore = new RecurringCheckoutStore(this);
+        RecurringCheckoutStore.CheckoutSession session = checkoutStore.consumeSession();
+        if (session == null || session.cart == null || session.cart.getItems() == null || session.cart.getItems().isEmpty()) {
+            Toast.makeText(this, "Không tìm thấy sản phẩm định kỳ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        recurringCheckoutContext = session.context;
+        bindCart(session.cart);
+        selectDeliveryMode(false);
+        DeliveryTimeUtils.DeliveryWindow window = RecurringConfirmationHelper.buildDeliveryWindow(
+                recurringOccurrenceDate,
+                recurringCheckoutContext == null ? "" : recurringCheckoutContext.deliverySlot
+        );
+        if (window != null) {
+            scheduledDeliveryWindow = window;
+            if (tvScheduleDeliveryTime != null) {
+                tvScheduleDeliveryTime.setText(window.displayText());
+            }
         }
     }
 
@@ -419,13 +476,20 @@ public class CheckoutActivity extends BaseActivity {
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_METHOD, selectedPaymentMethod);
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_AMOUNT, currentPaymentTotal);
         intent.putExtra(QrPaymentActivity.EXTRA_ITEM_COUNT, currentProductCount);
-        intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE, buildPaymentCode());
-        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod));
-        intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode && !transferredCheckoutMode);
+        intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE,
+                "bank".equals(selectedPaymentMethod) ? orderId : buildPaymentCode());
+        intent.putExtra(QrPaymentActivity.EXTRA_ORDER_ID, orderId);
+        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY,
+                "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod));
+        intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode);
         intent.putExtra(QrPaymentActivity.EXTRA_CUSTOMER_ID, customerId);
-        if (!buyNowMode && !transferredCheckoutMode) {
+        if (!buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode) {
             intent.putStringArrayListExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_SKUS, selectedCleanupSkus());
             intent.putExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_WEIGHTS, selectedCleanupWeights());
+        }
+        if (recurringCheckoutMode) {
+            intent.putExtra(QrPaymentActivity.EXTRA_RECURRING_ORDER_ID, recurringOrderId);
+            intent.putExtra(QrPaymentActivity.EXTRA_RECURRING_OCCURRENCE_DATE, recurringOccurrenceDate);
         }
         startActivity(intent);
         finish();
@@ -461,8 +525,8 @@ public class CheckoutActivity extends BaseActivity {
                         intent.putExtra(VnpayWebViewActivity.EXTRA_PAYMENT_URL, paymentUrl);
                         intent.putExtra(VnpayWebViewActivity.EXTRA_ORDER_ID, orderId);
                         intent.putExtra(VnpayWebViewActivity.EXTRA_CUSTOMER_ID, customerId);
-                        intent.putExtra(VnpayWebViewActivity.EXTRA_CLEAR_CART, !buyNowMode && !transferredCheckoutMode);
-                        if (!buyNowMode && !transferredCheckoutMode) {
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_CLEAR_CART, !buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode);
+                        if (!buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode) {
                             intent.putStringArrayListExtra(VnpayWebViewActivity.EXTRA_CLEANUP_SKUS, selectedCleanupSkus());
                             intent.putExtra(VnpayWebViewActivity.EXTRA_CLEANUP_WEIGHTS, selectedCleanupWeights());
                         }
@@ -520,9 +584,11 @@ public class CheckoutActivity extends BaseActivity {
         payload.put("vatRate", 0);
         payload.put("vatAmount", 0);
         payload.put("totalAmount", currentPaymentTotal);
-        payload.put("code", selectedVoucher != null ? safeText(selectedVoucher.promotionId) : "");
-        payload.put("promotion_id", selectedVoucher != null ? safeText(selectedVoucher.promotionId) : null);
-        payload.put("promotionName", selectedVoucher != null ? safeText(selectedVoucher.title) : "");
+        payload.put("code", selectedProductVoucher != null ? safeText(selectedProductVoucher.promotionId) : "");
+        payload.put("promotion_id", selectedProductVoucher != null ? safeText(selectedProductVoucher.promotionId) : null);
+        payload.put("promotionName", selectedProductVoucher != null ? safeText(selectedProductVoucher.title) : "");
+        payload.put("shippingPromotionId", selectedShippingVoucher != null ? safeText(selectedShippingVoucher.promotionId) : null);
+        payload.put("shippingPromotionName", selectedShippingVoucher != null ? safeText(selectedShippingVoucher.title) : "");
         payload.put("wantInvoice", false);
         payload.put("invoiceInfo", new HashMap<String, Object>());
         payload.put("consultantCode", "");
@@ -550,9 +616,31 @@ public class CheckoutActivity extends BaseActivity {
         shippingInfo.put("phone", phone);
         shippingInfo.put("email", safeText(new AppPreferences(this).getEmail()));
         shippingInfo.put("address", address);
-        shippingInfo.put("deliveryMethod", "standard");
+        shippingInfo.put("deliveryMethod", isFastDeliveryMode ? "fast" : "scheduled");
+        DeliveryTimeUtils.DeliveryWindow activeWindow = getActiveDeliveryWindow();
+        if (activeWindow != null) {
+            shippingInfo.put("deliveryWindowStart", formatDeliveryTimestamp(activeWindow.start));
+            shippingInfo.put("deliveryWindowEnd", formatDeliveryTimestamp(activeWindow.end));
+            shippingInfo.put("deliveryTimeText", activeWindow.displayText());
+        }
         shippingInfo.put("notes", tvCheckoutNote != null ? safeText(tvCheckoutNote.getText().toString()) : "");
-        shippingInfo.put("warehouse_id", "WH001");
+        shippingInfo.put("warehouse_id", safeText(warehouseHelper.getSelectedWarehouseCode()));
+        if (recurringCheckoutMode) {
+            shippingInfo.put("isRecurring", true);
+            shippingInfo.put("orderSource", "recurring");
+            shippingInfo.put("recurringOrderId", safeText(recurringOrderId));
+            shippingInfo.put("occurrenceDate", safeText(recurringOccurrenceDate));
+            RecurringOrderStore.RecurringOrder recurringOrder =
+                    new RecurringOrderStore(this).findById(recurringOrderId);
+            if (recurringOrder != null) {
+                shippingInfo.put("recurringOrderName", safeText(recurringOrder.name));
+                shippingInfo.put("recurringFrequency", safeText(recurringOrder.frequency));
+                shippingInfo.put("deliverySlot", safeText(recurringOrder.deliverySlot));
+            }
+        } else {
+            shippingInfo.put("isRecurring", false);
+            shippingInfo.put("orderSource", isFastDeliveryMode ? "fast" : "standard");
+        }
         return shippingInfo;
     }
 
@@ -674,14 +762,13 @@ public class CheckoutActivity extends BaseActivity {
         long voucherDiscount = 0;
         long shippingFee = currentSubtotal > 0 ? DEFAULT_SHIPPING_FEE : 0;
         long shippingDiscount = currentSubtotal >= FREE_SHIPPING_THRESHOLD ? shippingFee : 0;
-        if (selectedVoucher != null && selectedVoucher.promotion != null) {
-            if (isShippingPromotion(selectedVoucher.promotion)) {
-                shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount,
-                        calculatePromotionDiscount(selectedVoucher.promotion, shippingFee)));
-            } else {
-                voucherDiscount = Math.min(currentSubtotal,
-                        calculatePromotionDiscount(selectedVoucher.promotion, currentSubtotal));
-            }
+        if (selectedProductVoucher != null && selectedProductVoucher.promotion != null) {
+            voucherDiscount = Math.min(currentSubtotal,
+                    calculatePromotionDiscount(selectedProductVoucher.promotion, currentSubtotal));
+        }
+        if (selectedShippingVoucher != null && selectedShippingVoucher.promotion != null) {
+            shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount,
+                    calculatePromotionDiscount(selectedShippingVoucher.promotion, shippingFee)));
         }
         long total = Math.max(0, currentSubtotal + shippingFee - voucherDiscount - shippingDiscount);
         currentPaymentTotal = total;
@@ -715,12 +802,12 @@ public class CheckoutActivity extends BaseActivity {
             showVoucherDialog();
             return;
         }
-        if (layoutResId == R.layout.dialog_location) {
-            showLocationDialog();
+        if (layoutResId == R.layout.dialog_delivery_origin) {
+            warehouseHelper.showSelectionDialog(this, this::bindSelectedWarehouseUi, null);
             return;
         }
-        if (layoutResId == R.layout.dialog_delivery_origin) {
-            showDeliveryOriginDialog();
+        if (layoutResId == R.layout.dialog_location) {
+            showLocationDialog();
             return;
         }
         View dialogView = LayoutInflater.from(this).inflate(layoutResId, null, false);
@@ -741,8 +828,12 @@ public class CheckoutActivity extends BaseActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvSelectedCount.setText("Đang tải khuyến mãi...");
         tvSelectedTitle.setText("");
-        recyclerView.setAdapter(new VoucherOptionAdapter(new ArrayList<>(), RecyclerView.NO_POSITION, item -> {
-        }));
+        recyclerView.setAdapter(new VoucherOptionAdapter(
+                new ArrayList<>(),
+                null,
+                null,
+                (productVoucher, shippingVoucher) -> { }
+        ));
         loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
 
         BottomSheetDialog dialog = createHalfHeightBottomSheetDialog(dialogView);
@@ -920,14 +1011,61 @@ public class CheckoutActivity extends BaseActivity {
             return 0;
         });
 
-        int selectedPosition = selectedVoucherPosition();
         updateVoucherSelectionText(selectedCountView, selectedTitleView);
-        recyclerView.setAdapter(new VoucherOptionAdapter(voucherItems, selectedPosition, item -> {
-            selectedVoucher = item;
-            updateVoucherSelectionText(selectedCountView, selectedTitleView);
+        recyclerView.setAdapter(new VoucherOptionAdapter(
+                voucherItems,
+                selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
+                (productVoucher, shippingVoucher) -> {
+                    selectedProductVoucher = productVoucher;
+                    selectedShippingVoucher = shippingVoucher;
+                    updateVoucherSelectionText(selectedCountView, selectedTitleView);
+                    updateSelectedVoucherUi();
+                    bindPaymentSummary();
+                }
+        ));
+    }
+
+    private boolean validateSelectedVouchersBeforeCheckout() {
+        String invalidReason = validateVoucherSelection(selectedProductVoucher);
+        if (invalidReason != null) {
+            Toast.makeText(this, "Voucher sản phẩm không còn hợp lệ: " + invalidReason, Toast.LENGTH_LONG).show();
+            selectedProductVoucher = null;
             updateSelectedVoucherUi();
             bindPaymentSummary();
-        }));
+            return false;
+        }
+        invalidReason = validateVoucherSelection(selectedShippingVoucher);
+        if (invalidReason != null) {
+            Toast.makeText(this, "Voucher vận chuyển không còn hợp lệ: " + invalidReason, Toast.LENGTH_LONG).show();
+            selectedShippingVoucher = null;
+            updateSelectedVoucherUi();
+            bindPaymentSummary();
+            return false;
+        }
+        return true;
+    }
+
+    @Nullable
+    private String validateVoucherSelection(@Nullable VoucherOptionAdapter.VoucherItemUiModel voucher) {
+        if (voucher == null || voucher.promotion == null) {
+            return null;
+        }
+        PromotionTargetDto target = null;
+        for (PromotionTargetDto t : cachedTargets) {
+            if (voucher.promotionId != null && voucher.promotionId.equals(t.getPromotionId())) {
+                target = t;
+                break;
+            }
+        }
+        PromotionUsageDto usage = null;
+        for (PromotionUsageDto u : cachedUsages) {
+            if (voucher.promotionId != null && voucher.promotionId.equals(u.getPromotionId())) {
+                usage = u;
+                break;
+            }
+        }
+        return disabledReason(voucher.promotion, target, usage);
     }
 
     private void showLocationDialog() {
@@ -953,20 +1091,6 @@ public class CheckoutActivity extends BaseActivity {
             dialog.dismiss();
             openAddAddressForm();
         });
-        dialog.show();
-    }
-
-    private void showDeliveryOriginDialog() {
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delivery_origin, null, false);
-        TextView tvAddress = dialogView.findViewById(R.id.tvDeliveryOriginAddress);
-        TextView tvDistance = dialogView.findViewById(R.id.tvDeliveryOriginDistance);
-        TextView btnClose = dialogView.findViewById(R.id.btnCloseDeliveryOrigin);
-
-        tvAddress.setText("123 Nguyen Van Linh, P. Tan Phong, Quan 7, TP. Ho Chi Minh");
-        tvDistance.setText("20 km ~ 45 phút");
-
-        BottomSheetDialog dialog = createBottomSheetDialog(dialogView);
-        btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
@@ -1032,39 +1156,88 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void showScheduleTimePicker() {
-        Calendar calendar = Calendar.getInstance();
-        int initialHour = calendar.get(Calendar.HOUR_OF_DAY);
-        int initialMinute = calendar.get(Calendar.MINUTE);
+        int travelMinutes = warehouseHelper.getSelectedWarehouseEtaMinutes();
+        DeliveryTimeUtils.DeliveryWindow minimumWindow = DeliveryTimeUtils.defaultScheduledWindow(travelMinutes);
+        Calendar minimum = DeliveryTimeUtils.calculateScheduledMinimum(travelMinutes);
+        Calendar initial = scheduledDeliveryWindow != null
+                && DeliveryTimeUtils.isValidScheduledWindow(scheduledDeliveryWindow.start, travelMinutes)
+                ? scheduledDeliveryWindow.start
+                : minimumWindow.start;
+        if (initial.before(minimum)) {
+            initial = minimum;
+        }
 
         TimePickerDialog timePickerDialog = new TimePickerDialog(
                 this,
-                (view, hourOfDay, minute) -> tvScheduleDeliveryTime.setText(buildScheduleText(hourOfDay, minute)),
-                initialHour,
-                initialMinute,
+                (view, hourOfDay, minute) -> {
+                    DeliveryTimeUtils.DeliveryWindow picked =
+                            DeliveryTimeUtils.resolveScheduledPick(travelMinutes, hourOfDay, minute);
+                    if (!DeliveryTimeUtils.isValidScheduledWindow(picked.start, travelMinutes)) {
+                        Toast.makeText(
+                                this,
+                                "Khung giờ phải sau " + DeliveryTimeUtils.formatMinimumScheduleHint(travelMinutes),
+                                Toast.LENGTH_LONG
+                        ).show();
+                        picked = minimumWindow;
+                    }
+                    scheduledDeliveryWindow = picked;
+                    if (tvScheduleDeliveryTime != null) {
+                        tvScheduleDeliveryTime.setText(picked.displayText());
+                    }
+                },
+                initial.get(Calendar.HOUR_OF_DAY),
+                initial.get(Calendar.MINUTE),
                 true
         );
         timePickerDialog.show();
     }
 
     private void selectDeliveryMode(boolean isFastDelivery) {
+        isFastDeliveryMode = isFastDelivery;
         if (layoutFastDelivery != null) {
             layoutFastDelivery.setBackgroundResource(isFastDelivery ? R.drawable.bg_selected : R.drawable.bg_normal);
         }
         if (layoutScheduleDelivery != null) {
             layoutScheduleDelivery.setBackgroundResource(isFastDelivery ? R.drawable.bg_normal : R.drawable.bg_selected);
         }
+        if (!isFastDelivery && scheduledDeliveryWindow == null) {
+            refreshDeliveryTimes();
+        }
     }
 
-    private String buildScheduleText(int startHour, int startMinute) {
-        int endHour = (startHour + 2) % 24;
-        return String.format(
-                Locale.getDefault(),
-                "Dự kiến nhận hàng hôm nay, %02d:%02d - %02d:%02d",
-                startHour,
-                startMinute,
-                endHour,
-                startMinute
-        );
+    private void refreshDeliveryTimes() {
+        int travelMinutes = warehouseHelper.getSelectedWarehouseEtaMinutes();
+        fastDeliveryWindow = DeliveryTimeUtils.calculateFastDelivery(travelMinutes);
+        if (tvFastDeliveryTime != null) {
+            tvFastDeliveryTime.setText(fastDeliveryWindow.displayText());
+        }
+
+        DeliveryTimeUtils.DeliveryWindow defaultScheduled = DeliveryTimeUtils.defaultScheduledWindow(travelMinutes);
+        if (scheduledDeliveryWindow == null
+                || !DeliveryTimeUtils.isValidScheduledWindow(scheduledDeliveryWindow.start, travelMinutes)) {
+            scheduledDeliveryWindow = defaultScheduled;
+        }
+        if (tvScheduleDeliveryTime != null) {
+            tvScheduleDeliveryTime.setText(scheduledDeliveryWindow.displayText());
+        }
+    }
+
+    @Nullable
+    private DeliveryTimeUtils.DeliveryWindow getActiveDeliveryWindow() {
+        if (isFastDeliveryMode) {
+            if (fastDeliveryWindow == null) {
+                refreshDeliveryTimes();
+            }
+            return fastDeliveryWindow;
+        }
+        if (scheduledDeliveryWindow == null) {
+            refreshDeliveryTimes();
+        }
+        return scheduledDeliveryWindow;
+    }
+
+    private String formatDeliveryTimestamp(@NonNull Calendar calendar) {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(calendar.getTime());
     }
 
     private List<VoucherOptionAdapter.VoucherItemUiModel> buildVoucherItems() {
@@ -1072,9 +1245,12 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void updateSelectedVoucherUi() {
-        if (tvCheckoutSelectedVoucher == null) return;
-        if (selectedVoucher != null) {
-            tvCheckoutSelectedVoucher.setText(selectedVoucher.title);
+        if (tvCheckoutSelectedVoucher == null) {
+            return;
+        }
+        int selectedCount = countSelectedVouchers();
+        if (selectedCount > 0) {
+            tvCheckoutSelectedVoucher.setText(buildSelectedVoucherSummary());
             tvCheckoutSelectedVoucher.setTextColor(getResources().getColor(R.color.primary_main, getTheme()));
         } else {
             tvCheckoutSelectedVoucher.setText("Chọn hoặc nhập mã");
@@ -1082,10 +1258,36 @@ public class CheckoutActivity extends BaseActivity {
         }
     }
 
+    private int countSelectedVouchers() {
+        int count = 0;
+        if (selectedProductVoucher != null) {
+            count++;
+        }
+        if (selectedShippingVoucher != null) {
+            count++;
+        }
+        return count;
+    }
+
+    @NonNull
+    private String buildSelectedVoucherSummary() {
+        if (selectedProductVoucher != null && selectedShippingVoucher != null) {
+            return selectedProductVoucher.title + " + " + selectedShippingVoucher.title;
+        }
+        if (selectedProductVoucher != null) {
+            return selectedProductVoucher.title;
+        }
+        if (selectedShippingVoucher != null) {
+            return selectedShippingVoucher.title;
+        }
+        return "Chọn hoặc nhập mã";
+    }
+
     private void updateVoucherSelectionText(TextView selectedCountView, TextView selectedTitleView) {
-        if (selectedVoucher != null) {
-            selectedCountView.setText("1 mã đã được chọn");
-            selectedTitleView.setText(selectedVoucher.title);
+        int selectedCount = countSelectedVouchers();
+        if (selectedCount > 0) {
+            selectedCountView.setText(selectedCount + " mã đã được chọn");
+            selectedTitleView.setText(buildSelectedVoucherSummary());
         } else if (voucherItems.isEmpty()) {
             selectedCountView.setText("Không có mã khuyến mãi khả dụng");
             selectedTitleView.setText("");
@@ -1123,52 +1325,20 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void validateAppliedVoucher() {
-        if (selectedVoucher == null || selectedVoucher.promotion == null) {
-            return;
+        boolean changed = false;
+        if (validateVoucherSelection(selectedProductVoucher) != null) {
+            selectedProductVoucher = null;
+            changed = true;
         }
-
-        PromotionTargetDto target = null;
-        for (PromotionTargetDto t : cachedTargets) {
-            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
-                target = t;
-                break;
-            }
+        if (validateVoucherSelection(selectedShippingVoucher) != null) {
+            selectedShippingVoucher = null;
+            changed = true;
         }
-
-        PromotionUsageDto usage = null;
-        for (PromotionUsageDto u : cachedUsages) {
-            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
-                usage = u;
-                break;
-            }
-        }
-
-        String reason = disabledReason(selectedVoucher.promotion, target, usage);
-        if (reason != null) {
-            selectedVoucher = null;
+        if (changed) {
             updateSelectedVoucherUi();
             bindPaymentSummary();
             Toast.makeText(this, "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
         }
-    }
-
-    private int selectedVoucherPosition() {
-        if (selectedVoucher == null || selectedVoucher.promotionId == null) {
-            return RecyclerView.NO_POSITION;
-        }
-        for (int i = 0; i < voucherItems.size(); i++) {
-            VoucherOptionAdapter.VoucherItemUiModel item = voucherItems.get(i);
-            if (item.enabled && selectedVoucher.promotionId.equals(item.promotionId)) {
-                selectedVoucher = item;
-                updateSelectedVoucherUi();
-                bindPaymentSummary();
-                return i;
-            }
-        }
-        selectedVoucher = null;
-        updateSelectedVoucherUi();
-        bindPaymentSummary();
-        return RecyclerView.NO_POSITION;
     }
 
     private String disabledReason(PromotionDto promotion, PromotionTargetDto target, PromotionUsageDto usage) {
@@ -1384,6 +1554,7 @@ public class CheckoutActivity extends BaseActivity {
                 if (locationItems.isEmpty()) {
                     addFallbackLocation();
                 }
+                applyRecurringAddressIfNeeded();
                 applySelectedLocationToAddressCard();
             }
 
@@ -1392,9 +1563,39 @@ public class CheckoutActivity extends BaseActivity {
                 if (locationItems.isEmpty()) {
                     addFallbackLocation();
                 }
+                applyRecurringAddressIfNeeded();
                 applySelectedLocationToAddressCard();
             }
         });
+    }
+
+    private void applyRecurringAddressIfNeeded() {
+        if (!recurringCheckoutMode || recurringCheckoutContext == null) {
+            return;
+        }
+        String displayName = joinNameAndPhone(
+                recurringCheckoutContext.receiverName,
+                recurringCheckoutContext.receiverPhone
+        );
+        String displayAddress = recurringCheckoutContext.fullAddressLine();
+        int matchedIndex = -1;
+        for (int i = 0; i < locationItems.size(); i++) {
+            LocationOptionAdapter.LocationItemUiModel item = locationItems.get(i);
+            if (displayAddress.equals(item.address)) {
+                matchedIndex = i;
+                break;
+            }
+        }
+        if (matchedIndex >= 0) {
+            selectedLocationIndex = matchedIndex;
+            return;
+        }
+        locationItems.add(0, new LocationOptionAdapter.LocationItemUiModel(
+                displayName,
+                displayAddress,
+                true
+        ));
+        selectedLocationIndex = 0;
     }
 
     private void addFallbackLocation() {
@@ -1729,6 +1930,24 @@ public class CheckoutActivity extends BaseActivity {
         tvAddressPhone.setText(nameAndPhone[1]);
         tvAddressDetail.setText(selectedItem.address);
         tvAddressDefaultBadge.setVisibility(selectedItem.isDefault ? View.VISIBLE : View.GONE);
+        warehouseHelper.updateDeliveryAddress(selectedItem.address, this::bindSelectedWarehouseUi);
+    }
+
+    private void bindSelectedWarehouseUi(
+            @NonNull WarehouseDistanceUtils.RankedWarehouse warehouse,
+            @NonNull String distanceText
+    ) {
+        if (warehouse.warehouse == null) {
+            return;
+        }
+        if (tvCheckoutDeliveryOriginAddress != null) {
+            String address = warehouse.warehouse.getAddress();
+            tvCheckoutDeliveryOriginAddress.setText(address == null ? "" : address);
+        }
+        if (tvCheckoutDeliveryOriginDistance != null) {
+            tvCheckoutDeliveryOriginDistance.setText(distanceText);
+        }
+        refreshDeliveryTimes();
     }
 
     private String[] splitNameAndPhone(String value) {

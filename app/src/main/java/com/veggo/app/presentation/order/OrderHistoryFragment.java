@@ -24,6 +24,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -99,10 +100,7 @@ public class OrderHistoryFragment extends BaseFragment {
         orderStatusScroll = view.findViewById(R.id.orderStatusScroll);
         orderEmptyState = view.findViewById(R.id.orderEmptyState);
         if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setColorSchemeResources(R.color.primary_main, R.color.primary_hover);
-            swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) ->
-                    orderListScroll != null && orderListScroll.canScrollVertically(-1));
-            swipeRefreshLayout.setOnRefreshListener(() -> loadOrders(true));
+            PullToRefreshHelper.bind(swipeRefreshLayout, orderListScroll, () -> loadOrders(true));
         }
         EditText orderSearchInput = view.findViewById(R.id.orderSearchInput);
         if (orderSearchInput != null) {
@@ -184,7 +182,7 @@ public class OrderHistoryFragment extends BaseFragment {
                 pendingStatusAfterLoad = null;
                 showOrders(statusToShow);
                 if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    PullToRefreshHelper.finish(swipeRefreshLayout);
                 }
             });
         }).start();

@@ -1,13 +1,21 @@
 package com.veggo.app.presentation.auth;
 
+import android.app.Activity;
+import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.veggo.app.R;
 
 import java.util.Locale;
 import java.util.Random;
@@ -16,8 +24,55 @@ final class AuthFormUtils {
     static final String PHONE_REGEX = "^0\\d{9}$";
     static final int OTP_TTL_MS = 60_000;
     static final int MAX_OTP_ATTEMPTS = 3;
+    private static final int AUTH_COVER_HEIGHT_DP = 210;
 
     private AuthFormUtils() {}
+
+    static void setupAuthScreen(@NonNull Activity activity) {
+        WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
+        activity.getWindow().setStatusBarColor(Color.TRANSPARENT);
+
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        if (content == null || content.getChildCount() == 0) {
+            return;
+        }
+        View root = content.getChildAt(0);
+
+        final int[] basePadding = {
+                root.getPaddingLeft(),
+                root.getPaddingTop(),
+                root.getPaddingRight(),
+                root.getPaddingBottom()
+        };
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            int statusTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            view.setPadding(basePadding[0], 0, basePadding[2], basePadding[3]);
+
+            resizeCover(activity, R.id.authCoverImage, statusTop);
+            resizeCover(activity, R.id.authCoverOverlay, statusTop);
+
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+    }
+
+    private static void resizeCover(@NonNull Activity activity, int viewId, int statusTop) {
+        View cover = activity.findViewById(viewId);
+        if (cover == null) {
+            return;
+        }
+        ViewGroup.LayoutParams layoutParams = cover.getLayoutParams();
+        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+            ((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+        }
+        layoutParams.height = dp(activity, AUTH_COVER_HEIGHT_DP) + statusTop;
+        cover.setLayoutParams(layoutParams);
+    }
+
+    private static int dp(@NonNull Activity activity, int value) {
+        return Math.round(value * activity.getResources().getDisplayMetrics().density);
+    }
 
     static String phoneError(String phone) {
         if (phone == null || phone.trim().isEmpty()) {
@@ -25,6 +80,13 @@ final class AuthFormUtils {
         }
         if (!phone.trim().matches(PHONE_REGEX)) {
             return "Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số";
+        }
+        return "";
+    }
+
+    static String loginPasswordError(String password) {
+        if (password == null || password.isEmpty()) {
+            return "Vui lòng nhập mật khẩu";
         }
         return "";
     }

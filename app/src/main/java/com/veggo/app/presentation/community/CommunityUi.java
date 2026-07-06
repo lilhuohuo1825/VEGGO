@@ -88,7 +88,7 @@ public final class CommunityUi {
         int[] headerIds = {
                 R.id.communityHomeHeader,
                 R.id.communityTopHeader,
-                R.id.discoverySearchBar,
+                R.id.discoveryTopHeader,
                 R.id.cookbookTopHeader
         };
         for (int id : headerIds) {
@@ -118,29 +118,15 @@ public final class CommunityUi {
 
     public static SwipeRefreshLayout setupPullToRefresh(Activity activity, int contentViewId, Runnable refreshAction) {
         View content = activity.findViewById(contentViewId);
-        if (content == null || !(content.getParent() instanceof ViewGroup)) {
-            return null;
+        SwipeRefreshLayout refreshLayout = com.veggo.app.core.ui.PullToRefreshHelper.wrap(content, refreshAction);
+        if (refreshLayout != null) {
+            refreshLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         }
-        ViewGroup parent = (ViewGroup) content.getParent();
-        int index = parent.indexOfChild(content);
-        ViewGroup.LayoutParams params = content.getLayoutParams();
-        parent.removeView(content);
-
-        SwipeRefreshLayout refreshLayout = new SwipeRefreshLayout(activity);
-        refreshLayout.setColorSchemeResources(R.color.primary_main);
-        refreshLayout.addView(content, new SwipeRefreshLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        ));
-        refreshLayout.setOnRefreshListener(refreshAction::run);
-        parent.addView(refreshLayout, index, params);
         return refreshLayout;
     }
 
     public static void finishRefresh(SwipeRefreshLayout refreshLayout) {
-        if (refreshLayout != null) {
-            refreshLayout.setRefreshing(false);
-        }
+        com.veggo.app.core.ui.PullToRefreshHelper.finish(refreshLayout);
     }
 
     public static <T> List<T> shuffled(List<T> items) {

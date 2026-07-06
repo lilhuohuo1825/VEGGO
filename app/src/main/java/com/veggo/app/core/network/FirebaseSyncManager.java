@@ -7,6 +7,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.veggo.app.core.database.VeggoDatabase;
+import com.veggo.app.core.utils.ProductDisplayValidator;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.local.entity.ProductEntity;
 
 import java.util.ArrayList;
@@ -69,10 +71,16 @@ public class FirebaseSyncManager {
                 // Ánh xạ dữ liệu
                 String id = doc.getId();
                 String name = doc.getString("name");
+                if (name == null || name.trim().isEmpty()) {
+                    name = doc.getString("product_name");
+                }
                 Long priceL = doc.getLong("price");
                 Long originalPriceL = doc.getLong("originalPrice");
                 String sku = doc.getString("sku");
                 String imageUrl = doc.getString("imageUrl");
+                if (imageUrl == null || imageUrl.trim().isEmpty()) {
+                    imageUrl = ProductImageUtils.resolveImageUrl(null, doc.get("image"));
+                }
                 
                 // Firestore might store numbers as Strings or vice-versa. 
                 // Using doc.get() and manual conversion to be safe.
@@ -97,8 +105,14 @@ public class FirebaseSyncManager {
                 String origin = doc.getString("origin");
                 String condition = doc.getString("condition");
                 String fatContent = doc.getString("fatContent");
-                String catId = doc.getString("categoryId");
-                String subId = doc.getString("subcategoryId");
+                String catId = firstNonEmpty(
+                        doc.getString("categoryId"),
+                        doc.getString("CategoryID")
+                );
+                String subId = firstNonEmpty(
+                        doc.getString("subcategoryId"),
+                        doc.getString("SubcategoryID")
+                );
                 String brand = doc.getString("brand");
 
                 long price = priceL != null ? priceL : 0;
@@ -130,7 +144,14 @@ public class FirebaseSyncManager {
                         null, null, null, null, null, null, null, null,
                         origin, condition, fatContent, catId, subId, brand, carbonSavingPoint
                 );
-                activeProducts.add(entity);
+                ProductEntity existing = database.productDao().getProductById(id);
+                if (existing != null && !ProductDisplayValidator.hasValidImage(entity.getImageUrl())
+                        && ProductDisplayValidator.hasValidImage(existing.getImageUrl())) {
+                    entity.setImageUrl(existing.getImageUrl());
+                }
+                if (ProductDisplayValidator.isDisplayable(entity)) {
+                    activeProducts.add(entity);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Lỗi parse Product " + doc.getId(), e);
             }
@@ -138,12 +159,24 @@ public class FirebaseSyncManager {
 
         // Lưu vào Room
         database.runInTransaction(() -> {
-            // Cập nhật các sản phẩm active
+            if (!inactiveProductIds.isEmpty()) {
+                database.productDao().deleteByIds(inactiveProductIds);
+            }
             for (ProductEntity product : activeProducts) {
                 database.productDao().upsert(product);
             }
         });
         
         Log.d(TAG, "Đã đồng bộ xong " + activeProducts.size() + " products từ Firestore vào Room");
+    }
+
+    private static String firstNonEmpty(String primary, String alternate) {
+        if (primary != null && !primary.trim().isEmpty()) {
+            return primary.trim();
+        }
+        if (alternate != null && !alternate.trim().isEmpty()) {
+            return alternate.trim();
+        }
+        return null;
     }
 }

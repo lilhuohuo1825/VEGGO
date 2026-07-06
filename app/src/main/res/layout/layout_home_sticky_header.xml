@@ -62,9 +62,14 @@
             android:textSize="14sp" />
 
         <FrameLayout
+            android:id="@+id/btnStickyMic"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:background="@drawable/bg_home_mic">
+            android:background="@drawable/bg_home_mic"
+            android:clickable="true"
+            android:contentDescription="@string/chat_voice_input"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
 
             <ImageView
                 android:layout_width="16dp"

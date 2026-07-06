@@ -9,7 +9,9 @@ import android.widget.LinearLayout;
 
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.presentation.common.AssetScreenData;
 
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.Locale;
 public class SmartFridgeActivity extends BaseActivity {
 
     private Uri cameraImageUri = null;
+    private SwipeRefreshLayout fridgeRefreshLayout;
 
     private final ActivityResultLauncher<Intent> addIngredientLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -57,6 +60,14 @@ public class SmartFridgeActivity extends BaseActivity {
         findViewById(R.id.fridgeManualButton).setOnClickListener(v -> openAddIngredient());
         findViewById(R.id.fridgeSuggestionButton).setOnClickListener(v ->
                 startActivity(new Intent(this, FridgeSuggestionsActivity.class))
+        );
+        setupPullToRefresh();
+    }
+
+    private void setupPullToRefresh() {
+        fridgeRefreshLayout = PullToRefreshHelper.wrap(
+                findViewById(R.id.smartFridgeScroll),
+                this::loadInventory
         );
     }
 
@@ -192,7 +203,10 @@ public class SmartFridgeActivity extends BaseActivity {
                 e.printStackTrace();
             }
             final List<com.veggo.app.data.remote.dto.FridgeItemDto> finalItems = fridgeItems;
-            runOnUiThread(() -> bindInventory(finalItems));
+            runOnUiThread(() -> {
+                bindInventory(finalItems);
+                PullToRefreshHelper.finish(fridgeRefreshLayout);
+            });
         }).start();
     }
 
@@ -206,12 +220,17 @@ public class SmartFridgeActivity extends BaseActivity {
 
         for (com.veggo.app.data.remote.dto.FridgeItemDto item : items) {
             try {
+                if (!com.veggo.app.core.notification.FridgeExpiryReminderHelper.isReminderEnabled(item)) {
+                    continue;
+                }
                 if (item.getExpiryDate() != null) {
                     java.util.Date d = format.parse(item.getExpiryDate());
                     if (d != null) {
                         long diff = d.getTime() - now;
                         long daysLeft = diff / (1000L * 60 * 60 * 24);
-                        if (daysLeft >= 0 && daysLeft <= 3) expiringCount++;
+                        if (daysLeft >= 0 && daysLeft <= com.veggo.app.core.notification.FridgeExpiryReminderHelper.REMIND_DAYS_BEFORE) {
+                            expiringCount++;
+                        }
                     }
                 }
             } catch (Exception e) {

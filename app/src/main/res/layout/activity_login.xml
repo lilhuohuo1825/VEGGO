@@ -2,14 +2,17 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:clipChildren="false">
 
     <ImageView
+        android:id="@+id/authCoverImage"
         android:layout_width="match_parent"
         android:layout_height="210dp"
         android:scaleType="centerCrop"
         android:src="@drawable/bg_auth" />
     <View
+        android:id="@+id/authCoverOverlay"
         android:layout_width="match_parent"
         android:layout_height="210dp"
         android:background="#80FFFFFF" />
@@ -19,12 +22,13 @@
         android:layout_height="match_parent">
 
         <LinearLayout
+            android:id="@+id/authScrollContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="26dp"
-            android:paddingEnd="26dp"
             android:paddingTop="95dp"
+            android:paddingEnd="26dp"
             android:paddingBottom="40dp">
 
             <FrameLayout
@@ -175,12 +179,14 @@
                 android:layout_height="48dp"
                 android:layout_marginTop="18dp"
                 android:background="@drawable/bg_button_primary"
+                android:clickable="true"
+                android:focusable="true"
                 android:fontFamily="@font/inter_semibold"
+                android:gravity="center"
                 android:text="Đăng nhập"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:gravity="center"/>
+                android:textSize="15sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"

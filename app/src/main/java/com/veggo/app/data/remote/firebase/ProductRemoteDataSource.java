@@ -7,6 +7,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.veggo.app.core.utils.Constants;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.remote.dto.ProductDto;
 
 import java.util.ArrayList;
@@ -58,8 +59,9 @@ public class ProductRemoteDataSource {
                                     document.get("image_url"),
                                     document.get("image")
                             );
-                            if (imageUrl != null) {
-                                product.setImageUrl(String.valueOf(imageUrl));
+                            String resolved = ProductImageUtils.resolveImageUrl(null, imageUrl);
+                            if (resolved != null) {
+                                product.setImageUrl(resolved);
                             }
                         }
 

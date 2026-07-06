@@ -57,6 +57,7 @@ public class ForgotPasswordActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
+        AuthFormUtils.setupAuthScreen(this);
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
 
@@ -173,23 +174,11 @@ public class ForgotPasswordActivity extends BaseActivity {
         if (otp.length() < 6) {
             return;
         }
-        if (System.currentTimeMillis() > otpExpiresAt) {
-            Toast.makeText(this, "Mã xác thực đã hết hạn. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (otpFailedAttempts >= AuthFormUtils.MAX_OTP_ATTEMPTS) {
-            Toast.makeText(this, "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!otp.equals(currentOtp)) {
-            otpFailedAttempts++;
-            Toast.makeText(this,
-                    "Mã xác thực không đúng (" + otpFailedAttempts + "/" + AuthFormUtils.MAX_OTP_ATTEMPTS + ")",
-                    Toast.LENGTH_SHORT).show();
+        if (verifiedPhone == null || verifiedPhone.isEmpty()) {
             return;
         }
         verifiedOtp = otp;
-        showResetForm();
+        authViewModel.verifyForgotPasswordOtp(verifiedPhone, otp);
     }
 
     private void showForgotOtpAlert() {
@@ -242,13 +231,19 @@ public class ForgotPasswordActivity extends BaseActivity {
 
         authViewModel.getForgotPasswordSuccess().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
-                sendForgotOtpUi();
+                String otp = authViewModel.getForgotOtp().getValue();
+                if (otp == null || otp.trim().isEmpty()) {
+                    Toast.makeText(this, "Không nhận được mã xác thực. Vui lòng thử lại.",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                sendForgotOtpUi(otp.trim());
             }
         });
 
-        authViewModel.getForgotOtp().observe(this, otp -> {
-            if (otp != null && !otp.trim().isEmpty()) {
-                currentOtp = otp.trim();
+        authViewModel.getVerifyForgotOtpSuccess().observe(this, success -> {
+            if (Boolean.TRUE.equals(success)) {
+                showResetForm();
             }
         });
 
@@ -291,10 +286,8 @@ public class ForgotPasswordActivity extends BaseActivity {
         });
     }
 
-    private void sendForgotOtpUi() {
-        if (currentOtp == null || currentOtp.trim().isEmpty()) {
-            currentOtp = AuthFormUtils.randomOtp();
-        }
+    private void sendForgotOtpUi(@NonNull String otp) {
+        currentOtp = otp;
         otpExpiresAt = System.currentTimeMillis() + AuthFormUtils.OTP_TTL_MS;
         otpFailedAttempts = 0;
         tvForgotVerifyPhoneDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "

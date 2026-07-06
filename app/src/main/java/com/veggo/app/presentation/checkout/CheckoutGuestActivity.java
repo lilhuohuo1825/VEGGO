@@ -27,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatRadioButton;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -43,10 +44,15 @@ import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.DeliveryTimeUtils;
+import com.veggo.app.core.utils.WarehouseDistanceUtils;
 import com.veggo.app.data.remote.api.CartApi;
+import com.veggo.app.data.remote.api.AuthApi;
 import com.veggo.app.data.remote.api.OrderApi;
+import com.veggo.app.data.remote.api.PaymentApi;
 import com.veggo.app.data.remote.api.PromotionApi;
 import com.veggo.app.data.remote.api.UserApi;
+import com.veggo.app.data.remote.dto.PaymentUrlDto;
 import com.veggo.app.data.remote.dto.ApiListResponseDto;
 import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.data.remote.dto.OrderDto;
@@ -55,9 +61,12 @@ import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.PromotionTargetDto;
 import com.veggo.app.data.remote.dto.PromotionUsageDto;
 import com.veggo.app.data.remote.dto.UserDto;
+import com.veggo.app.data.remote.request.ForgotPasswordRequest;
+import com.veggo.app.data.remote.request.VerifyGuestOrderOtpRequest;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.presentation.dialog.VeggoDialog;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -77,6 +86,7 @@ public class CheckoutGuestActivity extends BaseActivity {
     private static final long DEFAULT_SHIPPING_FEE = 30_000L;
     private static final String PHONE_REGEX = "^0\\d{9}$";
     private static final String NAME_REGEX = "^[\\p{L}\\s'.-]{2,}$";
+    private static final String REQUIRED_FIELD_ERROR = "Thông tin này không được để trống";
     private static final int OTP_LENGTH = 6;
     private static final int OTP_TTL_MS = 60_000;
     private static final int MAX_OTP_ATTEMPTS = 3;
@@ -84,6 +94,12 @@ public class CheckoutGuestActivity extends BaseActivity {
     private EditText edtGuestName;
     private EditText edtGuestPhone;
     private EditText edtGuestAddressDetail;
+    private TextView tvGuestNameError;
+    private TextView tvGuestPhoneError;
+    private TextView tvGuestProvinceError;
+    private TextView tvGuestDistrictError;
+    private TextView tvGuestWardError;
+    private TextView tvGuestAddressDetailError;
     private TextView tvCheckoutNote;
     private TextView tvCheckoutSubtotal;
     private TextView tvCheckoutVoucherDiscount;
@@ -94,15 +110,19 @@ public class CheckoutGuestActivity extends BaseActivity {
     private TextView tvCheckoutBottomTotal;
     private TextView tvCheckoutCarbonPoints;
     private TextView tvCheckoutSelectedVoucher;
+    private TextView tvFastDeliveryTime;
     private TextView tvScheduleDeliveryTime;
     private TextView tvGuestCity;
     private TextView tvGuestDistrict;
     private TextView tvGuestWard;
+    private TextView tvCheckoutDeliveryOriginAddress;
+    private TextView tvCheckoutDeliveryOriginDistance;
     private View layoutFastDelivery;
     private View layoutScheduleDelivery;
     private AppCompatRadioButton radioPaymentMomo;
     private AppCompatRadioButton radioPaymentBank;
     private AppCompatRadioButton radioPaymentCod;
+    private AppCompatRadioButton radioPaymentVnpay;
     private PaymentItemAdapter paymentItemAdapter;
     private final List<CartDto.CartItemDto> cartItems = new ArrayList<>();
     private final List<VoucherOptionAdapter.VoucherItemUiModel> voucherItems = new ArrayList<>();
@@ -115,8 +135,11 @@ public class CheckoutGuestActivity extends BaseActivity {
     private double currentCarbonPoints;
     private double currentCarbonEmission;
     private int currentProductCount;
-    private VoucherOptionAdapter.VoucherItemUiModel selectedVoucher;
-    private String selectedPaymentMethod = "momo";
+    private VoucherOptionAdapter.VoucherItemUiModel selectedProductVoucher;
+    private VoucherOptionAdapter.VoucherItemUiModel selectedShippingVoucher;
+    private String selectedPaymentMethod = "vnpay";
+    private android.app.Dialog progressDialog;
+    private android.widget.TextView progressTextView;
     private String guestId;
     private boolean buyNowMode;
     private boolean isSearchingVoucher = false;
@@ -133,6 +156,15 @@ public class CheckoutGuestActivity extends BaseActivity {
     private long accountOtpExpiresAt;
     private int accountOtpFailedAttempts;
     private CountDownTimer accountOtpTimer;
+    private CountDownTimer guestOrderOtpTimer;
+    private String currentGuestOrderOtp;
+    private long guestOrderOtpExpiresAt;
+    private int guestOrderOtpFailedAttempts;
+    private boolean guestOrderOtpUsesLocalFallback;
+    private boolean isFastDeliveryMode = true;
+    private DeliveryTimeUtils.DeliveryWindow fastDeliveryWindow;
+    private DeliveryTimeUtils.DeliveryWindow scheduledDeliveryWindow;
+    private final CheckoutWarehouseHelper warehouseHelper = new CheckoutWarehouseHelper();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,6 +178,12 @@ public class CheckoutGuestActivity extends BaseActivity {
         edtGuestName = findViewById(R.id.edtGuestName);
         edtGuestPhone = findViewById(R.id.edtGuestPhone);
         edtGuestAddressDetail = findViewById(R.id.edtGuestAddressDetail);
+        tvGuestNameError = findViewById(R.id.tvGuestNameError);
+        tvGuestPhoneError = findViewById(R.id.tvGuestPhoneError);
+        tvGuestProvinceError = findViewById(R.id.tvGuestProvinceError);
+        tvGuestDistrictError = findViewById(R.id.tvGuestDistrictError);
+        tvGuestWardError = findViewById(R.id.tvGuestWardError);
+        tvGuestAddressDetailError = findViewById(R.id.tvGuestAddressDetailError);
         tvCheckoutNote = findViewById(R.id.tvCheckoutNote);
         tvCheckoutSubtotal = findViewById(R.id.tvCheckoutSubtotal);
         tvCheckoutVoucherDiscount = findViewById(R.id.tvCheckoutVoucherDiscount);
@@ -156,15 +194,19 @@ public class CheckoutGuestActivity extends BaseActivity {
         tvCheckoutBottomTotal = findViewById(R.id.tvCheckoutBottomTotal);
         tvCheckoutCarbonPoints = findViewById(R.id.tvCheckoutCarbonPoints);
         tvCheckoutSelectedVoucher = findViewById(R.id.tvCheckoutSelectedVoucher);
+        tvFastDeliveryTime = findViewById(R.id.tvFastDeliveryTime);
         tvScheduleDeliveryTime = findViewById(R.id.tvScheduleDeliveryTime);
         tvGuestCity = findViewById(R.id.tvGuestCity);
         tvGuestDistrict = findViewById(R.id.tvGuestDistrict);
         tvGuestWard = findViewById(R.id.tvGuestWard);
+        tvCheckoutDeliveryOriginAddress = findViewById(R.id.tvCheckoutDeliveryOriginAddress);
+        tvCheckoutDeliveryOriginDistance = findViewById(R.id.tvCheckoutDeliveryOriginDistance);
         layoutFastDelivery = findViewById(R.id.layoutFastDelivery);
         layoutScheduleDelivery = findViewById(R.id.layoutScheduleDelivery);
         radioPaymentMomo = findViewById(R.id.radioPaymentMomo);
         radioPaymentBank = findViewById(R.id.radioPaymentCard);
         radioPaymentCod = findViewById(R.id.radioPaymentCod);
+        radioPaymentVnpay = findViewById(R.id.radioPaymentVnpay);
 
         RecyclerView rvCheckoutProducts = findViewById(R.id.rvCheckoutProducts);
         rvCheckoutProducts.setLayoutManager(new LinearLayoutManager(this));
@@ -179,7 +221,8 @@ public class CheckoutGuestActivity extends BaseActivity {
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
         }
-        findViewById(R.id.layoutDeliveryOrigin).setOnClickListener(v -> showDeliveryOriginDialog());
+        findViewById(R.id.layoutDeliveryOrigin).setOnClickListener(v ->
+                warehouseHelper.showSelectionDialog(this, this::bindSelectedWarehouseUi, null));
         findViewById(R.id.layoutVoucher).setOnClickListener(v -> showVoucherDialog());
         findViewById(R.id.layoutNote).setOnClickListener(v -> showNoteDialog());
         layoutFastDelivery.setOnClickListener(v -> selectDeliveryMode(true));
@@ -187,9 +230,13 @@ public class CheckoutGuestActivity extends BaseActivity {
             selectDeliveryMode(false);
             showScheduleTimePicker();
         });
-        findViewById(R.id.btnPlaceOrder).setOnClickListener(v -> validatePhoneAndCreateOrder());
+        findViewById(R.id.btnPlaceOrder).setOnClickListener(v -> {
+            findViewById(R.id.btnPlaceOrder).setEnabled(false);
+            validatePhoneAndCreateOrder();
+        });
         restoreSelectedVoucherFromIntent();
         prefetchVoucherData();
+        refreshGuestWarehouse();
         if (buyNowMode) {
             bindBuyNowItem();
         } else {
@@ -208,7 +255,7 @@ public class CheckoutGuestActivity extends BaseActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
                 if (isValidGuestName(s.toString())) {
-                    edtGuestName.setError(null);
+                    showFieldError(tvGuestNameError, "");
                 }
             }
         });
@@ -227,7 +274,10 @@ public class CheckoutGuestActivity extends BaseActivity {
                     existingAccountUser = null;
                     existingAccountVerified = false;
                 }
-                if (s.length() == 10) {
+                String phone = s.toString().trim();
+                if (phone.isEmpty() || phone.matches(PHONE_REGEX)) {
+                    showFieldError(tvGuestPhoneError, "");
+                } else if (phone.length() >= 10) {
                     validateGuestPhoneFormat();
                 }
             }
@@ -237,12 +287,29 @@ public class CheckoutGuestActivity extends BaseActivity {
                 validateGuestAddressDetail();
             }
         });
+        edtGuestAddressDetail.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                String detail = s.toString().trim();
+                if (!detail.isEmpty() && detail.length() >= 5 && detail.matches(".*[\\p{L}\\d].*")) {
+                    showFieldError(tvGuestAddressDetailError, "");
+                }
+                refreshGuestWarehouse();
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         if (accountOtpTimer != null) {
             accountOtpTimer.cancel();
+        }
+        if (guestOrderOtpTimer != null) {
+            guestOrderOtpTimer.cancel();
+        }
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
         }
         super.onDestroy();
     }
@@ -254,13 +321,17 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void setupPaymentMethods() {
-        selectPaymentMethod("momo");
+        selectPaymentMethod("vnpay");
         radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
         radioPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         radioPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
+        if (radioPaymentVnpay != null) {
+            radioPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
+        }
         View layoutPaymentMomo = findViewById(R.id.layoutPaymentMomo);
         View layoutPaymentCod = findViewById(R.id.layoutPaymentCod);
         View layoutPaymentBank = findViewById(R.id.layoutPaymentBank);
+        View layoutPaymentVnpay = findViewById(R.id.layoutPaymentVnpay);
         if (layoutPaymentMomo != null) {
             layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
         }
@@ -270,13 +341,25 @@ public class CheckoutGuestActivity extends BaseActivity {
         if (layoutPaymentBank != null) {
             layoutPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         }
+        if (layoutPaymentVnpay != null) {
+            layoutPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
+        }
     }
 
     private void selectPaymentMethod(String method) {
         selectedPaymentMethod = method;
-        radioPaymentMomo.setChecked("momo".equals(method));
-        radioPaymentBank.setChecked("bank".equals(method));
-        radioPaymentCod.setChecked("cod".equals(method));
+        if (radioPaymentMomo != null) {
+            radioPaymentMomo.setChecked("momo".equals(method));
+        }
+        if (radioPaymentBank != null) {
+            radioPaymentBank.setChecked("bank".equals(method));
+        }
+        if (radioPaymentCod != null) {
+            radioPaymentCod.setChecked("cod".equals(method));
+        }
+        if (radioPaymentVnpay != null) {
+            radioPaymentVnpay.setChecked("vnpay".equals(method));
+        }
     }
 
     private void loadGuestCart() {
@@ -374,14 +457,13 @@ public class CheckoutGuestActivity extends BaseActivity {
         long voucherDiscount = 0;
         long shippingFee = currentSubtotal > 0 ? DEFAULT_SHIPPING_FEE : 0;
         long shippingDiscount = currentSubtotal >= 300_000L ? shippingFee : 0;
-        if (selectedVoucher != null && selectedVoucher.promotion != null) {
-            if (isShippingPromotion(selectedVoucher.promotion)) {
-                shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount,
-                        calculatePromotionDiscount(selectedVoucher.promotion, shippingFee)));
-            } else {
-                voucherDiscount = Math.min(currentSubtotal,
-                        calculatePromotionDiscount(selectedVoucher.promotion, currentSubtotal));
-            }
+        if (selectedProductVoucher != null && selectedProductVoucher.promotion != null) {
+            voucherDiscount = Math.min(currentSubtotal,
+                    calculatePromotionDiscount(selectedProductVoucher.promotion, currentSubtotal));
+        }
+        if (selectedShippingVoucher != null && selectedShippingVoucher.promotion != null) {
+            shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount,
+                    calculatePromotionDiscount(selectedShippingVoucher.promotion, shippingFee)));
         }
         currentVoucherDiscount = voucherDiscount;
         currentShippingFee = shippingFee;
@@ -399,47 +481,31 @@ public class CheckoutGuestActivity extends BaseActivity {
 
     private void validatePhoneAndCreateOrder() {
         if (cartItems.isEmpty()) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             Toast.makeText(this, "Giỏ hàng đang trống", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (selectedVoucher != null) {
-            PromotionTargetDto target = null;
-            for (PromotionTargetDto t : cachedTargets) {
-                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
-                    target = t;
-                    break;
-                }
-            }
-            PromotionUsageDto usage = null;
-            for (PromotionUsageDto u : cachedUsages) {
-                if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
-                    usage = u;
-                    break;
-                }
-            }
-            String reason = disabledReason(selectedVoucher.promotion, target, usage);
-            if (reason != null) {
-                Toast.makeText(this, "Voucher không còn hợp lệ: " + reason, Toast.LENGTH_LONG).show();
-                selectedVoucher = null;
-                updateSelectedVoucherUi();
-                bindPaymentSummary();
-                return;
-            }
+        if (!validateSelectedVouchersBeforeCheckout()) {
+            return;
         }
         if (!validateGuestInputs()) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         String phone = edtGuestPhone.getText().toString().trim();
         if (checkingPhone) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             Toast.makeText(this, "Đang kiểm tra số điện thoại", Toast.LENGTH_SHORT).show();
             return;
         }
         if (phoneRequiresDifferentNumber) {
-            edtGuestPhone.setError("Vui lòng dùng số điện thoại khác");
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            showFieldError(tvGuestPhoneError, "Vui lòng dùng số điện thoại khác");
             edtGuestPhone.requestFocus();
             return;
         }
         if (existingAccountUser != null && phone.equals(checkedPhone)) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             if (existingAccountVerified) {
                 continueCheckoutWithAccount(existingAccountUser);
             } else {
@@ -454,11 +520,12 @@ public class CheckoutGuestActivity extends BaseActivity {
                     checkedPhone = phone;
                     existingAccountUser = response.body();
                     existingAccountVerified = false;
+                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
                     showExistingAccountDialog(response.body(), true);
                 } else {
                     checkedPhone = phone;
                     existingAccountUser = null;
-                    createOrder(guestId, true);
+                    startGuestOrderOtpVerification();
                 }
             }
 
@@ -466,48 +533,366 @@ public class CheckoutGuestActivity extends BaseActivity {
             public void onFailure(Call<UserDto> call, Throwable t) {
                 checkedPhone = phone;
                 existingAccountUser = null;
-                createOrder(guestId, true);
+                startGuestOrderOtpVerification();
             }
         });
     }
 
+    private void startGuestOrderOtpVerification() {
+        String phone = edtGuestPhone.getText().toString().trim();
+        showProgress("Đang gửi mã OTP...");
+        ApiClient.createService(AuthApi.class)
+                .sendGuestOrderOtp(new ForgotPasswordRequest(phone))
+                .enqueue(new Callback<java.util.Map<String, String>>() {
+                    @Override
+                    public void onResponse(
+                            Call<java.util.Map<String, String>> call,
+                            Response<java.util.Map<String, String>> response
+                    ) {
+                        hideProgress();
+                        if (response.isSuccessful() && response.body() != null) {
+                            guestOrderOtpUsesLocalFallback = false;
+                            openGuestOrderOtpDialog(phone, response.body().get("otp"));
+                            return;
+                        }
+                        openGuestOrderOtpWithLocalFallback(phone);
+                    }
+
+                    @Override
+                    public void onFailure(Call<java.util.Map<String, String>> call, Throwable t) {
+                        hideProgress();
+                        openGuestOrderOtpWithLocalFallback(phone);
+                    }
+                });
+    }
+
+    private void openGuestOrderOtpWithLocalFallback(String phone) {
+        guestOrderOtpUsesLocalFallback = true;
+        currentGuestOrderOtp = randomOtp();
+        guestOrderOtpExpiresAt = System.currentTimeMillis() + OTP_TTL_MS;
+        guestOrderOtpFailedAttempts = 0;
+        openGuestOrderOtpDialog(phone, currentGuestOrderOtp);
+    }
+
+    private void openGuestOrderOtpDialog(String phone, @Nullable String otpForSms) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_otp_veggo);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        TextView tvOtpTitle = dialog.findViewById(R.id.tvOtpTitle);
+        TextView otpMessage = dialog.findViewById(R.id.tvOtpMessage);
+        TextView tvOtpError = dialog.findViewById(R.id.tvOtpError);
+        TextView btnCancel = dialog.findViewById(R.id.btnOtpCancel);
+        TextView btnConfirm = dialog.findViewById(R.id.btnOtpConfirm);
+        TextView btnResend = dialog.findViewById(R.id.btnOtpResend);
+        LinearLayout otpRow = dialog.findViewById(R.id.layoutOtpFields);
+        otpRow.removeAllViews();
+        EditText[] otpFields = new EditText[OTP_LENGTH];
+        for (int i = 0; i < OTP_LENGTH; i++) {
+            EditText field = new EditText(this);
+            field.setGravity(android.view.Gravity.CENTER);
+            field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(1)});
+            field.setTextColor(android.graphics.Color.parseColor("#1E1E1E"));
+            field.setTextSize(18f);
+            field.setBackgroundResource(R.drawable.bg_normal);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(38), dp(46));
+            if (i > 0) {
+                params.setMarginStart(dp(6));
+            }
+            otpRow.addView(field, params);
+            otpFields[i] = field;
+        }
+
+        if (tvOtpTitle != null) {
+            tvOtpTitle.setText("Xác thực đặt hàng");
+        }
+        hideOtpError(tvOtpError);
+        otpMessage.setText("Nhập mã OTP 6 số đã gửi đến số điện thoại " + maskPhone(phone) + ".");
+
+        wireOtpFields(otpFields, () -> verifyGuestOrderOtp(phone, dialog, otpFields, tvOtpError, btnResend));
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnConfirm.setOnClickListener(v -> verifyGuestOrderOtp(phone, dialog, otpFields, tvOtpError, btnResend));
+        btnResend.setOnClickListener(v ->
+                resendGuestOrderOtp(phone, otpFields, otpMessage, btnResend, tvOtpError));
+        dialog.setOnDismissListener(dialogInterface -> {
+            if (guestOrderOtpTimer != null) {
+                guestOrderOtpTimer.cancel();
+            }
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+        });
+        dialog.show();
+        startGuestOrderOtpTimer(otpMessage, btnResend);
+        if (otpForSms != null && !otpForSms.trim().isEmpty()) {
+            EmulatorSmsSender.send(
+                    this,
+                    "VEGGO: Ma OTP dat hang cua ban la " + otpForSms.trim()
+                            + ". Ma co hieu luc trong 60 giay."
+            );
+        }
+        otpFields[0].requestFocus();
+    }
+
+    private void resendGuestOrderOtp(
+            String phone,
+            EditText[] otpFields,
+            TextView otpMessage,
+            TextView btnResend,
+            TextView tvOtpError
+    ) {
+        hideOtpError(tvOtpError);
+        clearOtpFields(otpFields);
+        btnResend.setVisibility(View.GONE);
+        if (guestOrderOtpUsesLocalFallback) {
+            currentGuestOrderOtp = randomOtp();
+            guestOrderOtpExpiresAt = System.currentTimeMillis() + OTP_TTL_MS;
+            guestOrderOtpFailedAttempts = 0;
+            EmulatorSmsSender.send(
+                    this,
+                    "VEGGO: Ma OTP dat hang cua ban la " + currentGuestOrderOtp
+                            + ". Ma co hieu luc trong 60 giay."
+            );
+            startGuestOrderOtpTimer(otpMessage, btnResend);
+            otpFields[0].requestFocus();
+            return;
+        }
+        showProgress("Đang gửi lại mã OTP...");
+        ApiClient.createService(AuthApi.class)
+                .sendGuestOrderOtp(new ForgotPasswordRequest(phone))
+                .enqueue(new Callback<java.util.Map<String, String>>() {
+                    @Override
+                    public void onResponse(
+                            Call<java.util.Map<String, String>> call,
+                            Response<java.util.Map<String, String>> response
+                    ) {
+                        hideProgress();
+                        if (response.isSuccessful() && response.body() != null) {
+                            String otp = response.body().get("otp");
+                            if (otp != null && !otp.trim().isEmpty()) {
+                                EmulatorSmsSender.send(
+                                        CheckoutGuestActivity.this,
+                                        "VEGGO: Ma OTP dat hang cua ban la " + otp.trim()
+                                                + ". Ma co hieu luc trong 60 giay."
+                                );
+                            }
+                            startGuestOrderOtpTimer(otpMessage, btnResend);
+                            otpFields[0].requestFocus();
+                            return;
+                        }
+                        guestOrderOtpUsesLocalFallback = true;
+                        currentGuestOrderOtp = randomOtp();
+                        guestOrderOtpExpiresAt = System.currentTimeMillis() + OTP_TTL_MS;
+                        guestOrderOtpFailedAttempts = 0;
+                        EmulatorSmsSender.send(
+                                CheckoutGuestActivity.this,
+                                "VEGGO: Ma OTP dat hang cua ban la " + currentGuestOrderOtp
+                                        + ". Ma co hieu luc trong 60 giay."
+                        );
+                        startGuestOrderOtpTimer(otpMessage, btnResend);
+                        otpFields[0].requestFocus();
+                    }
+
+                    @Override
+                    public void onFailure(Call<java.util.Map<String, String>> call, Throwable t) {
+                        hideProgress();
+                        guestOrderOtpUsesLocalFallback = true;
+                        currentGuestOrderOtp = randomOtp();
+                        guestOrderOtpExpiresAt = System.currentTimeMillis() + OTP_TTL_MS;
+                        guestOrderOtpFailedAttempts = 0;
+                        EmulatorSmsSender.send(
+                                CheckoutGuestActivity.this,
+                                "VEGGO: Ma OTP dat hang cua ban la " + currentGuestOrderOtp
+                                        + ". Ma co hieu luc trong 60 giay."
+                        );
+                        startGuestOrderOtpTimer(otpMessage, btnResend);
+                        otpFields[0].requestFocus();
+                    }
+                });
+    }
+
+    private void verifyGuestOrderOtp(
+            String phone,
+            Dialog dialog,
+            EditText[] fields,
+            TextView tvOtpError,
+            TextView btnResend
+    ) {
+        String otp = getOtpValue(fields);
+        if (otp.length() < OTP_LENGTH) {
+            Toast.makeText(this, "Vui lòng nhập đủ 6 số OTP", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        hideOtpError(tvOtpError);
+        if (guestOrderOtpUsesLocalFallback) {
+            verifyGuestOrderOtpLocally(dialog, fields, tvOtpError, btnResend, otp);
+            return;
+        }
+        showProgress("Đang xác thực mã OTP...");
+        ApiClient.createService(AuthApi.class)
+                .verifyGuestOrderOtp(new VerifyGuestOrderOtpRequest(phone, otp))
+                .enqueue(new Callback<java.util.Map<String, String>>() {
+                    @Override
+                    public void onResponse(
+                            Call<java.util.Map<String, String>> call,
+                            Response<java.util.Map<String, String>> response
+                    ) {
+                        hideProgress();
+                        if (!response.isSuccessful()) {
+                            showOtpError(tvOtpError, resolveGuestOtpErrorMessage(response, "Mã OTP không chính xác"));
+                            if (btnResend != null) {
+                                btnResend.setVisibility(View.VISIBLE);
+                            }
+                            clearOtpFields(fields);
+                            fields[0].requestFocus();
+                            return;
+                        }
+                        dialog.dismiss();
+                        proceedGuestCheckout();
+                    }
+
+                    @Override
+                    public void onFailure(Call<java.util.Map<String, String>> call, Throwable t) {
+                        hideProgress();
+                        showOtpError(tvOtpError, "Mã OTP không chính xác");
+                        if (btnResend != null) {
+                            btnResend.setVisibility(View.VISIBLE);
+                        }
+                        clearOtpFields(fields);
+                        fields[0].requestFocus();
+                    }
+                });
+    }
+
+    private void verifyGuestOrderOtpLocally(
+            Dialog dialog,
+            EditText[] fields,
+            TextView tvOtpError,
+            TextView btnResend,
+            String otp
+    ) {
+        if (System.currentTimeMillis() > guestOrderOtpExpiresAt) {
+            showOtpError(tvOtpError, "Mã xác thực đã hết hạn. Vui lòng gửi lại mã");
+            if (btnResend != null) {
+                btnResend.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
+        if (guestOrderOtpFailedAttempts >= MAX_OTP_ATTEMPTS) {
+            showOtpError(tvOtpError, "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã");
+            if (btnResend != null) {
+                btnResend.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
+        if (!currentGuestOrderOtp.equals(otp)) {
+            guestOrderOtpFailedAttempts++;
+            showOtpError(tvOtpError, "Mã OTP không chính xác");
+            if (btnResend != null) {
+                btnResend.setVisibility(View.VISIBLE);
+            }
+            clearOtpFields(fields);
+            fields[0].requestFocus();
+            return;
+        }
+        dialog.dismiss();
+        proceedGuestCheckout();
+    }
+
+    private String resolveGuestOtpErrorMessage(
+            Response<java.util.Map<String, String>> response,
+            String fallback
+    ) {
+        try {
+            if (response.errorBody() != null) {
+                String body = response.errorBody().string();
+                if (body.contains("Mã OTP không chính xác")) {
+                    return "Mã OTP không chính xác";
+                }
+                if (body.contains("Mã xác thực đã hết hạn")) {
+                    return "Mã xác thực đã hết hạn. Vui lòng gửi lại mã";
+                }
+                if (body.contains("nhập sai quá số lần")) {
+                    return "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã";
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return fallback;
+    }
+
+    private void startGuestOrderOtpTimer(TextView otpMessage, TextView btnResend) {
+        if (guestOrderOtpTimer != null) {
+            guestOrderOtpTimer.cancel();
+        }
+        guestOrderOtpTimer = new CountDownTimer(OTP_TTL_MS, 1000) {
+            @Override public void onTick(long millisUntilFinished) {
+                otpMessage.setText("Nhập mã OTP 6 số. Mã còn hiệu lực trong "
+                        + Math.max(1, millisUntilFinished / 1000) + " giây.");
+            }
+
+            @Override public void onFinish() {
+                otpMessage.setText("Mã xác thực đã hết hạn. Vui lòng gửi lại mã.");
+                btnResend.setVisibility(View.VISIBLE);
+            }
+        }.start();
+    }
+
+    private void showOtpError(@Nullable TextView tvOtpError, String message) {
+        if (tvOtpError == null) {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        tvOtpError.setText(message);
+        tvOtpError.setVisibility(View.VISIBLE);
+    }
+
+    private void hideOtpError(@Nullable TextView tvOtpError) {
+        if (tvOtpError != null) {
+            tvOtpError.setVisibility(View.GONE);
+            tvOtpError.setText("");
+        }
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return phone == null ? "" : phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 3);
+    }
+
+    private void proceedGuestCheckout() {
+        if ("vnpay".equals(selectedPaymentMethod)) {
+            String tempOrderId = "VG" + System.currentTimeMillis();
+            openVnpayPayment(tempOrderId);
+            return;
+        }
+        showProgress("Đang gửi yêu cầu đặt đơn hàng...");
+        createOrder(guestId, true);
+    }
+
     private boolean validateGuestInputs() {
-        if (!validateGuestName()) {
-            return false;
-        }
-        if (!validateGuestPhoneFormat()) {
-            return false;
-        }
-        if (selectedProvince == null || selectedProvince.trim().isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn Tỉnh/Thành phố", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (selectedDistrict == null || selectedDistrict.trim().isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn Quận/Huyện", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (selectedWard == null || selectedWard.trim().isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn Phường/Xã", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (!validateGuestAddressDetail()) {
-            return false;
-        }
-        return true;
+        boolean isValid = true;
+        isValid &= validateGuestName();
+        isValid &= validateGuestPhoneFormat();
+        isValid &= validateGuestProvince();
+        isValid &= validateGuestDistrict();
+        isValid &= validateGuestWard();
+        isValid &= validateGuestAddressDetail();
+        return isValid;
     }
 
     private boolean validateGuestName() {
         String name = edtGuestName.getText().toString().trim().replaceAll("\\s+", " ");
         if (name.isEmpty()) {
-            edtGuestName.setError("Vui lòng nhập họ tên");
-            return false;
+            return showFieldError(tvGuestNameError, REQUIRED_FIELD_ERROR);
         }
         if (!isValidGuestName(name)) {
-            edtGuestName.setError("Họ tên không được chứa số/ký tự lạ");
-            return false;
+            return showFieldError(tvGuestNameError, "Họ tên không được chứa số/ký tự lạ");
         }
-        edtGuestName.setError(null);
-        return true;
+        return showFieldError(tvGuestNameError, "");
     }
 
     private boolean isValidGuestName(String name) {
@@ -518,29 +903,55 @@ public class CheckoutGuestActivity extends BaseActivity {
     private boolean validateGuestPhoneFormat() {
         String phone = edtGuestPhone.getText().toString().trim();
         if (phone.isEmpty()) {
-            edtGuestPhone.setError("Vui lòng nhập số điện thoại");
-            return false;
+            return showFieldError(tvGuestPhoneError, REQUIRED_FIELD_ERROR);
         }
         if (!phone.matches(PHONE_REGEX)) {
-            edtGuestPhone.setError("Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
-            return false;
+            return showFieldError(tvGuestPhoneError,
+                    "Số điện thoại phải bắt đầu bằng 0 và gồm đúng 10 chữ số");
         }
-        edtGuestPhone.setError(null);
-        return true;
+        return showFieldError(tvGuestPhoneError, "");
+    }
+
+    private boolean validateGuestProvince() {
+        if (selectedProvince == null || selectedProvince.trim().isEmpty()) {
+            return showFieldError(tvGuestProvinceError, REQUIRED_FIELD_ERROR);
+        }
+        return showFieldError(tvGuestProvinceError, "");
+    }
+
+    private boolean validateGuestDistrict() {
+        if (selectedDistrict == null || selectedDistrict.trim().isEmpty()) {
+            return showFieldError(tvGuestDistrictError, REQUIRED_FIELD_ERROR);
+        }
+        return showFieldError(tvGuestDistrictError, "");
+    }
+
+    private boolean validateGuestWard() {
+        if (selectedWard == null || selectedWard.trim().isEmpty()) {
+            return showFieldError(tvGuestWardError, REQUIRED_FIELD_ERROR);
+        }
+        return showFieldError(tvGuestWardError, "");
     }
 
     private boolean validateGuestAddressDetail() {
         String detail = edtGuestAddressDetail.getText().toString().trim();
         if (detail.isEmpty()) {
-            edtGuestAddressDetail.setError("Vui lòng nhập địa chỉ giao hàng");
-            return false;
+            return showFieldError(tvGuestAddressDetailError, REQUIRED_FIELD_ERROR);
         }
         if (detail.length() < 5 || !detail.matches(".*[\\p{L}\\d].*")) {
-            edtGuestAddressDetail.setError("Địa chỉ cụ thể chưa hợp lệ");
-            return false;
+            return showFieldError(tvGuestAddressDetailError, "Địa chỉ cụ thể chưa hợp lệ");
         }
-        edtGuestAddressDetail.setError(null);
-        return true;
+        return showFieldError(tvGuestAddressDetailError, "");
+    }
+
+    private boolean showFieldError(TextView errorView, String error) {
+        if (errorView == null) {
+            return error == null || error.isEmpty();
+        }
+        boolean hasError = error != null && !error.isEmpty();
+        errorView.setText(hasError ? error : "");
+        errorView.setVisibility(hasError ? View.VISIBLE : View.GONE);
+        return !hasError;
     }
 
     private void checkGuestPhoneAfterInput() {
@@ -597,7 +1008,8 @@ public class CheckoutGuestActivity extends BaseActivity {
                     public void onCancel() {
                         phoneRequiresDifferentNumber = true;
                         existingAccountVerified = false;
-                        edtGuestPhone.setError("Vui lòng dùng số điện thoại khác");
+                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                        showFieldError(tvGuestPhoneError, "Vui lòng dùng số điện thoại khác");
                         edtGuestPhone.requestFocus();
                     }
                 }
@@ -784,7 +1196,9 @@ public class CheckoutGuestActivity extends BaseActivity {
                 .enqueue(new Callback<OrderDto>() {
                     @Override
                     public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
+                        hideProgress();
                         if (!response.isSuccessful() || response.body() == null) {
+                            findViewById(R.id.btnPlaceOrder).setEnabled(true);
                             Toast.makeText(CheckoutGuestActivity.this, "Không thể tạo đơn hàng", Toast.LENGTH_SHORT).show();
                             return;
                         }
@@ -798,6 +1212,8 @@ public class CheckoutGuestActivity extends BaseActivity {
 
                     @Override
                     public void onFailure(Call<OrderDto> call, Throwable t) {
+                        hideProgress();
+                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
                         Toast.makeText(CheckoutGuestActivity.this, "Không thể tạo đơn hàng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -817,9 +1233,11 @@ public class CheckoutGuestActivity extends BaseActivity {
         payload.put("vatRate", 0);
         payload.put("vatAmount", 0);
         payload.put("totalAmount", currentPaymentTotal);
-        payload.put("code", selectedVoucher != null ? safeText(selectedVoucher.promotionId) : "");
-        payload.put("promotion_id", selectedVoucher != null ? safeText(selectedVoucher.promotionId) : null);
-        payload.put("promotionName", selectedVoucher != null ? safeText(selectedVoucher.title) : "");
+        payload.put("code", selectedProductVoucher != null ? safeText(selectedProductVoucher.promotionId) : "");
+        payload.put("promotion_id", selectedProductVoucher != null ? safeText(selectedProductVoucher.promotionId) : null);
+        payload.put("promotionName", selectedProductVoucher != null ? safeText(selectedProductVoucher.title) : "");
+        payload.put("shippingPromotionId", selectedShippingVoucher != null ? safeText(selectedShippingVoucher.promotionId) : null);
+        payload.put("shippingPromotionName", selectedShippingVoucher != null ? safeText(selectedShippingVoucher.title) : "");
         payload.put("wantInvoice", false);
         payload.put("invoiceInfo", new HashMap<String, Object>());
         payload.put("consultantCode", "");
@@ -841,9 +1259,15 @@ public class CheckoutGuestActivity extends BaseActivity {
         shippingInfo.put("phone", edtGuestPhone.getText().toString().trim());
         shippingInfo.put("email", "");
         shippingInfo.put("address", address);
-        shippingInfo.put("deliveryMethod", "standard");
+        shippingInfo.put("deliveryMethod", isFastDeliveryMode ? "fast" : "scheduled");
+        DeliveryTimeUtils.DeliveryWindow activeWindow = getActiveDeliveryWindow();
+        if (activeWindow != null) {
+            shippingInfo.put("deliveryWindowStart", formatDeliveryTimestamp(activeWindow.start));
+            shippingInfo.put("deliveryWindowEnd", formatDeliveryTimestamp(activeWindow.end));
+            shippingInfo.put("deliveryTimeText", activeWindow.displayText());
+        }
         shippingInfo.put("notes", tvCheckoutNote.getText().toString().trim());
-        shippingInfo.put("warehouse_id", "WH001");
+        shippingInfo.put("warehouse_id", safeText(warehouseHelper.getSelectedWarehouseCode()));
         return shippingInfo;
     }
 
@@ -891,24 +1315,135 @@ public class CheckoutGuestActivity extends BaseActivity {
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_METHOD, selectedPaymentMethod);
         intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_AMOUNT, currentPaymentTotal);
         intent.putExtra(QrPaymentActivity.EXTRA_ITEM_COUNT, currentProductCount);
-        intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE, "VG" + orderId);
+        intent.putExtra(QrPaymentActivity.EXTRA_PAYMENT_CODE,
+                "bank".equals(selectedPaymentMethod) ? orderId : buildPaymentCode());
         intent.putExtra(QrPaymentActivity.EXTRA_ORDER_ID, orderId);
-        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY, "cod".equals(selectedPaymentMethod) || "momo".equals(selectedPaymentMethod));
+        intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY,
+                "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod));
         intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode);
         intent.putExtra(QrPaymentActivity.EXTRA_CUSTOMER_ID, customerId);
         intent.putExtra(QrPaymentActivity.EXTRA_IS_GUEST_ORDER, guestOrder);
         intent.putExtra(QrPaymentActivity.EXTRA_GUEST_PHONE, edtGuestPhone.getText().toString().trim());
         if (!buyNowMode) {
-            ArrayList<String> skus = new ArrayList<>();
-            double[] weights = new double[cartItems.size()];
-            for (int i = 0; i < cartItems.size(); i++) {
-                skus.add(cartItems.get(i).getSku());
-                weights[i] = cartItems.get(i).getSelectedWeight() > 0 ? cartItems.get(i).getSelectedWeight() : 1.0;
-            }
-            intent.putStringArrayListExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_SKUS, skus);
-            intent.putExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_WEIGHTS, weights);
+            intent.putStringArrayListExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_SKUS, selectedCleanupSkus());
+            intent.putExtra(QrPaymentActivity.EXTRA_CART_CLEANUP_WEIGHTS, selectedCleanupWeights());
         }
         startActivity(intent);
+        finish();
+    }
+
+    private void openVnpayPayment(String orderId) {
+        showProgress("Đang tạo liên kết thanh toán VNPay...");
+        new Thread(() -> {
+            try {
+                PaymentApi paymentApi = ApiClient.createService(PaymentApi.class);
+                Map<String, Object> body = new HashMap<>();
+                body.put("orderId", orderId);
+                body.put("amount", currentPaymentTotal);
+                body.put("orderInfo", "Thanh toan don hang VEGGO " + orderId);
+                Response<PaymentUrlDto> resp = paymentApi.createVnpayUrl(body).execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    String paymentUrl = resp.body().getPaymentUrl();
+                    if (paymentUrl == null || paymentUrl.isEmpty()) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                            Toast.makeText(this, "Lỗi: paymentUrl rỗng từ server", Toast.LENGTH_LONG).show();
+                        });
+                        return;
+                    }
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        Intent intent = new Intent(this, VnpayWebViewActivity.class);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_PAYMENT_URL, paymentUrl);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_ORDER_ID, orderId);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_CUSTOMER_ID, guestId);
+                        intent.putExtra(VnpayWebViewActivity.EXTRA_CLEAR_CART, !buyNowMode);
+                        if (!buyNowMode) {
+                            intent.putStringArrayListExtra(VnpayWebViewActivity.EXTRA_CLEANUP_SKUS, selectedCleanupSkus());
+                            intent.putExtra(VnpayWebViewActivity.EXTRA_CLEANUP_WEIGHTS, selectedCleanupWeights());
+                        }
+                        startActivityForResult(intent, 1001);
+                    });
+                } else {
+                    String errBody = "";
+                    try {
+                        if (resp.errorBody() != null) {
+                            errBody = resp.errorBody().string();
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    final String finalErr = errBody;
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                        Toast.makeText(this,
+                                "Không thể tạo URL thanh toán (HTTP " + resp.code() + "): " + finalErr,
+                                Toast.LENGTH_LONG).show();
+                    });
+                }
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    hideProgress();
+                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                    Toast.makeText(this, "Lỗi kết nối VNPAY: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    private void createOrderAfterVnpaySuccess(String orderId) {
+        Map<String, Object> payload = buildOrderPayload(guestId, true);
+        payload.put("orderId", orderId);
+        payload.put("paymentStatus", "paid");
+        ApiClient.createService(OrderApi.class).createOrder(payload).enqueue(new Callback<OrderDto>() {
+            @Override
+            public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
+                hideProgress();
+                String finalId = orderId;
+                if (response.isSuccessful() && response.body() != null) {
+                    finalId = response.body().getOrderId() != null
+                            ? response.body().getOrderId()
+                            : response.body().getId();
+                }
+                openPaymentStep(finalId, guestId, true);
+            }
+
+            @Override
+            public void onFailure(Call<OrderDto> call, Throwable t) {
+                hideProgress();
+                Toast.makeText(CheckoutGuestActivity.this,
+                        "Đã thanh toán nhưng lỗi tạo đơn: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                openPaymentStep(orderId, guestId, true);
+            }
+        });
+    }
+
+    private ArrayList<String> selectedCleanupSkus() {
+        ArrayList<String> skus = new ArrayList<>();
+        for (CartDto.CartItemDto item : cartItems) {
+            skus.add(safeText(item.getSku()));
+        }
+        return skus;
+    }
+
+    private double[] selectedCleanupWeights() {
+        double[] weights = new double[cartItems.size()];
+        for (int i = 0; i < cartItems.size(); i++) {
+            double selectedWeight = cartItems.get(i).getSelectedWeight();
+            weights[i] = selectedWeight > 0 ? selectedWeight : 1.0;
+        }
+        return weights;
+    }
+
+    private String buildPaymentCode() {
+        long now = System.currentTimeMillis() % 1_000_000L;
+        String suffix = guestId == null ? "GUEST" : guestId.replaceAll("[^A-Za-z0-9]", "");
+        if (suffix.length() > 6) {
+            suffix = suffix.substring(suffix.length() - 6);
+        }
+        return String.format(Locale.US, "VG%s%06d", suffix, now);
     }
 
     private void setupAddressPickers() {
@@ -943,6 +1478,9 @@ public class CheckoutGuestActivity extends BaseActivity {
             selectedDistrict = null;
             selectedWard = null;
             updateLocationViews();
+            showFieldError(tvGuestProvinceError, "");
+            showFieldError(tvGuestDistrictError, "");
+            showFieldError(tvGuestWardError, "");
         });
     }
 
@@ -961,6 +1499,8 @@ public class CheckoutGuestActivity extends BaseActivity {
             selectedDistrict = value;
             selectedWard = null;
             updateLocationViews();
+            showFieldError(tvGuestDistrictError, "");
+            showFieldError(tvGuestWardError, "");
         });
     }
 
@@ -975,6 +1515,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         showPicker("Phường/Xã", addressTree.getWards(selectedProvince, selectedDistrict), selectedWard, value -> {
             selectedWard = value;
             updateLocationViews();
+            showFieldError(tvGuestWardError, "");
         });
     }
 
@@ -1015,6 +1556,84 @@ public class CheckoutGuestActivity extends BaseActivity {
         setLocationText(tvGuestCity, selectedProvince, "Tỉnh/Thành phố");
         setLocationText(tvGuestDistrict, selectedDistrict, "Quận/Huyện");
         setLocationText(tvGuestWard, selectedWard, "Phường/Xã");
+        refreshGuestWarehouse();
+    }
+
+    private void refreshGuestWarehouse() {
+        warehouseHelper.updateDeliveryAddress(buildGuestDeliveryAddress(), this::bindSelectedWarehouseUi);
+    }
+
+    private String buildGuestDeliveryAddress() {
+        StringBuilder builder = new StringBuilder();
+        appendAddressPart(builder, edtGuestAddressDetail != null
+                ? edtGuestAddressDetail.getText().toString().trim()
+                : "");
+        appendAddressPart(builder, selectedWard);
+        appendAddressPart(builder, selectedDistrict);
+        appendAddressPart(builder, selectedProvince);
+        return builder.toString();
+    }
+
+    private void appendAddressPart(StringBuilder builder, @Nullable String part) {
+        if (part == null || part.trim().isEmpty()) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append(", ");
+        }
+        builder.append(part.trim());
+    }
+
+    private void bindSelectedWarehouseUi(
+            @NonNull WarehouseDistanceUtils.RankedWarehouse warehouse,
+            @NonNull String distanceText
+    ) {
+        if (warehouse.warehouse == null) {
+            return;
+        }
+        if (tvCheckoutDeliveryOriginAddress != null) {
+            String address = warehouse.warehouse.getAddress();
+            tvCheckoutDeliveryOriginAddress.setText(address == null ? "" : address);
+        }
+        if (tvCheckoutDeliveryOriginDistance != null) {
+            tvCheckoutDeliveryOriginDistance.setText(distanceText);
+        }
+        refreshDeliveryTimes();
+    }
+
+    private void refreshDeliveryTimes() {
+        int travelMinutes = warehouseHelper.getSelectedWarehouseEtaMinutes();
+        fastDeliveryWindow = DeliveryTimeUtils.calculateFastDelivery(travelMinutes);
+        if (tvFastDeliveryTime != null) {
+            tvFastDeliveryTime.setText(fastDeliveryWindow.displayText());
+        }
+
+        DeliveryTimeUtils.DeliveryWindow defaultScheduled = DeliveryTimeUtils.defaultScheduledWindow(travelMinutes);
+        if (scheduledDeliveryWindow == null
+                || !DeliveryTimeUtils.isValidScheduledWindow(scheduledDeliveryWindow.start, travelMinutes)) {
+            scheduledDeliveryWindow = defaultScheduled;
+        }
+        if (tvScheduleDeliveryTime != null) {
+            tvScheduleDeliveryTime.setText(scheduledDeliveryWindow.displayText());
+        }
+    }
+
+    @Nullable
+    private DeliveryTimeUtils.DeliveryWindow getActiveDeliveryWindow() {
+        if (isFastDeliveryMode) {
+            if (fastDeliveryWindow == null) {
+                refreshDeliveryTimes();
+            }
+            return fastDeliveryWindow;
+        }
+        if (scheduledDeliveryWindow == null) {
+            refreshDeliveryTimes();
+        }
+        return scheduledDeliveryWindow;
+    }
+
+    private String formatDeliveryTimestamp(@NonNull Calendar calendar) {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(calendar.getTime());
     }
 
     private void setLocationText(TextView view, String value, String hint) {
@@ -1025,20 +1644,6 @@ public class CheckoutGuestActivity extends BaseActivity {
         }
         view.setText(value);
         view.setTextColor(android.graphics.Color.parseColor("#1E1E1E"));
-    }
-
-    private void showDeliveryOriginDialog() {
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delivery_origin, null, false);
-        TextView tvAddress = dialogView.findViewById(R.id.tvDeliveryOriginAddress);
-        TextView tvDistance = dialogView.findViewById(R.id.tvDeliveryOriginDistance);
-        TextView btnClose = dialogView.findViewById(R.id.btnCloseDeliveryOrigin);
-
-        tvAddress.setText("123 Nguyen Van Linh, P. Tan Phong, Quan 7, TP. Ho Chi Minh");
-        tvDistance.setText("20 km ~ 45 phút");
-
-        BottomSheetDialog dialog = createBottomSheetDialog(dialogView);
-        btnClose.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
     }
 
     private void showVoucherDialog() {
@@ -1055,8 +1660,12 @@ public class CheckoutGuestActivity extends BaseActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvSelectedCount.setText("Đang tải khuyến mãi...");
         tvSelectedTitle.setText("");
-        recyclerView.setAdapter(new VoucherOptionAdapter(new ArrayList<>(), RecyclerView.NO_POSITION, item -> {
-        }));
+        recyclerView.setAdapter(new VoucherOptionAdapter(
+                new ArrayList<>(),
+                null,
+                null,
+                (productVoucher, shippingVoucher) -> { }
+        ));
         loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
 
         BottomSheetDialog dialog = createHalfHeightBottomSheetDialog(dialogView);
@@ -1229,14 +1838,18 @@ public class CheckoutGuestActivity extends BaseActivity {
             return 0;
         });
 
-        int selectedPosition = selectedVoucherPosition();
-        updateVoucherSelectionText(selectedCountView, selectedTitleView);
-        recyclerView.setAdapter(new VoucherOptionAdapter(voucherItems, selectedPosition, item -> {
-            selectedVoucher = item;
-            updateVoucherSelectionText(selectedCountView, selectedTitleView);
-            updateSelectedVoucherUi();
-            bindPaymentSummary();
-        }));
+        recyclerView.setAdapter(new VoucherOptionAdapter(
+                voucherItems,
+                selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
+                (productVoucher, shippingVoucher) -> {
+                    selectedProductVoucher = productVoucher;
+                    selectedShippingVoucher = shippingVoucher;
+                    updateVoucherSelectionText(selectedCountView, selectedTitleView);
+                    updateSelectedVoucherUi();
+                    bindPaymentSummary();
+                }
+        ));
     }
 
     private BottomSheetDialog createHalfHeightBottomSheetDialog(View dialogView) {
@@ -1260,36 +1873,53 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void showScheduleTimePicker() {
-        Calendar calendar = Calendar.getInstance();
-        int initialHour = calendar.get(Calendar.HOUR_OF_DAY);
-        int initialMinute = calendar.get(Calendar.MINUTE);
+        int travelMinutes = warehouseHelper.getSelectedWarehouseEtaMinutes();
+        DeliveryTimeUtils.DeliveryWindow minimumWindow = DeliveryTimeUtils.defaultScheduledWindow(travelMinutes);
+        Calendar minimum = DeliveryTimeUtils.calculateScheduledMinimum(travelMinutes);
+        Calendar initial = scheduledDeliveryWindow != null
+                && DeliveryTimeUtils.isValidScheduledWindow(scheduledDeliveryWindow.start, travelMinutes)
+                ? scheduledDeliveryWindow.start
+                : minimumWindow.start;
+        if (initial.before(minimum)) {
+            initial = minimum;
+        }
+
         TimePickerDialog timePickerDialog = new TimePickerDialog(
                 this,
-                (view, hourOfDay, minute) -> tvScheduleDeliveryTime.setText(buildScheduleText(hourOfDay, minute)),
-                initialHour,
-                initialMinute,
+                (view, hourOfDay, minute) -> {
+                    DeliveryTimeUtils.DeliveryWindow picked =
+                            DeliveryTimeUtils.resolveScheduledPick(travelMinutes, hourOfDay, minute);
+                    if (!DeliveryTimeUtils.isValidScheduledWindow(picked.start, travelMinutes)) {
+                        Toast.makeText(
+                                this,
+                                "Khung giờ phải sau " + DeliveryTimeUtils.formatMinimumScheduleHint(travelMinutes),
+                                Toast.LENGTH_LONG
+                        ).show();
+                        picked = minimumWindow;
+                    }
+                    scheduledDeliveryWindow = picked;
+                    if (tvScheduleDeliveryTime != null) {
+                        tvScheduleDeliveryTime.setText(picked.displayText());
+                    }
+                },
+                initial.get(Calendar.HOUR_OF_DAY),
+                initial.get(Calendar.MINUTE),
                 true
         );
         timePickerDialog.show();
     }
 
     private void selectDeliveryMode(boolean isFastDelivery) {
+        isFastDeliveryMode = isFastDelivery;
         if (layoutFastDelivery != null) {
             layoutFastDelivery.setBackgroundResource(isFastDelivery ? R.drawable.bg_selected : R.drawable.bg_normal);
         }
         if (layoutScheduleDelivery != null) {
             layoutScheduleDelivery.setBackgroundResource(isFastDelivery ? R.drawable.bg_normal : R.drawable.bg_selected);
         }
-    }
-
-    private String buildScheduleText(int startHour, int startMinute) {
-        int endHour = (startHour + 2) % 24;
-        return String.format(Locale.getDefault(),
-                "Dự kiến nhận hàng hôm nay, %02d:%02d - %02d:%02d",
-                startHour,
-                startMinute,
-                endHour,
-                startMinute);
+        if (!isFastDelivery && scheduledDeliveryWindow == null) {
+            refreshDeliveryTimes();
+        }
     }
 
     private void showNoteDialog() {
@@ -1322,9 +1952,11 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void updateSelectedVoucherUi() {
-        if (tvCheckoutSelectedVoucher == null) return;
-        if (selectedVoucher != null) {
-            tvCheckoutSelectedVoucher.setText(selectedVoucher.title);
+        if (tvCheckoutSelectedVoucher == null) {
+            return;
+        }
+        if (countSelectedVouchers() > 0) {
+            tvCheckoutSelectedVoucher.setText(buildSelectedVoucherSummary());
             tvCheckoutSelectedVoucher.setTextColor(getResources().getColor(R.color.primary_main, getTheme()));
         } else {
             tvCheckoutSelectedVoucher.setText("Chọn hoặc nhập mã");
@@ -1332,10 +1964,35 @@ public class CheckoutGuestActivity extends BaseActivity {
         }
     }
 
+    private int countSelectedVouchers() {
+        int count = 0;
+        if (selectedProductVoucher != null) {
+            count++;
+        }
+        if (selectedShippingVoucher != null) {
+            count++;
+        }
+        return count;
+    }
+
+    private String buildSelectedVoucherSummary() {
+        if (selectedProductVoucher != null && selectedShippingVoucher != null) {
+            return selectedProductVoucher.title + " + " + selectedShippingVoucher.title;
+        }
+        if (selectedProductVoucher != null) {
+            return selectedProductVoucher.title;
+        }
+        if (selectedShippingVoucher != null) {
+            return selectedShippingVoucher.title;
+        }
+        return "Chọn hoặc nhập mã";
+    }
+
     private void updateVoucherSelectionText(TextView selectedCountView, TextView selectedTitleView) {
-        if (selectedVoucher != null) {
-            selectedCountView.setText("1 mã đã được chọn");
-            selectedTitleView.setText(selectedVoucher.title);
+        int selectedCount = countSelectedVouchers();
+        if (selectedCount > 0) {
+            selectedCountView.setText(selectedCount + " mã đã được chọn");
+            selectedTitleView.setText(buildSelectedVoucherSummary());
         } else if (voucherItems.isEmpty()) {
             selectedCountView.setText("Không có mã khuyến mãi khả dụng");
             selectedTitleView.setText("");
@@ -1346,21 +2003,83 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void restoreSelectedVoucherFromIntent() {
-        String promotionId = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID);
-        String title = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE);
-        PromotionDto promotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_voucher_dto");
-        if (title != null && !title.trim().isEmpty()) {
-            selectedVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
-                    title,
-                    "",
-                    "",
-                    R.drawable.ic_voucher,
-                    promotionId,
-                    true,
-                    promotion
+        PromotionDto productPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_product_voucher_dto");
+        PromotionDto shippingPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_shipping_voucher_dto");
+        String productId = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_ID);
+        String productTitle = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_PRODUCT_VOUCHER_TITLE);
+        String shippingId = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_ID);
+        String shippingTitle = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_SHIPPING_VOUCHER_TITLE);
+
+        if (productTitle != null && !productTitle.trim().isEmpty()) {
+            selectedProductVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
+                    productTitle, "", "", R.drawable.ic_voucher, productId, true, productPromotion
             );
         }
+        if (shippingTitle != null && !shippingTitle.trim().isEmpty()) {
+            selectedShippingVoucher = new VoucherOptionAdapter.VoucherItemUiModel(
+                    shippingTitle, "", "", R.drawable.ic_voucher, shippingId, true, shippingPromotion
+            );
+        }
+
+        String legacyId = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_ID);
+        String legacyTitle = getIntent().getStringExtra(CheckoutActivity.EXTRA_SELECTED_VOUCHER_TITLE);
+        PromotionDto legacyPromotion = (PromotionDto) getIntent().getSerializableExtra("extra_selected_voucher_dto");
+        if (legacyTitle != null && !legacyTitle.trim().isEmpty()
+                && selectedProductVoucher == null && selectedShippingVoucher == null) {
+            VoucherOptionAdapter.VoucherItemUiModel legacy = new VoucherOptionAdapter.VoucherItemUiModel(
+                    legacyTitle, "", "", R.drawable.ic_voucher, legacyId, true, legacyPromotion
+            );
+            if (legacy.shipping) {
+                selectedShippingVoucher = legacy;
+            } else {
+                selectedProductVoucher = legacy;
+            }
+        }
         updateSelectedVoucherUi();
+    }
+
+    private boolean validateSelectedVouchersBeforeCheckout() {
+        String invalidReason = validateVoucherSelection(selectedProductVoucher);
+        if (invalidReason != null) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            Toast.makeText(this, "Voucher sản phẩm không còn hợp lệ: " + invalidReason, Toast.LENGTH_LONG).show();
+            selectedProductVoucher = null;
+            updateSelectedVoucherUi();
+            bindPaymentSummary();
+            return false;
+        }
+        invalidReason = validateVoucherSelection(selectedShippingVoucher);
+        if (invalidReason != null) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            Toast.makeText(this, "Voucher vận chuyển không còn hợp lệ: " + invalidReason, Toast.LENGTH_LONG).show();
+            selectedShippingVoucher = null;
+            updateSelectedVoucherUi();
+            bindPaymentSummary();
+            return false;
+        }
+        return true;
+    }
+
+    @Nullable
+    private String validateVoucherSelection(@Nullable VoucherOptionAdapter.VoucherItemUiModel voucher) {
+        if (voucher == null || voucher.promotion == null) {
+            return null;
+        }
+        PromotionTargetDto target = null;
+        for (PromotionTargetDto t : cachedTargets) {
+            if (voucher.promotionId != null && voucher.promotionId.equals(t.getPromotionId())) {
+                target = t;
+                break;
+            }
+        }
+        PromotionUsageDto usage = null;
+        for (PromotionUsageDto u : cachedUsages) {
+            if (voucher.promotionId != null && voucher.promotionId.equals(u.getPromotionId())) {
+                usage = u;
+                break;
+            }
+        }
+        return disabledReason(voucher.promotion, target, usage);
     }
 
     private void prefetchVoucherData() {
@@ -1391,52 +2110,20 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private void validateAppliedVoucher() {
-        if (selectedVoucher == null || selectedVoucher.promotion == null) {
-            return;
+        boolean changed = false;
+        if (validateVoucherSelection(selectedProductVoucher) != null) {
+            selectedProductVoucher = null;
+            changed = true;
         }
-
-        PromotionTargetDto target = null;
-        for (PromotionTargetDto t : cachedTargets) {
-            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(t.getPromotionId())) {
-                target = t;
-                break;
-            }
+        if (validateVoucherSelection(selectedShippingVoucher) != null) {
+            selectedShippingVoucher = null;
+            changed = true;
         }
-
-        PromotionUsageDto usage = null;
-        for (PromotionUsageDto u : cachedUsages) {
-            if (selectedVoucher.promotionId != null && selectedVoucher.promotionId.equals(u.getPromotionId())) {
-                usage = u;
-                break;
-            }
-        }
-
-        String reason = disabledReason(selectedVoucher.promotion, target, usage);
-        if (reason != null) {
-            selectedVoucher = null;
+        if (changed) {
             updateSelectedVoucherUi();
             bindPaymentSummary();
             Toast.makeText(this, "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
         }
-    }
-
-    private int selectedVoucherPosition() {
-        if (selectedVoucher == null || selectedVoucher.promotionId == null) {
-            return RecyclerView.NO_POSITION;
-        }
-        for (int i = 0; i < voucherItems.size(); i++) {
-            VoucherOptionAdapter.VoucherItemUiModel item = voucherItems.get(i);
-            if (item.enabled && selectedVoucher.promotionId.equals(item.promotionId)) {
-                selectedVoucher = item;
-                updateSelectedVoucherUi();
-                bindPaymentSummary();
-                return i;
-            }
-        }
-        selectedVoucher = null;
-        updateSelectedVoucherUi();
-        bindPaymentSummary();
-        return RecyclerView.NO_POSITION;
     }
 
     private String disabledReason(PromotionDto promotion, PromotionTargetDto target, PromotionUsageDto usage) {
@@ -1714,6 +2401,61 @@ public class CheckoutGuestActivity extends BaseActivity {
 
     private String safeText(String preferred, String fallback) {
         return preferred == null || preferred.trim().isEmpty() ? fallback : preferred;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001) {
+            if (resultCode == RESULT_OK) {
+                showProgress("Đang đồng bộ và khởi tạo đơn hàng VNPay...");
+                String tempOrderId = data != null ? data.getStringExtra("orderId") : ("VG" + System.currentTimeMillis());
+                createOrderAfterVnpaySuccess(tempOrderId);
+            } else {
+                findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                Toast.makeText(this, "Thanh toán VNPay thất bại hoặc bị hủy", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void showProgress(String message) {
+        if (progressDialog == null) {
+            progressDialog = new android.app.Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+            android.widget.RelativeLayout rootLayout = new android.widget.RelativeLayout(this);
+            rootLayout.setBackgroundColor(android.graphics.Color.parseColor("#99000000"));
+            android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+            container.setOrientation(android.widget.LinearLayout.VERTICAL);
+            container.setGravity(android.view.Gravity.CENTER);
+            android.widget.ProgressBar progressBar = new android.widget.ProgressBar(this);
+            progressTextView = new android.widget.TextView(this);
+            progressTextView.setText(message);
+            progressTextView.setTextColor(android.graphics.Color.WHITE);
+            progressTextView.setTextSize(16);
+            progressTextView.setGravity(android.view.Gravity.CENTER);
+            progressTextView.setPadding(30, 32, 30, 0);
+            container.addView(progressBar);
+            container.addView(progressTextView);
+            android.widget.RelativeLayout.LayoutParams layoutParams = new android.widget.RelativeLayout.LayoutParams(
+                    android.widget.RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.RelativeLayout.LayoutParams.WRAP_CONTENT
+            );
+            layoutParams.addRule(android.widget.RelativeLayout.CENTER_IN_PARENT);
+            rootLayout.addView(container, layoutParams);
+            progressDialog.setContentView(rootLayout);
+            progressDialog.setCancelable(false);
+        }
+        if (progressTextView != null) {
+            progressTextView.setText(message);
+        }
+        if (!progressDialog.isShowing()) {
+            progressDialog.show();
+        }
+    }
+
+    private void hideProgress() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
     }
 
     private interface PickerCallback {

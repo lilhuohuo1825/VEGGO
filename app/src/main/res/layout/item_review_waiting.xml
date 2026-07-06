@@ -31,12 +31,12 @@
             android:id="@+id/reviewOrderStatus"
             android:layout_width="wrap_content"
             android:layout_height="24dp"
-            android:background="@drawable/bg_order_pending_chip"
+            android:background="@drawable/bg_order_cancelled_chip"
             android:fontFamily="@font/inter_regular"
             android:gravity="center"
             android:minWidth="110dp"
             android:text="@string/reviews_status_waiting"
-            android:textColor="@color/order_status_pending"
+            android:textColor="@color/order_status_unreview"
             android:textSize="@dimen/text_xs" />
     </LinearLayout>
 

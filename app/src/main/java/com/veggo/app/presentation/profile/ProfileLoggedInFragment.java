@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -56,9 +57,6 @@ public class ProfileLoggedInFragment extends BaseFragment {
         view.findViewById(R.id.profileSmartFridgeRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), SmartFridgeActivity.class))
         );
-        view.findViewById(R.id.profileTasteRow).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), TastePreferencesActivity.class))
-        );
         view.findViewById(R.id.profileNotificationsRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PostNotificationsActivity.class))
         );
@@ -105,10 +103,14 @@ public class ProfileLoggedInFragment extends BaseFragment {
                 user = buildUserFromPreferences(appPreferences);
             }
             AssetModels.User profileUser = user;
+            AssetScreenData.Snapshot profileSnapshot = snapshot;
             if (!isAdded()) {
                 return;
             }
-            requireActivity().runOnUiThread(() -> bindProfile(view, profileUser, appPreferences));
+            requireActivity().runOnUiThread(() -> {
+                bindProfile(view, profileUser, appPreferences);
+                bindOrderStatusBadges(view, profileSnapshot);
+            });
         }).start();
     }
 
@@ -166,6 +168,50 @@ public class ProfileLoggedInFragment extends BaseFragment {
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .circleCrop()
                 .into(avatarView);
+    }
+
+    private void bindOrderStatusBadges(@NonNull View view, @NonNull AssetScreenData.Snapshot snapshot) {
+        updateOrderBadge(view.findViewById(R.id.profileOrderPendingBadge),
+                AssetScreenData.filterOrders(snapshot, "pending").size());
+        updateOrderBadge(view.findViewById(R.id.profileOrderShippingBadge),
+                AssetScreenData.filterOrders(snapshot, "shipping").size());
+        updateOrderBadge(view.findViewById(R.id.profileOrderDeliveredBadge),
+                AssetScreenData.filterOrders(snapshot, "delivered").size());
+        updateOrderBadge(view.findViewById(R.id.profileOrderCancelledBadge),
+                AssetScreenData.filterOrders(snapshot, "cancelled").size());
+    }
+
+    private void updateOrderBadge(@Nullable TextView badgeView, int count) {
+        if (badgeView == null) {
+            return;
+        }
+        if (count <= 0) {
+            badgeView.setVisibility(View.GONE);
+            return;
+        }
+        badgeView.setText(count > 99 ? "99+" : String.valueOf(count));
+        badgeView.setVisibility(View.VISIBLE);
+        ViewGroup.LayoutParams params = badgeView.getLayoutParams();
+        if (params != null && count > 9) {
+            params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            int horizontalPadding = dp(4);
+            int verticalPadding = dp(1);
+            badgeView.setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
+            badgeView.setMinWidth(dp(18));
+            badgeView.setMinHeight(dp(18));
+        } else if (params != null) {
+            params.width = dp(18);
+            params.height = dp(18);
+            badgeView.setPadding(0, 0, 0, 0);
+            badgeView.setMinWidth(0);
+            badgeView.setMinHeight(0);
+        }
+        badgeView.requestLayout();
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void showLogoutDialog() {

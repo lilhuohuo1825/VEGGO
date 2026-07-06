@@ -72,11 +72,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/inter_semibold"
+            android:fontFamily="@font/inter_regular"
             android:text="@string/orders_view_more"
-            android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_sm"
-            android:textStyle="bold" />
+            android:textColor="@color/neutral_80"
+            android:textSize="@dimen/text_sm" />
 
         <TextView
             android:id="@+id/orderReturnRefundButton"

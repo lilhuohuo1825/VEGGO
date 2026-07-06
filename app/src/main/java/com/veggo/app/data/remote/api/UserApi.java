@@ -33,6 +33,8 @@ public interface UserApi {
             @Part("name") RequestBody name,
             @Part("phone") RequestBody phone,
             @Part("email") RequestBody email,
+            @Part("birthday") RequestBody birthday,
+            @Part("gender") RequestBody gender,
             @Part MultipartBody.Part avatar
     );
 

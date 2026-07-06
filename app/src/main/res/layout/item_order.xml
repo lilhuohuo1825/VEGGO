@@ -148,7 +148,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter_regular"
             android:text="@string/orders_view_more"
-            android:textColor="@color/neutral_50"
+            android:textColor="@color/neutral_80"
             android:textSize="@dimen/text_xs" />
 
         <ImageView

@@ -33,6 +33,11 @@ public class OrderDto {
     private Map<String, Object> shippingInfo;
     private String warehouseId;
     private String createdAt;
+    private String code;
+    @SerializedName("promotion_id")
+    private String promotionId;
+    @SerializedName("shippingPromotionId")
+    private String shippingPromotionId;
     @SerializedName("CarbonPointEarned")
     private int carbonPointEarned;
     @SerializedName("TotalCarbonEmission")
@@ -86,6 +91,9 @@ public class OrderDto {
 
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public String getCode() { return code; }
+    public String getPromotionId() { return promotionId; }
+    public String getShippingPromotionId() { return shippingPromotionId; }
     public int getCarbonPointEarned() { return carbonPointEarned; }
     public double getTotalCarbonEmission() { return totalCarbonEmission; }
 

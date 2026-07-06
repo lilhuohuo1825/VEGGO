@@ -12,125 +12,150 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="88dp"
-        android:gravity="center_vertical"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <CheckBox
-            android:id="@+id/orderDetailProductCheckBox"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+        <FrameLayout
+            android:id="@+id/orderDetailProductCheckBoxContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="88dp"
             android:layout_marginEnd="@dimen/spacing_sm"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true"
-            android:button="@null"
-            android:background="@drawable/selector_checkbox" />
+            android:visibility="gone">
 
-        <ImageView
-            android:id="@+id/orderDetailProductImage"
-            android:layout_width="78dp"
-            android:layout_height="78dp"
-            android:background="@drawable/bg_order_product_thumb"
-            android:contentDescription="@string/orders_sample_product_name"
-            android:padding="@dimen/spacing_sm"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_vegetable" />
+            <CheckBox
+                android:id="@+id/orderDetailProductCheckBox"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true"
+                android:button="@null"
+                android:background="@drawable/selector_checkbox" />
+        </FrameLayout>
 
         <LinearLayout
+            android:id="@+id/orderDetailProductClickArea"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/spacing_md"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/orderDetailProductName"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_semibold"
-                android:text="@string/orders_sample_product_name"
-                android:textColor="@color/neutral_100"
-                android:textSize="@dimen/text_sm"
-                android:textStyle="bold" />
+                android:layout_height="88dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/orderDetailProductVariant"
+                <ImageView
+                    android:id="@+id/orderDetailProductImage"
+                    android:layout_width="78dp"
+                    android:layout_height="78dp"
+                    android:background="@drawable/bg_order_product_thumb"
+                    android:contentDescription="@string/orders_sample_product_name"
+                    android:padding="@dimen/spacing_sm"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_vegetable" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_md"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/orderDetailProductName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="@string/orders_sample_product_name"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/orderDetailProductVariant"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="@string/orders_sample_variant"
+                        android:textColor="@color/neutral_70"
+                        android:textSize="@dimen/text_xs" />
+
+                    <TextView
+                        android:id="@+id/orderDetailProductQuantity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:fontFamily="@font/inter_regular"
+                        android:text="@string/order_detail_quantity_two"
+                        android:textColor="@color/neutral_70"
+                        android:textSize="@dimen/text_xs" />
+
+                    <TextView
+                        android:id="@+id/orderDetailProductAddedBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Đã thêm vào tủ lạnh"
+                        android:textColor="@color/primary_main"
+                        android:textSize="10sp"
+                        android:background="@drawable/bg_order_delivered_chip"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/orderDetailProductPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="@string/orders_sample_price"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/orders_sample_variant"
-                android:textColor="@color/neutral_70"
-                android:textSize="@dimen/text_xs" />
+                android:layout_height="1dp"
+                android:background="@color/neutral_30" />
 
-            <TextView
-                android:id="@+id/orderDetailProductQuantity"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_xs"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/order_detail_quantity_two"
-                android:textColor="@color/neutral_70"
-                android:textSize="@dimen/text_xs" />
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/orderDetailProductAddedBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_xs"
-                android:fontFamily="@font/inter_medium"
-                android:text="Đã thêm vào tủ lạnh"
-                android:textColor="@color/primary_main"
-                android:textSize="10sp"
-                android:background="@drawable/bg_order_delivered_chip"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                android:visibility="gone" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_regular"
+                    android:gravity="center"
+                    android:text="@string/order_detail_product_total"
+                    android:textColor="@color/neutral_80"
+                    android:textSize="@dimen/text_xs" />
+
+                <TextView
+                    android:id="@+id/orderDetailProductTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="@string/order_detail_product_total_one"
+                    android:textColor="@color/primary_main"
+                    android:textSize="@dimen/text_sm"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/orderDetailProductPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter_semibold"
-            android:text="@string/orders_sample_price"
-            android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_sm"
-            android:textStyle="bold" />
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/neutral_30" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="36dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="@font/inter_regular"
-            android:gravity="center"
-            android:text="@string/order_detail_product_total"
-            android:textColor="@color/neutral_80"
-            android:textSize="@dimen/text_xs" />
-
-        <TextView
-            android:id="@+id/orderDetailProductTotal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter_semibold"
-            android:text="@string/order_detail_product_total_one"
-            android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm"
-            android:textStyle="bold" />
-    </LinearLayout>
 </LinearLayout>

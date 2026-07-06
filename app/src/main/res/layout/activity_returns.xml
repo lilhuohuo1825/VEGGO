@@ -124,7 +124,7 @@
                         android:gravity="center"
                         android:maxLines="1"
                         android:text="@string/returns_tab_pending"
-                        android:textColor="@color/danger_main"
+                        android:textColor="@color/primary_main"
                         android:textSize="@dimen/text_sm"
                         android:textStyle="bold" />
 

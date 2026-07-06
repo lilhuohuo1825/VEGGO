@@ -1,6 +1,7 @@
 package com.veggo.app.domain.model;
 
 import com.google.gson.annotations.SerializedName;
+import com.veggo.app.core.utils.ProductImageUtils;
 import java.util.List;
 
 public class Product {
@@ -13,7 +14,7 @@ public class Product {
     private final String sku;
     private final long price;
 
-    @SerializedName(value = "base_price", alternate = {"originalPrice"})
+    @SerializedName("originalPrice")
     private final long originalPrice;
 
     @SerializedName(value = "imageUrl")
@@ -131,9 +132,22 @@ public class Product {
         return originalPrice > price && originalPrice > 0;
     }
 
+    public Product withPricing(long price, long originalPrice) {
+        return new Product(
+                id, name, sku, price, originalPrice, imageUrl, weightOptions, weight, rating, reviewCount, soldCount,
+                description, ingredients, usage, storage, producer, responsibleOrg, safetyWarning,
+                manufactureDate, expiryDate, origin, condition, fatContent, categoryId, subcategoryId, brand, carbonSavingPoint
+        );
+    }
+
     public String getImageUrl() {
-        if (imageUrl != null) return imageUrl;
-        if (image != null && !image.isEmpty()) return image.get(0);
+        String resolved = ProductImageUtils.normalizeUrl(imageUrl);
+        if (resolved != null) {
+            return resolved;
+        }
+        if (image != null && !image.isEmpty()) {
+            return ProductImageUtils.normalizeUrl(image.get(0));
+        }
         return null;
     }
 

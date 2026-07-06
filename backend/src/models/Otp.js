@@ -9,6 +9,11 @@ const otpSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  purpose: {
+    type: String,
+    default: 'forgot_password',
+    index: true
+  },
   otp: {
     type: String,
     required: true
@@ -31,5 +36,6 @@ const otpSchema = new mongoose.Schema({
 
 // TTL index to automatically delete expired OTPs
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+otpSchema.index({ phone: 1, purpose: 1 }, { unique: true });
 
 module.exports = mongoose.model('Otp', otpSchema);

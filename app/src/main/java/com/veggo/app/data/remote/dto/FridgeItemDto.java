@@ -18,6 +18,7 @@ public class FridgeItemDto {
     private String locationCode;
     private String purchaseDate;
     private String expiryDate;
+    private Boolean remindBeforeExpiry;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -45,4 +46,10 @@ public class FridgeItemDto {
     public void setPurchaseDate(String purchaseDate) { this.purchaseDate = purchaseDate; }
     public String getExpiryDate() { return expiryDate; }
     public void setExpiryDate(String expiryDate) { this.expiryDate = expiryDate; }
+    public boolean isRemindBeforeExpiry() {
+        return remindBeforeExpiry == null || remindBeforeExpiry;
+    }
+    public void setRemindBeforeExpiry(boolean remindBeforeExpiry) {
+        this.remindBeforeExpiry = remindBeforeExpiry;
+    }
 }

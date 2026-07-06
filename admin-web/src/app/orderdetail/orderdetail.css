@@ -3627,3 +3627,30 @@
 ::host-context(.dark-mode) .reject-refund-btn-cancel:hover {
   background: #6b7280;
 }
+
+.order-source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order-source-recurring {
+  background: #fff7d6;
+  color: #9a6700;
+  border: 1px solid #f2d675;
+}
+
+.order-source-standard {
+  background: #eef6ff;
+  color: #1d4f91;
+  border: 1px solid #bfd7ff;
+}
+
+.order-source-fast {
+  background: #eafaf1;
+  color: #1f7a45;
+  border: 1px solid #b8e6cb;
+}

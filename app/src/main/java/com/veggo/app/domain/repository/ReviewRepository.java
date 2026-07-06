@@ -10,4 +10,5 @@ public interface ReviewRepository {
     }
 
     void getReviewsBySku(String sku, Callback<List<Review>> callback);
+    void toggleReviewLike(String sku, String reviewId, String customerId, Callback<List<Review>> callback);
 }

@@ -17,7 +17,9 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
@@ -46,11 +48,20 @@ public class PersonalInfoActivity extends BaseActivity {
     private EditText phoneInput;
     private EditText emailInput;
     private EditText birthdayInput;
-    private TextView saveButton;
+    private TextView actionButton;
+    private TextView logoutButton;
     private ImageView avatarView;
     private TextView changeAvatarButton;
+    private TextView changePhoneButton;
     private CheckBox maleCheckBox;
     private CheckBox femaleCheckBox;
+    private View genderEditContainer;
+    private TextView genderDisplay;
+    private View birthdayEditContainer;
+    private TextView birthdayDisplay;
+    private ImageView birthdayIcon;
+    private View layoutGenderMale;
+    private View layoutGenderFemale;
 
     private TextView tvNameError;
     private TextView tvPhoneError;
@@ -64,6 +75,22 @@ public class PersonalInfoActivity extends BaseActivity {
 
     private ActivityResultLauncher<String> galleryPicker;
     private ActivityResultLauncher<Void> cameraPicker;
+
+    private boolean isEditMode = false;
+    @Nullable
+    private ProfileSnapshot savedSnapshot;
+
+    private static final class ProfileSnapshot {
+        private String name;
+        private String phone;
+        private String email;
+        private String birthday;
+        private String gender;
+        @Nullable
+        private String avatarUrl;
+        @Nullable
+        private File pendingAvatarFile;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,16 +108,33 @@ public class PersonalInfoActivity extends BaseActivity {
         loadProfile();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isEditMode) {
+            loadProfile();
+        }
+    }
+
     private void bindViews() {
         nameInput = findViewById(R.id.personalInfoNameInput);
         phoneInput = findViewById(R.id.personalInfoPhoneInput);
         emailInput = findViewById(R.id.personalInfoEmailInput);
         birthdayInput = findViewById(R.id.personalInfoBirthdayInput);
-        saveButton = findViewById(R.id.personalInfoSaveButton);
+        actionButton = findViewById(R.id.personalInfoSaveButton);
+        logoutButton = findViewById(R.id.personalInfoLogoutButton);
         avatarView = findViewById(R.id.personalInfoAvatarImage);
         changeAvatarButton = findViewById(R.id.personalInfoChangeAvatarButton);
+        changePhoneButton = findViewById(R.id.personalInfoChangePhoneButton);
         maleCheckBox = findViewById(R.id.personalInfoGenderMaleCheck);
         femaleCheckBox = findViewById(R.id.personalInfoGenderFemaleCheck);
+        genderEditContainer = findViewById(R.id.personalInfoGenderEditContainer);
+        genderDisplay = findViewById(R.id.personalInfoGenderDisplay);
+        birthdayEditContainer = findViewById(R.id.personalInfoBirthdayEditContainer);
+        birthdayDisplay = findViewById(R.id.personalInfoBirthdayDisplay);
+        birthdayIcon = findViewById(R.id.personalInfoBirthdayIcon);
+        layoutGenderMale = findViewById(R.id.layoutGenderMale);
+        layoutGenderFemale = findViewById(R.id.layoutGenderFemale);
 
         tvNameError = findViewById(R.id.personalInfoNameError);
         tvPhoneError = findViewById(R.id.personalInfoPhoneError);
@@ -103,8 +147,10 @@ public class PersonalInfoActivity extends BaseActivity {
         com.veggo.app.core.utils.DatePickerHelper.setupDatePicker(
                 this,
                 birthdayInput,
-                findViewById(R.id.personalInfoBirthdayIcon)
+                birthdayIcon
         );
+
+        setEditMode(false);
     }
 
     private void setupAvatarPickers() {
@@ -114,14 +160,26 @@ public class PersonalInfoActivity extends BaseActivity {
 
     private void setupActions() {
         findViewById(R.id.personalInfoBackButton).setOnClickListener(v -> finish());
-        findViewById(R.id.personalInfoLogoutButton).setOnClickListener(v -> showLogoutDialog());
-        findViewById(R.id.personalInfoChangePhoneButton).setOnClickListener(v -> showChangePhoneDialog());
+        logoutButton.setOnClickListener(v -> {
+            if (isEditMode) {
+                cancelEdit();
+            } else {
+                showLogoutDialog();
+            }
+        });
+        changePhoneButton.setOnClickListener(v -> showChangePhoneDialog());
         findViewById(R.id.personalInfoChangePasswordButton).setOnClickListener(v -> {
             Intent intent = new Intent(this, com.veggo.app.presentation.auth.ForgotPasswordActivity.class);
             intent.putExtra(com.veggo.app.presentation.auth.ForgotPasswordActivity.EXTRA_SCREEN_TITLE, "Thay đổi mật khẩu");
             startActivity(intent);
         });
-        saveButton.setOnClickListener(v -> saveProfile());
+        actionButton.setOnClickListener(v -> {
+            if (isEditMode) {
+                saveProfile();
+            } else {
+                enterEditMode();
+            }
+        });
 
         if (changeAvatarButton != null) {
             changeAvatarButton.setOnClickListener(v -> showAvatarSourceDialog());
@@ -139,13 +197,13 @@ public class PersonalInfoActivity extends BaseActivity {
                 maleCheckBox.setChecked(false);
             }
         });
-        findViewById(R.id.layoutGenderMale).setOnClickListener(v -> {
-            if (!maleCheckBox.isChecked()) {
+        layoutGenderMale.setOnClickListener(v -> {
+            if (isEditMode && !maleCheckBox.isChecked()) {
                 maleCheckBox.setChecked(true);
             }
         });
-        findViewById(R.id.layoutGenderFemale).setOnClickListener(v -> {
-            if (!femaleCheckBox.isChecked()) {
+        layoutGenderFemale.setOnClickListener(v -> {
+            if (isEditMode && !femaleCheckBox.isChecked()) {
                 femaleCheckBox.setChecked(true);
             }
         });
@@ -182,8 +240,10 @@ public class PersonalInfoActivity extends BaseActivity {
 
         viewModel.getLoading().observe(this, isLoading -> {
             boolean loading = Boolean.TRUE.equals(isLoading);
-            saveButton.setEnabled(!loading);
-            saveButton.setAlpha(loading ? 0.6f : 1f);
+            actionButton.setEnabled(!loading);
+            actionButton.setAlpha(loading ? 0.6f : 1f);
+            logoutButton.setEnabled(!loading);
+            logoutButton.setAlpha(loading ? 0.6f : 1f);
         });
 
         viewModel.getProfile().observe(this, this::onProfileUpdated);
@@ -193,7 +253,7 @@ public class PersonalInfoActivity extends BaseActivity {
                 return;
             }
             if (Boolean.TRUE.equals(viewModel.getRetryableError().getValue())) {
-                Snackbar.make(saveButton, message, Snackbar.LENGTH_LONG)
+                Snackbar.make(actionButton, message, Snackbar.LENGTH_LONG)
                         .setAction(R.string.consultation_submit_retry, v -> saveProfile())
                         .show();
             } else {
@@ -219,21 +279,209 @@ public class PersonalInfoActivity extends BaseActivity {
             name = "Khách hàng " + user.customerId;
         }
 
-        setText(nameInput, name);
-        setText(phoneInput, user.phone);
-        setText(emailInput, user.email);
-        setText(findViewById(R.id.personalInfoBirthdayInput), user.birthDay);
+        setFieldText(nameInput, name);
+        setFieldText(phoneInput, user.phone);
+        setFieldText(emailInput, user.email);
+        setFieldText(birthdayInput, user.birthDay);
         bindGender(user.gender);
+        updateGenderDisplay();
+        updateBirthdayDisplay();
         ((TextView) findViewById(R.id.personalInfoCarbonBadge)).setText(user.carbonPoint + " điểm carbon");
 
         currentAvatarUrl = AssetScreenData.hasText(user.avatarUrl) ? user.avatarUrl : appPreferences.getAvatarUrl();
         showAvatarPreview(currentAvatarUrl);
+        savedSnapshot = captureSnapshot();
+        setEditMode(false);
     }
 
     private void bindGender(@Nullable String gender) {
-        String normalized = gender == null ? "" : gender.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!AssetScreenData.hasText(gender)) {
+            maleCheckBox.setChecked(false);
+            femaleCheckBox.setChecked(false);
+            return;
+        }
+        String value = gender.trim();
+        String normalized = value.toLowerCase(java.util.Locale.ROOT);
         maleCheckBox.setChecked("nam".equals(normalized) || "male".equals(normalized));
-        femaleCheckBox.setChecked("nữ".equals(normalized) || "nu".equals(normalized) || "female".equals(normalized));
+        femaleCheckBox.setChecked(
+                "nữ".equals(normalized)
+                        || "nu".equals(normalized)
+                        || "female".equals(normalized)
+                        || "Nữ".equals(value)
+                        || value.startsWith("N\u1eef")
+        );
+    }
+
+    private void enterEditMode() {
+        savedSnapshot = captureSnapshot();
+        setEditMode(true);
+    }
+
+    private void cancelEdit() {
+        if (savedSnapshot != null) {
+            restoreSnapshot(savedSnapshot);
+        }
+        setEditMode(false);
+    }
+
+    private void setEditMode(boolean editMode) {
+        isEditMode = editMode;
+        applyFieldMode(editMode);
+        applyBottomBarMode(editMode);
+    }
+
+    private void applyFieldMode(boolean editMode) {
+        applyEditableField(nameInput, editMode);
+        applyEditableField(emailInput, editMode);
+        applyPhoneFieldMode(editMode);
+
+        if (birthdayEditContainer != null) {
+            birthdayEditContainer.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        }
+        if (birthdayDisplay != null) {
+            birthdayDisplay.setVisibility(editMode ? View.GONE : View.VISIBLE);
+            if (!editMode) {
+                updateBirthdayDisplay();
+            }
+        }
+        if (!editMode) {
+            applyEditableField(birthdayInput, false);
+        } else {
+            applyEditableField(birthdayInput, true);
+        }
+
+        if (birthdayIcon != null) {
+            birthdayIcon.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        }
+        if (changePhoneButton != null) {
+            changePhoneButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        }
+        if (genderEditContainer != null) {
+            genderEditContainer.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        }
+        if (genderDisplay != null) {
+            genderDisplay.setVisibility(editMode ? View.GONE : View.VISIBLE);
+            if (!editMode) {
+                updateGenderDisplay();
+            }
+        }
+        if (genderEditContainer != null) {
+            layoutGenderMale.setEnabled(editMode);
+            layoutGenderFemale.setEnabled(editMode);
+            maleCheckBox.setEnabled(editMode);
+            femaleCheckBox.setEnabled(editMode);
+        }
+    }
+
+    private void applyPhoneFieldMode(boolean editMode) {
+        if (editMode) {
+            phoneInput.setBackgroundResource(R.drawable.bg_input);
+            phoneInput.setTextColor(ContextCompat.getColor(this, R.color.neutral_60));
+        } else {
+            phoneInput.setBackground(null);
+            phoneInput.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+        }
+        phoneInput.setEnabled(false);
+        phoneInput.setFocusable(false);
+        phoneInput.setClickable(false);
+    }
+
+    private void applyEditableField(@NonNull EditText field, boolean editMode) {
+        if (editMode) {
+            field.setBackgroundResource(R.drawable.bg_input);
+            field.setEnabled(true);
+            field.setFocusable(true);
+            field.setFocusableInTouchMode(true);
+            field.setClickable(true);
+            field.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+        } else {
+            field.setBackground(null);
+            field.setEnabled(false);
+            field.setFocusable(false);
+            field.setFocusableInTouchMode(false);
+            field.setClickable(false);
+            field.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+            field.setHint("");
+        }
+    }
+
+    private void applyBottomBarMode(boolean editMode) {
+        if (editMode) {
+            logoutButton.setText("Huỷ");
+            logoutButton.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
+            logoutButton.setBackgroundResource(R.drawable.bg_cancel_outline_button);
+            actionButton.setText("Lưu");
+            actionButton.setBackgroundResource(R.drawable.bg_button_primary);
+            actionButton.setTextColor(ContextCompat.getColor(this, R.color.neutral_10));
+        } else {
+            logoutButton.setText("Đăng xuất");
+            logoutButton.setTextColor(ContextCompat.getColor(this, R.color.danger_main));
+            logoutButton.setBackgroundResource(R.drawable.bg_logout_outline_button);
+            actionButton.setText("Chỉnh sửa");
+            actionButton.setBackgroundResource(R.drawable.bg_button_primary);
+            actionButton.setTextColor(ContextCompat.getColor(this, R.color.neutral_10));
+        }
+    }
+
+    private void updateGenderDisplay() {
+        if (genderDisplay == null) {
+            return;
+        }
+        String display = getGenderValue();
+        genderDisplay.setText(AssetScreenData.hasText(display) ? display : "—");
+    }
+
+    private void updateBirthdayDisplay() {
+        if (birthdayDisplay == null) {
+            return;
+        }
+        String birthday = birthdayInput.getText() == null ? "" : birthdayInput.getText().toString().trim();
+        birthdayDisplay.setText(AssetScreenData.hasText(birthday) ? birthday : "—");
+    }
+
+    @NonNull
+    private ProfileSnapshot captureSnapshot() {
+        ProfileSnapshot snapshot = new ProfileSnapshot();
+        snapshot.name = nameInput.getText().toString();
+        snapshot.phone = phoneInput.getText().toString();
+        snapshot.email = emailInput.getText().toString();
+        snapshot.birthday = birthdayInput.getText().toString();
+        snapshot.gender = getGenderValue();
+        snapshot.avatarUrl = currentAvatarUrl;
+        snapshot.pendingAvatarFile = pendingAvatarFile;
+        return snapshot;
+    }
+
+    private void restoreSnapshot(@NonNull ProfileSnapshot snapshot) {
+        setFieldText(nameInput, snapshot.name);
+        setFieldText(phoneInput, snapshot.phone);
+        setFieldText(emailInput, snapshot.email);
+        setFieldText(birthdayInput, snapshot.birthday);
+        bindGender(snapshot.gender);
+        updateGenderDisplay();
+        updateBirthdayDisplay();
+        pendingAvatarFile = snapshot.pendingAvatarFile;
+        currentAvatarUrl = snapshot.avatarUrl;
+        showAvatarPreview(currentAvatarUrl);
+        clearFieldErrors();
+    }
+
+    private void clearFieldErrors() {
+        tvNameError.setVisibility(View.GONE);
+        tvPhoneError.setVisibility(View.GONE);
+        tvEmailError.setVisibility(View.GONE);
+        tvBirthdayError.setVisibility(View.GONE);
+    }
+
+    @Nullable
+    private String getGenderValue() {
+        if (maleCheckBox.isChecked()) {
+            return "Nam";
+        }
+        if (femaleCheckBox.isChecked()) {
+            return "Nữ";
+        }
+        return "";
     }
 
     private void saveProfile() {
@@ -257,25 +505,43 @@ public class PersonalInfoActivity extends BaseActivity {
                 nameInput.getText().toString(),
                 phoneInput.getText().toString(),
                 emailInput.getText().toString(),
+                birthdayInput.getText().toString(),
+                getGenderValue(),
                 pendingAvatarFile
         );
     }
 
     private void onProfileUpdated(UserProfileDto profile) {
-        appPreferences.saveProfileSession(
-                profile.getPhone(),
-                profile.getName(),
-                profile.getEmail(),
-                profile.getAvatarUrl()
-        );
         sessionPhone = profile.getPhone();
         currentAvatarUrl = profile.getAvatarUrl();
         pendingAvatarFile = null;
 
-        setText(nameInput, profile.getName());
-        setText(phoneInput, profile.getPhone());
-        setText(emailInput, profile.getEmail());
+        String savedBirthday = AssetScreenData.hasText(profile.getBirthday())
+                ? profile.getBirthday()
+                : birthdayInput.getText().toString().trim();
+        String savedGender = AssetScreenData.hasText(profile.getGender())
+                ? profile.getGender()
+                : getGenderValue();
+
+        setFieldText(nameInput, profile.getName());
+        setFieldText(phoneInput, profile.getPhone());
+        setFieldText(emailInput, profile.getEmail());
+        setFieldText(birthdayInput, savedBirthday);
+        bindGender(savedGender);
+        updateGenderDisplay();
+        updateBirthdayDisplay();
         showAvatarPreview(profile.getAvatarUrl());
+        savedSnapshot = captureSnapshot();
+        setEditMode(false);
+
+        appPreferences.saveProfileSession(
+                profile.getPhone(),
+                profile.getName(),
+                profile.getEmail(),
+                profile.getAvatarUrl(),
+                savedBirthday,
+                savedGender
+        );
 
         Toast.makeText(this, "Cập nhật thông tin thành công", Toast.LENGTH_SHORT).show();
     }
@@ -321,7 +587,7 @@ public class PersonalInfoActivity extends BaseActivity {
                 Toast.makeText(this, "Mã xác thực không đúng", Toast.LENGTH_SHORT).show();
                 return;
             }
-            setText(phoneInput, pendingPhone[0]);
+            setFieldText(phoneInput, pendingPhone[0]);
             Toast.makeText(this, "Đã xác thực số điện thoại mới. Bấm Lưu để cập nhật.", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
@@ -515,18 +781,11 @@ public class PersonalInfoActivity extends BaseActivity {
         return null;
     }
 
-    private void setText(EditText view, @Nullable String value) {
-        if (view == null || !AssetScreenData.hasText(value)) {
+    private void setFieldText(@Nullable EditText view, @Nullable String value) {
+        if (view == null) {
             return;
         }
-        view.setText(value);
-    }
-
-    private void setText(int viewId, @Nullable String value) {
-        if (!AssetScreenData.hasText(value)) {
-            return;
-        }
-        ((EditText) findViewById(viewId)).setText(value);
+        view.setText(value == null ? "" : value);
     }
 
     private void setupValidationListeners() {

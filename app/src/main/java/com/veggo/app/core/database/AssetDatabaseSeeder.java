@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import com.veggo.app.assets.AssetFiles;
 import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.utils.ProductDisplayValidator;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.local.entity.AssetRecordEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.data.local.entity.RecipeEntity;
@@ -160,7 +162,7 @@ public final class AssetDatabaseSeeder {
                 finalDescription = "Chưa có mô tả chi tiết cho sản phẩm này.";
             }
 
-            products.add(new ProductEntity(
+            ProductEntity entity = new ProductEntity(
                     id,
                     assetProduct.productName != null ? assetProduct.productName : "Sản phẩm Veggo",
                     assetProduct.price,
@@ -189,8 +191,11 @@ public final class AssetDatabaseSeeder {
                     assetProduct.categoryId,
                     assetProduct.subcategoryId,
                     assetProduct.brand != null ? assetProduct.brand : "Veggo",
-                    0.0
-            ));
+                    assetProduct.carbonSavingPoint
+            );
+            if (ProductDisplayValidator.isDisplayable(entity)) {
+                products.add(entity);
+            }
         }
         return products;
     }
@@ -389,15 +394,7 @@ public final class AssetDatabaseSeeder {
     }
 
     private static String firstImage(List<String> images) {
-        if (images == null || images.isEmpty()) {
-            return null;
-        }
-        for (String img : images) {
-            if (img != null && !img.startsWith("data:image/") && img.length() <= 1000) {
-                return img;
-            }
-        }
-        return null;
+        return ProductImageUtils.resolveImageUrl(images, null);
     }
 
     private static String firstNonEmpty(String first, String second) {

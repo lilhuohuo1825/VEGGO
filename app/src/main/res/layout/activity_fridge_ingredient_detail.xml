@@ -77,13 +77,27 @@
                     android:textStyle="bold" />
 
                 <!-- Tên nguyên liệu -->
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_md"
-                    android:text="@string/fridge_name"
-                    android:textColor="@color/neutral_100"
-                    android:textSize="@dimen/text_sm" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/fridge_name"
+                        android:textColor="@color/neutral_100"
+                        android:textSize="@dimen/text_sm" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="*"
+                        android:textColor="@color/danger_main"
+                        android:textSize="@dimen/text_sm" />
+                </LinearLayout>
                 <EditText
                     android:id="@+id/fridgeIngredientNameInput"
                     android:layout_width="match_parent"
@@ -270,12 +284,26 @@
                         android:layout_weight="1"
                         android:orientation="vertical">
 
-                        <TextView
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/fridge_expiry"
-                            android:textColor="@color/neutral_100"
-                            android:textSize="@dimen/text_sm" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/fridge_expiry"
+                                android:textColor="@color/neutral_100"
+                                android:textSize="@dimen/text_sm" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="*"
+                                android:textColor="@color/danger_main"
+                                android:textSize="@dimen/text_sm" />
+                        </LinearLayout>
 
                         <LinearLayout
                             android:id="@+id/fridgeExpiryDatePicker"
@@ -304,23 +332,32 @@
                                 android:layout_width="18dp"
                                 android:layout_height="18dp"
                                 android:src="@drawable/ic_calendar"
-                                android:tint="@color/neutral_60" />
+                                android:tint="@color/primary_main" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
 
                 <!-- Nhắc hạn -->
                 <LinearLayout
+                    android:id="@+id/fridgeReminderRow"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_marginTop="@dimen/spacing_sm"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <ImageView
+                    <CheckBox
+                        android:id="@+id/fridgeReminderCheck"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/ic_check" />
+                        android:background="@drawable/selector_checkbox"
+                        android:button="@null"
+                        android:checked="true"
+                        android:clickable="false"
+                        android:focusable="false" />
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"

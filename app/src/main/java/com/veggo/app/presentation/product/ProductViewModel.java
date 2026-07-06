@@ -39,6 +39,7 @@ public class ProductViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isSubmittingQuestion = new MutableLiveData<>(false);
     private final LiveData<List<Product>> relatedProducts;
     private String activeReviewSku;
+    private String activeConsultationSku;
 
     private final MutableLiveData<Boolean> isAddingToCart = new MutableLiveData<>(false);
     private final MutableLiveData<String> cartError = new MutableLiveData<>();
@@ -109,11 +110,35 @@ public class ProductViewModel extends ViewModel {
         }
     }
 
+    public void toggleReviewLike(String sku, String reviewId, String customerId) {
+        if (reviewRepository == null || sku == null || sku.isEmpty()
+                || reviewId == null || reviewId.isEmpty()) {
+            return;
+        }
+        reviewRepository.toggleReviewLike(sku, reviewId, customerId, new ReviewRepository.Callback<List<Review>>() {
+            @Override
+            public void onSuccess(List<Review> result) {
+                productReviews.postValue(result);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                // Keep current list on error.
+            }
+        });
+    }
+
     public void triggerConsultationFetch(Product product) {
         if (product == null) return;
-        if (product.getSku() != null && !product.getSku().isEmpty()) {
-            fetchRemoteConsultations(product.getSku());
+        String sku = product.getSku();
+        if (sku != null && !sku.isEmpty()) {
+            if (sku.equals(activeConsultationSku)) {
+                return;
+            }
+            activeConsultationSku = sku;
+            fetchRemoteConsultations(sku);
         } else {
+            activeConsultationSku = null;
             consultations.postValue(new ArrayList<>());
         }
     }
@@ -140,7 +165,8 @@ public class ProductViewModel extends ViewModel {
         });
     }
 
-    public void submitQuestion(String sku, String question, String customerId, String customerName, String productName,
+    public void submitQuestion(String sku, String question, String customerId, String customerName,
+                               String productName, String customerAvatarUrl,
                                ConsultationRepository.Callback<List<Consultation>> callback) {
         if (consultationRepository == null) {
             callback.onError(new IllegalStateException("ConsultationRepository not available"));
@@ -159,22 +185,81 @@ public class ProductViewModel extends ViewModel {
         String resolvedCustomerId = customerId != null && !customerId.trim().isEmpty()
                 ? customerId.trim()
                 : null;
+        String resolvedAvatarUrl = customerAvatarUrl != null ? customerAvatarUrl.trim() : "";
 
-        consultationRepository.submitQuestion(sku, trimmedQuestion, resolvedCustomerId, resolvedName, productName,
-                new ConsultationRepository.Callback<List<Consultation>>() {
-                    @Override
-                    public void onSuccess(List<Consultation> result) {
-                        isSubmittingQuestion.postValue(false);
-                        consultations.postValue(result);
-                        callback.onSuccess(result);
-                    }
+        consultationRepository.submitQuestion(
+                sku,
+                trimmedQuestion,
+                resolvedCustomerId,
+                resolvedName,
+                productName,
+                resolvedAvatarUrl,
+                wrapConsultationCallback(callback, true)
+        );
+    }
 
-                    @Override
-                    public void onError(Throwable t) {
-                        isSubmittingQuestion.postValue(false);
-                        callback.onError(t);
-                    }
-                });
+    public void toggleQuestionLike(String sku, String questionId, String customerId, String customerName,
+                                 ConsultationRepository.Callback<List<Consultation>> callback) {
+        if (consultationRepository == null) {
+            callback.onError(new IllegalStateException("ConsultationRepository not available"));
+            return;
+        }
+        consultationRepository.toggleQuestionLike(
+                sku,
+                questionId,
+                customerId,
+                customerName,
+                wrapConsultationCallback(callback, false)
+        );
+    }
+
+    public void submitReply(String sku, String questionId, String content, String customerId,
+                            String customerName, String customerAvatarUrl,
+                            ConsultationRepository.Callback<List<Consultation>> callback) {
+        if (consultationRepository == null) {
+            callback.onError(new IllegalStateException("ConsultationRepository not available"));
+            return;
+        }
+        String trimmedContent = content != null ? content.trim() : "";
+        if (trimmedContent.isEmpty()) {
+            callback.onError(new IllegalArgumentException("Reply cannot be empty"));
+            return;
+        }
+        isSubmittingQuestion.postValue(true);
+        consultationRepository.submitReply(
+                sku,
+                questionId,
+                trimmedContent,
+                customerId,
+                customerName,
+                customerAvatarUrl != null ? customerAvatarUrl.trim() : "",
+                wrapConsultationCallback(callback, true)
+        );
+    }
+
+    private ConsultationRepository.Callback<List<Consultation>> wrapConsultationCallback(
+            ConsultationRepository.Callback<List<Consultation>> callback,
+            boolean affectsSubmittingState
+    ) {
+        return new ConsultationRepository.Callback<List<Consultation>>() {
+            @Override
+            public void onSuccess(List<Consultation> result) {
+                if (affectsSubmittingState) {
+                    isSubmittingQuestion.postValue(false);
+                }
+                activeConsultationSku = null;
+                consultations.postValue(result);
+                callback.onSuccess(result);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                if (affectsSubmittingState) {
+                    isSubmittingQuestion.postValue(false);
+                }
+                callback.onError(t);
+            }
+        };
     }
 
     public void addToCart(String customerId, String sku, int quantity, double selectedWeight) {

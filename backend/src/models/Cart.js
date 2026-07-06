@@ -5,6 +5,7 @@ const cartItemSchema = new mongoose.Schema(
     sku: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1 },
     selectedWeight: { type: Number, required: true }, // Lưu 0.25, 0.5, 1
+    updatedAt: { type: Date, default: Date.now },
   },
   { _id: false }
 );

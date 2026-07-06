@@ -52,6 +52,31 @@ function calculateFlashSalePrice(originalPrice, promo) {
   return Math.max(0, Math.round(originalPrice * (100 - discountValue) / 100));
 }
 
+function getPromotionTargetGroups(target) {
+  if (!target) return [];
+  if (Array.isArray(target.target_groups) && target.target_groups.length) {
+    return target.target_groups
+      .map(group => ({
+        target_type: group?.target_type,
+        target_ref: Array.isArray(group?.target_ref) ? group.target_ref : [],
+      }))
+      .filter(group => group.target_type);
+  }
+  if (target.target_type) {
+    return [{
+      target_type: target.target_type,
+      target_ref: Array.isArray(target.target_ref) ? target.target_ref : [],
+    }];
+  }
+  return [];
+}
+
+function getTargetRefsByType(target, targetType) {
+  return getPromotionTargetGroups(target)
+    .filter(group => group.target_type === targetType)
+    .flatMap(group => group.target_ref);
+}
+
 async function getActiveFlashSaleBySku(skus) {
   const cleanSkus = [...new Set((skus || []).map(sku => String(sku || '').trim()).filter(Boolean))];
   const result = new Map();
@@ -59,7 +84,12 @@ async function getActiveFlashSaleBySku(skus) {
 
   const db = mongoose.connection.db;
   const targets = await db.collection('promotion_targets')
-    .find({ target_type: 'Product', target_ref: { $in: cleanSkus } })
+    .find({
+      $or: [
+        { target_type: 'Product', target_ref: { $in: cleanSkus } },
+        { 'target_groups.target_type': 'Product', 'target_groups.target_ref': { $in: cleanSkus } },
+      ],
+    })
     .toArray();
   const promotionIds = [...new Set(targets.map(target => target.promotion_id).filter(Boolean))];
   if (!promotionIds.length) return result;
@@ -76,10 +106,11 @@ async function getActiveFlashSaleBySku(skus) {
 
   targets.forEach(target => {
     const promo = activePromoById.get(target.promotion_id);
-    if (!promo || !Array.isArray(target.target_ref)) return;
-    target.target_ref.forEach(sku => {
-      if (cleanSkus.includes(String(sku)) && !result.has(String(sku))) {
-        result.set(String(sku), promo);
+    if (!promo) return;
+    getTargetRefsByType(target, 'Product').forEach(sku => {
+      const skuKey = String(sku);
+      if (cleanSkus.includes(skuKey) && !result.has(skuKey)) {
+        result.set(skuKey, promo);
       }
     });
   });
@@ -89,16 +120,21 @@ async function getActiveFlashSaleBySku(skus) {
 
 function applyFlashSalePricing(product, promo) {
   if (!product || !promo) return product;
-  const originalPrice = Number(product.price || 0);
-  const salePrice = calculateFlashSalePrice(originalPrice, promo);
+  const listPrice = Number(product.price || 0);
+  const salePrice = calculateFlashSalePrice(listPrice, promo);
   return {
     ...product,
     price: salePrice,
-    originalPrice,
-    base_price: originalPrice,
+    originalPrice: listPrice,
     activePromotionId: promo.promotion_id,
     activePromotionKind: promo.promotion_kind,
   };
+}
+
+function hasDisplayDiscount(product) {
+  const price = Number(product?.price || 0);
+  const originalPrice = Number(product?.originalPrice || 0);
+  return Boolean(product?.activePromotionId) || (originalPrice > price && originalPrice > 0);
 }
 
 /**
@@ -265,21 +301,25 @@ router.get('/', asyncHandler(async (req, res) => {
     }
   });
 
+  const flashSaleBySku = await getActiveFlashSaleBySku(products.map(product => product.sku));
+
   const mappedProducts = products.map(product => {
-    const normalized = normalizeProduct(product);
+    const priced = applyFlashSalePricing(product, flashSaleBySku.get(String(product.sku)));
+    const normalized = normalizeProduct(priced);
     const reviewStats = reviewStatsBySku.get(String(product.sku)) || {
       rating: normalized.rating,
       reviewCount: normalized.reviewCount,
     };
     return {
-      ...product,
+      ...priced,
       ...normalized,
       rating: reviewStats.rating,
       reviewCount: reviewStats.reviewCount,
-      image: sanitizeListImage(product.image),
-      imageUrl: sanitizeListImage(product.imageUrl || normalized.imageUrl),
-      category: categoryMap[product.CategoryID || product.categoryId] || product.category || normalized.category || '',
-      subcategory: subcategoryMap[product.SubcategoryID || product.subcategoryId] || product.subcategory || normalized.subcategory || '',
+      hasDisplayDiscount: hasDisplayDiscount(priced),
+      image: sanitizeListImage(priced.image),
+      imageUrl: sanitizeListImage(priced.imageUrl || normalized.imageUrl),
+      category: categoryMap[priced.CategoryID || priced.categoryId] || priced.category || normalized.category || '',
+      subcategory: subcategoryMap[priced.SubcategoryID || priced.subcategoryId] || priced.subcategory || normalized.subcategory || '',
     };
   });
 
@@ -566,7 +606,7 @@ function normalizeProduct(product) {
     subcategoryId: product.subcategoryId || product.SubcategoryID || '',
     description: product.description || product.usage || '',
     price: product.price || 0,
-    originalPrice: product.originalPrice || product.base_price || product.price || 0,
+    originalPrice: product.originalPrice || product.price || 0,
     unit: product.unit || '',
     imageUrl: product.imageUrl || firstImage(product.image) || '',
     stock: product.stock || 0,

@@ -6,9 +6,10 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.utils.ProductDisplayValidator;
 import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.databinding.ItemRelatedProductBinding;
 import com.veggo.app.domain.model.Product;
 
@@ -70,7 +71,12 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
 
         public void bind(final Product product) {
             binding.tvRelatedTitle.setText(product.getName());
-            binding.tvRelatedWeight.setText(product.getWeight() == null ? "" : product.getWeight());
+            if (ProductDisplayValidator.hasValidWeight(product.getWeight())) {
+                binding.tvRelatedWeight.setVisibility(android.view.View.VISIBLE);
+                binding.tvRelatedWeight.setText(product.getWeight());
+            } else {
+                binding.tvRelatedWeight.setVisibility(android.view.View.GONE);
+            }
             binding.tvRelatedPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
 
             if (product.hasActiveDiscount()) {
@@ -84,11 +90,7 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
                 binding.tvDiscountBadge.setVisibility(android.view.View.GONE);
             }
 
-            Glide.with(binding.getRoot().getContext())
-                    .load(product.getImageUrl())
-                    .placeholder(R.drawable.ic_leaf)
-                    .error(R.drawable.ic_leaf)
-                    .into(binding.ivRelatedProduct);
+            ProductImageUtils.loadInto(binding.getRoot().getContext(), binding.ivRelatedProduct, product.getImageUrl());
 
             binding.getRoot().setOnClickListener(v -> {
                 if (productClickListener != null) productClickListener.onProductClick(product);

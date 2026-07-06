@@ -118,6 +118,56 @@ public class CartViewModel extends ViewModel {
         });
     }
 
+    public void replaceCartItem(String customerId, String sku, double previousWeight, int quantity, double newWeight) {
+        if (weightsEqual(previousWeight, newWeight)) {
+            updateQuantity(customerId, sku, quantity, newWeight);
+            return;
+        }
+
+        isLoading.setValue(true);
+        cartRepository.removeItem(customerId, sku, previousWeight).enqueue(new Callback<CartDto>() {
+            @Override
+            public void onResponse(Call<CartDto> call, Response<CartDto> response) {
+                if (!response.isSuccessful()) {
+                    isLoading.setValue(false);
+                    error.setValue("Failed to update cart item");
+                    return;
+                }
+
+                cartRepository.addItem(customerId, new CartItemRequestDto(sku, quantity, newWeight))
+                        .enqueue(new Callback<CartDto>() {
+                            @Override
+                            public void onResponse(Call<CartDto> addCall, Response<CartDto> addResponse) {
+                                isLoading.setValue(false);
+                                if (addResponse.isSuccessful() && addResponse.body() != null) {
+                                    cart.setValue(addResponse.body());
+                                } else {
+                                    error.setValue("Failed to update cart item");
+                                    fetchCart(customerId);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<CartDto> addCall, Throwable t) {
+                                isLoading.setValue(false);
+                                error.setValue(t.getMessage());
+                                fetchCart(customerId);
+                            }
+                        });
+            }
+
+            @Override
+            public void onFailure(Call<CartDto> call, Throwable t) {
+                isLoading.setValue(false);
+                error.setValue(t.getMessage());
+            }
+        });
+    }
+
+    private static boolean weightsEqual(double left, double right) {
+        return Math.abs(left - right) < 0.0005d;
+    }
+
     public void clearCart(String customerId) {
         isLoading.setValue(true);
         cartRepository.clearCart(customerId).enqueue(new Callback<CartDto>() {

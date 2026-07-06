@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.notification.RecurringConfirmationScheduler;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.presentation.dialog.VeggoDialog;
 
@@ -154,6 +155,7 @@ public class RecurringOrderDetailActivity extends BaseActivity {
                     @Override
                     public void onConfirm() {
                     store.delete(order.id);
+                    RecurringConfirmationScheduler.runCheckNow(RecurringOrderDetailActivity.this);
                     Toast.makeText(RecurringOrderDetailActivity.this, "Đã xoá đơn định kỳ", Toast.LENGTH_SHORT).show();
                     finish();
                     }

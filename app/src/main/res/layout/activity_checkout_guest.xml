@@ -100,10 +100,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter_medium"
-                        android:text="Họ và tên"
+                        android:text="Họ và tên "
                         android:textColor="#1E1E1E"
                         android:textSize="15sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="*"
+                        android:textColor="#E5484D"
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <EditText
@@ -119,6 +126,16 @@
                     android:textColor="#1E1E1E"
                     android:textColorHint="#777777"
                     android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvGuestNameError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <!-- Số điện thoại -->
                 <LinearLayout
@@ -138,10 +155,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter_medium"
-                        android:text="Số điện thoại"
+                        android:text="Số điện thoại "
                         android:textColor="#1E1E1E"
                         android:textSize="15sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="*"
+                        android:textColor="#E5484D"
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <EditText
@@ -158,6 +182,16 @@
                     android:textColor="#1E1E1E"
                     android:textColorHint="#777777"
                     android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvGuestPhoneError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <!-- Địa chỉ -->
                 <LinearLayout
@@ -177,10 +211,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter_medium"
-                        android:text="Địa chỉ giao hàng"
+                        android:text="Địa chỉ giao hàng "
                         android:textColor="#1E1E1E"
                         android:textSize="15sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="*"
+                        android:textColor="#E5484D"
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -212,6 +253,16 @@
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tvGuestProvinceError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/layoutGuestDistrict"
                     android:layout_width="match_parent"
@@ -240,6 +291,16 @@
                         android:layout_height="16dp"
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvGuestDistrictError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/layoutGuestWard"
@@ -270,6 +331,16 @@
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tvGuestWardError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
                 <EditText
                     android:id="@+id/edtGuestAddressDetail"
                     android:layout_width="match_parent"
@@ -285,6 +356,16 @@
                     android:textColor="#1E1E1E"
                     android:textColorHint="#777777"
                     android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvGuestAddressDetailError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="#E5484D"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
                 <View
                     android:layout_width="match_parent"
@@ -322,20 +403,22 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutDeliveryOriginAddress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
-                            android:text="123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh"
+                            android:text="Đang tải kho gần nhất..."
                             android:textColor="#616161"
                             android:textSize="12sp" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutDeliveryOriginDistance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:text="20 km ~ 45 phút"
+                            android:text="-- km ~ -- phút"
                             android:textColor="#57AF37"
                             android:textSize="12sp" />
 
@@ -478,16 +561,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_medium"
-                            android:text="Giao nhanh trong 2 giờ"
+                            android:text="Giao hàng nhanh"
                             android:textColor="#1E1E1E"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvFastDeliveryTime"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Dự kiến nhận hàng hôm nay, 14:00 - 16:00"
+                            android:text="Đang tính thời gian giao..."
                             android:textColor="#616161"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -584,8 +668,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:buttonTint="@color/payment_radio_button_tint"
-                        app:buttonTint="@color/payment_radio_button_tint"
-                        android:checked="true" />
+                        app:buttonTint="@color/payment_radio_button_tint" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -648,6 +731,40 @@
 
                     <androidx.appcompat.widget.AppCompatRadioButton
                         android:id="@+id/radioPaymentCard"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:buttonTint="@color/payment_radio_button_tint"
+                        app:buttonTint="@color/payment_radio_button_tint" />
+                </LinearLayout>
+
+                <!-- VNPAY -->
+                <LinearLayout
+                    android:id="@+id/layoutPaymentVnpay"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_payment_vnpay" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="VNPAY"
+                        android:textColor="#1E1E1E"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/radioPaymentVnpay"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:buttonTint="@color/payment_radio_button_tint"

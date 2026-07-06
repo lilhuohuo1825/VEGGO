@@ -158,6 +158,8 @@ export class Layout implements OnInit, OnDestroy {
         } else if (notification.type === 'return_request') {
           // Hiển thị popup trực tiếp cho return request
           this.checkOrderStatusAndShowPopup(notification);
+        } else if (notification.type === 'scheduled_delivery_reminder') {
+          this.checkOrderStatusAndShowPopup(notification);
         }
       }
     });
@@ -369,6 +371,8 @@ export class Layout implements OnInit, OnDestroy {
         return `Đơn hàng mới #${notification.orderId}`;
       case 'return_request':
         return `Yêu cầu trả hàng #${notification.orderId}`;
+      case 'scheduled_delivery_reminder':
+        return notification.title || `Nhắc giao đơn #${notification.orderId}`;
       case 'consultation':
         return notification.title || 'Câu hỏi tư vấn mới';
       case 'system':
@@ -397,6 +401,11 @@ export class Layout implements OnInit, OnDestroy {
         }₫`;
       case 'return_request':
         return `Khách hàng ${notification.customerId} yêu cầu trả hàng cho đơn hàng ${notification.orderId}`;
+      case 'scheduled_delivery_reminder':
+        return (
+          notification.message
+          || `Đơn #${notification.orderId} sắp đến giờ giao. Vui lòng chuẩn bị giao đúng lịch.`
+        );
       case 'consultation':
         return (
           notification.message ||
@@ -437,6 +446,8 @@ export class Layout implements OnInit, OnDestroy {
         return '/assets/icons/order.png';
       case 'return_request':
         return '/assets/icons/return.png';
+      case 'scheduled_delivery_reminder':
+        return '/assets/icons/logistic_dark.png';
       case 'consultation':
         return '/assets/icons/edit.png';
       case 'system':
@@ -521,6 +532,13 @@ export class Layout implements OnInit, OnDestroy {
           console.log(`🔍 [Layout] Order ${notification.orderId} status: ${orderStatus}`);
 
           // Chỉ hiển thị popup nếu order status là 'pending' hoặc 'processing_return'
+          if (notification.type === 'scheduled_delivery_reminder') {
+            if (orderStatus === 'pending' || orderStatus === 'confirmed' || orderStatus === 'shipping') {
+              this.showNewOrderNotification(notification);
+            }
+            return;
+          }
+
           if (orderStatus === 'pending' || orderStatus === 'processing_return') {
             console.log(
               `✅ [Layout] Showing popup for order ${notification.orderId} with status ${orderStatus}`
@@ -587,7 +605,11 @@ export class Layout implements OnInit, OnDestroy {
   private checkUnreadNotificationsOnLoad(notifications: AdminNotification[]): void {
     // Find the latest unread notification of type 'new_order' or 'return_request'
     const unreadNotifications = notifications
-      .filter((n) => !n.read && (n.type === 'new_order' || n.type === 'return_request'))
+      .filter((n) => !n.read && (
+        n.type === 'new_order'
+        || n.type === 'return_request'
+        || n.type === 'scheduled_delivery_reminder'
+      ))
       .sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
@@ -599,7 +621,9 @@ export class Layout implements OnInit, OnDestroy {
       console.log('🔔 [Layout] Found unread notification on page load:', latestUnread);
 
       // Check order status and show popup if order is still pending/processing_return
-      if (latestUnread.type === 'new_order' || latestUnread.type === 'return_request') {
+      if (latestUnread.type === 'new_order'
+        || latestUnread.type === 'return_request'
+        || latestUnread.type === 'scheduled_delivery_reminder') {
         this.checkOrderStatusAndShowPopup(latestUnread);
       }
     } else {

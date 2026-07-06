@@ -65,6 +65,7 @@ public class ConsultationDetailActivity extends BaseActivity {
 
         rvQuestions = findViewById(R.id.rvQuestions);
         adapter = new ConsultationAdapter();
+        setupConsultationAdapterListener();
         rvQuestions.setLayoutManager(new LinearLayoutManager(this));
         rvQuestions.setAdapter(adapter);
 
@@ -75,6 +76,15 @@ public class ConsultationDetailActivity extends BaseActivity {
 
     private void submitQuestion() {
         if (edtQuestion == null) return;
+
+        AppPreferences appPreferences = new AppPreferences(this);
+        if (!appPreferences.isLoggedIn()
+                || appPreferences.getCustomerId() == null
+                || appPreferences.getCustomerId().isEmpty()) {
+            Toast.makeText(this, R.string.consultation_login_required, Toast.LENGTH_SHORT).show();
+            startActivity(new android.content.Intent(this, com.veggo.app.presentation.auth.LoginActivity.class));
+            return;
+        }
 
         String questionText = edtQuestion.getText().toString().trim();
         if (questionText.isEmpty()) {
@@ -88,13 +98,13 @@ public class ConsultationDetailActivity extends BaseActivity {
             return;
         }
 
-        AppPreferences appPreferences = new AppPreferences(this);
         viewModel.submitQuestion(
                 product.getSku(),
                 questionText,
                 appPreferences.getCustomerId(),
                 appPreferences.getFullName(),
                 product.getName(),
+                appPreferences.getAvatarUrl(),
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
                     public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
@@ -123,6 +133,8 @@ public class ConsultationDetailActivity extends BaseActivity {
                 message = getString(R.string.consultation_submit_not_found);
             } else if (code == 400) {
                 message = getString(R.string.consultation_submit_empty);
+            } else if (code == 401) {
+                message = getString(R.string.consultation_login_required);
             } else {
                 message = getString(R.string.consultation_submit_network_error);
             }
@@ -177,15 +189,105 @@ public class ConsultationDetailActivity extends BaseActivity {
         });
 
         viewModel.getConsultations().observe(this, questions -> {
-            if (questions != null) {
-                adapter.setQuestions(questions);
-                if (tvQuestionCount != null) {
-                    tvQuestionCount.setText(getString(
-                            R.string.consultation_question_count_format, questions.size()));
-                }
+            AppPreferences prefs = new AppPreferences(this);
+            adapter.setCurrentCustomerId(prefs.getCustomerId());
+            java.util.List<com.veggo.app.domain.model.Consultation> display =
+                    ConsultationUiHelper.filterForUser(questions, prefs.getCustomerId());
+            adapter.setQuestions(display);
+            if (tvQuestionCount != null) {
+                tvQuestionCount.setText(getString(
+                        R.string.consultation_question_count_format, display.size()));
             }
         });
 
         viewModel.isSubmittingQuestion().observe(this, this::setSubmittingUi);
+    }
+
+    private void setupConsultationAdapterListener() {
+        adapter.setActionListener(new ConsultationAdapter.ActionListener() {
+            @Override
+            public void onToggleLike(com.veggo.app.domain.model.Consultation question) {
+                toggleConsultationLike(question);
+            }
+
+            @Override
+            public void onSubmitReply(com.veggo.app.domain.model.Consultation question, String content) {
+                submitConsultationReply(question, content);
+            }
+
+            @Override
+            public void onLoginRequired() {
+                Toast.makeText(ConsultationDetailActivity.this,
+                        R.string.consultation_login_required, Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(
+                        ConsultationDetailActivity.this,
+                        com.veggo.app.presentation.auth.LoginActivity.class));
+            }
+        });
+    }
+
+    private void toggleConsultationLike(com.veggo.app.domain.model.Consultation question) {
+        if (question == null || question.getId() == null || question.getId().isEmpty()) {
+            return;
+        }
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            return;
+        }
+        AppPreferences prefs = new AppPreferences(this);
+        viewModel.toggleQuestionLike(
+                product.getSku(),
+                question.getId(),
+                prefs.getCustomerId(),
+                prefs.getFullName(),
+                new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
+                        // List refreshed via LiveData observer.
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        runOnUiThread(() -> Toast.makeText(
+                                ConsultationDetailActivity.this,
+                                R.string.consultation_submit_network_error,
+                                Toast.LENGTH_SHORT).show());
+                    }
+                });
+    }
+
+    private void submitConsultationReply(com.veggo.app.domain.model.Consultation question, String content) {
+        if (question == null || question.getId() == null || question.getId().isEmpty()) {
+            return;
+        }
+        Product product = viewModel.getProduct().getValue();
+        if (product == null || product.getSku() == null || product.getSku().isEmpty()) {
+            return;
+        }
+        AppPreferences prefs = new AppPreferences(this);
+        viewModel.submitReply(
+                product.getSku(),
+                question.getId(),
+                content,
+                prefs.getCustomerId(),
+                prefs.getFullName(),
+                prefs.getAvatarUrl(),
+                new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
+                        runOnUiThread(() -> Toast.makeText(
+                                ConsultationDetailActivity.this,
+                                R.string.consultation_reply_success,
+                                Toast.LENGTH_SHORT).show());
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        runOnUiThread(() -> Toast.makeText(
+                                ConsultationDetailActivity.this,
+                                R.string.consultation_submit_network_error,
+                                Toast.LENGTH_SHORT).show());
+                    }
+                });
     }
 }

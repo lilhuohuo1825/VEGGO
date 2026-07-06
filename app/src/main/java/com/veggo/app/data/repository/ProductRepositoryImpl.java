@@ -16,6 +16,7 @@ import com.veggo.app.data.mapper.RecipeMapper;
 import com.veggo.app.data.mapper.ReviewMapper;
 import com.veggo.app.data.remote.api.ProductApi;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.core.utils.ProductDisplayValidator;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.model.Recipe;
 import com.veggo.app.domain.model.Review;
@@ -33,10 +34,13 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ProductRepositoryImpl implements ProductRepository {
+    private static final int RELATED_PRODUCT_CANDIDATE_LIMIT = 30;
+    private static final int RELATED_PRODUCT_DISPLAY_LIMIT = 10;
+
     private final ProductDao productDao;
     private final ProductApi productApi;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private boolean catalogRefreshRequested = false;
+    private volatile boolean catalogRefreshInFlight = false;
 
     private final Context context;
 
@@ -57,7 +61,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         return Transformations.map(source, projections -> {
             List<Product> products = new ArrayList<>();
             for (int i = 0; i < projections.size(); i++) {
-                products.add(ProductMapper.fromProjection(projections.get(i)));
+                ProductItemProjection projection = projections.get(i);
+                if (!ProductDisplayValidator.isDisplayable(projection)) {
+                    continue;
+                }
+                products.add(ProductMapper.fromProjection(projection));
             }
             return products;
         });
@@ -100,6 +108,9 @@ public class ProductRepositoryImpl implements ProductRepository {
                 }
 
                 Product product = ProductMapper.fromDto(dto);
+                if (!ProductDisplayValidator.isDisplayable(product)) {
+                    return;
+                }
                 result.postValue(product);
                 executor.execute(() -> productDao.upsert(ProductMapper.toEntity(dto)));
             }
@@ -113,71 +124,101 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public LiveData<List<Product>> observeRelatedProducts(String currentProductId, String categoryId, String subcategoryId) {
-        refreshRemoteCatalogOnce();
+        refreshCatalogFromApi();
         String excludeId = currentProductId != null ? currentProductId : "";
         String catId = categoryId != null ? categoryId : "";
         String subcatId = subcategoryId != null ? subcategoryId : "";
 
         LiveData<List<ProductEntity>> source = !subcatId.trim().isEmpty()
-                ? productDao.observeRelatedBySubcategory(subcatId, excludeId, 10)
-                : productDao.observeRelatedByCategory(catId, excludeId, 10);
-        return Transformations.map(source, this::toProductList);
+                ? productDao.observeRelatedMerged(catId, subcatId, excludeId, RELATED_PRODUCT_CANDIDATE_LIMIT)
+                : productDao.observeRelatedByCategory(catId, excludeId, RELATED_PRODUCT_CANDIDATE_LIMIT);
+        return Transformations.map(source, entities -> limitDisplayableProducts(toProductList(entities), RELATED_PRODUCT_DISPLAY_LIMIT));
     }
 
-    private void refreshRemoteCatalogOnce() {
-        if (catalogRefreshRequested || productApi == null) {
+    private List<Product> limitDisplayableProducts(List<Product> products, int maxCount) {
+        List<Product> displayable = new ArrayList<>();
+        if (products == null) {
+            return displayable;
+        }
+        for (Product product : products) {
+            if (!ProductDisplayValidator.isDisplayable(product)) {
+                continue;
+            }
+            displayable.add(product);
+            if (displayable.size() >= maxCount) {
+                break;
+            }
+        }
+        return displayable;
+    }
+
+    private void refreshCatalogFromApi() {
+        if (catalogRefreshInFlight || productApi == null) {
             return;
         }
-        catalogRefreshRequested = true;
-        productApi.getProducts().enqueue(new Callback<List<ProductDto>>() {
+        catalogRefreshInFlight = true;
+        productApi.getProducts("true").enqueue(new Callback<List<ProductDto>>() {
             @Override
             public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
+                catalogRefreshInFlight = false;
                 List<ProductDto> dtos = response.body();
-                if (!response.isSuccessful() || dtos == null || dtos.isEmpty()) {
+                if (!response.isSuccessful() || dtos == null) {
                     return;
                 }
                 executor.execute(() -> {
-                    List<ProductEntity> entities = new ArrayList<>();
+                    int syncedCount = 0;
                     for (ProductDto dto : dtos) {
-                        if (isVisibleUserProduct(dto)) {
-                            entities.add(ProductMapper.toEntity(dto));
+                        ProductEntity entity = buildSyncedEntity(dto);
+                        if (entity != null) {
+                            productDao.upsert(entity);
+                            syncedCount++;
                         }
                     }
-                    if (!entities.isEmpty()) {
-                        productDao.clearAll();
-                        productDao.insertAll(entities);
+                    if (syncedCount == 0) {
+                        android.util.Log.w("ProductRepository", "Catalog sync skipped: no displayable products with images");
                     }
                 });
             }
 
             @Override
             public void onFailure(Call<List<ProductDto>> call, Throwable t) {
-                catalogRefreshRequested = false;
+                catalogRefreshInFlight = false;
             }
         });
     }
 
-    private boolean isVisibleUserProduct(ProductDto dto) {
-        if (dto == null || dto.getId() == null || dto.getId().trim().isEmpty()) {
-            return false;
+    private ProductEntity buildSyncedEntity(ProductDto dto) {
+        if (dto == null) {
+            return null;
         }
-        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
-            return false;
+
+        ProductEntity incoming = ProductMapper.toEntity(dto);
+        preserveExistingImageIfNeeded(incoming);
+
+        if (!ProductDisplayValidator.isDisplayable(incoming)) {
+            return null;
         }
-        if (dto.getPrice() <= 0) {
-            return false;
+        return incoming;
+    }
+
+    private void preserveExistingImageIfNeeded(ProductEntity incoming) {
+        if (incoming == null || ProductDisplayValidator.hasValidImage(incoming.getImageUrl())) {
+            return;
         }
-        String imageUrl = dto.getImageUrl();
-        if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            return false;
+
+        ProductEntity existing = productDao.getProductById(incoming.getId());
+        if (existing != null && ProductDisplayValidator.hasValidImage(existing.getImageUrl())) {
+            incoming.setImageUrl(existing.getImageUrl());
         }
-        return !Boolean.FALSE.equals(dto.getActive());
     }
 
     private List<Product> toProductList(List<com.veggo.app.data.local.entity.ProductEntity> entities) {
         List<Product> products = new ArrayList<>();
         if (entities != null) {
             for (com.veggo.app.data.local.entity.ProductEntity entity : entities) {
+                if (!ProductDisplayValidator.isDisplayable(entity)) {
+                    continue;
+                }
                 products.add(ProductMapper.fromEntity(entity));
             }
         }
@@ -216,6 +257,9 @@ public class ProductRepositoryImpl implements ProductRepository {
             List<Product> products = new ArrayList<>();
             if (projections != null) {
                 for (ProductItemProjection projection : projections) {
+                    if (!ProductDisplayValidator.isDisplayable(projection)) {
+                        continue;
+                    }
                     products.add(ProductMapper.fromProjection(projection));
                 }
             }
@@ -225,45 +269,24 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public LiveData<List<Product>> observeCatalogProducts() {
-        return Transformations.map(productDao.observeAllProductEntities(), entities -> {
-            List<Product> products = new ArrayList<>();
-            if (entities != null) {
-                for (ProductEntity entity : entities) {
-                    products.add(ProductMapper.fromEntity(entity));
-                }
-            }
-            return products;
-        });
+        return Transformations.map(productDao.observeAllProductEntities(), this::toProductList);
     }
 
     @Override
     public LiveData<List<Product>> observeProductsByCategory(String categoryId) {
-        return Transformations.map(productDao.observeProductsByCategory(categoryId), entities -> {
-            List<Product> products = new ArrayList<>();
-            if (entities != null) {
-                for (ProductEntity entity : entities) {
-                    products.add(ProductMapper.fromEntity(entity));
-                }
-            }
-            return products;
-        });
+        refreshCatalogFromApi();
+        return Transformations.map(productDao.observeProductsByCategory(categoryId), this::toProductList);
     }
 
     @Override
     public LiveData<List<Product>> observeProductsBySubcategory(String subcategoryId) {
-        return Transformations.map(productDao.observeProductsBySubcategory(subcategoryId), entities -> {
-            List<Product> products = new ArrayList<>();
-            if (entities != null) {
-                for (ProductEntity entity : entities) {
-                    products.add(ProductMapper.fromEntity(entity));
-                }
-            }
-            return products;
-        });
+        refreshCatalogFromApi();
+        return Transformations.map(productDao.observeProductsBySubcategory(subcategoryId), this::toProductList);
     }
 
     @Override
     public void refreshProducts() {
+        refreshCatalogFromApi();
         com.veggo.app.core.network.FirebaseSyncManager.getInstance(context).syncProducts();
     }
 

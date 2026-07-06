@@ -170,7 +170,7 @@ Lưu ý:
 // Thêm một nguyên liệu mới
 router.post('/:userId', asyncHandler(async (req, res) => {
   const { userId } = req.params;
-  const { name, quantity, purchaseDate, expiryDate, source, sku, orderId, image, images, unit, locationCode } = req.body;
+  const { name, quantity, purchaseDate, expiryDate, source, sku, orderId, image, images, unit, locationCode, remindBeforeExpiry } = req.body;
 
   if (!name || quantity === undefined || !purchaseDate || !expiryDate || !source) {
     return res.status(400).json({ message: 'Missing required fields' });
@@ -198,6 +198,7 @@ router.post('/:userId', asyncHandler(async (req, res) => {
     images: images || [],
     unit: unit || '',
     locationCode: locationCode || '',
+    remindBeforeExpiry: remindBeforeExpiry !== false,
   });
 
   const savedItem = await newItem.save();
@@ -236,6 +237,7 @@ router.post('/:userId/batch', asyncHandler(async (req, res) => {
       images: item.images || [],
       unit: item.unit || '',
       locationCode: item.locationCode || '',
+      remindBeforeExpiry: item.remindBeforeExpiry !== false,
     });
   }
 

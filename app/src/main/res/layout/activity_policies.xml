@@ -4,21 +4,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F7F8F7"
-    android:clipChildren="false"
-    android:clipToPadding="false"
     android:fitsSystemWindows="true">
 
     <ScrollView
         android:id="@+id/policiesScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clipToPadding="false"
         android:fillViewport="true"
         android:overScrollMode="never"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/headerBar">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -28,10 +25,6 @@
             android:paddingTop="0dp"
             android:paddingEnd="18dp"
             android:paddingBottom="16dp">
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="72dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -606,31 +599,28 @@
         android:layout_width="0dp"
         android:layout_height="64dp"
         android:background="@color/neutral_10"
+        android:elevation="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:translationZ="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <FrameLayout
+        <ImageView
             android:id="@+id/backButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:contentDescription="@string/orders_back"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless">
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:contentDescription=""
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_left"
-                app:tint="@color/primary_main" />
-        </FrameLayout>
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_hover" />
 
         <TextView
             android:id="@+id/headerTitle"
@@ -644,22 +634,18 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <FrameLayout
+        <ImageView
             android:id="@+id/notifyButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:contentDescription="@string/nav_account"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless">
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_notify"
-                app:tint="@color/primary_main" />
-        </FrameLayout>
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_notify"
+            app:tint="@color/primary_hover" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

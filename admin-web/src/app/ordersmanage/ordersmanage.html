@@ -249,6 +249,42 @@
           </div>
 
           <div class="dropdown-divider"></div>
+
+          <div class="dropdown-item-parent">
+            <div class="dropdown-item">
+              <img src="/assets/icons/logistic_dark.png" alt="Order Type" class="item-icon" />
+              <span>Loại đơn</span>
+              <span class="arrow-right">›</span>
+            </div>
+            <div class="dropdown-submenu">
+              <label class="dropdown-option" (click)="applyFilterAndClose('recurring')">
+                <input
+                  type="checkbox"
+                  [checked]="currentFilter === 'recurring'"
+                  (click)="$event.stopPropagation()"
+                />
+                <span>Định kỳ</span>
+              </label>
+              <label class="dropdown-option" (click)="applyFilterAndClose('standard')">
+                <input
+                  type="checkbox"
+                  [checked]="currentFilter === 'standard'"
+                  (click)="$event.stopPropagation()"
+                />
+                <span>Tiêu chuẩn</span>
+              </label>
+              <label class="dropdown-option" (click)="applyFilterAndClose('fast')">
+                <input
+                  type="checkbox"
+                  [checked]="currentFilter === 'fast'"
+                  (click)="$event.stopPropagation()"
+                />
+                <span>Giao nhanh</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="dropdown-divider"></div>
           <div class="dropdown-actions">
             <button class="btn-clear-filter" (click)="applyFilterAndClose('all')">
               <img
@@ -347,6 +383,7 @@
           <th class="col-order-id">Mã đơn</th>
           <th class="col-date">Thời gian tạo</th>
           <th class="col-customer">Mã khách hàng</th>
+          <th class="col-order-type">Loại đơn</th>
           <th class="col-status">Trạng thái</th>
           <th class="col-payment">Thanh toán</th>
           <th class="col-delivery">Giao hàng</th>
@@ -367,6 +404,14 @@
           <td class="col-order-id">{{ order.id }}</td>
           <td class="col-date">{{ order.date }}</td>
           <td class="col-customer">{{ order.customer }}</td>
+          <td class="col-order-type">
+            <span class="order-source-badge" [ngClass]="orderSourceClass(order.orderSource)">
+              {{ orderSourceLabel(order.orderSource) }}
+            </span>
+            <div class="order-delivery-window" *ngIf="order.deliveryTimeText">
+              {{ order.deliveryTimeText }}
+            </div>
+          </td>
           <td class="col-status">
             <span class="status-badge" [ngClass]="getStatusClass(order.status)">
               <span class="status-dot"></span>

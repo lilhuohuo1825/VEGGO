@@ -24,19 +24,33 @@ import com.veggo.app.R;
 import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.databinding.FragmentCategoryDetailBinding;
 import com.veggo.app.databinding.PopupFilterBinding;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.data.remote.api.PromotionApi;
+import com.veggo.app.data.remote.dto.FlashSaleResponseDto;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.CategoryRepository;
 import com.veggo.app.domain.repository.ProductRepository;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.PullToRefreshHelper;
+import com.veggo.app.speech.SearchVoiceInputController;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 import com.veggo.app.presentation.profile.TastePreferenceStore;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.text.Normalizer;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class CategoryDetailFragment extends Fragment {
     public static final String ARG_CATEGORY_ID = "arg_category_id";
@@ -53,6 +67,7 @@ public class CategoryDetailFragment extends Fragment {
     private List<AssetModels.Category> allCategories = new ArrayList<>();
     private List<Product> catalogProducts = new ArrayList<>();
     private List<Product> currentProducts = new ArrayList<>();
+    private final Map<String, long[]> flashSalePricingByKey = new HashMap<>();
     
     // Filter states
     private String selectedSort = ""; // "popular", "discount", "low_high", "high_low", "organic"
@@ -65,6 +80,8 @@ public class CategoryDetailFragment extends Fragment {
 
     private boolean isInitialLoad = true;
     private boolean isBuildingTabs = false;
+    private SearchVoiceInputController voiceInputController;
+    private SwipeRefreshLayout categoryDetailRefreshLayout;
 
     @Nullable
     @Override
@@ -89,7 +106,9 @@ public class CategoryDetailFragment extends Fragment {
         }
 
         setupViews();
+        setupPullToRefresh();
         observeData();
+        loadActiveFlashSales();
         productRepository.observeCatalogProducts().observe(getViewLifecycleOwner(), products -> {
             if (products != null) {
                 catalogProducts = products;
@@ -132,14 +151,27 @@ public class CategoryDetailFragment extends Fragment {
             startActivity(intent);
         });
 
-        // Navigate to SearchActivity when search bar is clicked
-        View.OnClickListener openSearchClick = v -> {
-            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.search.SearchActivity.class);
-            startActivity(intent);
-        };
-        binding.layoutSearch.getRoot().setOnClickListener(openSearchClick);
-        binding.layoutSearch.edtSearch.setFocusable(false);
-        binding.layoutSearch.edtSearch.setOnClickListener(openSearchClick);
+        // Local search + voice input on category product list
+        binding.layoutSearch.edtSearch.setFocusable(true);
+        binding.layoutSearch.edtSearch.setFocusableInTouchMode(true);
+        binding.layoutSearch.edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                applyFiltersAndSort();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+        voiceInputController = SearchVoiceInputController.attach(
+                this,
+                binding.layoutSearch.getRoot(),
+                binding.layoutSearch.edtSearch,
+                this::applyFiltersAndSort
+        );
         binding.categoryDetailBackButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
         );
@@ -164,6 +196,23 @@ public class CategoryDetailFragment extends Fragment {
         });
 
         binding.ivFilter.setOnClickListener(v -> showFilterPopup());
+    }
+
+    private void setupPullToRefresh() {
+        categoryDetailRefreshLayout = PullToRefreshHelper.wrap(binding.rvProducts, this::refreshPageData);
+    }
+
+    private void refreshPageData() {
+        categoryRepository.refreshCategories();
+        productRepository.refreshProducts();
+        loadActiveFlashSales();
+        loadProducts();
+        tasteStore.syncFromMongo(() -> {
+            if (binding != null) {
+                applyFiltersAndSort();
+                PullToRefreshHelper.finish(categoryDetailRefreshLayout);
+            }
+        });
     }
 
     private void showFilterPopup() {
@@ -623,25 +672,105 @@ public class CategoryDetailFragment extends Fragment {
             return;
         }
 
-        if (selectedSubcategoryId == null || selectedSubcategoryId.isEmpty()) {
-            // Observe products by Category
-            productRepository.observeProductsByCategory(selectedCategoryId).removeObservers(getViewLifecycleOwner());
-            productRepository.observeProductsByCategory(selectedCategoryId).observe(getViewLifecycleOwner(), products -> {
-                if (products != null) {
-                    currentProducts = products;
+        productRepository.observeProductsByCategory(selectedCategoryId).removeObservers(getViewLifecycleOwner());
+        productRepository.observeProductsByCategory(selectedCategoryId).observe(getViewLifecycleOwner(), products -> {
+            currentProducts = products != null ? products : Collections.emptyList();
+            applyFiltersAndSort();
+        });
+    }
+
+    private void loadActiveFlashSales() {
+        PromotionApi promotionApi = ApiClient.createService(PromotionApi.class);
+        promotionApi.getFlashSales().enqueue(new Callback<FlashSaleResponseDto>() {
+            @Override
+            public void onResponse(Call<FlashSaleResponseDto> call, Response<FlashSaleResponseDto> response) {
+                FlashSaleResponseDto body = response.body();
+                if (!response.isSuccessful() || body == null || !body.isSuccess() || body.getData() == null) {
+                    return;
+                }
+
+                flashSalePricingByKey.clear();
+                for (FlashSaleResponseDto.FlashSaleItemDto item : body.getData()) {
+                    if (item == null) {
+                        continue;
+                    }
+                    long[] pricing = new long[] { item.getPrice(), item.getOriginalPrice() };
+                    if (item.getSku() != null && !item.getSku().trim().isEmpty()) {
+                        flashSalePricingByKey.put(item.getSku().trim(), pricing);
+                    }
+                    if (item.getId() != null && !item.getId().trim().isEmpty()) {
+                        flashSalePricingByKey.put(item.getId().trim(), pricing);
+                    }
+                }
+
+                if (binding != null) {
                     applyFiltersAndSort();
                 }
-            });
-        } else {
-            // Observe products by Subcategory
-            productRepository.observeProductsBySubcategory(selectedSubcategoryId).removeObservers(getViewLifecycleOwner());
-            productRepository.observeProductsBySubcategory(selectedSubcategoryId).observe(getViewLifecycleOwner(), products -> {
-                if (products != null) {
-                    currentProducts = products;
-                    applyFiltersAndSort();
-                }
-            });
+            }
+
+            @Override
+            public void onFailure(Call<FlashSaleResponseDto> call, Throwable t) {
+                // Keep catalog-only discount filtering when flash sale API is unavailable.
+            }
+        });
+    }
+
+    private Product applyFlashSalePricing(Product product) {
+        if (product == null) {
+            return null;
         }
+
+        long[] pricing = null;
+        if (product.getSku() != null && !product.getSku().trim().isEmpty()) {
+            pricing = flashSalePricingByKey.get(product.getSku().trim());
+        }
+        if (pricing == null && product.getId() != null && !product.getId().trim().isEmpty()) {
+            pricing = flashSalePricingByKey.get(product.getId().trim());
+        }
+        if (pricing == null) {
+            return product;
+        }
+
+        return product.withPricing(pricing[0], pricing[1]);
+    }
+
+    private boolean isDiscountedProduct(Product product) {
+        Product displayProduct = applyFlashSalePricing(product);
+        return displayProduct != null && displayProduct.hasActiveDiscount();
+    }
+
+    private boolean matchesSelectedSubcategory(Product product) {
+        if (product == null) {
+            return false;
+        }
+        if (selectedSubcategoryId == null || selectedSubcategoryId.isEmpty()) {
+            return true;
+        }
+        if (selectedSubcategoryId.equals(product.getSubcategoryId())) {
+            return true;
+        }
+        return matchesSubcategoryFallback(product, selectedSubcategoryId);
+    }
+
+    private boolean matchesSubcategoryFallback(Product product, String subcategoryId) {
+        if (product == null || subcategoryId == null || subcategoryId.isEmpty()) {
+            return false;
+        }
+        String name = normalizeProductName(product.getName());
+        switch (subcategoryId) {
+            case "SUB00101":
+                return name.contains("ca cao") || name.contains("cacao");
+            case "SUB00102":
+                return name.contains("ca phe") || name.contains("coffee");
+            default:
+                return false;
+        }
+    }
+
+    private static String normalizeProductName(String value) {
+        String raw = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        String stripped = Normalizer.normalize(raw, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return stripped.replace('đ', 'd');
     }
 
     private void applyFiltersAndSort() {
@@ -653,23 +782,26 @@ public class CategoryDetailFragment extends Fragment {
         String query = binding.layoutSearch.edtSearch.getText().toString().toLowerCase();
 
         for (Product product : currentProducts) {
+            Product displayProduct = applyFlashSalePricing(product);
             boolean matchesSearch = query.isEmpty() || product.getName().toLowerCase().contains(query);
-            boolean matchesPrice = product.getPrice() >= selectedMinPrice && product.getPrice() <= selectedMaxPrice;
+            boolean matchesPrice = displayProduct.getPrice() >= selectedMinPrice
+                    && displayProduct.getPrice() <= selectedMaxPrice;
             boolean matchesBrand = selectedBrand.isEmpty()
                     || selectedBrand.equalsIgnoreCase(resolveBrandLabel(product));
+            boolean matchesSubcategory = matchesSelectedSubcategory(product);
 
-            if (matchesSearch && matchesPrice && matchesBrand && !tasteStore.shouldHide(product)) {
+            if (matchesSearch && matchesPrice && matchesBrand && matchesSubcategory) {
                 if ("discount".equals(selectedSort)) {
-                    if (product.hasActiveDiscount()) {
-                        filtered.add(product);
+                    if (isDiscountedProduct(product)) {
+                        filtered.add(displayProduct);
                     }
                 } else if ("organic".equals(selectedSort)) {
                     if (product.getName().toLowerCase().contains("organic") || 
                         (product.getDescription() != null && product.getDescription().toLowerCase().contains("organic"))) {
-                        filtered.add(product);
+                        filtered.add(displayProduct);
                     }
                 } else {
-                    filtered.add(product);
+                    filtered.add(displayProduct);
                 }
             }
         }
@@ -705,7 +837,27 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (voiceInputController != null) {
+            voiceInputController.onResume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (voiceInputController != null) {
+            voiceInputController.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
     public void onDestroyView() {
+        if (voiceInputController != null) {
+            voiceInputController.release();
+            voiceInputController = null;
+        }
         super.onDestroyView();
         binding = null;
     }
