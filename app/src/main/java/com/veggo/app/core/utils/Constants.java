@@ -1,17 +1,12 @@
 package com.veggo.app.core.utils;
 
-import com.veggo.app.BuildConfig;
-
 public final class Constants {
-    /**
-     * API URL lấy từ local.properties lúc build (Gradle → BuildConfig):
-     * - dev.api.mode=emulator  → http://10.0.2.2:5001/api/
-     * - dev.api.mode=physical  → http://{dev.api.host}:5001/api/
-     * - hoặc api.base.url=http://<IP>:5001/api/
-     *
-     * Đổi IP Wi-Fi: sửa local.properties rồi Rebuild — không cần sửa file Java.
-     */
-    public static final String API_BASE_URL = BuildConfig.API_BASE_URL;
+    // Emulator default.
+    public static final String API_BASE_URL = "http://10.0.2.2:5001/api/";
+    // Physical device alternatives:
+    // public static final String API_BASE_URL = "http://172.20.10.2:5001/api/";
+    // public static final String API_BASE_URL = "http://10.0.44.124:5001/api/";
+    // public static final String API_BASE_URL = "http://10.0.23.230:5001/api/";
 
     public static final String COLLECTION_PRODUCTS = "products";
     public static final String COLLECTION_USERS = "users";
