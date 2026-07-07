@@ -78,6 +78,10 @@ export const routes: Routes = [
         loadComponent: () => import('./consultationdetail/consultationdetail').then(m => m.ConsultationDetail)
       },
       {
+        path: 'support-chat',
+        loadComponent: () => import('./supportchat/supportchat').then(m => m.SupportChat)
+      },
+      {
         path: 'settings',
         loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard)
       }

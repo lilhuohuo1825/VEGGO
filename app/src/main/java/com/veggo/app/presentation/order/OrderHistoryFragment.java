@@ -291,7 +291,7 @@ public class OrderHistoryFragment extends BaseFragment {
                     Toast.makeText(requireContext(), "Không tìm thấy đơn guest", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                AssetModels.Order order = AssetScreenData.cacheGuestOrder(response.body());
+                AssetModels.Order order = AssetScreenData.cacheGuestOrder(requireContext(), response.body());
                 pendingStatusAfterLoad = tabStatusFor(order.status);
                 searchQuery = order.orderId;
                 loadOrders(false);

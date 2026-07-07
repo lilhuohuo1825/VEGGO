@@ -90,7 +90,7 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
                 binding.tvDiscountBadge.setVisibility(android.view.View.GONE);
             }
 
-            ProductImageUtils.loadInto(binding.getRoot().getContext(), binding.ivRelatedProduct, product.getImageUrl());
+            ProductImageUtils.loadProductImage(binding.getRoot().getContext(), binding.ivRelatedProduct, product);
 
             binding.getRoot().setOnClickListener(v -> {
                 if (productClickListener != null) productClickListener.onProductClick(product);

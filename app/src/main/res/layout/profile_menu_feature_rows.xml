@@ -16,6 +16,17 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/profileWalletRow"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView android:layout_width="@dimen/profile_menu_icon_size_large" android:layout_height="@dimen/profile_menu_icon_size_large" android:contentDescription="Ví VeggoPay" android:scaleType="fitCenter" android:src="@drawable/ic_veggopay_green" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/spacing_md" android:layout_weight="1" android:text="Ví VeggoPay" android:textColor="@color/veggo_text_secondary" android:fontFamily="@font/inter" android:textSize="16sp" />
+        <ImageView android:layout_width="@dimen/profile_menu_chevron_size" android:layout_height="@dimen/profile_menu_chevron_size" android:contentDescription="Ví VeggoPay" android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/profileCarbonRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"

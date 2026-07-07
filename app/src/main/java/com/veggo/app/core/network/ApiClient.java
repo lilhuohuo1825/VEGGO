@@ -1,5 +1,6 @@
 package com.veggo.app.core.network;
 
+import com.veggo.app.VeggoApplication;
 import com.veggo.app.core.utils.Constants;
 
 import java.util.concurrent.TimeUnit;
@@ -24,7 +25,7 @@ public final class ApiClient {
                     .connectTimeout(15, TimeUnit.SECONDS)
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
-                    .addInterceptor(new AuthInterceptor())
+                    .addInterceptor(new AuthInterceptor(VeggoApplication.getInstance()))
                     .addInterceptor(logging)
                     .build();
 

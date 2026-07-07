@@ -47,6 +47,9 @@ public class ProfileLoggedInFragment extends BaseFragment {
         view.findViewById(R.id.profileAddressRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), AddressBookActivity.class))
         );
+        view.findViewById(R.id.profileWalletRow).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), VeggoPayActivity.class))
+        );
         view.findViewById(R.id.profileCarbonRow).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CarbonPointsActivity.class))
         );
@@ -233,6 +236,7 @@ public class ProfileLoggedInFragment extends BaseFragment {
 
     private void logout() {
         new AppPreferences(requireContext()).logout();
+        new com.veggo.app.core.preferences.PreferencesManager(requireContext()).clearAccessToken();
 
         Fragment guestFragment = new ProfileFragment();
         requireActivity().getSupportFragmentManager()

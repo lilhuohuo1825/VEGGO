@@ -16,7 +16,9 @@ import com.veggo.app.data.mapper.RecipeMapper;
 import com.veggo.app.data.mapper.ReviewMapper;
 import com.veggo.app.data.remote.api.ProductApi;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.ProductDisplayValidator;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.model.Recipe;
 import com.veggo.app.domain.model.Review;
@@ -62,10 +64,17 @@ public class ProductRepositoryImpl implements ProductRepository {
             List<Product> products = new ArrayList<>();
             for (int i = 0; i < projections.size(); i++) {
                 ProductItemProjection projection = projections.get(i);
-                if (!ProductDisplayValidator.isDisplayable(projection)) {
+                if (ProductDisplayValidator.isDisplayable(projection)) {
+                    products.add(ProductMapper.fromProjection(projection));
                     continue;
                 }
-                products.add(ProductMapper.fromProjection(projection));
+                ProductEntity entity = productDao.getProductById(projection.getId());
+                if (entity != null) {
+                    enrichEntityImageIfNeeded(entity);
+                    if (ProductDisplayValidator.isDisplayable(entity)) {
+                        products.add(ProductMapper.fromEntity(entity));
+                    }
+                }
             }
             return products;
         });
@@ -194,11 +203,28 @@ public class ProductRepositoryImpl implements ProductRepository {
 
         ProductEntity incoming = ProductMapper.toEntity(dto);
         preserveExistingImageIfNeeded(incoming);
+        enrichEntityImageIfNeeded(incoming);
+
+        if (!ProductDisplayValidator.isDisplayable(incoming)
+                && ProductDisplayValidator.hasValidImage(
+                        ProductCatalogImageResolver.resolveBySku(context, incoming.getSku()))) {
+            incoming.setImageUrl(ProductCatalogImageResolver.resolveBySku(context, incoming.getSku()));
+        }
 
         if (!ProductDisplayValidator.isDisplayable(incoming)) {
             return null;
         }
         return incoming;
+    }
+
+    private void enrichEntityImageIfNeeded(ProductEntity entity) {
+        if (entity == null || ProductDisplayValidator.hasValidImage(entity.getImageUrl())) {
+            return;
+        }
+        String imageUrl = ProductCatalogImageResolver.resolveBySku(context, entity.getSku());
+        if (ProductDisplayValidator.hasValidImage(imageUrl)) {
+            entity.setImageUrl(imageUrl);
+        }
     }
 
     private void preserveExistingImageIfNeeded(ProductEntity incoming) {
@@ -216,6 +242,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<Product> products = new ArrayList<>();
         if (entities != null) {
             for (com.veggo.app.data.local.entity.ProductEntity entity : entities) {
+                enrichEntityImageIfNeeded(entity);
                 if (!ProductDisplayValidator.isDisplayable(entity)) {
                     continue;
                 }
@@ -257,10 +284,17 @@ public class ProductRepositoryImpl implements ProductRepository {
             List<Product> products = new ArrayList<>();
             if (projections != null) {
                 for (ProductItemProjection projection : projections) {
-                    if (!ProductDisplayValidator.isDisplayable(projection)) {
+                    if (ProductDisplayValidator.isDisplayable(projection)) {
+                        products.add(ProductMapper.fromProjection(projection));
                         continue;
                     }
-                    products.add(ProductMapper.fromProjection(projection));
+                    ProductEntity entity = productDao.getProductById(projection.getId());
+                    if (entity != null) {
+                        enrichEntityImageIfNeeded(entity);
+                        if (ProductDisplayValidator.isDisplayable(entity)) {
+                            products.add(ProductMapper.fromEntity(entity));
+                        }
+                    }
                 }
             }
             return products;

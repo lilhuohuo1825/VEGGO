@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F7F9"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="4dp"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_main" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/inter"
+            android:text="QR của tôi"
+            android:textColor="#1E1E1E"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- 2 Tabs Filter Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:orientation="horizontal">
+
+        <!-- Tab: QR nhận tiền -->
+        <FrameLayout
+            android:id="@+id/tabReceive"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView
+                android:id="@+id/tvTabReceive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/inter"
+                android:text="QR nhận tiền"
+                android:textColor="@color/primary_main"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <View
+                android:id="@+id/indicatorReceive"
+                android:layout_width="80dp"
+                android:layout_height="3dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@drawable/bg_tab_line_curved" />
+        </FrameLayout>
+
+        <!-- Tab: QR thanh toán -->
+        <FrameLayout
+            android:id="@+id/tabPay"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView
+                android:id="@+id/tvTabPay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/inter"
+                android:text="QR thanh toán"
+                android:textColor="#707070"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <View
+                android:id="@+id/indicatorPay"
+                android:layout_width="80dp"
+                android:layout_height="3dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@drawable/bg_tab_line_curved"
+                android:visibility="invisible" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Card Background Container (Can change backgrounds) -->
+            <FrameLayout
+                android:id="@+id/cardContainer"
+                android:layout_width="match_parent"
+                android:layout_marginHorizontal="12dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_checkout_card_white"
+                android:elevation="4dp"
+                android:padding="20dp">
+
+                <!-- Overlay Background Theme Image -->
+                <ImageView
+                    android:id="@+id/imgCardTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <!-- Avatar Circle Frame -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        app:cardCornerRadius="28dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E0E0E0">
+                        <ImageView
+                            android:id="@+id/imgAvatar"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/ic_user_full" />
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:id="@+id/tvUserName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:fontFamily="@font/inter_semibold"
+                        android:text="NGUYỄN HẢI ĐĂNG"
+                        android:textColor="#1E1E1E"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/tvUserPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="@font/inter"
+                        android:text="SĐT: ******700"
+                        android:textColor="#888888"
+                        android:textSize="13sp" />
+
+                    <!-- Simulated Barcode for Payment (Initially hidden) -->
+                    <ImageView
+                        android:id="@+id/imgBarcode"
+                        android:layout_width="220dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="14dp"
+                        android:src="@drawable/ic_barcode"
+                        android:scaleType="fitCenter"
+                        android:visibility="gone" />
+
+                    <!-- QR Frame -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="150dp"
+                        android:layout_height="150dp"
+                        android:layout_marginTop="14dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="1dp">
+                        <ImageView
+                            android:id="@+id/imgQr"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp"
+                            android:src="@drawable/qr_payment" />
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Add Amount section (Receive QR only) -->
+                    <TextView
+                        android:id="@+id/tvAmountHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:textColor="@color/primary_main"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/btnAddAmount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_button_outline_green"
+                        android:fontFamily="@font/inter_semibold"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="+ Thêm số tiền"
+                        android:textColor="@color/primary_main"
+                        android:textSize="12sp" />
+
+                    <!-- Payment Tip Note (Payment QR only) -->
+                    <TextView
+                        android:id="@+id/tvPaymentNote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="@font/inter"
+                        android:gravity="center"
+                        android:text="Đưa mã này cho thu ngân để thanh toán bằng ví VeggoPay"
+                        android:textColor="#888888"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <!-- Payment Timer (Payment QR only) -->
+                    <TextView
+                        android:id="@+id/tvPaymentTimer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="center"
+                        android:text="Tự động làm mới sau 60s"
+                        android:textColor="@color/primary_main"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Theme Selection Container -->
+            <LinearLayout
+                android:id="@+id/layoutThemeSelection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Themes Heading -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Chủ đề hình nền"
+                    android:textColor="#1E1E1E"
+                    android:textSize="14sp" />
+
+                <!-- Themes list horizontal scroll -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="8dp">
+
+                        <!-- Custom Add background item -->
+                        <LinearLayout
+                            android:id="@+id/btnThemeAdd"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_promotion_code_dashed"
+                            android:gravity="center"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:text="+"
+                                android:textColor="#666666"
+                                android:textSize="20sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:text="Thêm ảnh"
+                                android:textColor="#666666"
+                                android:textSize="8sp" />
+                        </LinearLayout>
+
+                        <!-- Mock Theme 1: Default -->
+                        <View
+                            android:id="@+id/btnThemeDefault"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="#FFFFFF"
+                            android:elevation="1dp" />
+
+                        <!-- Mock Theme 2: Pink Gradient -->
+                        <View
+                            android:id="@+id/btnThemePink"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="#FFE4E1"
+                            android:elevation="1dp" />
+
+                        <!-- Mock Theme 3: Yellow Pattern -->
+                        <View
+                            android:id="@+id/btnThemeYellow"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="#FFF8DC"
+                            android:elevation="1dp" />
+
+                        <!-- Mock Theme 4: Blue pattern -->
+                        <View
+                            android:id="@+id/btnThemeBlue"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="#E0FFFF"
+                            android:elevation="1dp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom action buttons: Tải xuống & Chia sẻ pinned at the bottom -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnDownload"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_outline_green"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Tải xuống"
+            android:textColor="@color/primary_main"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/btnShare"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_primary"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="Chia sẻ"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
+    </LinearLayout>
+</LinearLayout>

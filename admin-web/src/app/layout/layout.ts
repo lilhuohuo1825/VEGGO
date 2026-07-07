@@ -84,6 +84,10 @@ export class Layout implements OnInit, OnDestroy {
       title: 'Cài đặt',
       route: '/settings',
     },
+    supportChat: {
+      title: 'Chat hỗ trợ',
+      route: '/support-chat',
+    },
   };
 
   // Computed signals từ AuthService

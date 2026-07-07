@@ -195,8 +195,8 @@
                 android:layout_marginTop="10dp"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                app:spanCount="5"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_home_utility" />
 
             <!-- Banner -->

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F9F9F9"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header Toolbar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="8dp"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_main" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/inter"
+            android:text="Biến động số dư"
+            android:textColor="#1E1E1E"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnReadAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:fontFamily="@font/inter_semibold"
+            android:text="Đọc tất cả"
+            android:textColor="@color/primary_main"
+            android:textSize="14sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+    </RelativeLayout>
+
+    <!-- 3 Tabs Filter Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:orientation="horizontal">
+
+        <!-- Tab: Tất cả -->
+        <FrameLayout
+            android:id="@+id/tabAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView
+                android:id="@+id/tvTabAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/inter"
+                android:text="Tất cả"
+                android:textColor="@color/primary_main"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <View
+                android:id="@+id/indicatorAll"
+                android:layout_width="70dp"
+                android:layout_height="8dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@drawable/bg_tab_line_curved" />
+        </FrameLayout>
+
+        <!-- Tab: Nhận tiền -->
+        <FrameLayout
+            android:id="@+id/tabReceive"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView
+                android:id="@+id/tvTabReceive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/inter"
+                android:text="Nhận tiền"
+                android:textColor="#707070"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <View
+                android:id="@+id/indicatorReceive"
+                android:layout_width="70dp"
+                android:layout_height="8dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@drawable/bg_tab_line_curved"
+                android:visibility="invisible" />
+        </FrameLayout>
+
+        <!-- Tab: Chuyển tiền -->
+        <FrameLayout
+            android:id="@+id/tabSend"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+            <TextView
+                android:id="@+id/tvTabSend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/inter"
+                android:text="Chuyển tiền"
+                android:textColor="#707070"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <View
+                android:id="@+id/indicatorSend"
+                android:layout_width="70dp"
+                android:layout_height="8dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@drawable/bg_tab_line_curved"
+                android:visibility="invisible" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTransactions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            tools:listitem="@layout/item_wallet_transaction" />
+
+        <!-- Empty State -->
+        <LinearLayout
+            android:id="@+id/layoutEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="Chưa có giao dịch nào"
+                android:textColor="#707070"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

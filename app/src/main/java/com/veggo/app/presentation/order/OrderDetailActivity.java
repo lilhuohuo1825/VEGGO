@@ -131,7 +131,7 @@ public class OrderDetailActivity extends BaseActivity {
             OrderApi orderApi = ApiClient.createService(OrderApi.class);
             retrofit2.Response<OrderDto> response = orderApi.getOrderById(orderId).execute();
             if (response.isSuccessful() && response.body() != null) {
-                AssetScreenData.cacheGuestOrder(response.body());
+                AssetScreenData.cacheGuestOrder(this, response.body());
             }
         } catch (Exception exception) {
             exception.printStackTrace();

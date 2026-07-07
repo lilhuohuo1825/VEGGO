@@ -92,6 +92,9 @@ export class AuthService {
       map((response: any) => {
         if (response && response.success && response.user) {
           localStorage.setItem('adminUser', JSON.stringify(response.user));
+          if (response.accessToken) {
+            localStorage.setItem('adminAccessToken', String(response.accessToken));
+          }
           this.isAuthenticated.set(true);
           this.currentUser.set(response.user);
           return true;
@@ -139,6 +142,7 @@ export class AuthService {
    */
   logout(): void {
     localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminAccessToken');
     signOut(this.auth).then(() => {
       this.clearSession();
       this.router.navigate(['/login']);
@@ -154,6 +158,7 @@ export class AuthService {
    */
   private clearSession(): void {
     localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminAccessToken');
     this.isAuthenticated.set(false);
     this.currentUser.set(null);
   }

@@ -38,6 +38,7 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.preferences.PreferencesManager;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 
@@ -201,6 +202,9 @@ public class LoginActivity extends BaseActivity {
                     userDto.getEmail(),
                     userDto.getAvatarUrl()
             );
+            if (userDto.getAccessToken() != null && !userDto.getAccessToken().trim().isEmpty()) {
+                new PreferencesManager(this).saveAccessToken(userDto.getAccessToken().trim());
+            }
             Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
 
             PendingCheckoutStore pendingCheckoutStore = new PendingCheckoutStore(this);

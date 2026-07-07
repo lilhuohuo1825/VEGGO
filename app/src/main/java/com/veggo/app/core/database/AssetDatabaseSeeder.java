@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import com.veggo.app.assets.AssetFiles;
 import com.veggo.app.assets.AssetJsonLoader;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.ProductDisplayValidator;
 import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.local.entity.AssetRecordEntity;
@@ -120,6 +121,7 @@ public final class AssetDatabaseSeeder {
             }
         });
         AssetDataStore.replaceAll(context, assetRecords);
+        ProductCatalogImageResolver.invalidateAssetCache();
     }
 
     private static List<ProductEntity> readProducts(AssetJsonLoader loader) throws Exception {

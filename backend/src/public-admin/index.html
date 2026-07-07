@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VEGGO Admin - Support Chat</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background: #f5f7fb; margin: 0; height: 100vh; display: flex; }
+      .sidebar { width: 360px; background: #fff; border-right: 1px solid #e6e9f0; display: flex; flex-direction: column; }
+      .top { padding: 14px 14px; border-bottom: 1px solid #e6e9f0; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+      .top h1 { margin: 0; font-size: 16px; }
+      .top button { border: 1px solid #e6e9f0; background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+      .list { overflow: auto; padding: 10px; gap: 10px; display: flex; flex-direction: column; }
+      .item { border: 1px solid #e6e9f0; background: #fff; border-radius: 12px; padding: 10px; cursor:pointer; }
+      .item .row { display:flex; justify-content:space-between; gap:10px; }
+      .badge { font-size: 12px; background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius: 999px; }
+      .main { flex: 1; display: flex; flex-direction: column; }
+      .header { padding: 14px 16px; border-bottom: 1px solid #e6e9f0; background: #fff; display:flex; align-items:center; justify-content:space-between; }
+      .chat { flex:1; overflow:auto; padding: 16px; }
+      .bubble { max-width: 70%; padding: 10px 12px; border-radius: 14px; margin: 8px 0; white-space: pre-wrap; }
+      .bubble.user { background:#e8f5ff; margin-left:auto; }
+      .bubble.admin { background:#f0fdf4; margin-right:auto; }
+      .composer { display:flex; gap:10px; padding: 12px; border-top: 1px solid #e6e9f0; background:#fff; }
+      .composer input { flex:1; border:1px solid #d8dde7; border-radius: 12px; padding: 10px 12px; outline:none; }
+      .composer button { border:0; border-radius: 12px; padding: 10px 14px; background:#18a558; color:#fff; font-weight:600; cursor:pointer; }
+      .muted { color:#6b7280; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="top">
+        <h1>Support conversations</h1>
+        <div>
+          <button id="logout">Logout</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+
+    <div class="main">
+      <div class="header">
+        <div>
+          <div><strong id="title">Chọn 1 conversation</strong></div>
+          <div class="muted" id="status">Chưa kết nối</div>
+        </div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="composer">
+        <input id="text" placeholder="Nhập tin nhắn..." />
+        <button id="send">Gửi</button>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const token = localStorage.getItem('veggo_admin_accessToken');
+      if (!token) location.href = '/admin/login.html';
+
+      const listEl = document.getElementById('list');
+      const chatEl = document.getElementById('chat');
+      const statusEl = document.getElementById('status');
+      const titleEl = document.getElementById('title');
+      const textEl = document.getElementById('text');
+      const sendBtn = document.getElementById('send');
+      document.getElementById('logout').onclick = () => {
+        localStorage.removeItem('veggo_admin_accessToken');
+        localStorage.removeItem('veggo_admin_user');
+        location.href = '/admin/login.html';
+      };
+
+      let socket = null;
+      let currentConversationId = null;
+
+      function renderBubble(senderType, text) {
+        const div = document.createElement('div');
+        div.className = 'bubble ' + (senderType === 'user' ? 'user' : 'admin');
+        div.textContent = text || '';
+        chatEl.appendChild(div);
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      async function api(path) {
+        const res = await fetch(path, { headers: { Authorization: 'Bearer ' + token } });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.message || 'API error');
+        return json.data;
+      }
+
+      async function loadConversations() {
+        listEl.innerHTML = '';
+        const data = await api('/api/support/conversations');
+        data.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <div class="row">
+              <div><strong>${c.customerId || 'unknown'}</strong></div>
+              <div class="badge">${c.status || 'open'}</div>
+            </div>
+            <div class="muted">unreadUser: ${c.unreadCountUser || 0} • unreadAdmin: ${c.unreadCountAdmin || 0}</div>
+          `;
+          div.onclick = () => openConversation(c._id);
+          listEl.appendChild(div);
+        });
+      }
+
+      async function openConversation(conversationId) {
+        currentConversationId = conversationId;
+        titleEl.textContent = 'Conversation ' + conversationId;
+        chatEl.innerHTML = '';
+        const msgs = await api(`/api/support/conversations/${conversationId}/messages?limit=100`);
+        msgs.forEach(m => renderBubble(m.senderType, m.text));
+
+        if (!socket) {
+          socket = io({ auth: { token } });
+          socket.on('connect', () => statusEl.textContent = 'Đã kết nối');
+          socket.on('disconnect', () => statusEl.textContent = 'Mất kết nối');
+          socket.on('message:new', (m) => {
+            if (!m || m.conversationId !== currentConversationId) return;
+            renderBubble(m.senderType, m.text);
+          });
+        }
+
+        socket.emit('conversation:join', { conversationId }, (ack) => {
+          // ignore
+        });
+      }
+
+      sendBtn.onclick = () => {
+        const text = (textEl.value || '').trim();
+        if (!text) return;
+        if (!socket || !currentConversationId) return;
+        textEl.value = '';
+        socket.emit('message:send', { conversationId: currentConversationId, text, clientMessageId: String(Date.now()) });
+      };
+
+      loadConversations().catch(() => location.href = '/admin/login.html');
+    </script>
+  </body>
+</html>
+

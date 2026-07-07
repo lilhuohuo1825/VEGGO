@@ -228,6 +228,7 @@ public class PersonalInfoActivity extends BaseActivity {
 
     private void logout() {
         appPreferences.logout();
+        new com.veggo.app.core.preferences.PreferencesManager(this).clearAccessToken();
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_SELECTED_NAV_ITEM, R.id.nav_profile);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

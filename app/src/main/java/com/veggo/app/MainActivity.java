@@ -6,8 +6,10 @@ import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
@@ -29,6 +31,8 @@ import com.veggo.app.presentation.profile.ProfileFragment;
 import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
 import com.veggo.app.presentation.profile.PostNotificationsActivity;
 import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
+import com.veggo.app.presentation.support.SupportChatActivity;
+import com.veggo.app.core.preferences.PreferencesManager;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
@@ -37,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ComponentBottomNavBinding bottomNavBinding;
     private Tab currentTab;
+    private boolean supportBubbleInitialized = false;
     private android.net.Uri cameraImageUri = null;
     private boolean isScanReceiptMode = true;
     private View currentNotificationAlert;
@@ -107,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
                 setBottomNavVisible(true);
             }
+            updateSupportChatBubbleVisibility();
         });
 
         // Seed database from JSON assets if needed
@@ -133,6 +139,250 @@ public class MainActivity extends AppCompatActivity {
                     openScanScreen();
                 }
             }
+        } else if (savedInstanceState.containsKey("current_tab")) {
+            currentTab = Tab.valueOf(savedInstanceState.getString("current_tab", Tab.HOME.name()));
+            setSelectedTab(currentTab);
+        } else {
+            syncCurrentTabFromVisibleFragment();
+        }
+
+        setupSupportChatBubble();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (currentTab != null) {
+            outState.putString("current_tab", currentTab.name());
+        }
+    }
+
+    private void syncCurrentTabFromVisibleFragment() {
+        Fragment visible = getVisibleMainFragment();
+        if (visible instanceof OrderHistoryFragment) {
+            currentTab = Tab.ORDERS;
+        } else if (visible instanceof ProfileLoggedInFragment || visible instanceof ProfileFragment) {
+            currentTab = Tab.ACCOUNT;
+        } else {
+            currentTab = Tab.HOME;
+        }
+        setSelectedTab(currentTab);
+    }
+
+    private void setupSupportChatBubble() {
+        if (binding == null || binding.supportChatBubble == null) {
+            return;
+        }
+        final View bubble = binding.supportChatBubble;
+
+        if (!supportBubbleInitialized) {
+            supportBubbleInitialized = true;
+            android.content.SharedPreferences prefs = getSharedPreferences("support_chat_bubble", MODE_PRIVATE);
+            float savedX = prefs.getFloat("x", -1f);
+            float savedY = prefs.getFloat("y", -1f);
+            bubble.post(() -> {
+                if (savedX >= 0f) bubble.setX(savedX);
+                if (savedY >= 0f) bubble.setY(savedY);
+                clampSupportBubbleWithinScreen(bubble);
+                avoidOverlapWithHomeChatbotBubble(bubble);
+            });
+
+            bubble.setOnClickListener(v -> {
+                if (!new AppPreferences(this).isLoggedIn()) {
+                    android.widget.Toast.makeText(this, "Vui lòng đăng nhập để chat hỗ trợ", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                startActivity(new Intent(this, SupportChatActivity.class));
+            });
+
+            attachSupportBubbleDragBehavior(bubble, prefs);
+        }
+
+        updateSupportChatBubbleVisibility();
+    }
+
+    private boolean shouldShowSupportChatBubble() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            return false;
+        }
+        return resolveActiveTab() == Tab.HOME;
+    }
+
+    private Tab resolveActiveTab() {
+        if (currentTab != null) {
+            return currentTab;
+        }
+        Fragment visible = getVisibleMainFragment();
+        if (visible instanceof OrderHistoryFragment) {
+            return Tab.ORDERS;
+        }
+        if (visible instanceof ProfileLoggedInFragment || visible instanceof ProfileFragment) {
+            return Tab.ACCOUNT;
+        }
+        return Tab.HOME;
+    }
+
+    private void updateSupportChatBubbleVisibility() {
+        if (binding == null || binding.supportChatBubble == null) {
+            return;
+        }
+        final View bubble = binding.supportChatBubble;
+        boolean show = shouldShowSupportChatBubble();
+        bubble.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (!show) {
+            return;
+        }
+        Runnable positionBubble = () -> {
+            clampSupportBubbleWithinScreen(bubble);
+            avoidOverlapWithHomeChatbotBubble(bubble);
+        };
+        ViewGroup parent = (ViewGroup) bubble.getParent();
+        if (parent != null && parent.getWidth() > 0 && parent.getHeight() > 0) {
+            positionBubble.run();
+        } else {
+            bubble.post(positionBubble);
+        }
+    }
+
+    private void attachSupportBubbleDragBehavior(View bubble, android.content.SharedPreferences prefs) {
+        final float density = getResources().getDisplayMetrics().density;
+        final float touchSlop = 8f * density;
+        final float edgeMargin = 16f * density;
+        final float bottomSafeMargin = 96f * density;
+        final int[] parentLocation = new int[2];
+        final ViewGroup parent = (ViewGroup) bubble.getParent();
+
+        bubble.setOnTouchListener(new View.OnTouchListener() {
+            boolean dragging = false;
+            float offsetX, offsetY;
+            float downRawX, downRawY;
+
+            @Override
+            public boolean onTouch(View view, android.view.MotionEvent event) {
+                if (parent == null) return false;
+                parent.getLocationOnScreen(parentLocation);
+                float localX = event.getRawX() - parentLocation[0];
+                float localY = event.getRawY() - parentLocation[1];
+
+                switch (event.getActionMasked()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        dragging = false;
+                        offsetX = localX - view.getX();
+                        offsetY = localY - view.getY();
+                        downRawX = event.getRawX();
+                        downRawY = event.getRawY();
+                        view.setPressed(true);
+                        return true;
+
+                    case android.view.MotionEvent.ACTION_MOVE:
+                        float deltaX = Math.abs(event.getRawX() - downRawX);
+                        float deltaY = Math.abs(event.getRawY() - downRawY);
+                        if (!dragging && (deltaX > touchSlop || deltaY > touchSlop)) {
+                            dragging = true;
+                            view.setPressed(false);
+                        }
+                        if (dragging) {
+                            float targetX = clampX(view, parent, localX - offsetX, edgeMargin);
+                            float targetY = clampY(view, parent, localY - offsetY, edgeMargin, bottomSafeMargin);
+                            view.setX(targetX);
+                            view.setY(targetY);
+                        }
+                        return true;
+
+                    case android.view.MotionEvent.ACTION_UP:
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                        view.setPressed(false);
+                        if (dragging) {
+                            snapToEdge(view, parent, edgeMargin, prefs);
+                            avoidOverlapWithHomeChatbotBubble(view);
+                            prefs.edit().putFloat("x", view.getX()).putFloat("y", view.getY()).apply();
+                            dragging = false;
+                            return true;
+                        }
+                        view.performClick();
+                        return true;
+
+                    default:
+                        return false;
+                }
+            }
+        });
+    }
+
+    private float clampX(View bubble, ViewGroup parent, float x, float edgeMargin) {
+        float minX = edgeMargin;
+        float maxX = parent.getWidth() - bubble.getWidth() - edgeMargin;
+        if (maxX < minX) maxX = minX;
+        return Math.max(minX, Math.min(x, maxX));
+    }
+
+    private float clampY(View bubble, ViewGroup parent, float y, float topMargin, float bottomSafeMargin) {
+        float minY = 12f * getResources().getDisplayMetrics().density;
+        float maxY = parent.getHeight() - bubble.getHeight() - bottomSafeMargin;
+        if (maxY < minY) maxY = minY;
+        return Math.max(minY, Math.min(y, maxY));
+    }
+
+    private void snapToEdge(View bubble, ViewGroup parent, float edgeMargin, android.content.SharedPreferences prefs) {
+        float centerX = bubble.getX() + bubble.getWidth() / 2f;
+        float targetX = centerX < parent.getWidth() / 2f
+                ? edgeMargin
+                : parent.getWidth() - bubble.getWidth() - edgeMargin;
+        bubble.animate()
+                .x(targetX)
+                .setDuration(180L)
+                .withEndAction(() -> prefs.edit().putFloat("x", bubble.getX()).putFloat("y", bubble.getY()).apply())
+                .start();
+    }
+
+    private void clampSupportBubbleWithinScreen(View bubble) {
+        ViewGroup parent = (ViewGroup) bubble.getParent();
+        if (parent == null) return;
+        final float density = getResources().getDisplayMetrics().density;
+        final float edgeMargin = 16f * density;
+        final float bottomSafeMargin = 168f * density;
+        bubble.setX(clampX(bubble, parent, bubble.getX(), edgeMargin));
+        bubble.setY(clampY(bubble, parent, bubble.getY(), edgeMargin, bottomSafeMargin));
+    }
+
+    private void avoidOverlapWithHomeChatbotBubble(View supportBubble) {
+        try {
+            Fragment fragment = getVisibleMainFragment();
+            if (!(fragment instanceof HomeFragment)) {
+                return;
+            }
+            if (fragment.getView() == null) return;
+            View chatbot = fragment.getView().findViewById(R.id.btnChatbot);
+            if (chatbot == null || chatbot.getVisibility() != View.VISIBLE || supportBubble.getVisibility() != View.VISIBLE) {
+                return;
+            }
+
+            int[] supportLoc = new int[2];
+            int[] chatbotLoc = new int[2];
+            supportBubble.getLocationOnScreen(supportLoc);
+            chatbot.getLocationOnScreen(chatbotLoc);
+
+            android.graphics.RectF supportRect = new android.graphics.RectF(
+                    supportLoc[0],
+                    supportLoc[1],
+                    supportLoc[0] + supportBubble.getWidth(),
+                    supportLoc[1] + supportBubble.getHeight()
+            );
+            android.graphics.RectF chatbotRect = new android.graphics.RectF(
+                    chatbotLoc[0],
+                    chatbotLoc[1],
+                    chatbotLoc[0] + chatbot.getWidth(),
+                    chatbotLoc[1] + chatbot.getHeight()
+            );
+
+            final float gap = 12f * getResources().getDisplayMetrics().density;
+            if (android.graphics.RectF.intersects(supportRect, chatbotRect)) {
+                // Prefer moving support bubble upward to avoid covering chatbot.
+                float newY = supportBubble.getY() - (chatbot.getHeight() + gap);
+                supportBubble.setY(newY);
+                clampSupportBubbleWithinScreen(supportBubble);
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -142,6 +392,9 @@ public class MainActivity extends AppCompatActivity {
         notificationHandler.removeCallbacks(notificationPollRunnable);
         refreshGlobalNotificationAlert(true);
         notificationHandler.postDelayed(notificationPollRunnable, 30000);
+
+        // Re-check login/token state after returning to MainActivity
+        setupSupportChatBubble();
     }
 
     @Override
@@ -197,26 +450,31 @@ public class MainActivity extends AppCompatActivity {
     private void openTab(Tab tab, boolean fromExternal, boolean scrollHomeProducts) {
         setBottomNavVisible(true);
 
-        boolean isAlreadyInHome = (currentTab == Tab.HOME);
-        
+        boolean isAlreadyInHome = currentTab == Tab.HOME
+                && getVisibleMainFragment() instanceof HomeFragment;
+
         if (tab == Tab.HOME && isAlreadyInHome) {
             Fragment currentFragment = getVisibleMainFragment();
-            if (!(currentFragment instanceof HomeFragment)) {
-                getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                setSelectedTab(Tab.HOME);
-                return;
-            }
             if (!fromExternal) {
                 ((HomeFragment) currentFragment).onHomeButtonPressed();
             }
             if (scrollHomeProducts) {
                 ((HomeFragment) currentFragment).scrollToProductsSection();
             }
+            updateSupportChatBubbleVisibility();
             return;
+        }
+
+        if (tab == Tab.HOME && currentTab == Tab.HOME) {
+            Fragment currentFragment = getVisibleMainFragment();
+            if (currentFragment != null && !(currentFragment instanceof HomeFragment)) {
+                getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            }
         }
 
         if (tab == Tab.COMMUNITY) {
             openCommunityScreen();
+            updateSupportChatBubbleVisibility();
             return;
         }
 
@@ -288,7 +546,10 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
 
+        ft.runOnCommit(this::updateSupportChatBubbleVisibility);
         ft.commit();
+        fm.executePendingTransactions();
+        updateSupportChatBubbleVisibility();
         if (scrollHomeProducts && targetFragment instanceof HomeFragment) {
             fm.executePendingTransactions();
             ((HomeFragment) targetFragment).scrollToProductsSection();
@@ -324,6 +585,7 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, cartFragment)
                 .addToBackStack("cart")
+                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
     }
 
@@ -350,6 +612,7 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category_detail")
+                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
     }
 
@@ -373,6 +636,7 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category")
+                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
     }
 

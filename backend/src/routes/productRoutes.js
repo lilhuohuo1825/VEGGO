@@ -211,13 +211,21 @@ router.get('/home', asyncHandler(async (req, res) => {
   const pipeline = getPipelineByTab(tab, limit, skip);
 
   const products = await Product.aggregate(pipeline);
+  const data = products.map(product => {
+    const imageUrl = sanitizeListImage(product.image || product.imageUrl);
+    return {
+      ...product,
+      imageUrl,
+      image: imageUrl ? [imageUrl] : (Array.isArray(product.image) ? product.image : []),
+    };
+  });
 
   res.json({
     success: true,
     message: 'Products retrieved successfully',
-    count: products.length,
+    count: data.length,
     tab,
-    data: products,
+    data,
   });
 }));
 

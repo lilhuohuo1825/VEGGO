@@ -55,6 +55,9 @@ public class UserDto {
     @SerializedName("addresses")
     private List<AddressDto> addresses;
 
+    @SerializedName("accessToken")
+    private String accessToken;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -105,6 +108,9 @@ public class UserDto {
 
     public List<AddressDto> getAddresses() { return addresses; }
     public void setAddresses(List<AddressDto> addresses) { this.addresses = addresses; }
+
+    public String getAccessToken() { return accessToken; }
+    public void setAccessToken(String accessToken) { this.accessToken = accessToken; }
 
     public static class AddressDto {
         @SerializedName("receiverName")

@@ -117,4 +117,12 @@ public final class AppModule {
     public static com.veggo.app.data.remote.api.ForecastApi provideForecastApi() {
         return ApiClient.createService(com.veggo.app.data.remote.api.ForecastApi.class);
     }
+
+    public static com.veggo.app.data.remote.api.WalletApi provideWalletApi() {
+        return ApiClient.createService(com.veggo.app.data.remote.api.WalletApi.class);
+    }
+
+    public static com.veggo.app.data.repository.WalletRepository provideWalletRepository() {
+        return new com.veggo.app.data.repository.WalletRepository(provideWalletApi());
+    }
 }

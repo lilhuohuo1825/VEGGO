@@ -9,6 +9,7 @@ const Otp = require('../models/Otp');
 const asyncHandler = require('../middleware/asyncHandler');
 const { uploadAvatar } = require('../utils/avatarStorage');
 const { validateProfileInput, formatProfileResponse } = require('../utils/profileValidation');
+const { signAccessToken } = require('../utils/jwt');
 
 const router = express.Router();
 
@@ -126,7 +127,12 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   delete user.Password;
   user._id = String(user._id);
-  res.json(user);
+  const accessToken = signAccessToken({
+    type: 'user',
+    customerId: user.CustomerID,
+    userId: user._id,
+  });
+  res.json({ ...user, accessToken });
 }));
 
 /**
@@ -208,12 +214,48 @@ router.post('/firebase-login', asyncHandler(async (req, res) => {
     const userResponse = userDoc.toObject();
     delete userResponse.Password;
     userResponse._id = String(userResponse._id);
+    const accessToken = signAccessToken({
+      type: 'user',
+      customerId: userResponse.CustomerID,
+      userId: userResponse._id,
+    });
 
-    res.json(userResponse);
+    res.json({ ...userResponse, accessToken });
   } catch (error) {
     console.error('Firebase Login Error:', error);
     res.status(401).json({ message: 'Xác thực tài khoản thất bại' });
   }
+}));
+
+/**
+ * 2.2 Làm mới access token cho phiên đăng nhập hiện tại (không cần mật khẩu)
+ * POST /api/users/refresh-access-token
+ */
+router.post('/refresh-access-token', asyncHandler(async (req, res) => {
+  const customerId = String(req.body.customerId || '').trim();
+  const phone = String(req.body.phone || '').trim();
+
+  if (!customerId) {
+    return res.status(400).json({ message: 'Thiếu customerId' });
+  }
+
+  const user = await User.findOne({ CustomerID: customerId })
+    .select('CustomerID Phone')
+    .lean();
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  }
+
+  if (phone && user.Phone && user.Phone !== phone) {
+    return res.status(403).json({ message: 'Thông tin đăng nhập không khớp' });
+  }
+
+  const accessToken = signAccessToken({
+    type: 'user',
+    customerId: user.CustomerID,
+    userId: String(user._id),
+  });
+  res.json({ accessToken });
 }));
 
 /**
@@ -695,6 +737,12 @@ router.post('/admin/login', asyncHandler(async (req, res) => {
     return res.status(401).json({ error: 'Mật khẩu không đúng' });
   }
 
+  const accessToken = signAccessToken({
+    type: 'admin',
+    adminId: adminUser._id.toString(),
+    email: adminUser.email,
+  });
+
   res.json({
     success: true,
     user: {
@@ -702,7 +750,8 @@ router.post('/admin/login', asyncHandler(async (req, res) => {
       email: adminUser.email,
       name: adminUser.name || 'Admin User',
       role: 'admin'
-    }
+    },
+    accessToken,
   });
 }));
 

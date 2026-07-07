@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F9F9F9"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header Toolbar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="4dp"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_main" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/inter"
+            android:text="Kích hoạt VeggoPay"
+            android:textColor="#1E1E1E"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Banner/Icon -->
+            <ImageView
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:src="@drawable/ic_veggopay_green" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/inter"
+                android:gravity="center"
+                android:text="Chào mừng bạn đến với VeggoPay"
+                android:textColor="#1E1E1E"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/inter"
+                android:gravity="center"
+                android:text="Ví điện tử thanh toán nội bộ siêu tiện lợi dành riêng cho khách hàng Veggo."
+                android:textColor="#707070"
+                android:textSize="14sp" />
+
+            <!-- Benefits Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
+                        android:text="Ưu đãi &amp; Tiện ích khi dùng ví"
+                        android:textColor="@color/primary_main"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <!-- Benefit 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_profile_menu_tree"
+                            app:tint="@color/primary_main" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:fontFamily="@font/inter"
+                            android:text="Hoàn tiền xanh từ Carbon Point trực tiếp vào ví."
+                            android:textColor="#333333"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- Benefit 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_wallet"
+                            app:tint="@color/primary_main" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:fontFamily="@font/inter"
+                            android:text="Nạp tiền an toàn qua các ngân hàng liên kết chính thức."
+                            android:textColor="#333333"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- Benefit 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_shield_check"
+                            app:tint="@color/primary_main" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:fontFamily="@font/inter"
+                            android:text="Bảo mật giao dịch bằng mật khẩu ví 6 chữ số."
+                            android:textColor="#333333"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Terms & Conditions Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/inter"
+                android:text="Điều khoản sử dụng ví"
+                android:textColor="#1E1E1E"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <!-- 1. Quy định Chung -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/inter"
+                android:text="1. Quy định Chung"
+                android:textColor="#333333"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/inter"
+                android:text="Ví điện tử VeggoPay là dịch vụ ví nội bộ được tích hợp trên nền tảng Veggo, cho phép nạp tiền, lưu trữ số dư và thực hiện các giao dịch thanh toán đơn hàng trực tiếp trong ứng dụng. VeggoPay không hỗ trợ chuyển khoản ra ngoài hệ thống hoặc quy đổi thành tiền mặt ngoại trừ các chiến dịch hoàn trả đặc biệt được quy định."
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <!-- 2. Kích hoạt và Sử dụng -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/inter"
+                android:text="2. Kích hoạt và Sử dụng"
+                android:textColor="#333333"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/inter"
+                android:text="Để kích hoạt ví, bạn cần tự thiết lập mật khẩu bảo mật gồm 6 chữ số (PIN). Mật khẩu này được dùng để xác thực cho tất cả các giao dịch nhạy cảm bao gồm đăng nhập ví, liên kết thẻ ngân hàng mới, thực hiện nạp tiền và xác nhận đặt thanh toán đơn hàng."
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <!-- 3. Tích điểm Carbon & Hoàn tiền -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/inter"
+                android:text="3. Chính sách Tích điểm Carbon &amp; Hoàn tiền"
+                android:textColor="#333333"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/inter"
+                android:text="Số dư ví sẽ được cộng dồn tự động khi có phát sinh hoàn tiền từ chương trình tích điểm xanh Carbon Points (quy đổi tỷ giá 1 Carbon Point = 100 VNĐ). Tiền hoàn chỉ được áp dụng và giải ngân khi đơn hàng thanh toán bằng phương thức VeggoPay được giao thành công (Completed) và không có phát sinh hủy, trả hàng."
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <!-- 4. Trách nhiệm Bảo mật -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/inter"
+                android:text="4. Trách nhiệm Bảo mật"
+                android:textColor="#333333"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/inter"
+                android:text="Người dùng chịu trách nhiệm duy nhất và tuyệt đối về việc bảo mật mật khẩu 6 số của mình. Veggo sẽ không chịu bất kỳ trách nhiệm pháp lý hoặc bồi thường nào đối với các tổn thất tài chính gây ra do việc rò rỉ thông tin mật khẩu cá nhân hoặc truy cập trái phép từ bên thứ ba."
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <!-- 5. Quyền Tạm khóa Dịch vụ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/inter"
+                android:text="5. Quyền Tạm khóa Dịch vụ"
+                android:textColor="#333333"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/inter"
+                android:text="VeggoPay có quyền tạm ngừng hoặc chấm dứt cung cấp dịch vụ đối với bất kỳ tài khoản ví nào có dấu hiệu gian lận, trục lợi từ các chương trình hoàn tiền hoặc vi phạm chính sách của Veggo mà không cần thông báo trước."
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginTop="24dp" />
+
+            <!-- Checkbox and button -->
+            <CheckBox
+                android:id="@+id/cbAgree"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/inter"
+                android:text="Tôi đã đọc và đồng ý với điều khoản sử dụng ví VeggoPay"
+                android:textColor="#333333"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnActivate"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="32dp"
+                android:backgroundTint="@color/primary_main"
+                android:enabled="false"
+                android:fontFamily="@font/inter"
+                android:text="Kích hoạt ví"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

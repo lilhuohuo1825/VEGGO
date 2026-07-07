@@ -29,7 +29,7 @@ public class ProductDto {
     private long originalPrice;
 
     @SerializedName(value = "image", alternate = {"imageList"})
-    private List<String> image;
+    private Object image;
 
     @SerializedName(value = "imageUrl")
     private Object imageUrl;
@@ -110,19 +110,34 @@ public class ProductDto {
     }
     public void setWeight(String weight) { this.weight = weight; }
 
-    public List<String> getImageList() { return image; }
-    public List<String> getImage() { return image; }
-    public void setImageList(List<String> imageList) { this.image = imageList; }
-    public void setImage(List<String> image) { this.image = image; }
+    public List<String> getImageList() {
+        return ProductImageUtils.asImageList(image, imageUrl);
+    }
+
+    public List<String> getImage() {
+        return getImageList();
+    }
+
+    public Object getImageRaw() {
+        return image;
+    }
+
+    public Object getImageUrlRaw() {
+        return imageUrl;
+    }
+
+    public void setImageList(List<String> imageList) {
+        this.image = imageList;
+    }
+
+    public void setImage(List<String> imageList) {
+        this.image = imageList;
+    }
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
-        if (imageUrl != null) {
-            if (this.image == null) {
-                this.image = new ArrayList<>();
-            }
-            this.image.clear();
-            this.image.add(imageUrl);
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            this.image = imageUrl;
         }
     }
 

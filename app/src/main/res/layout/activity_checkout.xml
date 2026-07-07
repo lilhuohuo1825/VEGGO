@@ -440,15 +440,16 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:scaleType="centerInside"
-                        android:src="@drawable/ic_payment_momo" />
+                        android:src="@drawable/ic_veggopay_green" />
 
                     <TextView
+                        android:id="@+id/tvPaymentMomoLabel"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:layout_weight="1"
                         android:fontFamily="@font/inter_medium"
-                        android:text="Ví MoMo"
+                        android:text="Ví VeggoPay"
                         android:textColor="#1E1E1E"
                         android:textSize="14sp" />
 

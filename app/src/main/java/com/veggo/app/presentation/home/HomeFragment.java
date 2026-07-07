@@ -415,6 +415,13 @@ public class HomeFragment extends Fragment {
                     intent = new Intent(requireContext(), com.veggo.app.presentation.profile.CarbonPointsActivity.class);
                     break;
                 case "5": intent = new Intent(requireContext(), com.veggo.app.presentation.blog.BlogHomeActivity.class); break;
+                case "6":
+                    if (!new AppPreferences(requireContext()).isLoggedIn()) {
+                        LoginRequiredActivity.open(requireContext(), "ví VeggoPay");
+                        return;
+                    }
+                    intent = new Intent(requireContext(), com.veggo.app.presentation.profile.VeggoPayActivity.class);
+                    break;
             }
             if (intent != null) startActivity(intent);
         });

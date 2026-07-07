@@ -8,10 +8,11 @@ import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.request.RequestOptions;
 import com.veggo.app.R;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.domain.model.Product;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,8 +20,6 @@ import java.util.List;
  * Chuẩn hóa URL ảnh sản phẩm và load qua Glide — dùng chung cho grid, detail, related.
  */
 public final class ProductImageUtils {
-    private static final int GLIDE_TIMEOUT_MS = 20_000;
-
     private ProductImageUtils() {
     }
 
@@ -29,29 +28,52 @@ public final class ProductImageUtils {
         if (dto == null) {
             return null;
         }
-        return resolveImageUrl(dto.getImage(), dto.getImageUrl());
+        return resolveImageUrl(dto.getImageRaw(), dto.getImageUrlRaw());
     }
 
     @Nullable
-    public static String resolveImageUrl(@Nullable List<String> images, @Nullable Object imageUrlRaw) {
-        String fromList = firstHttpUrl(images);
-        if (fromList != null) {
-            return normalizeUrl(fromList);
+    public static String resolveImageUrl(@Nullable Object imageRaw, @Nullable Object imageUrlRaw) {
+        String fromImage = extractHttpUrl(imageRaw);
+        if (fromImage != null) {
+            return fromImage;
         }
-        return normalizeUrl(coerceToUrl(imageUrlRaw));
+        return extractHttpUrl(imageUrlRaw);
     }
 
     @Nullable
-    public static String resolveImageUrl(@Nullable Collection<?> images, @Nullable Object imageUrlRaw) {
-        if (images != null) {
-            for (Object item : images) {
-                String url = normalizeUrl(coerceToUrl(item));
-                if (isHttpUrl(url)) {
-                    return url;
-                }
-            }
+    public static String resolveDisplayImage(
+            @Nullable Context context,
+            @Nullable Product product
+    ) {
+        if (product == null) {
+            return null;
         }
-        return normalizeUrl(coerceToUrl(imageUrlRaw));
+        String imageUrl = product.getImageUrl();
+        if (isHttpUrl(imageUrl)) {
+            return imageUrl;
+        }
+        if (context != null) {
+            return ProductCatalogImageResolver.resolveBySku(context, product.getSku());
+        }
+        return null;
+    }
+
+    @Nullable
+    public static String resolveDisplayImage(
+            @Nullable Context context,
+            @Nullable ProductDto dto
+    ) {
+        if (dto == null) {
+            return null;
+        }
+        String imageUrl = resolveImageUrl(dto);
+        if (isHttpUrl(imageUrl)) {
+            return imageUrl;
+        }
+        if (context != null) {
+            return ProductCatalogImageResolver.resolveBySku(context, dto.getSku());
+        }
+        return null;
     }
 
     @Nullable
@@ -71,8 +93,16 @@ public final class ProductImageUtils {
 
     public static boolean isHttpUrl(@Nullable String url) {
         String normalized = normalizeUrl(url);
-        return normalized != null
-                && (normalized.startsWith("http://") || normalized.startsWith("https://"));
+        if (normalized == null) {
+            return false;
+        }
+        if (normalized.startsWith("data:")) {
+            return false;
+        }
+        if (normalized.length() > 4096) {
+            return false;
+        }
+        return normalized.startsWith("http://") || normalized.startsWith("https://");
     }
 
     public static void loadInto(Context context, @Nullable ImageView target, @Nullable String imageUrl) {
@@ -96,16 +126,16 @@ public final class ProductImageUtils {
             return;
         }
 
-        RequestOptions options = new RequestOptions()
+        Glide.with(context)
+                .load(normalized)
                 .placeholder(placeholderRes)
                 .error(errorRes)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .timeout(GLIDE_TIMEOUT_MS);
-
-        Glide.with(target)
-                .load(normalized)
-                .apply(options)
                 .into(target);
+    }
+
+    public static void loadProductImage(Context context, ImageView target, Product product) {
+        loadInto(context, target, resolveDisplayImage(context, product));
     }
 
     public static void clear(ImageView target) {
@@ -116,38 +146,48 @@ public final class ProductImageUtils {
     }
 
     @Nullable
-    private static String firstHttpUrl(@Nullable List<String> images) {
-        if (images == null || images.isEmpty()) {
-            return null;
-        }
-        for (String image : images) {
-            String normalized = normalizeUrl(image);
-            if (isHttpUrl(normalized)) {
-                return normalized;
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    private static String coerceToUrl(@Nullable Object raw) {
+    private static String extractHttpUrl(@Nullable Object raw) {
         if (raw == null) {
             return null;
         }
         if (raw instanceof String) {
-            return (String) raw;
+            String normalized = normalizeUrl((String) raw);
+            return isHttpUrl(normalized) ? normalized : null;
         }
-        if (raw instanceof List<?>) {
-            List<?> list = (List<?>) raw;
-            if (!list.isEmpty()) {
-                return coerceToUrl(list.get(0));
+        if (raw instanceof Collection<?>) {
+            for (Object item : (Collection<?>) raw) {
+                String nested = extractHttpUrl(item);
+                if (nested != null) {
+                    return nested;
+                }
             }
             return null;
         }
-        String value = String.valueOf(raw).trim();
-        if (value.startsWith("[") && value.endsWith("]")) {
+        if (raw.getClass().isArray()) {
+            Object[] values = (Object[]) raw;
+            for (Object value : values) {
+                String nested = extractHttpUrl(value);
+                if (nested != null) {
+                    return nested;
+                }
+            }
             return null;
         }
-        return value;
+        String fallback = normalizeUrl(String.valueOf(raw));
+        if (fallback != null && (fallback.startsWith("[") || fallback.startsWith("{"))) {
+            return null;
+        }
+        return isHttpUrl(fallback) ? fallback : null;
+    }
+
+    @Nullable
+    public static List<String> asImageList(@Nullable Object imageRaw, @Nullable Object imageUrlRaw) {
+        String resolved = resolveImageUrl(imageRaw, imageUrlRaw);
+        if (resolved == null) {
+            return null;
+        }
+        List<String> images = new ArrayList<>();
+        images.add(resolved);
+        return images;
     }
 }

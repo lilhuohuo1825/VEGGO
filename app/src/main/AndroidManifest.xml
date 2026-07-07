@@ -100,6 +100,9 @@
             android:name=".presentation.chatbot.ChatbotActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.support.SupportChatActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.checkout.CheckoutActivity"
             android:exported="false" />
         <activity
@@ -169,6 +172,27 @@
             android:exported="false" />
         <activity
             android:name=".presentation.profile.CarbonPointsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayPolicyActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayMyQrActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayScanActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayTransferActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.profile.VeggoPayDonateActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.profile.AddressFormActivity"

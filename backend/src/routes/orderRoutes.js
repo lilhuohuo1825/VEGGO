@@ -10,6 +10,14 @@ const {
 } = require('../services/scheduledDeliveryReminderService');
 
 const router = express.Router();
+const Wallet = require('../models/Wallet');
+const WalletTransaction = require('../models/WalletTransaction');
+
+function generateWalletTxId() {
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `VP${timestamp}${random}`;
+}
 
 const ORDER_STATUSES = new Set([
   'pending',
@@ -53,13 +61,16 @@ const normalizePaymentMethod = (method) => {
   if (['bank', 'banking', 'bank_transfer', 'transfer'].includes(value)) return 'bank';
   if (value === 'momo') return 'momo';
   if (value === 'vnpay') return 'vnpay';
+  if (value === 'veggopay' || value === 'wallet') return 'veggopay';
   return 'cod';
 };
 
 const defaultPaymentStatus = (method, explicitStatus) => {
   const status = String(explicitStatus || '').trim().toLowerCase();
   if (PAYMENT_STATUSES.has(status)) return status;
-  return normalizePaymentMethod(method) === 'cod' ? 'unpaid' : 'unpaid';
+  const norm = normalizePaymentMethod(method);
+  if (norm === 'veggopay') return 'paid';
+  return 'unpaid';
 };
 
 const toNumber = (value, fallback = 0) => {
@@ -507,6 +518,38 @@ router.post('/', asyncHandler(async (req, res) => {
     return res.status(400).json({ message: shippingPromotionCheck.message });
   }
 
+  if (paymentMethod === 'veggopay') {
+    const { walletPassword } = req.body;
+    let wallet = await Wallet.findOne({ customerId });
+    if (!wallet) {
+      wallet = new Wallet({ customerId, balance: 0, status: 'inactive', linkedBanks: [] });
+      await wallet.save();
+    }
+    if (wallet.status !== 'active') {
+      return res.status(400).json({ message: 'Ví VeggoPay chưa được kích hoạt' });
+    }
+    if (!walletPassword || wallet.password !== walletPassword) {
+      return res.status(400).json({ message: 'Mật khẩu ví VeggoPay không chính xác' });
+    }
+    if (wallet.balance < totalAmount) {
+      return res.status(400).json({ message: 'Số dư ví VeggoPay không đủ để thanh toán đơn hàng này' });
+    }
+
+    wallet.balance -= totalAmount;
+    await wallet.save();
+
+    const transaction = new WalletTransaction({
+      transactionId: generateWalletTxId(),
+      customerId,
+      amount: -totalAmount,
+      type: 'payment',
+      status: 'completed',
+      referenceId: orderId,
+      description: `Thanh toán đơn hàng #${orderId}`
+    });
+    await transaction.save();
+  }
+
   const orderDoc = {
     OrderID: orderId,
     CustomerID: customerId,
@@ -692,6 +735,107 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
 
   if (!result) {
     return res.status(404).json({ message: 'Order not found' });
+  }
+
+  // VeggoPay Refund on Cancellation
+  if (nextStatus === 'cancelled' && result.paymentMethod === 'veggopay') {
+    const existingRefund = await WalletTransaction.findOne({ referenceId: orderId, type: 'refund' });
+    if (!existingRefund) {
+      let wallet = await Wallet.findOne({ customerId: result.CustomerID });
+      if (!wallet) {
+        wallet = new Wallet({ customerId: result.CustomerID, balance: 0, status: 'active', linkedBanks: [] });
+      }
+      const refundAmount = result.totalAmount || 0;
+      wallet.balance += refundAmount;
+      await wallet.save();
+
+      const refundTx = new WalletTransaction({
+        transactionId: generateWalletTxId(),
+        customerId: result.CustomerID,
+        amount: refundAmount,
+        type: 'refund',
+        status: 'completed',
+        referenceId: orderId,
+        description: `Hoàn tiền đơn hàng hủy #${orderId}`
+      });
+      await refundTx.save();
+
+      await createOrderNotification(
+        result.CustomerID,
+        result.OrderID,
+        'Biến động số dư',
+        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do đơn hàng #${orderId} bị hủy.`,
+        'payment'
+      );
+    }
+  }
+
+  // VeggoPay Cashback on Completed Order (2% Cashback)
+  if (['completed', 'unreview', 'reviewed'].includes(nextStatus) && result.paymentMethod === 'veggopay') {
+    const existingCashback = await WalletTransaction.findOne({ referenceId: orderId, type: 'cashback' });
+    if (!existingCashback) {
+      let wallet = await Wallet.findOne({ customerId: result.CustomerID });
+      if (!wallet) {
+        wallet = new Wallet({ customerId: result.CustomerID, balance: 0, status: 'active', linkedBanks: [] });
+      }
+      const cashbackAmount = Math.round((result.totalAmount || 0) * 0.02);
+      if (cashbackAmount > 0) {
+        wallet.balance += cashbackAmount;
+        await wallet.save();
+
+        const cashbackTx = new WalletTransaction({
+          transactionId: generateWalletTxId(),
+          customerId: result.CustomerID,
+          amount: cashbackAmount,
+          type: 'cashback',
+          status: 'completed',
+          referenceId: orderId,
+          description: `Hoàn tiền đặc quyền VeggoPay 2% đơn #${orderId}`
+        });
+        await cashbackTx.save();
+
+        await createOrderNotification(
+          result.CustomerID,
+          result.OrderID,
+          'Biến động số dư',
+          `Ví VeggoPay nhận +${cashbackAmount.toLocaleString('vi-VN')}đ (hoàn 2%) cho đơn hàng #${orderId}.`,
+          'payment'
+        );
+      }
+    }
+  }
+
+  // VeggoPay Refund on Return/Refund Request Approved
+  if (nextStatus === 'returned') {
+    const existingRefund = await WalletTransaction.findOne({ referenceId: orderId, type: 'refund' });
+    if (!existingRefund) {
+      let wallet = await Wallet.findOne({ customerId: result.CustomerID });
+      if (!wallet) {
+        wallet = new Wallet({ customerId: result.CustomerID, balance: 0, status: 'active', linkedBanks: [] });
+      }
+      const refundAmount = result.totalAmount || 0;
+      wallet.balance += refundAmount;
+      await wallet.save();
+
+      const refundTx = new WalletTransaction({
+        transactionId: generateWalletTxId(),
+        customerId: result.CustomerID,
+        amount: refundAmount,
+        type: 'refund',
+        status: 'completed',
+        referenceId: orderId,
+        description: `Hoàn tiền trả hàng đơn hàng #${orderId}`
+      });
+      await refundTx.save();
+
+      await createOrderNotification(
+        result.CustomerID,
+        result.OrderID,
+        'Biến động số dư',
+        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do trả hàng đơn #${orderId}.`,
+        'payment'
+      );
+    }
   }
 
   await refreshCustomerMetricsAfterOrderChange(result.CustomerID, result.OrderID, isDeliveredStatus(nextStatus));

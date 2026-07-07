@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E8F5E9"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="4dp"
+            android:src="@drawable/ic_left"
+            app:tint="@color/primary_main" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/inter"
+            android:text="Trồng cây"
+            android:textColor="#1E1E1E"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Main Forest/Garden View -->
+    <RelativeLayout
+        android:id="@+id/rlGarden"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Meadow Hill curve illustration -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/bg_circle_light_green" />
+
+        <!-- Total Planted Trees Stats Counter -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_circle_white"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:gravity="center_vertical"
+            android:elevation="1dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_tree_stage_5" />
+
+            <TextView
+                android:id="@+id/tvTotalPlanted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:fontFamily="@font/inter_bold"
+                android:text="Đã trồng: 0 cây"
+                android:textColor="#388E3C"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Speech Bubble/Status -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardStatusBubble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="68dp"
+            android:layout_marginHorizontal="16dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvStatusBubble"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:fontFamily="@font/inter_medium"
+                android:text="Xin chào! Hãy kích hoạt hạt giống để gieo mầm xanh"
+                android:textColor="#388E3C"
+                android:textSize="13sp"
+                android:gravity="center" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Swaying Tree Container -->
+        <FrameLayout
+            android:id="@+id/treeContainer"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="45dp">
+
+            <!-- Swaying Tree Image -->
+            <ImageView
+                android:id="@+id/imgTree"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom|center_horizontal"
+                android:src="@drawable/ic_tree_stage_1" />
+        </FrameLayout>
+
+        <!-- Watering animation can image (Initially Gone) -->
+        <ImageView
+            android:id="@+id/imgWaterCanAnim"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_above="@id/treeContainer"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="50dp"
+            android:layout_marginBottom="-30dp"
+            android:src="@drawable/ic_watering_can"
+            android:visibility="gone" />
+    </RelativeLayout>
+
+    <!-- Bottom Controls Card -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="3dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Activation State Form -->
+            <LinearLayout
+                android:id="@+id/layoutActivate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Trồng rừng xanh Veggo"
+                    android:textColor="#1E1E1E"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter"
+                    android:text="Sử dụng 10.000 ₫ trong ví VeggoPay để kích hoạt hạt giống. Sau đó, tích lũy đủ 30 lượt tưới nước bằng điểm Carbon để cây trưởng thành và hoàn thành trồng 1 cây thật."
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="3dp" />
+
+                <TextView
+                    android:id="@+id/btnActivateSeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="Kích hoạt hạt giống (10.000 ₫)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Growing/Watering State Form (Initially Gone) -->
+            <LinearLayout
+                android:id="@+id/layoutWater"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvTreeName"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_bold"
+                        android:text="Cây Veggo Xanh"
+                        android:textColor="#1E1E1E"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/tvWaterProgress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="Tiến trình: 0/24 lần tưới"
+                        android:textColor="#388E3C"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- Stage Progress Bar (6 segments) -->
+                <TextView
+                    android:id="@+id/tvStageProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Tiến trình cấp hiện tại (0/6 lần tưới):"
+                    android:textColor="#558B2F"
+                    android:textSize="11sp" />
+                <LinearLayout
+                    android:id="@+id/layoutStageSegments"
+                    android:layout_width="match_parent"
+                    android:layout_height="10dp"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+
+                <!-- Total Progress Bar (24 segments) -->
+                <TextView
+                    android:id="@+id/tvTotalProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/inter_semibold"
+                    android:text="Tiến trình tổng (0/24 lần tưới):"
+                    android:textColor="#388E3C"
+                    android:textSize="11sp" />
+                <LinearLayout
+                    android:id="@+id/layoutTotalSegments"
+                    android:layout_width="match_parent"
+                    android:layout_height="10dp"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="@font/inter"
+                    android:text="Tưới nước bằng điểm Carbon để cây lớn lên. Khi cây đạt cấp 5 (24 lần tưới), bạn sẽ hoàn thành trồng 1 cây thật."
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/btnWaterTree"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="Tưới nước cho cây"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>

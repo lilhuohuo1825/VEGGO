@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 const path = require('path');
 require('dotenv').config();
+const { Server } = require('socket.io');
 
 const { connectMongo } = require('./config/mongodb');
 require('./config/firebaseAdmin');
@@ -31,17 +33,49 @@ const { seedConsultationsIfEmpty } = require('./utils/consultationSeed');
 const { processScheduledDeliveryReminders } = require('./services/scheduledDeliveryReminderService');
 const paymentRoutes = require('./routes/paymentRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const forecastRoutes = require('./routes/forecastRoutes');
+const walletRoutes = require('./routes/walletRoutes');
 const mongoose = require('mongoose');
+const { verifyAccessToken } = require('./utils/jwt');
+const { createSupportSocket } = require('./sockets/supportSocket');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.SOCKET_IO_CORS_ORIGIN ? process.env.SOCKET_IO_CORS_ORIGIN.split(',') : '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+io.use((socket, next) => {
+  try {
+    const token =
+      (socket.handshake && socket.handshake.auth && socket.handshake.auth.token) ||
+      (socket.handshake && socket.handshake.headers && socket.handshake.headers.authorization
+        ? String(socket.handshake.headers.authorization).replace(/^Bearer\s+/i, '')
+        : null);
+
+    if (!token) return next(new Error('Unauthorized'));
+    const decoded = verifyAccessToken(token);
+    socket.data.auth = decoded;
+    return next();
+  } catch (err) {
+    return next(new Error('Unauthorized'));
+  }
+});
+
+createSupportSocket(io);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/admin', express.static(path.join(__dirname, 'public-admin')));
 
 app.use('/api', (req, res, next) => {
   if (req.method === 'GET') {
@@ -110,8 +144,10 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/forecast', forecastRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {
@@ -206,7 +242,7 @@ connectMongo()
     await runDeliveryReminders();
     setInterval(runDeliveryReminders, 5 * 60 * 1000);
 
-    app.listen(port, '0.0.0.0', () => {
+    server.listen(port, '0.0.0.0', () => {
       console.log(`VEGGO API running on http://0.0.0.0:${port}`);
     });
   })

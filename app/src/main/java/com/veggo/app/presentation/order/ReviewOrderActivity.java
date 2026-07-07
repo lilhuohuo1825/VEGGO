@@ -31,6 +31,8 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.remote.api.ReviewApi;
 import com.veggo.app.data.remote.dto.ReviewMediaUploadResponseDto;
 import com.veggo.app.presentation.common.AssetScreenData;
@@ -357,9 +359,8 @@ public class ReviewOrderActivity extends BaseActivity {
 
         name.setText(item.productName == null ? "" : item.productName);
         variant.setText((item.unit == null ? "" : item.unit) + "  x" + Math.max(1, item.quantity));
-        if (item.image != null && !item.image.trim().isEmpty()) {
-            Glide.with(this).load(item.image).placeholder(R.drawable.ic_vegetable).into(image);
-        }
+        String imageUrl = ProductCatalogImageResolver.resolveOrderItemImage(this, item.image, item.sku);
+        ProductImageUtils.loadInto(this, image, imageUrl, R.drawable.ic_vegetable, R.drawable.ic_vegetable);
     }
 
     private void submitReviews() {

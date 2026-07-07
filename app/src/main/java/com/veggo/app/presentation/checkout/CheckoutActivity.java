@@ -17,6 +17,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.app.Dialog;
+import android.view.Window;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.text.TextWatcher;
+import android.text.Editable;
+import android.view.KeyEvent;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -37,6 +44,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
 import com.veggo.app.core.notification.RecurringConfirmationHelper;
 import com.veggo.app.core.utils.DeliveryTimeUtils;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.WarehouseDistanceUtils;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
@@ -50,6 +58,8 @@ import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.PromotionTargetDto;
 import com.veggo.app.data.remote.dto.PromotionUsageDto;
 import com.veggo.app.di.AppModule;
+import com.veggo.app.data.repository.WalletRepository;
+import com.veggo.app.data.remote.dto.WalletDto;
 import com.veggo.app.domain.model.Address;
 import com.veggo.app.domain.repository.AddressRepository;
 import com.veggo.app.presentation.cart.CartViewModel;
@@ -127,6 +137,9 @@ public class CheckoutActivity extends BaseActivity {
     private PaymentItemAdapter paymentItemAdapter;
     private CartViewModel cartViewModel;
     private AddressRepository addressRepository;
+    private WalletRepository walletRepository;
+    private double veggoPayBalance = 0;
+    private String currentWalletPassword = "";
     private String customerId;
     private AppCompatRadioButton radioPaymentMomo;
     private AppCompatRadioButton radioPaymentBank;
@@ -272,11 +285,34 @@ public class CheckoutActivity extends BaseActivity {
         ViewModelFactory factory = new ViewModelFactory(AppModule.provideCartRepository(this));
         cartViewModel = new ViewModelProvider(this, factory).get(CartViewModel.class);
         addressRepository = AppModule.provideAddressRepository(this);
+        walletRepository = AppModule.provideWalletRepository();
 
         cartViewModel.getCartData().observe(this, this::bindCart);
         cartViewModel.getError().observe(this, error -> {
             if (error != null) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
+        loadWalletInfo();
+    }
+
+    private void loadWalletInfo() {
+        if (customerId == null || customerId.trim().isEmpty()) return;
+        walletRepository.getWalletInfo(customerId, new WalletRepository.ResultCallback<WalletDto>() {
+            @Override
+            public void onSuccess(WalletDto result) {
+                runOnUiThread(() -> {
+                    veggoPayBalance = result.getBalance();
+                    TextView tvLabel = findViewById(R.id.tvPaymentMomoLabel);
+                    if (tvLabel != null) {
+                        tvLabel.setText("Ví VeggoPay (Số dư: " + com.veggo.app.core.utils.CurrencyFormatter.formatVnd((long) veggoPayBalance) + ")");
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                // Ignore or log
             }
         });
     }
@@ -328,7 +364,7 @@ public class CheckoutActivity extends BaseActivity {
 
     private void setupPaymentMethods() {
         selectPaymentMethod("vnpay");
-        radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
+        radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
         radioPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         radioPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
         if (radioPaymentVnpay != null) radioPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
@@ -337,7 +373,7 @@ public class CheckoutActivity extends BaseActivity {
         View layoutPaymentBank = findViewById(R.id.layoutPaymentBank);
         View layoutPaymentVnpay = findViewById(R.id.layoutPaymentVnpay);
         if (layoutPaymentMomo != null) {
-            layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
+            layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
         }
         if (layoutPaymentCod != null) {
             layoutPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
@@ -352,67 +388,168 @@ public class CheckoutActivity extends BaseActivity {
 
     private void selectPaymentMethod(String method) {
         selectedPaymentMethod = method;
-        if (radioPaymentMomo != null) radioPaymentMomo.setChecked("momo".equals(method));
+        if (radioPaymentMomo != null) radioPaymentMomo.setChecked("veggopay".equals(method));
         if (radioPaymentBank != null) radioPaymentBank.setChecked("bank".equals(method));
         if (radioPaymentCod  != null) radioPaymentCod.setChecked("cod".equals(method));
         if (radioPaymentVnpay != null) radioPaymentVnpay.setChecked("vnpay".equals(method));
     }
 
     private void createOrderAndOpenPaymentStep() {
-        if ("momo".equals(selectedPaymentMethod)) {
-            Toast.makeText(this, "Liên kết Ví MoMo đang được phát triển", Toast.LENGTH_SHORT).show();
-            findViewById(R.id.btnPlaceOrder).setEnabled(true);
-            return;
+        if ("veggopay".equals(selectedPaymentMethod)) {
+            if (veggoPayBalance < currentPaymentTotal) {
+                Toast.makeText(this, "Số dư ví VeggoPay không đủ để thanh toán. Vui lòng nạp thêm tiền.", Toast.LENGTH_LONG).show();
+                findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                return;
+            }
         }
         if (cartItems.isEmpty()) {
             Toast.makeText(this, "Giỏ hàng đang trống", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         if (selectedLocationIndex < 0 || selectedLocationIndex >= locationItems.size() || 
             tvAddressDetail.getText().toString().equals("Vui lòng thêm địa chỉ giao hàng") || 
             tvAddressDetail.getText().toString().trim().isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn địa chỉ giao hàng hợp lệ", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         if (!validateSelectedVouchersBeforeCheckout()) {
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         if (customerId == null || customerId.trim().isEmpty()) {
             Toast.makeText(this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
 
-        if ("vnpay".equals(selectedPaymentMethod)) {
+        if ("veggopay".equals(selectedPaymentMethod)) {
+            showPaymentPasswordDialog();
+        } else if ("vnpay".equals(selectedPaymentMethod)) {
             String tempOrderId = "VG" + System.currentTimeMillis();
             openVnpayPayment(tempOrderId);
         } else {
-            showProgress("Đang gửi yêu cầu đặt đơn hàng...");
-            OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(OrderApi.class);
-            orderApi.createOrder(buildOrderPayload()).enqueue(new Callback<OrderDto>() {
-                @Override
-                public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
-                    hideProgress();
-                    if (!response.isSuccessful() || response.body() == null) {
-                        Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng", Toast.LENGTH_SHORT).show();
-                        findViewById(R.id.btnPlaceOrder).setEnabled(true);
-                        return;
-                    }
-                    OrderDto order = response.body();
-                    String orderId = order.getOrderId();
-                    if (orderId == null || orderId.trim().isEmpty()) {
-                        orderId = order.getId();
-                    }
-                    openPaymentStep(orderId);
-                }
+            executeCreateOrderRequest();
+        }
+    }
 
+    private void showPaymentPasswordDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_veggopay_password_input);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvTitle = dialog.findViewById(R.id.tvPinTitle);
+        TextView tvDesc = dialog.findViewById(R.id.tvPinDescription);
+        TextView btnCancel = dialog.findViewById(R.id.btnCancel);
+        TextView btnConfirm = dialog.findViewById(R.id.btnConfirm);
+
+        tvTitle.setText("Thanh toán VeggoPay");
+        tvDesc.setText("Nhập mật khẩu ví 6 số để xác nhận thanh toán đơn hàng");
+
+        EditText[] pinFields = new EditText[] {
+                dialog.findViewById(R.id.edtPin1),
+                dialog.findViewById(R.id.edtPin2),
+                dialog.findViewById(R.id.edtPin3),
+                dialog.findViewById(R.id.edtPin4),
+                dialog.findViewById(R.id.edtPin5),
+                dialog.findViewById(R.id.edtPin6)
+        };
+
+        for (int i = 0; i < pinFields.length; i++) {
+            final int index = i;
+            pinFields[i].addTextChangedListener(new TextWatcher() {
                 @Override
-                public void onFailure(Call<OrderDto> call, Throwable t) {
-                    hideProgress();
-                    Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (s.length() == 1) {
+                        if (index < pinFields.length - 1) {
+                            pinFields[index + 1].requestFocus();
+                        } else {
+                            btnConfirm.performClick();
+                        }
+                    }
                 }
             });
+            pinFields[i].setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (pinFields[index].getText().length() == 0 && index > 0) {
+                        pinFields[index - 1].requestFocus();
+                        pinFields[index - 1].setText("");
+                        return true;
+                    }
+                }
+                return false;
+            });
         }
+
+        btnCancel.setOnClickListener(v -> {
+            dialog.dismiss();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+        });
+
+        btnConfirm.setOnClickListener(v -> {
+            StringBuilder pinBuilder = new StringBuilder();
+            for (EditText edt : pinFields) {
+                pinBuilder.append(edt.getText().toString().trim());
+            }
+            String pinCode = pinBuilder.toString();
+            if (pinCode.length() < 6) {
+                Toast.makeText(this, "Vui lòng nhập đủ 6 số", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            dialog.dismiss();
+            currentWalletPassword = pinCode;
+            executeCreateOrderRequest();
+        });
+
+        dialog.show();
+    }
+
+    private void executeCreateOrderRequest() {
+        showProgress("Đang gửi yêu cầu đặt đơn hàng...");
+        OrderApi orderApi = com.veggo.app.core.network.ApiClient.createService(OrderApi.class);
+        orderApi.createOrder(buildOrderPayload()).enqueue(new Callback<OrderDto>() {
+            @Override
+            public void onResponse(Call<OrderDto> call, Response<OrderDto> response) {
+                hideProgress();
+                if (!response.isSuccessful() || response.body() == null) {
+                    String errorMsg = "Không thể tạo đơn hàng";
+                    if (response.errorBody() != null) {
+                        try {
+                            org.json.JSONObject errObj = new org.json.JSONObject(response.errorBody().string());
+                            if (errObj.has("message")) {
+                                errorMsg = errObj.getString("message");
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    Toast.makeText(CheckoutActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    findViewById(R.id.btnPlaceOrder).setEnabled(true);
+                    return;
+                }
+                OrderDto order = response.body();
+                String orderId = order.getOrderId();
+                if (orderId == null || orderId.trim().isEmpty()) {
+                    orderId = order.getId();
+                }
+                openPaymentStep(orderId);
+            }
+
+            @Override
+            public void onFailure(Call<OrderDto> call, Throwable t) {
+                hideProgress();
+                Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            }
+        });
     }
 
     private void bindRecurringCheckoutFromStore() {
@@ -480,7 +617,7 @@ public class CheckoutActivity extends BaseActivity {
                 "bank".equals(selectedPaymentMethod) ? orderId : buildPaymentCode());
         intent.putExtra(QrPaymentActivity.EXTRA_ORDER_ID, orderId);
         intent.putExtra(QrPaymentActivity.EXTRA_SHOW_SUCCESS_IMMEDIATELY,
-                "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod));
+                "cod".equals(selectedPaymentMethod) || "vnpay".equals(selectedPaymentMethod) || "veggopay".equals(selectedPaymentMethod));
         intent.putExtra(QrPaymentActivity.EXTRA_CLEAR_CART_ON_SUCCESS, !buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode);
         intent.putExtra(QrPaymentActivity.EXTRA_CUSTOMER_ID, customerId);
         if (!buyNowMode && !transferredCheckoutMode && !recurringCheckoutMode) {
@@ -596,6 +733,9 @@ public class CheckoutActivity extends BaseActivity {
         payload.put("items", buildOrderItemPayloads());
         payload.put("CarbonPointEarned", Math.round(currentCarbonPoints));
         payload.put("TotalCarbonEmission", currentCarbonEmission);
+        if ("veggopay".equals(selectedPaymentMethod)) {
+            payload.put("walletPassword", currentWalletPassword);
+        }
         return payload;
     }
 
@@ -672,7 +812,7 @@ public class CheckoutActivity extends BaseActivity {
             item.put("quantity", itemDto.getQuantity());
             item.put("price", variantPrice(unitPrice, selectedWeight, hasWeightOptions));
             item.put("originalPrice", variantPrice(originalPrice, selectedWeight, hasWeightOptions));
-            item.put("image", product != null ? product.getFirstImage() : "");
+            item.put("image", ProductCatalogImageResolver.resolveCheckoutImage(this, product, itemDto.getSku()));
             item.put("unit", resolveItemUnit(product, selectedWeight, hasWeightOptions));
             item.put("weight", resolveItemUnit(product, selectedWeight, hasWeightOptions));
             if (hasWeightOptions) {
@@ -743,7 +883,7 @@ public class CheckoutActivity extends BaseActivity {
                         variantUnitPrice,
                         itemDto.getQuantity(),
                         R.drawable.ic_vegetable,
-                        product != null ? product.getFirstImage() : null
+                        ProductCatalogImageResolver.resolveCheckoutImage(this, product, itemDto.getSku())
                 ));
             }
         }

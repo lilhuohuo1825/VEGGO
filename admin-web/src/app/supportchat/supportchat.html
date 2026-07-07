@@ -1,0 +1,125 @@
+<div class="support-chat">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="title">Chat hỗ trợ</div>
+      <div class="status" [class.online]="statusText() === 'Đã kết nối'">{{ statusText() }}</div>
+    </div>
+
+    <div class="conversation-list">
+      <button
+        class="conversation"
+        *ngFor="let c of conversations()"
+        [class.active]="selectedConversationId() === c._id"
+        [class.unread]="isUnread(c)"
+        (click)="selectConversation(c)"
+      >
+        <div class="avatar-wrap">
+          <img
+            *ngIf="showAvatar(c); else avatarFallback"
+            class="avatar"
+            [src]="avatarUrl(c)"
+            [alt]="c.customerName || c.customerId"
+            (error)="onAvatarError(c._id)"
+          />
+          <ng-template #avatarFallback>
+            <div class="avatar avatar-fallback">{{ avatarInitials(c) }}</div>
+          </ng-template>
+          <span class="unread-badge" *ngIf="isUnread(c)">{{ unreadCount(c) }}</span>
+        </div>
+
+        <div class="conversation-body">
+          <div class="row-top">
+            <div class="name">{{ c.customerName || c.customerId }}</div>
+            <div class="time">{{ formatTime(c.lastMessageAt) }}</div>
+          </div>
+          <div class="row-bottom">
+            <div class="preview">{{ previewText(c) }}</div>
+            <div class="status-pill" [class.closed]="c.status === 'closed'">
+              {{ c.statusLabel || (c.status === 'closed' ? 'Đã đóng' : 'Đang mở') }}
+            </div>
+          </div>
+        </div>
+      </button>
+
+      <div class="empty-list" *ngIf="conversations().length === 0">
+        Chưa có cuộc trò chuyện nào
+      </div>
+    </div>
+  </aside>
+
+  <section class="main">
+    <div class="chat-header" *ngIf="selectedConversation() as active">
+      <div class="avatar-wrap small">
+        <img
+          *ngIf="showAvatar(active); else headerAvatarFallback"
+          class="avatar"
+          [src]="avatarUrl(active)"
+          [alt]="active.customerName || active.customerId"
+          (error)="onAvatarError(active._id)"
+        />
+        <ng-template #headerAvatarFallback>
+          <div class="avatar avatar-fallback">{{ avatarInitials(active) }}</div>
+        </ng-template>
+      </div>
+      <div class="chat-header-text">
+        <div class="chat-title">{{ active.customerName || active.customerId }}</div>
+        <div class="chat-subtitle">
+          {{ active.customerPhone || active.customerId }}
+          <span *ngIf="active.statusLabel"> • {{ active.statusLabel }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages" #messagesContainer>
+      <div class="empty" *ngIf="!selectedConversationId()">Chọn một khách hàng để bắt đầu</div>
+
+      <div
+        class="msg-row"
+        *ngFor="let m of messages()"
+        [class.from-customer]="m.senderType === 'user'"
+        [class.from-admin]="m.senderType !== 'user'"
+      >
+        <div class="msg-bubble">
+          <div class="msg-text">{{ m.text }}</div>
+          <div class="msg-time">{{ formatTime(m.createdAt) }}</div>
+        </div>
+      </div>
+
+      <div
+        class="typing-row from-customer"
+        *ngIf="customerTyping() && selectedConversation() as active"
+      >
+        <div class="avatar-wrap tiny">
+          <img
+            *ngIf="showAvatar(active); else typingAvatarFallback"
+            class="avatar"
+            [src]="avatarUrl(active)"
+            [alt]="active.customerName || active.customerId"
+            (error)="onAvatarError(active._id)"
+          />
+          <ng-template #typingAvatarFallback>
+            <div class="avatar avatar-fallback">{{ avatarInitials(active) }}</div>
+          </ng-template>
+        </div>
+        <div class="typing-bubble" aria-label="Khách hàng đang soạn tin">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <input
+        [value]="inputText()"
+        (input)="onInputChange($event)"
+        (keydown)="onInputKeydown($event)"
+        placeholder="Nhập tin nhắn..."
+        [disabled]="!selectedConversationId()"
+      />
+      <button type="button" class="send-btn" (click)="send()" [disabled]="!selectedConversationId()">
+        <span aria-hidden="true">➤</span>
+      </button>
+    </div>
+  </section>
+</div>

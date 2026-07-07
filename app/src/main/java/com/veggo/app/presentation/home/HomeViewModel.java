@@ -10,6 +10,7 @@ import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.utils.JsonUtils;
 import com.veggo.app.core.utils.ProductDisplayValidator;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.core.database.AssetRepository;
 import com.veggo.app.data.remote.api.ProductApi;
 import com.veggo.app.data.remote.api.PromotionApi;
@@ -91,6 +92,7 @@ public class HomeViewModel extends ViewModel {
 
     private static final int PAGE_SIZE = 24;
     private int currentSkip = 0;
+    private Context appContext;
 
     // ─── Constructor ─────────────────────────────────────────────────────
     public HomeViewModel() {
@@ -101,6 +103,7 @@ public class HomeViewModel extends ViewModel {
     // ─── Public API ──────────────────────────────────────────────────────
 
     public void loadHomeData(Context context) {
+        appContext = context.getApplicationContext();
         Gson gson = new Gson();
 
         // Blogs
@@ -154,7 +157,8 @@ public class HomeViewModel extends ViewModel {
                     List<Product> newProducts = new ArrayList<>();
                     if (dtos != null) {
                         for (ProductDto dto : dtos) {
-                            if (!ProductDisplayValidator.isDisplayable(dto)) {
+                            String imageUrl = ProductImageUtils.resolveDisplayImage(appContext, dto);
+                            if (!ProductDisplayValidator.hasValidImage(imageUrl)) {
                                 continue;
                             }
                             newProducts.add(mapDtoToProduct(dto));
@@ -188,13 +192,14 @@ public class HomeViewModel extends ViewModel {
 
     /** Chuyển ProductDto → Product (domain model) */
     private Product mapDtoToProduct(ProductDto dto) {
+        String imageUrl = ProductImageUtils.resolveDisplayImage(appContext, dto);
         return new Product(
                 dto.getId(),
                 dto.getName(),
                 dto.getSku(),
                 dto.getPrice(),
                 dto.getOriginalPrice(),
-                dto.getImageUrl(),
+                imageUrl,
                 dto.getWeightOptions(),
                 dto.getWeight(),
                 dto.getRating(),
@@ -217,6 +222,7 @@ public class HomeViewModel extends ViewModel {
         utilityList.add(new Utility("3", "Yêu thích", R.drawable.ic_heart_outline_white));
         utilityList.add(new Utility("4", "Điểm xanh", R.drawable.ic_yellow_cert));
         utilityList.add(new Utility("5", "Bài viết", R.drawable.ic_blog));
+        utilityList.add(new Utility("6", "VeggoPay", R.drawable.ic_veggopay_utility));
         _utilities.setValue(utilityList);
     }
 

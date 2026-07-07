@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VEGGO Admin - Login</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background: #f5f7fb; margin: 0; }
+      .card { max-width: 420px; margin: 10vh auto; background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+      h1 { font-size: 18px; margin: 0 0 14px; }
+      label { display: block; font-size: 13px; color: #444; margin: 10px 0 6px; }
+      input { width: 100%; padding: 10px 12px; border: 1px solid #d8dde7; border-radius: 10px; outline: none; }
+      button { width: 100%; margin-top: 14px; padding: 10px 12px; border: 0; border-radius: 10px; background: #18a558; color: #fff; font-weight: 600; cursor: pointer; }
+      .err { margin-top: 10px; color: #b00020; font-size: 13px; min-height: 18px; }
+      .muted { margin-top: 8px; color: #6b7280; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Admin đăng nhập</h1>
+      <form id="form">
+        <label>Email</label>
+        <input id="email" type="email" autocomplete="username" required />
+        <label>Mật khẩu</label>
+        <input id="password" type="password" autocomplete="current-password" required />
+        <button type="submit">Đăng nhập</button>
+        <div class="err" id="err"></div>
+      </form>
+      <div class="muted">Sau khi đăng nhập, token sẽ lưu trong LocalStorage.</div>
+    </div>
+
+    <script>
+      const errEl = document.getElementById('err');
+      const form = document.getElementById('form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errEl.textContent = '';
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        try {
+          const res = await fetch('/api/users/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.success || !json.accessToken) {
+            errEl.textContent = (json && (json.error || json.message)) || 'Đăng nhập thất bại';
+            return;
+          }
+          localStorage.setItem('veggo_admin_accessToken', json.accessToken);
+          localStorage.setItem('veggo_admin_user', JSON.stringify(json.user || {}));
+          location.href = '/admin/index.html';
+        } catch (err) {
+          errEl.textContent = 'Lỗi kết nối';
+        }
+      });
+    </script>
+  </body>
+</html>
+

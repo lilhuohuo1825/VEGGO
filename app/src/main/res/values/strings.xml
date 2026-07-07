@@ -484,6 +484,7 @@
 
     <!-- Chatbot voice input -->
     <string name="chat_input_hint">Nhập tin nhắn hoặc dùng micro…</string>
+    <string name="support_chat_input_hint">Nhập tin nhắn…</string>
     <string name="chat_voice_input">Nhập bằng giọng nói</string>
     <string name="chat_voice_hint_listening">Nói câu hỏi của bạn</string>
     <string name="chat_voice_hint_processing">Vui lòng đợi trong giây lát</string>

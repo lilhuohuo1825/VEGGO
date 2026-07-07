@@ -9,9 +9,16 @@ import com.veggo.app.core.notification.RecurringConfirmationScheduler;
 import com.veggo.app.di.AppModule;
 
 public class VeggoApplication extends Application {
+    private static VeggoApplication instance;
+
+    public static VeggoApplication getInstance() {
+        return instance;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         FirebaseApp.initializeApp(this);
 
         // Seed xong trước khi auth/profile thao tác; mở DB trước để migration chạy,

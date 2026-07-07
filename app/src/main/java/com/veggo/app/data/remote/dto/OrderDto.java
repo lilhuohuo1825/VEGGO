@@ -1,6 +1,7 @@
 package com.veggo.app.data.remote.dto;
 
 import com.google.gson.annotations.SerializedName;
+import com.veggo.app.core.utils.ProductImageUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +108,7 @@ public class OrderDto {
         private long originalPrice;
         private int quantity;
         @SerializedName(value = "imageUrl", alternate = {"image"})
-        private String imageUrl;
+        private Object imageUrl;
         private String unit;
         @SerializedName("CarbonPointEarned")
         private int carbonPointEarned;
@@ -125,7 +126,9 @@ public class OrderDto {
         public void setOriginalPrice(long originalPrice) { this.originalPrice = originalPrice; }
         public int getQuantity() { return quantity; }
         public void setQuantity(int quantity) { this.quantity = quantity; }
-        public String getImageUrl() { return imageUrl; }
+        public String getImageUrl() {
+            return ProductImageUtils.resolveImageUrl(null, imageUrl);
+        }
         public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
         public void setSku(String sku) { this.sku = sku; }
         public String getUnit() { return unit; }

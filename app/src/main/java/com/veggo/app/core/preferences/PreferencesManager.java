@@ -23,6 +23,10 @@ public class PreferencesManager {
         return preferences.getString(KEY_ACCESS_TOKEN, null);
     }
 
+    public void clearAccessToken() {
+        preferences.edit().remove(KEY_ACCESS_TOKEN).apply();
+    }
+
     public void saveUserId(String userId) {
         preferences.edit().putString(KEY_USER_ID, userId).apply();
     }

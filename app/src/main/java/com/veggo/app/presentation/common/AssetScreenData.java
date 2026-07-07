@@ -8,11 +8,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.database.AssetRepository;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
+import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.auth.model.User;
 
@@ -152,7 +153,7 @@ public final class AssetScreenData {
                     for (com.veggo.app.data.remote.dto.OrderDto orderDto : ordersResponse.body()) {
                         AssetModels.Order order = mapOrder(orderDto);
                         customerOrders.add(order);
-                        detailByOrderId.put(order.orderId, mapOrderDetail(orderDto, order.orderId));
+                        detailByOrderId.put(order.orderId, mapOrderDetail(context, orderDto, order.orderId));
                     }
                 }
             } catch (Exception e) {
@@ -170,6 +171,7 @@ public final class AssetScreenData {
             }
             detailByOrderId.putAll(guestOrderDetailCache);
         }
+        enrichOrderDetailImages(context, detailByOrderId);
         customerOrders.sort((left, right) -> compareDates(right.createdAt, left.createdAt));
 
         Map<String, AssetModels.Warehouse> warehouseById = new HashMap<>();
@@ -214,10 +216,11 @@ public final class AssetScreenData {
     }
 
     public static synchronized AssetModels.Order cacheGuestOrder(
+            @NonNull Context context,
             @NonNull com.veggo.app.data.remote.dto.OrderDto orderDto
     ) {
         AssetModels.Order order = mapOrder(orderDto);
-        AssetModels.OrderDetail detail = mapOrderDetail(orderDto, order.orderId);
+        AssetModels.OrderDetail detail = mapOrderDetail(context, orderDto, order.orderId);
         removeCachedGuestOrder(order.orderId);
         guestOrderCache.add(order);
         guestOrderDetailCache.put(order.orderId, detail);
@@ -272,7 +275,26 @@ public final class AssetScreenData {
         return order;
     }
 
+    private static void enrichOrderDetailImages(
+            @NonNull Context context,
+            @NonNull Map<String, AssetModels.OrderDetail> detailByOrderId
+    ) {
+        for (AssetModels.OrderDetail detail : detailByOrderId.values()) {
+            if (detail == null || detail.items == null) {
+                continue;
+            }
+            for (AssetModels.OrderDetailItem item : detail.items) {
+                item.image = ProductCatalogImageResolver.resolveOrderItemImage(
+                        context,
+                        item.image,
+                        item.sku
+                );
+            }
+        }
+    }
+
     private static AssetModels.OrderDetail mapOrderDetail(
+            @NonNull Context context,
             @NonNull com.veggo.app.data.remote.dto.OrderDto orderDto,
             @NonNull String orderId
     ) {
@@ -291,11 +313,15 @@ public final class AssetScreenData {
                 item.originalPrice = itemDto.getOriginalPrice() > 0
                         ? itemDto.getOriginalPrice() : itemDto.getPrice();
                 item.quantity = itemDto.getQuantity();
-                item.image = itemDto.getImageUrl();
                 item.sku = itemDto.getSku();
                 item.unit = hasText(itemDto.getUnit()) ? itemDto.getUnit() : "kg";
                 item.carbonPointEarned = itemDto.getCarbonPointEarned();
                 item.totalCarbonEmission = itemDto.getTotalCarbonEmission();
+                item.image = ProductCatalogImageResolver.resolveOrderItemImage(
+                        context,
+                        itemDto.getImageUrl(),
+                        item.sku
+                );
                 detail.items.add(item);
             }
         }
@@ -688,9 +714,7 @@ public final class AssetScreenData {
         setText(root, R.id.orderItemTotalLabel, "Thành tiền (" + orderProductCount(detail) + " sản phẩm):");
         setText(root, R.id.orderItemTotal, money(Math.round(order.totalAmount)));
         ImageView image = root.findViewById(R.id.orderItemProductImage);
-        if (image != null && hasText(item.image)) {
-            Glide.with(context).load(item.image).placeholder(R.drawable.ic_vegetable).into(image);
-        }
+        ProductImageUtils.loadInto(context, image, item.image, R.drawable.ic_vegetable, R.drawable.ic_vegetable);
     }
 
     private static void clearProductBlock(@NonNull View root) {
@@ -725,9 +749,7 @@ public final class AssetScreenData {
         setText(row, R.id.orderDetailProductPrice, money(item.price));
         setText(row, R.id.orderDetailProductTotal, money(item.price * item.quantity));
         ImageView image = row.findViewById(R.id.orderDetailProductImage);
-        if (image != null && hasText(item.image)) {
-            Glide.with(context).load(item.image).placeholder(R.drawable.ic_vegetable).into(image);
-        }
+        ProductImageUtils.loadInto(context, image, item.image, R.drawable.ic_vegetable, R.drawable.ic_vegetable);
     }
 
     public static void setText(@NonNull View root, int id, @Nullable String value) {

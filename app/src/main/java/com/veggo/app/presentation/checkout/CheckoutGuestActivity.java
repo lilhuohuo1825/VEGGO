@@ -45,6 +45,7 @@ import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.DeliveryTimeUtils;
+import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.WarehouseDistanceUtils;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.AuthApi;
@@ -322,7 +323,7 @@ public class CheckoutGuestActivity extends BaseActivity {
 
     private void setupPaymentMethods() {
         selectPaymentMethod("vnpay");
-        radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
+        radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
         radioPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         radioPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
         if (radioPaymentVnpay != null) {
@@ -333,7 +334,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         View layoutPaymentBank = findViewById(R.id.layoutPaymentBank);
         View layoutPaymentVnpay = findViewById(R.id.layoutPaymentVnpay);
         if (layoutPaymentMomo != null) {
-            layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("momo"));
+            layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
         }
         if (layoutPaymentCod != null) {
             layoutPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
@@ -349,7 +350,7 @@ public class CheckoutGuestActivity extends BaseActivity {
     private void selectPaymentMethod(String method) {
         selectedPaymentMethod = method;
         if (radioPaymentMomo != null) {
-            radioPaymentMomo.setChecked("momo".equals(method));
+            radioPaymentMomo.setChecked("veggopay".equals(method));
         }
         if (radioPaymentBank != null) {
             radioPaymentBank.setChecked("bank".equals(method));
@@ -444,7 +445,7 @@ public class CheckoutGuestActivity extends BaseActivity {
                         variantPrice,
                         quantity,
                         R.drawable.ic_vegetable,
-                        product != null ? product.getFirstImage() : ""
+                        ProductCatalogImageResolver.resolveCheckoutImage(this, product, item.getSku())
                 ));
             }
         }
@@ -486,6 +487,11 @@ public class CheckoutGuestActivity extends BaseActivity {
             return;
         }
         if (!validateSelectedVouchersBeforeCheckout()) {
+            return;
+        }
+        if ("veggopay".equals(selectedPaymentMethod)) {
+            Toast.makeText(this, "Ví VeggoPay yêu cầu đăng nhập tài khoản để sử dụng", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
         if (!validateGuestInputs()) {
@@ -1292,7 +1298,7 @@ public class CheckoutGuestActivity extends BaseActivity {
             item.put("quantity", itemDto.getQuantity());
             item.put("price", variantPrice(unitPrice, selectedWeight, hasWeightOptions));
             item.put("originalPrice", variantPrice(originalPrice, selectedWeight, hasWeightOptions));
-            item.put("image", product != null ? product.getFirstImage() : "");
+            item.put("image", ProductCatalogImageResolver.resolveCheckoutImage(this, product, itemDto.getSku()));
             item.put("unit", resolveItemUnit(product, selectedWeight, hasWeightOptions));
             item.put("weight", resolveItemUnit(product, selectedWeight, hasWeightOptions));
             if (hasWeightOptions) {

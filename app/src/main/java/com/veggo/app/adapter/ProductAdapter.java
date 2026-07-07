@@ -87,22 +87,12 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         return products.size();
     }
 
-    @Override
-    public void onViewRecycled(@NonNull ProductViewHolder holder) {
-        super.onViewRecycled(holder);
-        holder.clearImage();
-    }
-
     static class ProductViewHolder extends RecyclerView.ViewHolder {
         private final ItemProductGridBinding binding;
 
         public ProductViewHolder(@NonNull ItemProductGridBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-        }
-
-        void clearImage() {
-            ProductImageUtils.clear(binding.imgProduct);
         }
 
         public void bind(
@@ -134,7 +124,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 binding.tvTasteTag.setText(tasteWarning);
             }
 
-            ProductImageUtils.loadInto(binding.getRoot().getContext(), binding.imgProduct, product.getImageUrl());
+            ProductImageUtils.loadProductImage(binding.getRoot().getContext(), binding.imgProduct, product);
 
             binding.getRoot().setOnClickListener(v -> {
                 if (listener != null) {

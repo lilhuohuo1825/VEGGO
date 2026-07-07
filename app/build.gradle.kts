@@ -128,4 +128,9 @@ dependencies {
 // Thư viện Gson để đọc file JSON tự động
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.mindrot:jbcrypt:0.4")
+
+    // Socket.IO (support chat)
+    implementation("io.socket:socket.io-client:2.1.0") {
+        exclude(group = "org.json", module = "json")
+    }
 }
