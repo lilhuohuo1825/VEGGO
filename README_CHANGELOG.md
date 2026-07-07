@@ -100,3 +100,24 @@ sequenceGraph
     * Ngày phát hành: 07/15
     * Mật khẩu OTP: 123456
 
+
+---
+
+## 3. Tinh chỉnh giao diện Onboarding (Ẩn nút Skip ở trang cuối)
+Ở trang Onboarding thứ 4 (`onboarding_4`), do đã xuất hiện nút "Bắt đầu" (`btnNext` đổi text sang `onboarding_start`) để hoàn tất giới thiệu và đi vào trang chủ, nút "Bỏ qua" (`tvSkip`) đã được ẩn đi để tối ưu trải nghiệm người dùng và tránh dư thừa nút bấm.
+
+### 🔄 Luồng xử lý chi tiết (Flow):
+* Khi người dùng trượt qua lại giữa các trang Onboarding, `ViewPager2.OnPageChangeCallback` sẽ nhận sự kiện chọn trang (`onPageSelected(position)`).
+* Hệ thống sẽ kiểm tra vị trí hiện tại:
+  * Nếu là trang cuối cùng (`position == adapter.getItemCount() - 1`):
+    * Nút điều hướng chuyển text thành **Bắt đầu**.
+    * Nút Bỏ qua (`tvSkip`) được đặt trạng thái `View.INVISIBLE`.
+  * Nếu là các trang trước đó:
+    * Nút điều hướng chuyển text thành **Tiếp theo**.
+    * Nút Bỏ qua (`tvSkip`) được đặt trạng thái `View.VISIBLE`.
+
+### 🛠️ Các thành phần thay đổi/tạo mới:
+* **Android Code ([OnboardingActivity.java](file:///d:/NAM3/Ky3/M_Commerce/VEGGO/app/src/main/java/com/veggo/app/presentation/onboarding/OnboardingActivity.java)):**
+  * Cập nhật callback `registerOnPageChangeCallback` của `viewPager` để tự động bật/tắt hiển thị nút Skip dựa vào chỉ số slide hiện tại.
+
+
