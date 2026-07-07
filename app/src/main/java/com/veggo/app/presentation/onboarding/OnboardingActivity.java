@@ -82,8 +82,10 @@ public class OnboardingActivity extends AppCompatActivity {
                 
                 if (position == adapter.getItemCount() - 1) {
                     btnNext.setText(R.string.onboarding_start);
+                    tvSkip.setVisibility(View.INVISIBLE);
                 } else {
                     btnNext.setText(R.string.onboarding_next);
+                    tvSkip.setVisibility(View.VISIBLE);
                 }
             }
         });

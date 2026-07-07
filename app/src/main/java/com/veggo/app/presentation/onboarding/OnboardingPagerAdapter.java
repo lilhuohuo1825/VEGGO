@@ -45,13 +45,7 @@ public class OnboardingPagerAdapter extends RecyclerView.Adapter<OnboardingPager
             holder.imageLogo.setVisibility(View.GONE);
         }
 
-        ViewGroup.LayoutParams params = holder.image.getLayoutParams();
-        if (position == 1) {
-            params.height = (int) (340 * holder.itemView.getContext().getResources().getDisplayMetrics().density);
-        } else {
-            params.height = (int) (300 * holder.itemView.getContext().getResources().getDisplayMetrics().density);
-        }
-        holder.image.setLayoutParams(params);
+
     }
 
     @Override
