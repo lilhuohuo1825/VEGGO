@@ -54,6 +54,11 @@ function createSupportSocket(io) {
         if (auth && auth.type === 'user') {
           const customerId = auth.customerId;
           convo = await ensureConversationForCustomer(customerId);
+          await SupportConversation.updateOne(
+            { _id: convo._id },
+            { $set: { unreadCountUser: 0 } }
+          );
+          convo.unreadCountUser = 0;
         } else if (auth && auth.type === 'admin') {
           if (conversationId) {
             convo = await SupportConversation.findById(conversationId).lean();

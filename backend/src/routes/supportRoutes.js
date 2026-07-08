@@ -80,6 +80,11 @@ router.get('/conversations', asyncHandler(async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
     const convo = await ensureConversationForCustomer(customerId);
+    await SupportConversation.updateOne(
+      { _id: convo._id },
+      { $set: { unreadCountUser: 0 } }
+    );
+    convo.unreadCountUser = 0;
     return res.json({ success: true, data: [serializeConversation(convo)] });
   }
 
