@@ -74,6 +74,10 @@ public class VeggoPayPolicyActivity extends BaseActivity {
         };
 
         setupPinAutoShift(pinFields, btnConfirm);
+        pinFields[0].requestFocus();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnConfirm.setOnClickListener(v -> {

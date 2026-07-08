@@ -276,6 +276,10 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
         };
 
         setupPinAutoShift(pinFields, btnConfirm);
+        pinFields[0].requestFocus();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
 
         // Add countdown timer text dynamically below the pin fields
         LinearLayout rootContainer = dialog.findViewById(R.id.layoutPinContainer);

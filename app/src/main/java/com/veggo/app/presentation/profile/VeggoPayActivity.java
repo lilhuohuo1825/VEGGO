@@ -19,6 +19,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.veggo.app.R;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.annotation.NonNull;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import java.util.concurrent.Executor;
 import com.veggo.app.adapter.BankSpinnerAdapter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -83,6 +89,27 @@ public class VeggoPayActivity extends BaseActivity {
             });
         }
 
+        SwitchCompat switchBiometric = findViewById(R.id.switchBiometric);
+        if (switchBiometric != null) {
+            AppPreferences prefs = new AppPreferences(this);
+            switchBiometric.setChecked(prefs.isBiometricEnabled(customerId));
+            switchBiometric.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (!buttonView.isPressed()) {
+                    return; // Ignore programmatic updates
+                }
+                if (isChecked) {
+                    if (!checkBiometricSupport()) {
+                        buttonView.setChecked(false);
+                        return;
+                    }
+                    showBiometricSetupPinDialog(switchBiometric);
+                } else {
+                    prefs.clearBiometric(customerId);
+                    Toast.makeText(this, "Đã tắt xác thực sinh trắc học", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
         checkWalletStatus();
     }
 
@@ -99,8 +126,12 @@ public class VeggoPayActivity extends BaseActivity {
                         startActivity(new Intent(VeggoPayActivity.this, VeggoPayPolicyActivity.class));
                         finish();
                     } else {
-                        // Wallet is active, ask for password before entering
-                        showEntrancePasswordDialog();
+                        AppPreferences prefs = new AppPreferences(VeggoPayActivity.this);
+                        if (prefs.isBiometricEnabled(customerId) && checkBiometricAvailableForEntrance()) {
+                            showEntranceBiometricPrompt(prefs.getBiometricPin(customerId));
+                        } else {
+                            showEntrancePasswordDialog();
+                        }
                     }
                 });
             }
@@ -143,6 +174,10 @@ public class VeggoPayActivity extends BaseActivity {
         };
 
         setupPinAutoShift(pinFields, btnConfirm);
+        pinFields[0].requestFocus();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
 
         btnCancel.setOnClickListener(v -> {
             dialog.dismiss();
@@ -514,6 +549,10 @@ public class VeggoPayActivity extends BaseActivity {
         };
 
         setupPinAutoShift(pinFields, btnConfirm);
+        pinFields[0].requestFocus();
+        if (pinDialog.getWindow() != null) {
+            pinDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
 
         btnCancel.setOnClickListener(v -> pinDialog.dismiss());
         btnConfirm.setOnClickListener(v -> {
@@ -648,5 +687,199 @@ public class VeggoPayActivity extends BaseActivity {
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
+    }
+
+    private boolean checkBiometricSupport() {
+        BiometricManager biometricManager = BiometricManager.from(this);
+        int canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK);
+        switch (canAuthenticate) {
+            case BiometricManager.BIOMETRIC_SUCCESS:
+                return true;
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+                Toast.makeText(this, "Thiết bị không có phần cứng xác thực sinh trắc học", Toast.LENGTH_SHORT).show();
+                return false;
+            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+                Toast.makeText(this, "Phần cứng sinh trắc học hiện tại không khả dụng", Toast.LENGTH_SHORT).show();
+                return false;
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                Toast.makeText(this, "Vui lòng thiết lập vân tay/khuôn mặt trong cài đặt máy trước", Toast.LENGTH_LONG).show();
+                return false;
+            default:
+                Toast.makeText(this, "Sinh trắc học không được hỗ trợ trên thiết bị này", Toast.LENGTH_SHORT).show();
+                return false;
+        }
+    }
+
+    private void showBiometricSetupPinDialog(SwitchCompat switchBiometric) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_veggopay_password_input);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvTitle = dialog.findViewById(R.id.tvPinTitle);
+        TextView tvDesc = dialog.findViewById(R.id.tvPinDescription);
+        TextView btnCancel = dialog.findViewById(R.id.btnCancel);
+        TextView btnConfirm = dialog.findViewById(R.id.btnConfirm);
+
+        tvTitle.setText("Xác minh ví VeggoPay");
+        tvDesc.setText("Nhập mật khẩu ví 6 số để kích hoạt sinh trắc học");
+
+        EditText[] pinFields = new EditText[] {
+                dialog.findViewById(R.id.edtPin1),
+                dialog.findViewById(R.id.edtPin2),
+                dialog.findViewById(R.id.edtPin3),
+                dialog.findViewById(R.id.edtPin4),
+                dialog.findViewById(R.id.edtPin5),
+                dialog.findViewById(R.id.edtPin6)
+        };
+
+        setupPinAutoShift(pinFields, btnConfirm);
+        pinFields[0].requestFocus();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
+
+        btnCancel.setOnClickListener(v -> {
+            dialog.dismiss();
+            switchBiometric.setChecked(false);
+        });
+
+        btnConfirm.setOnClickListener(v -> {
+            StringBuilder pinBuilder = new StringBuilder();
+            for (EditText edt : pinFields) {
+                pinBuilder.append(edt.getText().toString().trim());
+            }
+            String pinCode = pinBuilder.toString();
+            if (pinCode.length() < 6) {
+                Toast.makeText(this, "Vui lòng nhập đủ 6 số", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            dialog.dismiss();
+            showProgress("Đang xác thực mật khẩu...");
+            walletRepository.verifyPassword(customerId, pinCode, new WalletRepository.ResultCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean success) {
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        triggerBiometricConfirmation(pinCode, switchBiometric);
+                    });
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    runOnUiThread(() -> {
+                        hideProgress();
+                        Toast.makeText(VeggoPayActivity.this, "Mật khẩu ví không đúng. Vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+                        switchBiometric.setChecked(false);
+                    });
+                }
+            });
+        });
+
+        dialog.setCancelable(false);
+        dialog.show();
+    }
+
+    private void triggerBiometricConfirmation(String pinCode, SwitchCompat switchBiometric) {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                runOnUiThread(() -> {
+                    Toast.makeText(VeggoPayActivity.this, "Xác thực thất bại: " + errString, Toast.LENGTH_SHORT).show();
+                    switchBiometric.setChecked(false);
+                });
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                runOnUiThread(() -> {
+                    AppPreferences prefs = new AppPreferences(VeggoPayActivity.this);
+                    prefs.setBiometricEnabled(customerId, true);
+                    prefs.setBiometricPin(customerId, pinCode);
+                    Toast.makeText(VeggoPayActivity.this, "Kích hoạt xác thực sinh trắc học thành công!", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Xác thực sinh trắc học")
+                .setSubtitle("Xác thực sinh trắc học để liên kết với ví VeggoPay")
+                .setNegativeButtonText("Hủy")
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    private int biometricFailedCount = 0;
+    private BiometricPrompt entranceBiometricPrompt;
+    private boolean isTransitioningToPin = false;
+
+    private boolean checkBiometricAvailableForEntrance() {
+        BiometricManager biometricManager = BiometricManager.from(this);
+        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS;
+    }
+
+    private void showEntranceBiometricPrompt(final String savedPin) {
+        biometricFailedCount = 0;
+        isTransitioningToPin = false;
+        Executor executor = ContextCompat.getMainExecutor(this);
+        entranceBiometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                runOnUiThread(() -> {
+                    if (!isTransitioningToPin) {
+                        isTransitioningToPin = true;
+                        Toast.makeText(VeggoPayActivity.this, "Xác thực thất bại/đã hủy. Vui lòng nhập mã PIN.", Toast.LENGTH_SHORT).show();
+                        showEntrancePasswordDialog();
+                    }
+                });
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                runOnUiThread(() -> {
+                    Toast.makeText(VeggoPayActivity.this, "Truy cập ví VeggoPay thành công!", Toast.LENGTH_SHORT).show();
+                    loadWalletInfo();
+                });
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+                biometricFailedCount++;
+                runOnUiThread(() -> {
+                    if (biometricFailedCount >= 3 && !isTransitioningToPin) {
+                        isTransitioningToPin = true;
+                        Toast.makeText(VeggoPayActivity.this, "Thử lại quá 3 lần. Vui lòng sử dụng mã PIN.", Toast.LENGTH_SHORT).show();
+                        if (entranceBiometricPrompt != null) {
+                            entranceBiometricPrompt.cancelAuthentication();
+                        }
+                        showEntrancePasswordDialog();
+                    }
+                });
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Mở khóa VeggoPay")
+                .setSubtitle("Xác thực vân tay/khuôn mặt để truy cập ví")
+                .setNegativeButtonText("Sử dụng mã PIN")
+                .build();
+
+        entranceBiometricPrompt.authenticate(promptInfo);
     }
 }

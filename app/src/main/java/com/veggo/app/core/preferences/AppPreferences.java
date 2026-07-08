@@ -126,4 +126,40 @@ public class AppPreferences {
                 .remove(KEY_GENDER)
                 .apply();
     }
+
+    public boolean isBiometricEnabled(String customerId) {
+        if (customerId == null) return false;
+        return sharedPreferences.getBoolean("biometric_enabled_" + customerId, false);
+    }
+
+    public void setBiometricEnabled(String customerId, boolean enabled) {
+        if (customerId == null) return;
+        sharedPreferences.edit()
+                .putBoolean("biometric_enabled_" + customerId, enabled)
+                .apply();
+    }
+
+    @Nullable
+    public String getBiometricPin(String customerId) {
+        if (customerId == null) return null;
+        String encryptedPin = sharedPreferences.getString("biometric_pin_" + customerId, null);
+        if (encryptedPin == null) return null;
+        return com.veggo.app.core.security.BiometricCryptographyHelper.decrypt(encryptedPin);
+    }
+
+    public void setBiometricPin(String customerId, String pin) {
+        if (customerId == null || pin == null) return;
+        String encryptedPin = com.veggo.app.core.security.BiometricCryptographyHelper.encrypt(pin);
+        sharedPreferences.edit()
+                .putString("biometric_pin_" + customerId, encryptedPin)
+                .apply();
+    }
+
+    public void clearBiometric(String customerId) {
+        if (customerId == null) return;
+        sharedPreferences.edit()
+                .remove("biometric_enabled_" + customerId)
+                .remove("biometric_pin_" + customerId)
+                .apply();
+    }
 }

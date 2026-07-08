@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.core.splashscreen)
+    implementation(libs.androidx.biometric)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // MVVM
