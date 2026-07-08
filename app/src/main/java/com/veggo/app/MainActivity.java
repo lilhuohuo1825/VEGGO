@@ -33,6 +33,14 @@ import com.veggo.app.presentation.profile.PostNotificationsActivity;
 import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
 import com.veggo.app.presentation.support.SupportChatActivity;
 import com.veggo.app.core.preferences.PreferencesManager;
+import com.veggo.app.data.remote.api.SupportApi;
+import com.veggo.app.data.remote.dto.SupportConversationDto;
+import com.veggo.app.data.remote.dto.SupportConversationsResponseDto;
+import com.veggo.app.core.network.ApiClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
@@ -42,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ComponentBottomNavBinding bottomNavBinding;
     private Tab currentTab;
     private boolean supportBubbleInitialized = false;
+    private SupportApi supportApi;
     private android.net.Uri cameraImageUri = null;
     private boolean isScanReceiptMode = true;
     private View currentNotificationAlert;
@@ -232,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
         if (!show) {
             return;
         }
+        fetchSupportChatUnreadCount();
         Runnable positionBubble = () -> {
             clampSupportBubbleWithinScreen(bubble);
             avoidOverlapWithHomeChatbotBubble(bubble);
@@ -241,6 +251,52 @@ public class MainActivity extends AppCompatActivity {
             positionBubble.run();
         } else {
             bubble.post(positionBubble);
+        }
+    }
+
+    private void fetchSupportChatUnreadCount() {
+        String customerId = new AppPreferences(this).getCustomerId();
+        if (android.text.TextUtils.isEmpty(customerId)) {
+            updateSupportChatUnreadBadge(0);
+            return;
+        }
+
+        if (supportApi == null) {
+            supportApi = ApiClient.createService(SupportApi.class);
+        }
+
+        supportApi.getConversations(customerId).enqueue(new Callback<SupportConversationsResponseDto>() {
+            @Override
+            public void onResponse(Call<SupportConversationsResponseDto> call, Response<SupportConversationsResponseDto> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    List<SupportConversationDto> data = response.body().getData();
+                    if (data != null && !data.isEmpty() && data.get(0) != null) {
+                        int unreadCount = data.get(0).getUnreadCountUser();
+                        runOnUiThread(() -> updateSupportChatUnreadBadge(unreadCount));
+                    } else {
+                        runOnUiThread(() -> updateSupportChatUnreadBadge(0));
+                    }
+                } else {
+                    runOnUiThread(() -> updateSupportChatUnreadBadge(0));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<SupportConversationsResponseDto> call, Throwable t) {
+                runOnUiThread(() -> updateSupportChatUnreadBadge(0));
+            }
+        });
+    }
+
+    private void updateSupportChatUnreadBadge(int count) {
+        if (binding == null) return;
+        android.widget.TextView tvBadge = binding.tvSupportChatUnreadBadge;
+        if (tvBadge == null) return;
+        if (count > 0) {
+            tvBadge.setText(String.valueOf(count));
+            tvBadge.setVisibility(View.VISIBLE);
+        } else {
+            tvBadge.setVisibility(View.GONE);
         }
     }
 
