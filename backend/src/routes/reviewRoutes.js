@@ -16,6 +16,14 @@ const {
 
 const router = express.Router();
 
+let reviewsCache = null;
+let reviewsCacheTime = 0;
+
+function invalidateReviewsCache() {
+  reviewsCache = null;
+}
+
+
 const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'reviews');
 fs.mkdirSync(uploadDir, { recursive: true });
 const mediaUpload = multer({
@@ -144,6 +152,12 @@ router.get('/sku/:sku', asyncHandler(async (req, res) => {
  */
 router.get('/', asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 0; // 0 = lấy hết
+  const now = Date.now();
+
+  if (reviewsCache && (now - reviewsCacheTime < 30000)) {
+    const result = limit > 0 ? reviewsCache.slice(0, limit) : reviewsCache;
+    return res.json(result);
+  }
 
   const reviewDocs = await mongoose.connection.db
     .collection('reviews')
@@ -177,13 +191,15 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 
   // Lọc ra review hợp lệ (không phải trong tương lai)
-  const now = Date.now();
   const validReviews = allReviews.filter((r) => {
     const t = r.time || r.created_at || r.date || r.review_date;
     if (!t) return true;
     if (typeof t === 'object' && t.$date) return new Date(t.$date).getTime() <= now;
     return new Date(t).getTime() <= now;
   });
+
+  reviewsCache = validReviews;
+  reviewsCacheTime = now;
 
   const result = limit > 0 ? validReviews.slice(0, limit) : validReviews;
 
@@ -302,6 +318,8 @@ router.post('/', asyncHandler(async (req, res) => {
     console.error('[review certificate evaluation] Failed:', error);
   }
 
+  invalidateReviewsCache();
+
   res.status(201).json({
     success: true,
     sku,
@@ -364,6 +382,8 @@ router.post('/sku/:sku/reviews/:reviewId/like', asyncHandler(async (req, res) =>
     { sku },
     { $set: { reviews: updatedReviews, updatedAt: new Date() } }
   );
+
+  invalidateReviewsCache();
 
   res.json({ sku, reviews: updatedReviews });
 }));

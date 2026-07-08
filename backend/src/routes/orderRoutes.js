@@ -259,7 +259,18 @@ router.get('/id/:id', asyncHandler(async (req, res) => {
   if (mongoose.Types.ObjectId.isValid(req.params.id)) {
     query = { _id: new mongoose.Types.ObjectId(req.params.id) };
   } else {
-    query = { OrderID: req.params.id };
+    const targetId = req.params.id;
+    const strippedId = targetId.replace(/^(VG|ORD)/i, '');
+    query = {
+      $or: [
+        { OrderID: targetId },
+        { OrderID: 'VG' + targetId },
+        { OrderID: 'ORD' + targetId },
+        { OrderID: 'VG' + strippedId },
+        { OrderID: 'ORD' + strippedId },
+        { OrderID: strippedId }
+      ]
+    };
   }
 
   const order = await mongoose.connection.db.collection('orders').findOne(query);
@@ -727,8 +738,21 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
       : String(returnEvidenceUrls).split(',').map(value => value.trim()).filter(Boolean);
   }
 
+  const targetId = orderId;
+  const strippedId = targetId.replace(/^(VG|ORD)/i, '');
+  const query = {
+    $or: [
+      { OrderID: targetId },
+      { OrderID: 'VG' + targetId },
+      { OrderID: 'ORD' + targetId },
+      { OrderID: 'VG' + strippedId },
+      { OrderID: 'ORD' + strippedId },
+      { OrderID: strippedId }
+    ]
+  };
+
   const result = await db.collection('orders').findOneAndUpdate(
-    { OrderID: orderId },
+    query,
     { $set: setData },
     { returnDocument: 'after' }
   );
@@ -739,7 +763,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
 
   // VeggoPay Refund on Cancellation
   if (nextStatus === 'cancelled' && result.paymentMethod === 'veggopay') {
-    const existingRefund = await WalletTransaction.findOne({ referenceId: orderId, type: 'refund' });
+    const existingRefund = await WalletTransaction.findOne({ referenceId: result.OrderID, type: 'refund' });
     if (!existingRefund) {
       let wallet = await Wallet.findOne({ customerId: result.CustomerID });
       if (!wallet) {
@@ -755,8 +779,8 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
         amount: refundAmount,
         type: 'refund',
         status: 'completed',
-        referenceId: orderId,
-        description: `Hoàn tiền đơn hàng hủy #${orderId}`
+        referenceId: result.OrderID,
+        description: `Hoàn tiền đơn hàng hủy #${result.OrderID}`
       });
       await refundTx.save();
 
@@ -764,7 +788,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
         result.CustomerID,
         result.OrderID,
         'Biến động số dư',
-        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do đơn hàng #${orderId} bị hủy.`,
+        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do đơn hàng #${result.OrderID} bị hủy.`,
         'payment'
       );
     }
@@ -772,7 +796,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
 
   // VeggoPay Cashback on Completed Order (2% Cashback)
   if (['completed', 'unreview', 'reviewed'].includes(nextStatus) && result.paymentMethod === 'veggopay') {
-    const existingCashback = await WalletTransaction.findOne({ referenceId: orderId, type: 'cashback' });
+    const existingCashback = await WalletTransaction.findOne({ referenceId: result.OrderID, type: 'cashback' });
     if (!existingCashback) {
       let wallet = await Wallet.findOne({ customerId: result.CustomerID });
       if (!wallet) {
@@ -789,8 +813,8 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
           amount: cashbackAmount,
           type: 'cashback',
           status: 'completed',
-          referenceId: orderId,
-          description: `Hoàn tiền đặc quyền VeggoPay 2% đơn #${orderId}`
+          referenceId: result.OrderID,
+          description: `Hoàn tiền đặc quyền VeggoPay 2% đơn #${result.OrderID}`
         });
         await cashbackTx.save();
 
@@ -798,7 +822,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
           result.CustomerID,
           result.OrderID,
           'Biến động số dư',
-          `Ví VeggoPay nhận +${cashbackAmount.toLocaleString('vi-VN')}đ (hoàn 2%) cho đơn hàng #${orderId}.`,
+          `Ví VeggoPay nhận +${cashbackAmount.toLocaleString('vi-VN')}đ (hoàn 2%) cho đơn hàng #${result.OrderID}.`,
           'payment'
         );
       }
@@ -807,7 +831,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
 
   // VeggoPay Refund on Return/Refund Request Approved
   if (nextStatus === 'returned') {
-    const existingRefund = await WalletTransaction.findOne({ referenceId: orderId, type: 'refund' });
+    const existingRefund = await WalletTransaction.findOne({ referenceId: result.OrderID, type: 'refund' });
     if (!existingRefund) {
       let wallet = await Wallet.findOne({ customerId: result.CustomerID });
       if (!wallet) {
@@ -823,8 +847,8 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
         amount: refundAmount,
         type: 'refund',
         status: 'completed',
-        referenceId: orderId,
-        description: `Hoàn tiền trả hàng đơn hàng #${orderId}`
+        referenceId: result.OrderID,
+        description: `Hoàn tiền trả hàng đơn hàng #${result.OrderID}`
       });
       await refundTx.save();
 
@@ -832,7 +856,7 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
         result.CustomerID,
         result.OrderID,
         'Biến động số dư',
-        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do trả hàng đơn #${orderId}.`,
+        `Ví VeggoPay đã hoàn +${refundAmount.toLocaleString('vi-VN')}đ do trả hàng đơn #${result.OrderID}.`,
         'payment'
       );
     }
@@ -902,7 +926,18 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (mongoose.Types.ObjectId.isValid(req.params.id)) {
     query = { _id: new mongoose.Types.ObjectId(req.params.id) };
   } else {
-    query = { OrderID: req.params.id };
+    const targetId = req.params.id;
+    const strippedId = targetId.replace(/^(VG|ORD)/i, '');
+    query = {
+      $or: [
+        { OrderID: targetId },
+        { OrderID: 'VG' + targetId },
+        { OrderID: 'ORD' + targetId },
+        { OrderID: 'VG' + strippedId },
+        { OrderID: 'ORD' + strippedId },
+        { OrderID: strippedId }
+      ]
+    };
   }
 
   const updateData = { ...req.body };
@@ -955,7 +990,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
     if (Object.keys(detailUpdate).length > 0) {
       await mongoose.connection.db.collection('order_details').updateOne(
-        { OrderID: req.params.id },
+        { OrderID: order.OrderID },
         { $set: detailUpdate },
         { upsert: true }
       );
@@ -1007,7 +1042,18 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   if (mongoose.Types.ObjectId.isValid(req.params.id)) {
     query = { _id: new mongoose.Types.ObjectId(req.params.id) };
   } else {
-    query = { OrderID: req.params.id };
+    const targetId = req.params.id;
+    const strippedId = targetId.replace(/^(VG|ORD)/i, '');
+    query = {
+      $or: [
+        { OrderID: targetId },
+        { OrderID: 'VG' + targetId },
+        { OrderID: 'ORD' + targetId },
+        { OrderID: 'VG' + strippedId },
+        { OrderID: 'ORD' + strippedId },
+        { OrderID: strippedId }
+      ]
+    };
   }
 
   await mongoose.connection.db.collection('orders').updateOne(query, {

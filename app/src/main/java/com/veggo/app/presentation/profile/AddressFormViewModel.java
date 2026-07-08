@@ -53,7 +53,8 @@ public class AddressFormViewModel extends ViewModel {
                 addressTree.postValue(tree);
                 retryableError.postValue(false);
                 error.postValue(null);
-            } catch (Exception e) {
+            } catch (Throwable t) {
+                android.util.Log.e("AddressFormViewModel", "Lỗi tải dữ liệu địa chỉ", t);
                 retryableError.postValue(true);
                 error.postValue("Không thể tải dữ liệu Tỉnh/Huyện/Xã. Vui lòng thử lại.");
             } finally {

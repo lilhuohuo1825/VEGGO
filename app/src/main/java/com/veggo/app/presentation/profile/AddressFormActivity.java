@@ -85,7 +85,7 @@ public class AddressFormActivity extends BaseActivity {
         if (isEditMode) {
             fillAddressDataFromIntent();
         } else {
-            prefillEmailFromSession();
+            prefillPersonalDataFromSession();
         }
 
         viewModel.loadAddressTree();
@@ -180,7 +180,15 @@ public class AddressFormActivity extends BaseActivity {
         });
     }
 
-    private void prefillEmailFromSession() {
+    private void prefillPersonalDataFromSession() {
+        String name = appPreferences.getFullName();
+        if (name != null && !name.isEmpty()) {
+            setEditText(R.id.addressNameInput, name);
+        }
+        String phone = appPreferences.getCurrentPhone();
+        if (phone != null && !phone.isEmpty()) {
+            setEditText(R.id.addressPhoneInput, phone);
+        }
         String email = appPreferences.getEmail();
         if (email != null && !email.isEmpty()) {
             setEditText(R.id.addressEmailInput, email);

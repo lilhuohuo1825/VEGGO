@@ -5,6 +5,17 @@ const Product = require('../models/Product');
 
 const router = express.Router();
 
+let productsLiteCache = null;
+let productsLiteCacheTime = 0;
+let productsFullCache = null;
+let productsFullCacheTime = 0;
+
+function invalidateProductsCache() {
+  productsLiteCache = null;
+  productsFullCache = null;
+}
+
+
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
@@ -238,6 +249,15 @@ router.get('/home', asyncHandler(async (req, res) => {
 router.get('/', asyncHandler(async (req, res) => {
   const showAll = req.query.all === 'true';
   const lite = req.query.lite === 'true';
+
+  const now = Date.now();
+  if (showAll && lite && productsLiteCache && (now - productsLiteCacheTime < 30000)) {
+    return res.json(productsLiteCache);
+  }
+  if (showAll && !lite && productsFullCache && (now - productsFullCacheTime < 30000)) {
+    return res.json(productsFullCache);
+  }
+
   const query = showAll
     ? {}
     : {
@@ -330,6 +350,14 @@ router.get('/', asyncHandler(async (req, res) => {
       subcategory: subcategoryMap[priced.SubcategoryID || priced.subcategoryId] || priced.subcategory || normalized.subcategory || '',
     };
   });
+
+  if (showAll && lite) {
+    productsLiteCache = mappedProducts;
+    productsLiteCacheTime = now;
+  } else if (showAll && !lite) {
+    productsFullCache = mappedProducts;
+    productsFullCacheTime = now;
+  }
 
   res.json(mappedProducts);
 }));
@@ -437,6 +465,8 @@ router.post('/groups', asyncHandler(async (req, res) => {
     { $addToSet: { groups: groupName } }
   );
 
+  invalidateProductsCache();
+
   res.json({
     success: true,
     message: `Đã tạo nhóm "${groupName}"`,
@@ -471,6 +501,7 @@ router.patch('/:sku/groups', asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Product not found' });
   }
 
+  invalidateProductsCache();
   res.json({ success: true, data: result });
 }));
 
@@ -506,6 +537,7 @@ router.patch('/:id/field', asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Product not found' });
   }
 
+  invalidateProductsCache();
   res.json({ success: true, data: result });
 }));
 
@@ -564,6 +596,7 @@ router.post('/', asyncHandler(async (req, res) => {
     allowCustomWeight: req.body.allowCustomWeight === true || req.body.allowCustomWeight === 'true'
   };
   const result = await mongoose.connection.db.collection('products').insertOne(newProduct);
+  invalidateProductsCache();
   res.status(201).json({ _id: result.insertedId, ...newProduct });
 }));
 
@@ -588,6 +621,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
   await mongoose.connection.db.collection('products').updateOne(query, { $set: updateData });
   const updatedProduct = await mongoose.connection.db.collection('products').findOne(query);
+  invalidateProductsCache();
   res.json(updatedProduct);
 }));
 
@@ -607,6 +641,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   const newStatus = product.status === 'Inactive' ? 'Active' : 'Inactive';
   await mongoose.connection.db.collection('products').updateOne(query, { $set: { status: newStatus } });
+  invalidateProductsCache();
   res.json({ success: true, status: newStatus });
 }));
 
