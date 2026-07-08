@@ -513,9 +513,16 @@ router.patch('/:id/field', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   let query = {};
   if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-    query = { _id: new mongoose.Types.ObjectId(req.params.id) };
+    query = {
+      $or: [
+        { _id: req.params.id },
+        { _id: new mongoose.Types.ObjectId(req.params.id) },
+        { sku: req.params.id },
+        { id: req.params.id }
+      ]
+    };
   } else {
-    query = { $or: [{ sku: req.params.id }, { id: req.params.id }] };
+    query = { $or: [{ _id: req.params.id }, { sku: req.params.id }, { id: req.params.id }] };
   }
 
   const rawProduct = await mongoose.connection.db.collection('products').findOne(query);
