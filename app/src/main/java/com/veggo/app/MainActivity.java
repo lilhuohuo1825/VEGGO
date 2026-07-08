@@ -585,8 +585,8 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, cartFragment)
                 .addToBackStack("cart")
-                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
+        updateSupportChatBubbleVisibility();
     }
 
     public static final String EXTRA_CATEGORY_ID = "extra_category_id";
@@ -612,8 +612,8 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category_detail")
-                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
+        updateSupportChatBubbleVisibility();
     }
 
     public void openCategoryScreen() {
@@ -636,8 +636,8 @@ public class MainActivity extends AppCompatActivity {
         }
         ft.add(R.id.mainFragmentContainer, fragment)
                 .addToBackStack("category")
-                .runOnCommit(this::updateSupportChatBubbleVisibility)
                 .commit();
+        updateSupportChatBubbleVisibility();
     }
 
     public void openNotificationsScreen() {

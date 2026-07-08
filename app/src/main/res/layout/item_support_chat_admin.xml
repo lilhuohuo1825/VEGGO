@@ -17,18 +17,34 @@
         android:src="@drawable/ic_support_headset"
         app:tint="@color/primary_main" />
 
-    <TextView
-        android:id="@+id/tvMessage"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="6dp"
-        android:background="@drawable/bg_chat_bot"
-        android:fontFamily="@font/inter"
-        android:maxWidth="260dp"
-        android:paddingStart="10dp"
-        android:paddingTop="7dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="7dp"
-        android:textColor="@color/neutral_100"
-        android:textSize="13sp" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chat_bot"
+            android:fontFamily="@font/inter"
+            android:maxWidth="260dp"
+            android:paddingStart="10dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="7dp"
+            android:textColor="@color/neutral_100"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginStart="4dp"
+            android:fontFamily="@font/inter"
+            android:textColor="@color/neutral_60"
+            android:textSize="10sp" />
+    </LinearLayout>
 </LinearLayout>

@@ -585,7 +585,8 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
                         int type = "user".equalsIgnoreCase(msg.getSenderType())
                                 ? ChatMessage.TYPE_USER
                                 : ChatMessage.TYPE_BOT;
-                        mapped.add(new ChatMessage(msg.getText(), type));
+                        long ts = parseIso8601(msg.getCreatedAt());
+                        mapped.add(new ChatMessage(msg.getText(), type, ts));
                     }
                 }
                 adapter.setMessages(mapped);
@@ -597,6 +598,29 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
                 // ignore
             }
         });
+    }
+
+    private static long parseIso8601(String isoString) {
+        if (isoString == null || isoString.trim().isEmpty()) {
+            return System.currentTimeMillis();
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                return java.time.Instant.parse(isoString).toEpochMilli();
+            } else {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                return sdf.parse(isoString).getTime();
+            }
+        } catch (Exception e) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                return sdf.parse(isoString).getTime();
+            } catch (Exception ex) {
+                return System.currentTimeMillis();
+            }
+        }
     }
 
     private void connectSocket() {
@@ -631,8 +655,10 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
                 runOnUiThread(() -> {
                     String senderType = messageJson.optString("senderType", "");
                     String text = messageJson.optString("text", "");
+                    String createdAt = messageJson.optString("createdAt", "");
                     int type = "user".equalsIgnoreCase(senderType) ? ChatMessage.TYPE_USER : ChatMessage.TYPE_BOT;
-                    adapter.addMessage(new ChatMessage(text, type));
+                    long ts = parseIso8601(createdAt);
+                    adapter.addMessage(new ChatMessage(text, type, ts));
                     if ("admin".equalsIgnoreCase(senderType)) {
                         updatePeerTypingIndicator(false);
                     }

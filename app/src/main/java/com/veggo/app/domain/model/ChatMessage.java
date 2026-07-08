@@ -24,6 +24,14 @@ public class ChatMessage {
         this(message, type, Collections.emptyList(), Collections.emptyList());
     }
 
+    public ChatMessage(String message, int type, long timestamp) {
+        this.message = message;
+        this.type = type;
+        this.timestamp = timestamp;
+        this.products = Collections.emptyList();
+        this.recipes = Collections.emptyList();
+    }
+
     public ChatMessage(
             String message,
             int type,

@@ -48,6 +48,9 @@ public interface ProductDao {
     List<ProductEntity> getProductsByIds(List<String> productIds);
 
     @Query("SELECT * FROM products")
+    List<ProductEntity> getAllProductEntities();
+
+    @Query("SELECT * FROM products")
     LiveData<List<ProductEntity>> observeAllProductEntities();
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

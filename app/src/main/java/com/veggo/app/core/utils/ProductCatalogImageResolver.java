@@ -19,9 +19,51 @@ import java.util.Map;
  * Tra cứu ảnh sản phẩm từ Room hoặc assets khi snapshot đơn hàng/giỏ hàng thiếu imageUrl.
  */
 public final class ProductCatalogImageResolver {
-    private static volatile Map<String, String> assetImageBySku;
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> cache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static volatile boolean isPrefetched = false;
 
     private ProductCatalogImageResolver() {
+    }
+
+    public static void prefetchAll(Context context) {
+        if (context == null || isPrefetched) {
+            return;
+        }
+        Context appContext = context.getApplicationContext();
+        new Thread(() -> {
+            try {
+                // 1. Prefetch from JSON assets
+                AssetJsonLoader loader = new AssetJsonLoader(appContext);
+                List<AssetModels.Product> assetProducts = loader.readList(AssetFiles.PRODUCTS, AssetModels.Product.class);
+                if (assetProducts != null) {
+                    for (AssetModels.Product product : assetProducts) {
+                        if (product.sku != null && !product.sku.trim().isEmpty()) {
+                            String imageUrl = ProductImageUtils.resolveImageUrl(product.image, null);
+                            if (ProductImageUtils.isHttpUrl(imageUrl)) {
+                                cache.put(product.sku.trim(), imageUrl);
+                            }
+                        }
+                    }
+                }
+
+                // 2. Prefetch from Room database
+                ProductDao productDao = VeggoDatabase.getInstance(appContext).productDao();
+                List<ProductEntity> entities = productDao.getAllProductEntities();
+                if (entities != null) {
+                    for (ProductEntity entity : entities) {
+                        if (entity.getSku() != null && !entity.getSku().trim().isEmpty()) {
+                            String imageUrl = entity.getImageUrl();
+                            if (ProductImageUtils.isHttpUrl(imageUrl)) {
+                                cache.put(entity.getSku().trim(), ProductImageUtils.normalizeUrl(imageUrl));
+                            }
+                        }
+                    }
+                }
+                isPrefetched = true;
+            } catch (Exception e) {
+                android.util.Log.e("ProductCatalogImageResolver", "Error prefetching product images", e);
+            }
+        }).start();
     }
 
     @Nullable
@@ -53,42 +95,60 @@ public final class ProductCatalogImageResolver {
 
     @Nullable
     public static String resolveBySku(@Nullable Context context, @Nullable String sku) {
-        if (context == null || sku == null || sku.trim().isEmpty()) {
+        if (sku == null || sku.trim().isEmpty()) {
             return null;
         }
         String key = sku.trim();
-
-        ProductDao productDao = VeggoDatabase.getInstance(context.getApplicationContext()).productDao();
-        String productId = productDao.getProductIdBySku(key);
-        if (productId != null) {
-            ProductEntity entity = productDao.getProductById(productId);
-            if (entity != null && ProductDisplayValidator.hasValidImage(entity.getImageUrl())) {
-                return ProductImageUtils.normalizeUrl(entity.getImageUrl());
-            }
+        
+        // 1. Check in-memory cache
+        if (cache.containsKey(key)) {
+            return cache.get(key);
         }
 
-        return resolveFromAssets(context, key);
+        if (context == null) {
+            return null;
+        }
+
+        // 2. Fallback to database query (only if cache missed/not yet loaded)
+        try {
+            ProductDao productDao = VeggoDatabase.getInstance(context.getApplicationContext()).productDao();
+            String productId = productDao.getProductIdBySku(key);
+            if (productId != null) {
+                ProductEntity entity = productDao.getProductById(productId);
+                if (entity != null && ProductDisplayValidator.hasValidImage(entity.getImageUrl())) {
+                    String url = ProductImageUtils.normalizeUrl(entity.getImageUrl());
+                    if (url != null) {
+                        cache.put(key, url);
+                        return url;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 3. Fallback to assets
+        String assetUrl = resolveFromAssets(context, key);
+        if (assetUrl != null) {
+            cache.put(key, assetUrl);
+        }
+        return assetUrl;
     }
 
     public static void invalidateAssetCache() {
-        assetImageBySku = null;
+        cache.clear();
+        isPrefetched = false;
     }
 
     @Nullable
     private static String resolveFromAssets(Context context, String sku) {
         ensureAssetCache(context);
-        if (assetImageBySku == null) {
-            return null;
-        }
-        String url = assetImageBySku.get(sku);
-        return ProductImageUtils.isHttpUrl(url) ? url : null;
+        return cache.get(sku);
     }
 
     private static synchronized void ensureAssetCache(Context context) {
-        if (assetImageBySku != null) {
+        if (isPrefetched) {
             return;
         }
-        Map<String, String> map = new HashMap<>();
         try {
             AssetJsonLoader loader = new AssetJsonLoader(context.getApplicationContext());
             List<AssetModels.Product> products = loader.readList(AssetFiles.PRODUCTS, AssetModels.Product.class);
@@ -98,11 +158,10 @@ public final class ProductCatalogImageResolver {
                 }
                 String imageUrl = ProductImageUtils.resolveImageUrl(product.image, null);
                 if (ProductImageUtils.isHttpUrl(imageUrl)) {
-                    map.put(product.sku.trim(), imageUrl);
+                    cache.put(product.sku.trim(), imageUrl);
                 }
             }
         } catch (Exception ignored) {
         }
-        assetImageBySku = map;
     }
 }

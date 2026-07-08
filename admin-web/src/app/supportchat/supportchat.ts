@@ -424,6 +424,37 @@ export class SupportChat implements OnInit, OnDestroy, AfterViewChecked {
     return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   }
 
+  shouldShowDateDivider(index: number): boolean {
+    const list = this.messages();
+    if (index === 0) return true;
+    const current = list[index];
+    const previous = list[index - 1];
+    if (!current.createdAt || !previous.createdAt) return false;
+    
+    const currentDate = new Date(current.createdAt);
+    const previousDate = new Date(previous.createdAt);
+    
+    return (
+      currentDate.getDate() !== previousDate.getDate() ||
+      currentDate.getMonth() !== previousDate.getMonth() ||
+      currentDate.getFullYear() !== previousDate.getFullYear()
+    );
+  }
+
+  formatDateDivider(value?: string | null): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  }
+
   isUnread(conversation: SupportConversation): boolean {
     return (Number(conversation.unreadCountAdmin || 0) || 0) > 0;
   }

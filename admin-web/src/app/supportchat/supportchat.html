@@ -73,17 +73,21 @@
     <div class="messages" #messagesContainer>
       <div class="empty" *ngIf="!selectedConversationId()">Chọn một khách hàng để bắt đầu</div>
 
-      <div
-        class="msg-row"
-        *ngFor="let m of messages()"
-        [class.from-customer]="m.senderType === 'user'"
-        [class.from-admin]="m.senderType !== 'user'"
-      >
-        <div class="msg-bubble">
-          <div class="msg-text">{{ m.text }}</div>
-          <div class="msg-time">{{ formatTime(m.createdAt) }}</div>
+      <ng-container *ngFor="let m of messages(); let i = index">
+        <div class="date-divider" *ngIf="shouldShowDateDivider(i)">
+          <span>{{ formatDateDivider(m.createdAt) }}</span>
         </div>
-      </div>
+        <div
+          class="msg-row"
+          [class.from-customer]="m.senderType === 'user'"
+          [class.from-admin]="m.senderType !== 'user'"
+        >
+          <div class="msg-bubble">
+            <div class="msg-text">{{ m.text }}</div>
+            <div class="msg-time">{{ formatTime(m.createdAt) }}</div>
+          </div>
+        </div>
+      </ng-container>
 
       <div
         class="typing-row from-customer"
