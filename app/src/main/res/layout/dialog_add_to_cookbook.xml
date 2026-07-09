@@ -46,7 +46,7 @@
             android:id="@+id/cookbookCreateButton"
             android:layout_width="116dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_community_circle"
+            android:background="@drawable/bg_button_secondary_large"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"

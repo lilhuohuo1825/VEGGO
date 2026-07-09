@@ -552,20 +552,13 @@ public class OrderHistoryFragment extends BaseFragment {
     }
 
     private void confirmCancel(AssetModels.Order order) {
-        VeggoDialog.show(
-                requireContext(),
-                R.drawable.ic_trash,
-                "Xác nhận hủy đơn",
-                "Bạn có chắc chắn muốn hủy đơn hàng này không?",
-                "Đồng ý",
-                "Hủy bỏ",
-                new VeggoDialog.DialogListener() {
-                    @Override
-                    public void onConfirm() {
-                        updateOrderStatus(order, "cancelled");
-                    }
-                }
-        );
+        openCancelOrder(order.orderId);
+    }
+
+    private void openCancelOrder(String orderId) {
+        Intent intent = new Intent(requireContext(), CancelOrderActivity.class);
+        intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
+        startActivity(intent);
     }
 
     private void confirmReceived(AssetModels.Order order) {

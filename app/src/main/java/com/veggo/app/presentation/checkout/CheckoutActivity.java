@@ -2058,33 +2058,20 @@ public class CheckoutActivity extends BaseActivity {
                 usage,
                 currentSubtotal,
                 customerId,
-                matchesTarget(target)
+                PromotionVoucherHelper.matchesPromotionTarget(
+                        promotion,
+                        target,
+                        buildVoucherCartLines()
+                )
         );
     }
 
-    private boolean matchesTarget(PromotionTargetDto target) {
-        if (target == null) {
-            return true;
-        }
-        if (target.getTargetGroups() != null && !target.getTargetGroups().isEmpty()) {
-            for (PromotionTargetDto.TargetGroupDto group : target.getTargetGroups()) {
-                if (!matchesTargetGroup(group.getTargetType(), group.getTargetRefs())) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return matchesTargetGroup(target.getTargetType(), target.getTargetRefs());
-    }
-
-    private boolean matchesTargetGroup(String targetType, List<String> targetRefs) {
+    private List<PromotionVoucherHelper.VoucherCartLine> buildVoucherCartLines() {
+        List<PromotionVoucherHelper.VoucherCartLine> lines = new ArrayList<>();
         for (CartDto.CartItemDto item : cartItems) {
-            if (PromotionVoucherHelper.matchesTargetRef(
-                    targetType, targetRefs, item.getSku(), item.getProduct())) {
-                return true;
-            }
+            lines.add(new PromotionVoucherHelper.VoucherCartLine(item.getSku(), item.getProduct()));
         }
-        return PromotionVoucherHelper.matchesTargetRef(targetType, targetRefs, null, null);
+        return lines;
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {

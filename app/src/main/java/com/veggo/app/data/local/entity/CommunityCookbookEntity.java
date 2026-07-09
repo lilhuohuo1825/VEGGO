@@ -17,6 +17,11 @@ public class CommunityCookbookEntity {
     private int recipeCount;
     private String imageUrl;
 
+    @Ignore
+    public CommunityCookbookEntity() {
+        this.id = "";
+    }
+
     public CommunityCookbookEntity(@NonNull String id, String accountId, String title, int recipeCount, String imageUrl) {
         this.id = id;
         this.customerId = accountId;

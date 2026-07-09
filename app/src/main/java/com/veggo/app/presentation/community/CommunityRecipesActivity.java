@@ -45,17 +45,22 @@ public class CommunityRecipesActivity extends AppCompatActivity {
     }
 
     private void loadRecipes() {
+        CommunityRepository.Callback<java.util.List<com.veggo.app.data.local.entity.CommunityRecipeEntity>> recipeCallback =
+                recipes -> repository.loadSavedRecipeIds(savedIds -> runOnUiThread(() -> renderRecipes(recipes, savedIds)));
         if (categoryId != null && !categoryId.isEmpty()) {
-            repository.loadRecipesByCategory(categoryId, recipes -> runOnUiThread(() -> renderRecipes(recipes)));
+            repository.loadRecipesByCategory(categoryId, recipeCallback);
         } else if (chefId != null && !chefId.isEmpty()) {
-            repository.loadRecipesByChef(chefId, recipes -> runOnUiThread(() -> renderRecipes(recipes)));
+            repository.loadRecipesByChef(chefId, recipeCallback);
         } else {
-            repository.loadRecipes(recipes -> runOnUiThread(() -> renderRecipes(recipes)));
+            repository.loadRecipes(recipeCallback);
         }
     }
 
-    private void renderRecipes(java.util.List<com.veggo.app.data.local.entity.CommunityRecipeEntity> recipes) {
-        CommunityUi.addRecipeList(this, container, CommunityUi.shuffled(recipes));
+    private void renderRecipes(
+            java.util.List<com.veggo.app.data.local.entity.CommunityRecipeEntity> recipes,
+            java.util.Set<String> savedIds
+    ) {
+        CommunityUi.addRecipeList(this, container, CommunityUi.shuffled(recipes), repository, savedIds);
         CommunityUi.finishRefresh(refreshLayout);
     }
 }

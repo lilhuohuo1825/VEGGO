@@ -34,6 +34,11 @@ const imageUpload = multer({
 const ACCOUNT_ID = 'account-thuc-quyen';
 const ACCOUNT_NAME = 'Thuc Quyen';
 const ACCOUNT_AVATAR_URL = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80';
+const COMMUNITY_CACHE_TTL_MS = 15000;
+const DEFAULT_RECIPE_LIMIT = 50;
+
+let communityCookingCache = null;
+let communityCookingCacheAt = 0;
 
 router.get('/home', asyncHandler(async (req, res) => {
   const data = await getCommunityCooking();
@@ -72,7 +77,10 @@ router.get('/users/:customerId', asyncHandler(async (req, res) => {
 
 router.get('/recipes', asyncHandler(async (req, res) => {
   const data = await getCommunityCooking();
-  let recipes = (data.recipes || []).map(normalizeRecipe);
+  let recipes = dedupeByKey(
+    (data.recipes || []).map(normalizeRecipe),
+    (recipe) => recipe.id
+  );
   if (req.query.categoryId) {
     recipes = recipes.filter((recipe) => recipe.categoryId === req.query.categoryId);
   }
@@ -80,8 +88,26 @@ router.get('/recipes', asyncHandler(async (req, res) => {
     recipes = recipes.filter((recipe) => recipe.chefId === req.query.chefId);
   }
 
-  const limit = Number(req.query.limit || 0);
-  res.json(limit > 0 ? recipes.slice(0, limit) : recipes);
+  const requestedLimit = Number(req.query.limit || 0);
+  const limit = requestedLimit > 0 ? requestedLimit : DEFAULT_RECIPE_LIMIT;
+  res.json(recipes.slice(0, limit));
+}));
+
+router.get('/saved-recipe-ids', asyncHandler(async (req, res) => {
+  const data = await getCommunityCooking();
+  const customerId = req.query.customerId || req.query.accountId || ACCOUNT_ID;
+  const cookbookIds = new Set(
+    (data.cookbooks || [])
+      .filter((cookbook) => cookbookBelongsToCustomer(cookbook, customerId))
+      .map(cookbookRef)
+  );
+  const recipeIds = [...new Set(
+    (data.cookbookRecipes || [])
+      .filter((item) => cookbookIds.has(cookbookRef(item)))
+      .map((item) => recipeRef(item))
+      .filter(Boolean)
+  )];
+  res.json({ recipeIds });
 }));
 
 router.get('/recipes/drafts/:customerId', asyncHandler(async (req, res) => {
@@ -100,7 +126,7 @@ router.post('/recipes/drafts', asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'customerId is required' });
   }
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $push: { recipeDrafts: draft },
@@ -125,7 +151,7 @@ router.delete('/recipes/drafts/:draftId', asyncHandler(async (req, res) => {
     return res.status(403).json({ message: 'Only draft owner can delete this draft' });
   }
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $pull: {
@@ -200,7 +226,7 @@ router.post('/recipes/publish', asyncHandler(async (req, res) => {
     SortOrder: index,
   }));
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $push: {
@@ -277,7 +303,7 @@ router.put('/recipes/:recipeId', asyncHandler(async (req, res) => {
     SortOrder: index,
   }));
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $set: {
@@ -329,7 +355,7 @@ router.delete('/recipes/:recipeId', asyncHandler(async (req, res) => {
     };
   });
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $set: {
@@ -414,56 +440,67 @@ router.get('/recipes/:recipeId/saved', asyncHandler(async (req, res) => {
   const data = await getCommunityCooking();
   const customerId = req.query.customerId || req.query.accountId || ACCOUNT_ID;
   const cookbookIds = (data.cookbooks || [])
-    .filter((cookbook) => cookbook.CustomerID === customerId || cookbook.customerId === customerId)
+    .filter((cookbook) => cookbookBelongsToCustomer(cookbook, customerId))
     .map(cookbookRef);
   const saved = (data.cookbookRecipes || [])
-    .some((item) => cookbookIds.includes(cookbookRef(item)) && recipeRef(item) === req.params.recipeId);
+    .some((item) => cookbookIds.includes(cookbookRef(item))
+      && recipeIdsEquivalent(data, recipeRef(item), req.params.recipeId));
   res.json({ saved });
 }));
 
 router.get('/cookbooks', asyncHandler(async (req, res) => {
-  const data = await getCommunityCooking();
   const customerId = req.query.customerId || req.query.accountId || ACCOUNT_ID;
-  const cookbooks = (data.cookbooks || [])
-    .filter((cookbook) => cookbook.CustomerID === customerId || cookbook.customerId === customerId)
-    .sort((left, right) => dateValue(right.UpdatedAt || right.CreatedAt) - dateValue(left.UpdatedAt || left.CreatedAt));
-  res.json(cookbooks.map(normalizeCookbook));
+  const data = await ensureSeedCookbooksForCustomer(customerId);
+  const cookbooks = dedupeByKey(
+    (data.cookbooks || [])
+      .filter((cookbook) => cookbookBelongsToCustomer(cookbook, customerId))
+      .sort((left, right) => dateValue(right.UpdatedAt || right.CreatedAt) - dateValue(left.UpdatedAt || left.CreatedAt))
+      .map(normalizeCookbook),
+    (cookbook) => cookbook.id
+  );
+  res.json(cookbooks);
 }));
 
 router.get('/cookbooks/:cookbookId', asyncHandler(async (req, res) => {
-  const data = await getCommunityCooking();
   const cookbookId = req.params.cookbookId;
-  const cookbook = (data.cookbooks || []).find((item) => cookbookRef(item) === cookbookId);
+  const data = await getCommunityCooking();
+  const cookbook = findCookbookInData(data, cookbookId);
   if (!cookbook) {
     return res.status(404).json({ message: 'Community cookbook not found' });
   }
 
+  const canonicalCookbookId = cookbookRef(cookbook);
   const links = (data.cookbookRecipes || [])
-    .filter((item) => cookbookRef(item) === cookbookId)
+    .filter((item) => cookbookRef(item) === canonicalCookbookId)
     .sort(sortByOrder);
-  const recipeIds = links.map((link) => recipeRef(link));
-  const recipes = (data.recipes || []).map(normalizeRecipe).filter((recipe) => recipeIds.includes(recipe.id));
-  const recipesById = new Map(recipes.map((recipe) => [recipe.id, recipe]));
+  const linkRecipeIds = [...new Set(links.map((link) => recipeRef(link)).filter(Boolean))];
+  const normalizedRecipes = (data.recipes || []).map(normalizeRecipe);
+  const recipes = dedupeByKey(
+    normalizedRecipes.filter((recipe) => linkRecipeIds.some((linkId) => recipeIdsEquivalent(data, recipe.id, linkId))),
+    (recipe) => recipe.id
+  );
 
   res.json({
     cookbook: normalizeCookbook(cookbook),
-    recipes: recipeIds.map((recipeId) => recipesById.get(recipeId)).filter(Boolean),
+    recipes: linkRecipeIds
+      .map((linkId) => recipes.find((recipe) => recipeIdsEquivalent(data, recipe.id, linkId)))
+      .filter(Boolean),
   });
 }));
 
 router.post('/cookbooks', asyncHandler(async (req, res) => {
-  const { title, recipeId, description = '' } = req.body;
+  const { title, description = '' } = req.body;
+  const recipeId = String(req.body.recipeId || req.body.RecipeID || '').trim();
   const customerId = req.body.customerId || req.body.accountId || ACCOUNT_ID;
-  if (!title || !recipeId) {
-    return res.status(400).json({ message: 'title and recipeId are required' });
+  if (!title) {
+    return res.status(400).json({ message: 'title is required' });
   }
 
   const data = await getCommunityCooking();
-  const recipe = (data.recipes || []).map(normalizeRecipe).find((item) => item.id === recipeId);
-  if (!recipe) {
-    return res.status(404).json({ message: 'Community recipe not found' });
-  }
-
+  const rawRecipe = recipeId
+    ? (data.recipes || []).find((item) => recipeMatchesId(item, recipeId))
+    : null;
+  const recipe = rawRecipe ? normalizeRecipe(rawRecipe) : null;
   const cookbookId = nextCookbookId(data.cookbooks || []);
   const now = new Date();
   const cookbook = {
@@ -471,74 +508,98 @@ router.post('/cookbooks', asyncHandler(async (req, res) => {
     CustomerID: customerId,
     Title: title,
     Description: description,
-    CoverImageUrl: recipe.imageUrl || '',
-    RecipeCount: 1,
+    CoverImageUrl: recipe?.imageUrl || '',
+    RecipeCount: recipe ? 1 : 0,
     CreatedAt: now,
     UpdatedAt: now,
   };
-  const cookbookRecipe = {
-    CookbookID: cookbookId,
-    RecipeID: recipeId,
-    SortOrder: 0,
-    SavedAt: now,
-  };
+  const pushPayload = { cookbooks: cookbook };
+  if (rawRecipe) {
+    pushPayload.cookbookRecipes = {
+      CookbookID: cookbookId,
+      RecipeID: recipeRef(rawRecipe),
+      SortOrder: 0,
+      SavedAt: now,
+    };
+  }
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
-      $push: {
-        cookbooks: cookbook,
-        cookbookRecipes: cookbookRecipe,
-      },
+      $push: pushPayload,
     }
   );
   res.status(201).json(normalizeCookbook(cookbook));
 }));
 
 router.post('/cookbooks/:cookbookId/recipes', asyncHandler(async (req, res) => {
-  const { recipeId } = req.body;
+  const body = req.body || {};
+  const recipeId = String(body.recipeId || body.RecipeID || '').trim();
   const cookbookId = req.params.cookbookId;
   if (!recipeId) {
     return res.status(400).json({ message: 'recipeId is required' });
   }
 
-  const data = await getCommunityCooking();
-  const cookbook = (data.cookbooks || []).find((item) => cookbookRef(item) === cookbookId);
+  let data = await getCommunityCooking();
+  let cookbook = findCookbookInData(data, cookbookId);
+  if (!cookbook) {
+    const ownerId = body.customerId || body.accountId || req.query.customerId || req.query.accountId || ACCOUNT_ID;
+    data = await ensureSeedCookbooksForCustomer(ownerId);
+    cookbook = findCookbookInData(data, cookbookId);
+  }
   if (!cookbook) {
     return res.status(404).json({ message: 'Community cookbook not found' });
   }
 
-  const recipe = (data.recipes || []).map(normalizeRecipe).find((item) => item.id === recipeId);
-  if (!recipe) {
+  const rawRecipe = (data.recipes || []).find((item) => recipeMatchesId(item, recipeId));
+  if (!rawRecipe) {
     return res.status(404).json({ message: 'Community recipe not found' });
   }
 
-  const existing = (data.cookbookRecipes || [])
-    .some((item) => cookbookRef(item) === cookbookId && recipeRef(item) === recipeId);
-  if (!existing) {
-    const count = (data.cookbookRecipes || []).filter((item) => cookbookRef(item) === cookbookId).length;
-    const update = {
-      $push: {
-        cookbookRecipes: {
-          CookbookID: cookbookId,
-          RecipeID: recipeId,
-          SortOrder: count,
-          SavedAt: new Date(),
-        },
-      },
-      $inc: { 'cookbooks.$.RecipeCount': 1 },
-      $set: {
-        'cookbooks.$.UpdatedAt': new Date(),
-      },
-    };
-    if (!cookbook.CoverImageUrl && recipe.imageUrl) {
-      update.$set['cookbooks.$.CoverImageUrl'] = recipe.imageUrl;
-    }
-    await communityCollection().updateOne(
-      { _id: data._id, 'cookbooks.CookbookID': cookbookId },
-      update
-    );
+  const canonicalCookbookId = cookbookRef(cookbook);
+  const canonicalRecipeId = recipeRef(rawRecipe);
+  const recipe = normalizeRecipe(rawRecipe);
+  const cookbookRecipes = [...(data.cookbookRecipes || [])];
+  const alreadyLinked = cookbookRecipes.some((item) =>
+    cookbookRef(item) === canonicalCookbookId
+    && recipeIdsEquivalent(data, recipeRef(item), canonicalRecipeId)
+  );
+
+  if (!alreadyLinked) {
+    cookbookRecipes.push({
+      CookbookID: canonicalCookbookId,
+      RecipeID: canonicalRecipeId,
+      cookbookId: canonicalCookbookId,
+      recipeId: canonicalRecipeId,
+      SortOrder: cookbookRecipes.filter((item) => cookbookRef(item) === canonicalCookbookId).length,
+      SavedAt: new Date(),
+    });
   }
+
+  const nextCookbooks = (data.cookbooks || []).map((item) => {
+    if (cookbookRef(item) !== canonicalCookbookId) {
+      return item;
+    }
+    const recipeCount = cookbookRecipes.filter((link) => cookbookRef(link) === canonicalCookbookId).length;
+    const coverImage = item.CoverImageUrl || item.coverImageUrl || item.imageUrl || recipe.imageUrl || '';
+    return {
+      ...item,
+      RecipeCount: recipeCount,
+      CoverImageUrl: coverImage,
+      imageUrl: coverImage,
+      UpdatedAt: new Date(),
+    };
+  });
+
+  await patchCommunityCooking(
+    { _id: data._id },
+    {
+      $set: {
+        cookbooks: nextCookbooks,
+        cookbookRecipes,
+      },
+    }
+  );
 
   res.json({ ok: true });
 }));
@@ -560,7 +621,7 @@ router.delete('/cookbooks/recipes/:recipeId', asyncHandler(async (req, res) => {
 
   const cookbookRecipes = data.cookbookRecipes || [];
   const nextCookbookRecipes = cookbookRecipes.filter((item) =>
-    !(ownedCookbookIds.has(cookbookRef(item)) && recipeRef(item) === recipeId)
+    !(ownedCookbookIds.has(cookbookRef(item)) && recipeIdsEquivalent(data, recipeRef(item), recipeId))
   );
   const removed = nextCookbookRecipes.length !== cookbookRecipes.length;
   if (!removed) {
@@ -584,7 +645,7 @@ router.delete('/cookbooks/recipes/:recipeId', asyncHandler(async (req, res) => {
     };
   });
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $set: {
@@ -727,7 +788,7 @@ router.post('/comments', asyncHandler(async (req, res) => {
     CreatedAt: new Date(),
   };
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     { $push: { recipeComments: comment } }
   );
@@ -773,7 +834,7 @@ router.post('/comments/:commentId/like', asyncHandler(async (req, res) => {
     UpdatedAt: new Date(),
   };
 
-  await communityCollection().updateOne(
+  await patchCommunityCooking(
     { _id: data._id },
     {
       $set: {
@@ -800,11 +861,21 @@ router.post('/comments/:commentId/like', asyncHandler(async (req, res) => {
   res.json(normalizeRecipeComment(nextComment, user, customerId));
 }));
 
-async function getCommunityCooking() {
+function invalidateCommunityCache() {
+  communityCookingCache = null;
+  communityCookingCacheAt = 0;
+}
+
+async function getCommunityCooking(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && communityCookingCache && (now - communityCookingCacheAt) < COMMUNITY_CACHE_TTL_MS) {
+    return communityCookingCache;
+  }
+
   const collection = communityCollection();
   const data = await collection.findOne({});
   if (data && Array.isArray(data.recipes) && data.recipes.length > 0) {
-    return data;
+    return storeCommunityCache(data);
   }
 
   const seedPath = path.join(__dirname, '..', '..', '..', 'app', 'src', 'main', 'assets', 'community_cooking.json');
@@ -827,17 +898,33 @@ async function getCommunityCooking() {
         },
       }
     );
-    return collection.findOne({ _id: data._id });
+    invalidateCommunityCache();
+    return storeCommunityCache(await collection.findOne({ _id: data._id }));
   }
 
   seed.SeededFromAsset = true;
   seed.CreatedAt = new Date();
   await collection.insertOne(seed);
-  return collection.findOne({});
+  const inserted = await collection.findOne({});
+  communityCookingCache = inserted;
+  communityCookingCacheAt = Date.now();
+  return inserted;
+}
+
+function storeCommunityCache(data) {
+  communityCookingCache = data;
+  communityCookingCacheAt = Date.now();
+  return data;
 }
 
 function communityCollection() {
   return mongoose.connection.db.collection('community_cooking');
+}
+
+async function patchCommunityCooking(filter, update) {
+  const result = await communityCollection().updateOne(filter, update);
+  invalidateCommunityCache();
+  return result;
 }
 
 async function topCommunityUsers(limit = 0) {
@@ -1003,7 +1090,7 @@ function normalizeRecipeComment(comment, user, viewerId = '') {
 }
 
 function recipeRef(item) {
-  return item.RecipeID || item.recipeId || item.recipeID || item.RecipeId || '';
+  return item.RecipeID || item.id || item.recipeId || item.recipeID || item.RecipeId || '';
 }
 
 function commentRef(item) {
@@ -1026,6 +1113,104 @@ function draftRef(item) {
 
 function cookbookRef(item) {
   return item.CookbookID || item.cookbookId || item.id || '';
+}
+
+function findCookbookInData(data, cookbookId) {
+  if (!data || !cookbookId) {
+    return null;
+  }
+  return (data.cookbooks || []).find((item) => cookbookRef(item) === cookbookId) || null;
+}
+
+function readCommunitySeed() {
+  const seedPath = path.join(__dirname, '..', '..', '..', 'app', 'src', 'main', 'assets', 'community_cooking.json');
+  return JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+}
+
+async function ensureSeedCookbooksForCustomer(customerId) {
+  const data = await getCommunityCooking();
+  if (!customerId) {
+    return data;
+  }
+
+  let seed;
+  try {
+    seed = readCommunitySeed();
+  } catch (error) {
+    return data;
+  }
+
+  const existingIds = new Set((data.cookbooks || []).map(cookbookRef).filter(Boolean));
+  const seedCookbooks = (seed.cookbooks || []).filter((cookbook) => cookbookBelongsToCustomer(cookbook, customerId));
+  const cookbooksToAdd = seedCookbooks.filter((cookbook) => !existingIds.has(cookbookRef(cookbook)));
+  if (!cookbooksToAdd.length) {
+    return data;
+  }
+
+  const cookbookIdsToAdd = new Set(cookbooksToAdd.map(cookbookRef));
+  const cookbookRecipesToAdd = (seed.cookbookRecipes || []).filter((link) => cookbookIdsToAdd.has(cookbookRef(link)));
+  const pushPayload = { cookbooks: { $each: cookbooksToAdd } };
+  if (cookbookRecipesToAdd.length > 0) {
+    pushPayload.cookbookRecipes = { $each: cookbookRecipesToAdd };
+  }
+
+  await patchCommunityCooking({ _id: data._id }, { $push: pushPayload });
+  return getCommunityCooking(true);
+}
+
+function cookbookBelongsToCustomer(cookbook, customerId) {
+  if (!cookbook || !customerId) {
+    return false;
+  }
+  const ownerId = cookbook.CustomerID || cookbook.customerId || cookbook.accountId || '';
+  return ownerId === customerId;
+}
+
+function findRecipeInData(data, recipeId) {
+  if (!recipeId) {
+    return null;
+  }
+  const raw = (data.recipes || []).find((item) => recipeMatchesId(item, recipeId));
+  return raw ? normalizeRecipe(raw) : null;
+}
+
+function recipeMatchesId(item, recipeId) {
+  if (!item || !recipeId) {
+    return false;
+  }
+  const target = String(recipeId).trim();
+  if (!target) {
+    return false;
+  }
+  return recipeRef(item) === target
+    || String(item.LegacyRecipeID || item.legacyRecipeId || '').trim() === target;
+}
+
+function recipeIdsEquivalent(data, leftId, rightId) {
+  if (!leftId || !rightId) {
+    return false;
+  }
+  if (leftId === rightId) {
+    return true;
+  }
+  const left = (data.recipes || []).find((item) => recipeMatchesId(item, leftId));
+  const right = (data.recipes || []).find((item) => recipeMatchesId(item, rightId));
+  if (!left || !right) {
+    return false;
+  }
+  return recipeRef(left) === recipeRef(right);
+}
+
+function dedupeByKey(items, keySelector) {
+  const map = new Map();
+  for (const item of items || []) {
+    const key = keySelector(item);
+    if (!key || map.has(key)) {
+      continue;
+    }
+    map.set(key, item);
+  }
+  return [...map.values()];
 }
 
 function nextCookbookId(cookbooks) {

@@ -46,40 +46,22 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <FrameLayout
-                android:id="@+id/cartNotifyButton"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
+            <TextView
+                android:id="@+id/cartEditButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="Notifications"
-                    android:src="@drawable/ic_notify_xanh" />
-
-                <TextView
-                    android:id="@+id/cartNotificationBadge"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_gravity="top|end"
-                    android:background="@drawable/bg_notification_badge_alert"
-                    android:fontFamily="@font/inter_semibold"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:textColor="@color/white"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    tools:text="3"
-                    tools:visibility="visible" />
-            </FrameLayout>
+                android:focusable="true"
+                android:fontFamily="@font/inter_semibold"
+                android:paddingStart="8dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="6dp"
+                android:text="@string/cart_edit"
+                android:textColor="@color/primary_main"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <View
@@ -269,6 +251,32 @@
                         android:text="Nhận 0 điểm carbon cho đơn này"
                         android:textColor="#57AF37"
                         android:textSize="10sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layoutCartEditActions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical|end"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/btnCartSaveFavorite"
+                        style="@style/Widget.Veggo.OrderActionButton.Outline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:minWidth="0dp"
+                        android:text="@string/cart_save_to_favorites" />
+
+                    <TextView
+                        android:id="@+id/btnCartDeleteSelected"
+                        style="@style/Widget.Veggo.OrderActionButton.Primary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:minWidth="72dp"
+                        android:text="@string/cart_delete_selected" />
                 </LinearLayout>
 
                 <LinearLayout

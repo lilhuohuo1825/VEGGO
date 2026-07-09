@@ -30,7 +30,9 @@ public interface CommunityApi {
     Call<List<CommunityCategoryEntity>> getCategories();
 
     @GET("community/chefs")
-    Call<List<CommunityChefEntity>> getChefs();
+    Call<List<CommunityChefEntity>> getChefs(
+            @Query("limit") Integer limit
+    );
 
     @GET("community/users/{customerId}")
     Call<CommunityChefEntity> getUser(@Path("customerId") String customerId);
@@ -40,6 +42,11 @@ public interface CommunityApi {
             @Query("categoryId") String categoryId,
             @Query("chefId") String chefId,
             @Query("limit") Integer limit
+    );
+
+    @GET("community/saved-recipe-ids")
+    Call<CommunityRepository.SavedRecipeIdsResponse> getSavedRecipeIds(
+            @Query("customerId") String customerId
     );
 
     @GET("community/recipes/drafts/{customerId}")

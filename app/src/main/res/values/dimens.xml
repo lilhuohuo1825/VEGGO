@@ -32,4 +32,11 @@
     <!-- 3 hàng lịch giao định kỳ (48dp/hàng) -->
     <dimen name="recurring_scheduled_list_max_height">144dp</dimen>
 
+    <!-- Nút hành động đơn hàng (chi tiết, định kỳ, đổi trả, đánh giá) -->
+    <dimen name="order_action_button_height">44dp</dimen>
+    <dimen name="order_action_button_height_large">52dp</dimen>
+    <dimen name="order_action_button_padding_horizontal">16dp</dimen>
+    <dimen name="order_action_button_min_width">88dp</dimen>
+    <dimen name="order_detail_bottom_bar_min_height">76dp</dimen>
+
 </resources>

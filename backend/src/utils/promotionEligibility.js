@@ -1,5 +1,10 @@
 const mongoose = require('mongoose');
 
+const isGuestCustomerId = (customerId) => {
+  const value = String(customerId || '').trim();
+  return value.startsWith('GUEST_');
+};
+
 const getPromotionTargetGroups = (target) => {
   if (!target) return [];
   if (Array.isArray(target.target_groups) && target.target_groups.length) {
@@ -106,12 +111,19 @@ const validatePromotionForCustomer = async (promotionId, customerId) => {
   const target = await mongoose.connection.db.collection('promotion_targets').findOne({
     promotion_id: promo.promotion_id,
   });
-  const user = await mongoose.connection.db.collection('users').findOne({ CustomerID: customerId });
-  if (!user) {
-    return { ok: false, message: 'User not found' };
-  }
-  if (!matchesUserPromotionTarget(target, user)) {
-    return { ok: false, message: 'Promotion is not available for this account' };
+  if (isGuestCustomerId(customerId)) {
+    const userGroups = getPromotionTargetGroups(target).filter((group) => group.target_type === 'User');
+    if (userGroups.length > 0) {
+      return { ok: false, message: 'Promotion is not available for guest checkout' };
+    }
+  } else {
+    const user = await mongoose.connection.db.collection('users').findOne({ CustomerID: customerId });
+    if (!user) {
+      return { ok: false, message: 'User not found' };
+    }
+    if (!matchesUserPromotionTarget(target, user)) {
+      return { ok: false, message: 'Promotion is not available for this account' };
+    }
   }
 
   const usage = await getPromotionUsageCount(promo.promotion_id, customerId);
@@ -126,6 +138,7 @@ const validatePromotionForCustomer = async (promotionId, customerId) => {
 };
 
 module.exports = {
+  isGuestCustomerId,
   getPromotionTargetGroups,
   matchesUserTargetRefs,
   matchesUserPromotionTarget,

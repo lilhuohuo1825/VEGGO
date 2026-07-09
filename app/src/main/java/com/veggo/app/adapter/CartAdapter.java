@@ -21,10 +21,23 @@ import java.util.Locale;
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
     private final List<CartItemUiModel> items;
     private final CartItemActionListener listener;
+    private boolean editMode;
 
     public CartAdapter(List<CartItemUiModel> items, CartItemActionListener listener) {
         this.items = items;
         this.listener = listener;
+    }
+
+    public void setEditMode(boolean editMode) {
+        if (this.editMode == editMode) {
+            return;
+        }
+        this.editMode = editMode;
+        notifyDataSetChanged();
+    }
+
+    public boolean isEditMode() {
+        return editMode;
     }
 
     public void setItems(List<CartItemUiModel> newItems) {
@@ -43,7 +56,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     @Override
     public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
         CartItemUiModel item = items.get(position);
-        holder.bind(item, listener, position == items.size() - 1);
+        holder.bind(item, listener, position == items.size() - 1, editMode);
     }
 
     @Override
@@ -83,7 +96,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             dividerView = itemView.findViewById(R.id.viewDivider);
         }
 
-        private void bind(CartItemUiModel item, CartItemActionListener listener, boolean isLastItem) {
+        private void bind(CartItemUiModel item, CartItemActionListener listener, boolean isLastItem, boolean editMode) {
             checkboxView.setImageResource(item.isChecked ? R.drawable.ic_checkbox_checked : R.drawable.ic_checkbox_uncheck);
             
             Glide.with(itemView.getContext())
@@ -93,9 +106,21 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
             nameView.setText(item.name);
             unitView.setText(item.selectedWeight);
-            unitView.setVisibility(item.selectedWeight == null || item.selectedWeight.isEmpty() ? View.GONE : View.VISIBLE);
+            boolean showUnit = item.selectedWeight != null && !item.selectedWeight.isEmpty();
+            unitView.setVisibility(showUnit ? View.VISIBLE : View.GONE);
+            if (editMode && item.hasWeightOptions) {
+                unitView.setClickable(true);
+                unitView.setFocusable(true);
+                unitView.setBackgroundResource(R.drawable.bg_tag_green);
+                unitView.setOnClickListener(v -> dispatchVariantClicked(listener));
+            } else {
+                unitView.setClickable(false);
+                unitView.setFocusable(false);
+                unitView.setOnClickListener(null);
+            }
             if (carbonPointView != null) {
                 carbonPointView.setText(String.format(Locale.US, "Carbon: %.1f", item.carbonSavingPoint));
+                carbonPointView.setVisibility(editMode ? View.GONE : View.VISIBLE);
             }
             priceView.setText(item.priceText);
             
@@ -111,19 +136,39 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             dividerView.setVisibility(isLastItem ? View.GONE : View.VISIBLE);
             contentView.setTranslationX(0f);
 
+            decreaseView.setVisibility(View.VISIBLE);
+            quantityView.setVisibility(View.VISIBLE);
+            increaseView.setVisibility(View.VISIBLE);
+            deleteView.setVisibility(editMode ? View.VISIBLE : View.GONE);
+
             checkboxView.setOnClickListener(v -> dispatchCheckedChanged(listener));
             deleteView.setOnClickListener(v -> dispatchRemoved(listener));
             decreaseView.setOnClickListener(v -> dispatchQuantityChanged(listener, -1));
             increaseView.setOnClickListener(v -> dispatchQuantityChanged(listener, 1));
-            contentView.setOnClickListener(v -> dispatchClicked(listener));
+            contentView.setOnClickListener(v -> {
+                if (editMode) {
+                    if (item.hasWeightOptions) {
+                        dispatchVariantClicked(listener);
+                    }
+                } else {
+                    dispatchClicked(listener);
+                }
+            });
             contentView.setOnLongClickListener(v -> {
-                dispatchLongClicked(listener);
+                if (!editMode) {
+                    dispatchLongClicked(listener);
+                }
                 return true;
             });
-            setupSwipeToRevealDelete();
+            setupSwipeToRevealDelete(editMode);
         }
 
-        private void setupSwipeToRevealDelete() {
+        private void setupSwipeToRevealDelete(boolean editMode) {
+            if (!editMode) {
+                contentView.setOnTouchListener(null);
+                contentView.setClickable(true);
+                return;
+            }
             final float touchSlop = itemView.getResources().getDisplayMetrics().density * 8f;
             contentView.setOnTouchListener(new View.OnTouchListener() {
                 private float downX;
@@ -199,6 +244,13 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         }
 
+        private void dispatchVariantClicked(CartItemActionListener listener) {
+            int position = getBindingAdapterPosition();
+            if (position != RecyclerView.NO_POSITION) {
+                listener.onItemVariantClicked(position);
+            }
+        }
+
         private void dispatchLongClicked(CartItemActionListener listener) {
             int position = getBindingAdapterPosition();
             if (position != RecyclerView.NO_POSITION) {
@@ -238,6 +290,8 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         void onItemClicked(int position);
 
         void onItemLongClicked(int position);
+
+        void onItemVariantClicked(int position);
     }
 
     public static final class CartItemUiModel {

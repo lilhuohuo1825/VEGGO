@@ -42,7 +42,9 @@ import com.veggo.app.domain.repository.UserRepository;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CommunityProfileActivity extends AppCompatActivity {
     public static final String EXTRA_CHEF_ID = "community_profile_chef_id";
@@ -71,6 +73,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
     private CameraCaptureHelper cameraCaptureHelper;
     private final List<CommunityRecipeEntity> chefRecipes = new ArrayList<>();
     private final List<CommunityCookbookEntity> cookbooks = new ArrayList<>();
+    private final Set<String> savedRecipeIds = new HashSet<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -128,12 +131,19 @@ public class CommunityProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (repository != null && profileCustomerId != null) {
-            loadProfileContent();
-        }
     }
 
     private void loadProfileContent() {
+        repository.loadSavedRecipeIds(ids -> runOnUiThread(() -> {
+            savedRecipeIds.clear();
+            if (ids != null) {
+                savedRecipeIds.addAll(ids);
+            }
+            loadProfileRecipes();
+        }));
+    }
+
+    private void loadProfileRecipes() {
         CommunityRepository.Callback<List<CommunityRecipeEntity>> recipeCallback = recipes -> runOnUiThread(() -> {
             chefRecipes.clear();
             chefRecipes.addAll(CommunityUi.shuffled(recipes));
@@ -489,7 +499,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
         recipesTab.setTypeface(null, android.graphics.Typeface.BOLD);
         galleriesTab.setTextColor(ContextCompat.getColor(this, R.color.neutral_60));
         galleriesTab.setTypeface(null, android.graphics.Typeface.NORMAL);
-        CommunityUi.addRecipeMasonry(this, leftColumn, rightColumn, chefRecipes);
+        CommunityUi.addRecipeMasonry(this, leftColumn, rightColumn, chefRecipes, repository, savedRecipeIds);
     }
 
     private void showGalleries() {

@@ -179,38 +179,27 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="88dp"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/order_detail_bottom_bar_min_height"
         android:layout_gravity="bottom"
         android:background="@color/background_main"
         android:elevation="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="@dimen/spacing_md"
-        android:paddingEnd="@dimen/spacing_md">
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_sm">
 
         <TextView
             android:id="@+id/recurringConfirmCancelButton"
-            android:layout_width="0dp"
-            android:layout_height="46dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_order_cancel_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="@string/recurring_confirm_cancel_occurrence"
-            android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm" />
+            style="@style/Widget.Veggo.OrderActionButton.Cancel.Weighted"
+            android:text="@string/recurring_confirm_cancel_occurrence" />
 
         <TextView
             android:id="@+id/recurringConfirmOrderButton"
-            android:layout_width="0dp"
-            android:layout_height="46dp"
+            style="@style/Widget.Veggo.OrderActionButton.Primary.Weighted"
             android:layout_marginStart="@dimen/spacing_md"
-            android:layout_weight="1"
-            android:background="@drawable/bg_order_primary_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="@string/recurring_confirm_place_order"
-            android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm" />
+            android:text="@string/recurring_confirm_place_order" />
     </LinearLayout>
 </FrameLayout>

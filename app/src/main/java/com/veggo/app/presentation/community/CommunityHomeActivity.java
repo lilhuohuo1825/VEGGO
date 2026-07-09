@@ -39,12 +39,19 @@ public class CommunityHomeActivity extends AppCompatActivity {
     }
 
     private void loadHome() {
-        repository.loadHome(data -> runOnUiThread(() -> {
+        repository.loadHome(data -> repository.loadSavedRecipeIds(savedIds -> runOnUiThread(() -> {
             CommunityUi.addCategoryChips(this, binding.communityChipRow, CommunityUi.shuffled(data.categories));
             CommunityUi.addChefPreview(this, binding.chefPreviewRow, CommunityUi.shuffled(data.chefs));
-            CommunityUi.addRecipePreview(this, binding.recipeLeftColumn, binding.recipeRightColumn, CommunityUi.shuffled(data.recipes));
+            CommunityUi.addRecipePreview(
+                    this,
+                    binding.recipeLeftColumn,
+                    binding.recipeRightColumn,
+                    CommunityUi.shuffled(data.recipes),
+                    repository,
+                    savedIds
+            );
             CommunityUi.finishRefresh(refreshLayout);
-        }));
+        })));
     }
 
     private void bindAccountAvatar() {

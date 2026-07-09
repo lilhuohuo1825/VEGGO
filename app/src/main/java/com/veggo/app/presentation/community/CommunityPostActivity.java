@@ -1,7 +1,7 @@
 package com.veggo.app.presentation.community;
 
+import android.content.Intent;
 import android.Manifest;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -42,19 +42,25 @@ import com.veggo.app.data.local.entity.CommunityRecipeGalleryEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeIngredientEntity;
 import com.veggo.app.data.local.entity.ProductEntity;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.presentation.order.RecurringOrderStore;
+import com.veggo.app.presentation.order.RecurringProductPickerActivity;
+import com.veggo.app.presentation.dialog.VeggoDialog;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class CommunityPostActivity extends AppCompatActivity {
     public static final String EXTRA_EDIT_RECIPE_ID = "community_edit_recipe_id";
     private static final int MAX_IMAGES = 6;
 
+    private ActivityResultLauncher<Intent> productPickerLauncher;
     private ActivityResultLauncher<PickVisualMediaRequest> galleryPicker;
     private ActivityResultLauncher<Uri> cameraPicker;
     private ActivityResultLauncher<String> cameraPermissionLauncher;
@@ -88,10 +94,7 @@ public class CommunityPostActivity extends AppCompatActivity {
     private String selectedCategoryId = "";
     private boolean loadingCategories;
     private boolean openCategoryAfterLoad;
-    private boolean loadingProducts;
-    private boolean openProductAfterLoad;
     private final List<CommunityCategoryEntity> categories = new ArrayList<>();
-    private final List<ProductDto> products = new ArrayList<>();
     private final List<IngredientSelection> selectedIngredients = new ArrayList<>();
     private final List<String> selectedImageUris = new ArrayList<>();
     private final List<EditText> stepInputs = new ArrayList<>();
@@ -109,6 +112,14 @@ public class CommunityPostActivity extends AppCompatActivity {
                 new ActivityResultContracts.PickMultipleVisualMedia(MAX_IMAGES),
                 this::addSelectedImages
         );
+        productPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        bindSelectedProducts(result.getData());
+                    }
+                }
+        );
         cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicture(), this::handleCameraResult);
         cameraPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
@@ -123,7 +134,7 @@ public class CommunityPostActivity extends AppCompatActivity {
 
         findViewById(R.id.communityPostBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.communityPostImagePickerButton).setOnClickListener(v -> showImageSourceDialog());
-        findViewById(R.id.communityPostAddIngredientButton).setOnClickListener(v -> showProductPicker());
+        findViewById(R.id.communityPostAddIngredientButton).setOnClickListener(v -> openProductPicker());
         findViewById(R.id.communityPostAddStepButton).setOnClickListener(v -> addStepInput("", null));
         categoryButton.setOnClickListener(v -> showCategorySheet());
         findViewById(R.id.communityPostDraftButton).setOnClickListener(v -> saveDraft());
@@ -140,7 +151,6 @@ public class CommunityPostActivity extends AppCompatActivity {
         setupDraftButtonVisibilityTracking();
         updateDraftButtonState();
         loadCategories();
-        loadProducts();
         loadRecipeForEdit();
     }
 
@@ -214,31 +224,54 @@ public class CommunityPostActivity extends AppCompatActivity {
         }));
     }
 
-    private void loadProducts() {
-        loadProducts(null);
+    private void openProductPicker() {
+        Intent intent = new Intent(this, RecurringProductPickerActivity.class);
+        if (!selectedIngredients.isEmpty()) {
+            intent.putExtra(
+                    RecurringProductPickerActivity.EXTRA_EXISTING_PRODUCTS_JSON,
+                    new Gson().toJson(toRecurringProductItems(selectedIngredients))
+            );
+        }
+        productPickerLauncher.launch(intent);
     }
 
-    private void loadProducts(@Nullable Runnable afterLoad) {
-        if (loadingProducts) {
-            if (afterLoad != null) {
-                openProductAfterLoad = true;
-            }
+    private List<RecurringOrderStore.RecurringProductItem> toRecurringProductItems(List<IngredientSelection> selections) {
+        List<RecurringOrderStore.RecurringProductItem> items = new ArrayList<>();
+        for (IngredientSelection selection : selections) {
+            RecurringOrderStore.RecurringProductItem item = new RecurringOrderStore.RecurringProductItem();
+            item.productId = selection.product.getId();
+            item.sku = selection.product.getSku();
+            item.name = selection.product.getName();
+            item.imageUrl = selection.product.getImageUrl();
+            item.unit = selection.quantity;
+            item.quantity = 1;
+            items.add(item);
+        }
+        return items;
+    }
+
+    private void bindSelectedProducts(Intent data) {
+        String json = data.getStringExtra(RecurringProductPickerActivity.EXTRA_SELECTED_PRODUCTS_JSON);
+        if (json == null || json.trim().isEmpty()) {
             return;
         }
-        loadingProducts = true;
-        repository.loadProducts(result -> runOnUiThread(() -> {
-            loadingProducts = false;
-            products.clear();
-            if (result != null) {
-                products.addAll(result);
+        Type type = new TypeToken<List<RecurringOrderStore.RecurringProductItem>>() {}.getType();
+        List<RecurringOrderStore.RecurringProductItem> items = new Gson().fromJson(json, type);
+        selectedIngredients.clear();
+        if (items != null) {
+            for (RecurringOrderStore.RecurringProductItem item : items) {
+                ProductDto product = new ProductDto();
+                product.setId(item.productId);
+                product.setSku(item.sku);
+                product.setName(item.name);
+                product.setImageUrl(item.imageUrl);
+                IngredientSelection selection = new IngredientSelection(product);
+                selection.quantity = item.unit == null ? "" : item.unit.trim();
+                selectedIngredients.add(selection);
             }
-            if (afterLoad != null) {
-                afterLoad.run();
-            } else if (openProductAfterLoad) {
-                openProductAfterLoad = false;
-                showProductPicker();
-            }
-        }));
+        }
+        renderIngredients();
+        updateDraftButtonState();
     }
 
     private void saveDraft() {
@@ -794,51 +827,6 @@ public class CommunityPostActivity extends AppCompatActivity {
         categoryButton.setTextColor(getColor(R.color.neutral_100));
     }
 
-    private void showProductPicker() {
-        if (products.isEmpty()) {
-            Toast.makeText(this, "Chưa tải được sản phẩm", Toast.LENGTH_SHORT).show();
-            loadProducts(() -> {
-                if (products.isEmpty()) {
-                    Toast.makeText(this, "Chua tai duoc san pham", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                showProductPicker();
-            });
-            return;
-        }
-        Dialog dialog = bottomSheetDialog();
-        LinearLayout container = pickerContainer("Chọn nguyên liệu", "");
-        EditText searchInput = searchInput();
-        container.addView(searchInput);
-        LinearLayout list = scrollList(container, dp(360));
-        Runnable renderAll = () -> renderProductRows(list, dialog, text(searchInput));
-        searchInput.addTextChangedListener(new SimpleWatcher() {
-            @Override public void afterTextChanged(Editable editable) {
-                renderAll.run();
-            }
-        });
-        renderAll.run();
-        dialog.setContentView(container);
-        showBottomSheet(dialog);
-    }
-
-    private void renderProductRows(LinearLayout list, Dialog dialog, String query) {
-        list.removeAllViews();
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (ProductDto product : products) {
-            String name = product.getName() == null ? "" : product.getName();
-            if (!TextUtils.isEmpty(lowerQuery) && !name.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
-                continue;
-            }
-            list.addView(productRow(product, v -> {
-                selectedIngredients.add(new IngredientSelection(product));
-                renderIngredients();
-                updateDraftButtonState();
-                dialog.dismiss();
-            }));
-        }
-    }
-
     private void renderIngredients() {
         ingredientsList.removeAllViews();
         for (IngredientSelection selection : selectedIngredients) {
@@ -910,10 +898,6 @@ public class CommunityPostActivity extends AppCompatActivity {
         return optionRow((TextUtils.isEmpty(icon) ? "" : icon + " ") + category.getName(), category.getRecipeCount() + " công thức", listener);
     }
 
-    private View productRow(ProductDto product, View.OnClickListener listener) {
-        return optionRow(product.getName(), "", listener);
-    }
-
     private View optionRow(String title, String subtitle, View.OnClickListener listener) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
@@ -981,22 +965,6 @@ public class CommunityPostActivity extends AppCompatActivity {
         return list;
     }
 
-    private EditText searchInput() {
-        EditText input = new EditText(this);
-        input.setHint("Tìm sản phẩm");
-        input.setSingleLine(true);
-        input.setTextSize(12);
-        input.setBackgroundResource(R.drawable.bg_post_input);
-        input.setPadding(dp(12), 0, dp(12), 0);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(42)
-        );
-        params.topMargin = dp(12);
-        input.setLayoutParams(params);
-        return input;
-    }
-
     private Dialog bottomSheetDialog() {
         return new Dialog(this);
     }
@@ -1023,9 +991,19 @@ public class CommunityPostActivity extends AppCompatActivity {
     }
 
     private void showImageSourceDialog() {
-        Dialog dialog = bottomSheetDialog();
-        dialog.setContentView(R.layout.bottom_sheet_community_image_source);
-        dialog.findViewById(R.id.communityImageSourceGallery).setOnClickListener(v -> {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_image_source);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView title = dialog.findViewById(R.id.dialogSourceTitle);
+        if (title != null) {
+            title.setText("Thêm ảnh món ăn");
+        }
+
+        dialog.findViewById(R.id.dialogOptionGallery).setOnClickListener(v -> {
             if (selectedImageUris.size() >= MAX_IMAGES) {
                 Toast.makeText(this, "Đã đủ 6 ảnh", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
@@ -1036,11 +1014,11 @@ public class CommunityPostActivity extends AppCompatActivity {
                     .build());
             dialog.dismiss();
         });
-        dialog.findViewById(R.id.communityImageSourceCamera).setOnClickListener(v -> {
+        dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
             openCamera();
             dialog.dismiss();
         });
-        showBottomSheet(dialog);
+        dialog.show();
     }
 
     private void openCamera() {
@@ -1079,12 +1057,20 @@ public class CommunityPostActivity extends AppCompatActivity {
             Toast.makeText(this, "Đã đủ 6 ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("Chụp ảnh")
-                .setMessage("Bạn có muốn chụp thêm ảnh không?")
-                .setPositiveButton("Có", (dialog, which) -> openCamera())
-                .setNegativeButton("Không", null)
-                .show();
+        VeggoDialog.show(
+                this,
+                R.drawable.ic_camera,
+                "Chụp ảnh",
+                "Bạn có muốn chụp thêm ảnh không?",
+                "Có",
+                "Không",
+                new VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        openCamera();
+                    }
+                }
+        );
     }
 
     private void addImageUri(String imageUri, String fullMessage) {

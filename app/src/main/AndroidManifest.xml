@@ -247,6 +247,9 @@
             android:name=".presentation.order.ReturnRequestActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.order.CancelOrderActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.order.OrderHistoryActivity"
             android:exported="false" />
         <activity

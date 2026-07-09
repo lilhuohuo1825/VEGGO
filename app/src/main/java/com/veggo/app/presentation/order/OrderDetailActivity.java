@@ -256,22 +256,7 @@ public class OrderDetailActivity extends BaseActivity {
             switch (status) {
                 case "pending":
                     btnCancel.setVisibility(View.VISIBLE);
-                    btnCancel.setOnClickListener(v -> {
-                        com.veggo.app.presentation.dialog.VeggoDialog.show(
-                                this,
-                                R.drawable.ic_trash,
-                                "Xác nhận hủy đơn",
-                                "Bạn có chắc chắn muốn hủy đơn hàng này không?",
-                                "Đồng ý",
-                                "Hủy bỏ",
-                                new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
-                                    @Override
-                                    public void onConfirm() {
-                                        updateOrderStatus(order, "cancelled", "Đã huỷ đơn hàng thành công");
-                                    }
-                                }
-                        );
-                    });
+                    btnCancel.setOnClickListener(v -> openCancelOrder(order.orderId));
                     break;
 
                 case "shipping":
@@ -436,6 +421,12 @@ public class OrderDetailActivity extends BaseActivity {
 
     private void openReturnRequest(String orderId) {
         Intent intent = new Intent(this, ReturnRequestActivity.class);
+        intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
+        startActivity(intent);
+    }
+
+    private void openCancelOrder(String orderId) {
+        Intent intent = new Intent(this, CancelOrderActivity.class);
         intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
         startActivity(intent);
     }

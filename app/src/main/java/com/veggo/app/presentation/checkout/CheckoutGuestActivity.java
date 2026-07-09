@@ -147,6 +147,7 @@ public class CheckoutGuestActivity extends BaseActivity {
     private android.widget.TextView progressTextView;
     private String guestId;
     private boolean buyNowMode;
+    private Set<String> selectedCartLineKeys;
     private boolean isSearchingVoucher = false;
     private PromotionVoucherHelper.VoucherFilter activeVoucherFilter = PromotionVoucherHelper.VoucherFilter.PRODUCT;
     private VietnamAddressTree addressTree;
@@ -180,6 +181,12 @@ public class CheckoutGuestActivity extends BaseActivity {
         PendingCheckoutStore store = new PendingCheckoutStore(this);
         guestId = store.guestId();
         buyNowMode = getIntent().getBooleanExtra(CheckoutActivity.EXTRA_BUY_NOW, false);
+        ArrayList<String> selectedLineKeys = getIntent().getStringArrayListExtra(
+                CheckoutActivity.EXTRA_SELECTED_CART_LINE_KEYS
+        );
+        selectedCartLineKeys = selectedLineKeys == null || selectedLineKeys.isEmpty()
+                ? null
+                : new HashSet<>(selectedLineKeys);
 
         edtGuestName = findViewById(R.id.edtGuestName);
         edtGuestPhone = findViewById(R.id.edtGuestPhone);
@@ -425,6 +432,11 @@ public class CheckoutGuestActivity extends BaseActivity {
         List<PaymentItemAdapter.PaymentItemUiModel> uiItems = new ArrayList<>();
         if (cart != null && cart.getItems() != null) {
             for (CartDto.CartItemDto item : cart.getItems()) {
+                double selectedWeight = item.getSelectedWeight() > 0 ? item.getSelectedWeight() : 1.0;
+                if (selectedCartLineKeys != null
+                        && !selectedCartLineKeys.contains(cartLineKey(item.getSku(), selectedWeight))) {
+                    continue;
+                }
                 ProductDto product = item.getProduct();
                 long price = product != null ? product.getPrice() : item.getPrice();
                 long originalPrice = product != null ? product.getOriginalPrice() : item.getOriginalPrice();
@@ -433,7 +445,6 @@ public class CheckoutGuestActivity extends BaseActivity {
                 boolean hasWeightOptions = product != null
                         && product.getWeightOptions() != null
                         && !product.getWeightOptions().isEmpty();
-                double selectedWeight = item.getSelectedWeight() > 0 ? item.getSelectedWeight() : 1.0;
                 long variantPrice = variantPrice(price, selectedWeight, hasWeightOptions);
                 long variantOriginalPrice = variantPrice(originalPrice, selectedWeight, hasWeightOptions);
                 currentSubtotal += variantPrice * quantity;
@@ -1811,17 +1822,24 @@ public class CheckoutGuestActivity extends BaseActivity {
         PromotionApi promotionApi = AppModule.providePromotionApi();
         isSearchingVoucher = true;
 
-        // Phản hồi tức thì: Hiện tiêu đề tìm kiếm và thông báo đang kiểm tra
+        allVoucherItems.clear();
+        voucherItems.clear();
+        if (recyclerView.getAdapter() != null) {
+            recyclerView.getAdapter().notifyDataSetChanged();
+        }
         recyclerView.setVisibility(View.GONE);
         tvListTitle.setVisibility(View.VISIBLE);
         tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
         tvEmptyState.setVisibility(View.VISIBLE);
         tvEmptyState.setText("Đang kiểm tra mã '" + code + "'...");
-        selectedCountView.setText("Đang kiểm tra mã...");
+        selectedCountView.setText("Đang kiểm tra...");
 
         promotionApi.getPromotions(guestId, code, null).enqueue(new Callback<List<PromotionDto>>() {
             @Override
             public void onResponse(Call<List<PromotionDto>> call, Response<List<PromotionDto>> response) {
+                if (!isSearchingVoucher) {
+                    return;
+                }
                 if (response.isSuccessful() && response.body() != null) {
                     List<PromotionDto> found = response.body();
                     runOnUiThread(() -> {
@@ -1842,6 +1860,9 @@ public class CheckoutGuestActivity extends BaseActivity {
                 }
             }
             @Override public void onFailure(Call<List<PromotionDto>> call, Throwable t) {
+                if (!isSearchingVoucher) {
+                    return;
+                }
                 runOnUiThread(() -> {
                     showVoucherEmptyState("Lỗi kết nối khi tìm mã. Vui lòng thử lại.", recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
                 });
@@ -2268,33 +2289,24 @@ public class CheckoutGuestActivity extends BaseActivity {
                 usage,
                 currentSubtotal,
                 guestId,
-                matchesTarget(target)
+                PromotionVoucherHelper.matchesPromotionTarget(
+                        promotion,
+                        target,
+                        buildVoucherCartLines()
+                )
         );
     }
 
-    private boolean matchesTarget(PromotionTargetDto target) {
-        if (target == null) {
-            return true;
+    private List<PromotionVoucherHelper.VoucherCartLine> buildVoucherCartLines() {
+        List<PromotionVoucherHelper.VoucherCartLine> lines = new ArrayList<>();
+        for (CartDto.CartItemDto item : cartItems) {
+            lines.add(new PromotionVoucherHelper.VoucherCartLine(item.getSku(), item.getProduct()));
         }
-        if (target.getTargetGroups() != null && !target.getTargetGroups().isEmpty()) {
-            for (PromotionTargetDto.TargetGroupDto group : target.getTargetGroups()) {
-                if (!matchesTargetGroup(group.getTargetType(), group.getTargetRefs())) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return matchesTargetGroup(target.getTargetType(), target.getTargetRefs());
+        return lines;
     }
 
-    private boolean matchesTargetGroup(String targetType, List<String> targetRefs) {
-        for (CartDto.CartItemDto item : cartItems) {
-            if (PromotionVoucherHelper.matchesTargetRef(
-                    targetType, targetRefs, item.getSku(), item.getProduct())) {
-                return true;
-            }
-        }
-        return PromotionVoucherHelper.matchesTargetRef(targetType, targetRefs, null, null);
+    private String cartLineKey(@Nullable String sku, double selectedWeight) {
+        return (sku == null ? "" : sku) + "#" + trimTrailingZeros(selectedWeight > 0 ? selectedWeight : 1.0);
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {

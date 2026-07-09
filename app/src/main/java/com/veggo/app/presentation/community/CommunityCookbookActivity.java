@@ -10,6 +10,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class CommunityCookbookActivity extends AppCompatActivity {
     public static final String EXTRA_COOKBOOK_ID = "community_cookbook_id";
 
@@ -40,7 +43,20 @@ public class CommunityCookbookActivity extends AppCompatActivity {
                 ((TextView) findViewById(R.id.cookbookTitle)).setText(data.cookbook.getTitle());
                 ((TextView) findViewById(R.id.cookbookCount)).setText(data.recipes.size() + " công thức");
             }
-            CommunityUi.addRecipeMasonry(this, leftColumn, rightColumn, CommunityUi.shuffled(data.recipes));
+            Set<String> savedIds = new HashSet<>();
+            for (com.veggo.app.data.local.entity.CommunityRecipeEntity recipe : data.recipes) {
+                if (recipe != null && recipe.getId() != null) {
+                    savedIds.add(recipe.getId());
+                }
+            }
+            CommunityUi.addRecipeMasonry(
+                    this,
+                    leftColumn,
+                    rightColumn,
+                    CommunityUi.shuffled(data.recipes),
+                    repository,
+                    savedIds
+            );
             CommunityUi.finishRefresh(refreshLayout);
         }));
     }

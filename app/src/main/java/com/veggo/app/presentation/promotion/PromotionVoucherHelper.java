@@ -8,12 +8,16 @@ import android.widget.TextView;
 import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 
+import androidx.annotation.NonNull;
+
 import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.PromotionTargetDto;
 import com.veggo.app.data.remote.dto.PromotionUsageDto;
 import com.veggo.app.data.remote.dto.ProductDto;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +32,206 @@ public final class PromotionVoucherHelper {
     private static final int VOUCHER_LABEL_HIDE_LENGTH = 24;
 
     private PromotionVoucherHelper() {
+    }
+
+    public static final class VoucherCartLine {
+        @Nullable
+        public final String sku;
+        @Nullable
+        public final ProductDto product;
+
+        public VoucherCartLine(@Nullable String sku, @Nullable ProductDto product) {
+            this.sku = sku;
+            this.product = product;
+        }
+    }
+
+    public static boolean isGuestCustomerId(@Nullable String customerId) {
+        if (customerId == null) {
+            return false;
+        }
+        return customerId.trim().startsWith("GUEST_");
+    }
+
+    public static boolean matchesPromotionTarget(
+            @Nullable PromotionDto promotion,
+            @Nullable PromotionTargetDto target,
+            @Nullable List<VoucherCartLine> lines
+    ) {
+        if (target == null || shouldSkipProductTargetCheck(promotion, target)) {
+            return true;
+        }
+        List<TargetGroupView> relevantGroups = resolveRelevantTargetGroups(promotion, target);
+        if (relevantGroups.isEmpty()) {
+            return true;
+        }
+        List<VoucherCartLine> safeLines = lines == null ? Collections.emptyList() : lines;
+        for (TargetGroupView group : relevantGroups) {
+            if (matchesTargetGroup(group.getTargetType(), group.getTargetRefs(), safeLines)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean shouldSkipProductTargetCheck(
+            @Nullable PromotionDto promotion,
+            @Nullable PromotionTargetDto target
+    ) {
+        if (VoucherOptionAdapter.isShippingPromotion(promotion)) {
+            return true;
+        }
+        if (promotion == null || promotion.getScope() == null) {
+            return false;
+        }
+        String scope = promotion.getScope().trim();
+        if ("Order".equalsIgnoreCase(scope)) {
+            return true;
+        }
+        if ("Shipping".equalsIgnoreCase(scope)) {
+            return !hasProductFacingTargetGroup(target);
+        }
+        return false;
+    }
+
+    private static boolean hasProductFacingTargetGroup(@Nullable PromotionTargetDto target) {
+        for (TargetGroupView group : resolveTargetGroups(target)) {
+            if (isProductFacingTargetType(group.getTargetType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<TargetGroupView> resolveRelevantTargetGroups(
+            @Nullable PromotionDto promotion,
+            @Nullable PromotionTargetDto target
+    ) {
+        List<TargetGroupView> groups = new ArrayList<>();
+        for (TargetGroupView group : resolveTargetGroups(target)) {
+            if (isProductFacingTargetType(group.getTargetType())) {
+                groups.add(group);
+            }
+        }
+        if (groups.isEmpty()) {
+            return groups;
+        }
+        if (promotion == null || promotion.getScope() == null || promotion.getScope().trim().isEmpty()) {
+            return groups;
+        }
+        String scope = promotion.getScope().trim();
+        if ("Order".equalsIgnoreCase(scope) || "Shipping".equalsIgnoreCase(scope)) {
+            return Collections.emptyList();
+        }
+        if ("Category".equalsIgnoreCase(scope)) {
+            List<TargetGroupView> categoryGroups = new ArrayList<>();
+            for (TargetGroupView group : groups) {
+                if (isCategoryFacingTargetType(group.getTargetType())) {
+                    categoryGroups.add(group);
+                }
+            }
+            return categoryGroups.isEmpty() ? groups : categoryGroups;
+        }
+        if ("Product".equalsIgnoreCase(scope)) {
+            List<TargetGroupView> productGroups = new ArrayList<>();
+            for (TargetGroupView group : groups) {
+                if ("Product".equalsIgnoreCase(group.getTargetType())) {
+                    productGroups.add(group);
+                }
+            }
+            return productGroups.isEmpty() ? groups : productGroups;
+        }
+        if ("Brand".equalsIgnoreCase(scope)) {
+            List<TargetGroupView> brandGroups = new ArrayList<>();
+            for (TargetGroupView group : groups) {
+                if ("Brand".equalsIgnoreCase(group.getTargetType())) {
+                    brandGroups.add(group);
+                }
+            }
+            return brandGroups.isEmpty() ? groups : brandGroups;
+        }
+        return groups;
+    }
+
+    private static List<TargetGroupView> resolveTargetGroups(@Nullable PromotionTargetDto target) {
+        if (target == null) {
+            return Collections.emptyList();
+        }
+        List<TargetGroupView> groups = new ArrayList<>();
+        if (target.getTargetGroups() != null && !target.getTargetGroups().isEmpty()) {
+            for (PromotionTargetDto.TargetGroupDto group : target.getTargetGroups()) {
+                groups.add(new SimpleTargetGroup(group.getTargetType(), group.getTargetRefs()));
+            }
+            return groups;
+        }
+        if (target.getTargetType() != null && !target.getTargetType().trim().isEmpty()) {
+            groups.add(new SimpleTargetGroup(target.getTargetType(), target.getTargetRefs()));
+        }
+        return groups;
+    }
+
+    private interface TargetGroupView {
+        @Nullable
+        String getTargetType();
+
+        @Nullable
+        List<String> getTargetRefs();
+    }
+
+    private static final class SimpleTargetGroup implements TargetGroupView {
+        private final String targetType;
+        private final List<String> targetRefs;
+
+        private SimpleTargetGroup(String targetType, List<String> targetRefs) {
+            this.targetType = targetType;
+            this.targetRefs = targetRefs;
+        }
+
+        @Override
+        public String getTargetType() {
+            return targetType;
+        }
+
+        @Override
+        public List<String> getTargetRefs() {
+            return targetRefs;
+        }
+    }
+
+    private static boolean matchesTargetGroup(
+            @Nullable String targetType,
+            @Nullable List<String> targetRefs,
+            @NonNull List<VoucherCartLine> lines
+    ) {
+        for (VoucherCartLine line : lines) {
+            if (matchesTargetRef(targetType, targetRefs, line.sku, line.product)) {
+                return true;
+            }
+        }
+        return matchesTargetRef(targetType, targetRefs, null, null);
+    }
+
+    private static boolean isProductFacingTargetType(@Nullable String targetType) {
+        if (targetType == null) {
+            return false;
+        }
+        switch (targetType.trim().toLowerCase(Locale.US)) {
+            case "product":
+            case "category":
+            case "subcategory":
+            case "brand":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static boolean isCategoryFacingTargetType(@Nullable String targetType) {
+        if (targetType == null) {
+            return false;
+        }
+        String normalized = targetType.trim().toLowerCase(Locale.US);
+        return "category".equals(normalized) || "subcategory".equals(normalized);
     }
 
     public static void bindVoucherSelectionRow(
@@ -132,7 +336,8 @@ public final class PromotionVoucherHelper {
             return "Mã đã bị vô hiệu hóa";
         }
 
-        boolean skipTargetCheck = VoucherOptionAdapter.isShippingPromotion(promotion);
+        boolean skipTargetCheck = VoucherOptionAdapter.isShippingPromotion(promotion)
+                || shouldSkipProductTargetCheck(promotion, target);
 
         double minOrder = promotion.getMinOrderValue() != null ? promotion.getMinOrderValue() : 0;
         if (subtotal < minOrder) {
@@ -294,6 +499,10 @@ public final class PromotionVoucherHelper {
                 }
                 if (product != null && product.getSku() != null
                         && normalizedRef.equalsIgnoreCase(product.getSku().trim())) {
+                    return true;
+                }
+                if (product != null && product.getId() != null
+                        && normalizedRef.equalsIgnoreCase(product.getId().trim())) {
                     return true;
                 }
             } else if (product != null) {

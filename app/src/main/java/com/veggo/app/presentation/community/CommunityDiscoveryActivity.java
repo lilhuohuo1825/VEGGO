@@ -2,6 +2,8 @@ package com.veggo.app.presentation.community;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -21,8 +23,10 @@ import com.veggo.app.databinding.ComponentBottomNavBinding;
 import com.veggo.app.speech.SearchVoiceInputController;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class CommunityDiscoveryActivity extends AppCompatActivity {
     private static final int TAB_RECIPES = 0;
@@ -40,6 +44,10 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
     private int activeTab = TAB_RECIPES;
     private final List<CommunityRecipeEntity> recipes = new ArrayList<>();
     private final List<CommunityChefEntity> chefs = new ArrayList<>();
+    private final Set<String> savedRecipeIds = new HashSet<>();
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable renderRunnable = this::renderActiveTabInternal;
+    private int pendingLoads = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -60,7 +68,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
                 this,
                 findViewById(R.id.discoveryRoot),
                 searchInput,
-                this::renderActiveTab
+                this::scheduleRender
         );
 
         findViewById(R.id.discoveryBackButton).setOnClickListener(v -> finish());
@@ -69,7 +77,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                renderActiveTab();
+                scheduleRender();
             }
             @Override public void afterTextChanged(Editable s) {}
         });
@@ -78,30 +86,50 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
     }
 
     private void loadDiscoveryData() {
-        repository.loadRecipes(result -> runOnUiThread(() -> {
+        pendingLoads = 3;
+        repository.loadSavedRecipeIds(ids -> runOnUiThread(() -> {
+            savedRecipeIds.clear();
+            if (ids != null) {
+                savedRecipeIds.addAll(ids);
+            }
+            onDiscoveryDataPartLoaded();
+        }));
+        repository.loadRecipes(CommunityRepository.DISCOVERY_RECIPE_LIMIT, result -> runOnUiThread(() -> {
             recipes.clear();
             recipes.addAll(CommunityUi.shuffled(result));
-            renderActiveTab();
+            onDiscoveryDataPartLoaded();
         }));
-        repository.loadChefs(result -> runOnUiThread(() -> {
+        repository.loadChefs(CommunityRepository.CHEF_LIST_LIMIT, result -> runOnUiThread(() -> {
             chefs.clear();
             chefs.addAll(CommunityUi.shuffled(result));
-            renderActiveTab();
-            CommunityUi.finishRefresh(refreshLayout);
+            onDiscoveryDataPartLoaded();
         }));
+    }
+
+    private void onDiscoveryDataPartLoaded() {
+        pendingLoads--;
+        if (pendingLoads <= 0) {
+            renderActiveTabInternal();
+            CommunityUi.finishRefresh(refreshLayout);
+        }
+    }
+
+    private void scheduleRender() {
+        searchHandler.removeCallbacks(renderRunnable);
+        searchHandler.postDelayed(renderRunnable, 300);
     }
 
     private void showRecipes() {
         activeTab = TAB_RECIPES;
-        renderActiveTab();
+        renderActiveTabInternal();
     }
 
     private void showChefs() {
         activeTab = TAB_CHEFS;
-        renderActiveTab();
+        renderActiveTabInternal();
     }
 
-    private void renderActiveTab() {
+    private void renderActiveTabInternal() {
         if (activeTab == TAB_RECIPES) {
             bindTabs(true);
             renderRecipes();
@@ -113,7 +141,14 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
 
     private void renderRecipes() {
         LinearLayout row = masonryRow();
-        CommunityUi.addRecipeMasonry(this, (LinearLayout) row.getChildAt(0), (LinearLayout) row.getChildAt(1), filteredRecipes());
+        CommunityUi.addRecipeMasonry(
+                this,
+                (LinearLayout) row.getChildAt(0),
+                (LinearLayout) row.getChildAt(1),
+                filteredRecipes(),
+                repository,
+                savedRecipeIds
+        );
     }
 
     private void renderChefs() {
@@ -231,6 +266,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        searchHandler.removeCallbacks(renderRunnable);
         if (voiceInputController != null) {
             voiceInputController.release();
             voiceInputController = null;

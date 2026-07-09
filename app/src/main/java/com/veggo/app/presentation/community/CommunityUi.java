@@ -17,6 +17,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -36,6 +37,7 @@ import com.veggo.app.databinding.ComponentBottomNavBinding;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Set;
 
 public final class CommunityUi {
     public interface SaveCallback {
@@ -175,11 +177,22 @@ public final class CommunityUi {
             LinearLayout rightColumn,
             List<CommunityRecipeEntity> recipes
     ) {
+        addRecipePreview(activity, leftColumn, rightColumn, recipes, null, null);
+    }
+
+    public static void addRecipePreview(
+            Activity activity,
+            LinearLayout leftColumn,
+            LinearLayout rightColumn,
+            List<CommunityRecipeEntity> recipes,
+            @Nullable CommunityRepository repository,
+            @Nullable Set<String> savedRecipeIds
+    ) {
         leftColumn.removeAllViews();
         rightColumn.removeAllViews();
         int limit = Math.min(recipes.size(), 4);
         for (int index = 0; index < limit; index++) {
-            View card = recipeCard(activity, recipes.get(index));
+            View card = recipeCard(activity, recipes.get(index), repository, savedRecipeIds);
             int height = (index == 1 || index == 2) ? dp(activity, 250) : dp(activity, 218);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -233,9 +246,19 @@ public final class CommunityUi {
     }
 
     public static void addRecipeList(Activity activity, LinearLayout parent, List<CommunityRecipeEntity> recipes) {
+        addRecipeList(activity, parent, recipes, null, null);
+    }
+
+    public static void addRecipeList(
+            Activity activity,
+            LinearLayout parent,
+            List<CommunityRecipeEntity> recipes,
+            @Nullable CommunityRepository repository,
+            @Nullable Set<String> savedRecipeIds
+    ) {
         parent.removeAllViews();
         for (CommunityRecipeEntity recipe : recipes) {
-            View card = recipeCard(activity, recipe);
+            View card = recipeCard(activity, recipe, repository, savedRecipeIds);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     dp(activity, 142)
@@ -251,10 +274,21 @@ public final class CommunityUi {
             LinearLayout rightColumn,
             List<CommunityRecipeEntity> recipes
     ) {
+        addRecipeMasonry(activity, leftColumn, rightColumn, recipes, null, null);
+    }
+
+    public static void addRecipeMasonry(
+            Activity activity,
+            LinearLayout leftColumn,
+            LinearLayout rightColumn,
+            List<CommunityRecipeEntity> recipes,
+            @Nullable CommunityRepository repository,
+            @Nullable Set<String> savedRecipeIds
+    ) {
         leftColumn.removeAllViews();
         rightColumn.removeAllViews();
         for (int index = 0; index < recipes.size(); index++) {
-            View card = recipeCard(activity, recipes.get(index));
+            View card = recipeCard(activity, recipes.get(index), repository, savedRecipeIds);
             addMasonryCard(activity, index, card, leftColumn, rightColumn);
         }
     }
@@ -323,27 +357,40 @@ public final class CommunityUi {
         count.setText(chef.getRecipeCount() + " c\u00f4ng th\u1ee9c");
     }
 
-    private static View recipeCard(Activity activity, CommunityRecipeEntity recipe) {
+    private static View recipeCard(
+            Activity activity,
+            CommunityRecipeEntity recipe,
+            @Nullable CommunityRepository repository,
+            @Nullable Set<String> savedRecipeIds
+    ) {
         View card = imageCard(activity, recipe.getImageUrl(), true);
         ((TextView) card.findViewById(R.id.cardMeta)).setText("\u25CF  " + recipe.getTimeMinutes() + " min");
         ((TextView) card.findViewById(R.id.cardTitle)).setText(recipe.getTitle());
         ImageView save = card.findViewById(R.id.cardSave);
-        CommunityRepository repository = new CommunityRepository(activity);
-        repository.isRecipeSaved(recipe.getId(), saved ->
-                activity.runOnUiThread(() -> renderSaveState(save, saved)));
+        CommunityRepository repo = repository != null ? repository : new CommunityRepository(activity);
+        boolean saved = savedRecipeIds != null && savedRecipeIds.contains(recipe.getId());
+        renderSaveState(save, saved);
         save.setOnClickListener(v -> {
             Object tag = save.getTag();
-            boolean saved = tag instanceof Boolean && (Boolean) tag;
-            if (saved) {
-                repository.removeRecipeFromCookbooks(recipe.getId(), done -> activity.runOnUiThread(() -> {
+            boolean currentlySaved = tag instanceof Boolean && (Boolean) tag;
+            if (currentlySaved) {
+                repo.removeRecipeFromCookbooks(recipe.getId(), done -> activity.runOnUiThread(() -> {
                     Toast.makeText(activity, done ? "Da bo luu" : "Chua bo luu duoc", Toast.LENGTH_SHORT).show();
                     if (done) {
+                        if (savedRecipeIds != null) {
+                            savedRecipeIds.remove(recipe.getId());
+                        }
                         renderSaveState(save, false);
                     }
                 }));
                 return;
             }
-            showAddToCookbook(activity, recipe.getId(), () -> renderSaveState(save, true));
+            showAddToCookbook(activity, recipe.getId(), () -> {
+                if (savedRecipeIds != null) {
+                    savedRecipeIds.add(recipe.getId());
+                }
+                renderSaveState(save, true);
+            });
         });
         card.setOnClickListener(v -> openRecipeDetail(activity, recipe));
         return card;
@@ -376,7 +423,7 @@ public final class CommunityUi {
         LinearLayout optionList = dialog.findViewById(R.id.cookbookOptionList);
         final String[] selectedCookbookId = {null};
         CommunityRepository repository = new CommunityRepository(activity);
-        repository.loadCookbooks(null, cookbooks -> activity.runOnUiThread(() -> {
+        repository.loadCookbooksForSave(null, cookbooks -> activity.runOnUiThread(() -> {
             optionList.removeAllViews();
             if (cookbooks.isEmpty()) {
                 TextView empty = new TextView(activity);
@@ -422,8 +469,8 @@ public final class CommunityUi {
                 Toast.makeText(activity, "Chọn cookbook hoặc bấm Tạo mới", Toast.LENGTH_SHORT).show();
                 return;
             }
-            repository.addRecipeToCookbook(selectedCookbookId[0], recipeId, done -> activity.runOnUiThread(() -> {
-                Toast.makeText(activity, done ? "Đã lưu vào cookbook" : "Chưa lưu được vào cookbook", Toast.LENGTH_SHORT).show();
+            repository.addRecipeToCookbook(selectedCookbookId[0], recipeId, (done, errorDetail) -> activity.runOnUiThread(() -> {
+                Toast.makeText(activity, done ? "Đã lưu vào cookbook" : cookbookErrorMessage("Chưa lưu được vào cookbook", errorDetail), Toast.LENGTH_LONG).show();
                 if (!done) {
                     return;
                 }
@@ -452,15 +499,18 @@ public final class CommunityUi {
                 titleInput.setError("Nh\u1eadp t\u00ean cookbook");
                 return;
             }
-            repository.createCookbook(title, descriptionInput.getText().toString().trim(), recipeId, done -> activity.runOnUiThread(() -> {
-                Toast.makeText(activity, done ? "Đã tạo cookbook" : "Chưa tạo được cookbook", Toast.LENGTH_SHORT).show();
+            repository.createCookbook(title, descriptionInput.getText().toString().trim(), recipeId, (done, errorDetail) -> activity.runOnUiThread(() -> {
+                Toast.makeText(activity, done ? "Đã tạo cookbook" : cookbookErrorMessage("Chưa tạo được cookbook", errorDetail), Toast.LENGTH_LONG).show();
                 if (!done) {
                     return;
                 }
-                if (callback != null) {
+                if (recipeId != null && !recipeId.trim().isEmpty() && callback != null) {
                     callback.onSaved();
                 }
                 dialog.dismiss();
+                if (recipeId != null && !recipeId.trim().isEmpty()) {
+                    showAddToCookbook(activity, recipeId, callback);
+                }
             }));
         });
         dialog.show();
@@ -478,6 +528,13 @@ public final class CommunityUi {
             window.setGravity(Gravity.BOTTOM);
         }
         return dialog;
+    }
+
+    private static String cookbookErrorMessage(String fallback, String errorDetail) {
+        if (errorDetail == null || errorDetail.trim().isEmpty()) {
+            return fallback;
+        }
+        return fallback + "\n" + errorDetail.trim();
     }
 
     private static void sizeDialog(Activity activity, Dialog dialog) {

@@ -567,92 +567,53 @@
     <LinearLayout
         android:id="@+id/orderDetailBottomActions"
         android:layout_width="match_parent"
-        android:layout_height="76dp"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/order_detail_bottom_bar_min_height"
         android:background="@drawable/bg_order_detail_bottom_bar"
         android:gravity="center_vertical|end"
         android:orientation="horizontal"
         android:paddingStart="@dimen/spacing_md"
-        android:paddingEnd="@dimen/spacing_md">
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_sm">
 
         <TextView
             android:id="@+id/orderDetailCancelButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="92dp"
-            android:background="@drawable/bg_order_cancel_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
+            style="@style/Widget.Veggo.OrderActionButton.Cancel"
             android:text="@string/orders_cancel"
-            android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/orderDetailReturnButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="92dp"
-            android:background="@drawable/bg_order_danger_outline_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
+            style="@style/Widget.Veggo.OrderActionButton.DangerOutline"
             android:text="@string/orders_return_refund"
-            android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/orderDetailReceivedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="128dp"
-            android:layout_marginStart="@dimen/spacing_md"
-            android:background="@drawable/bg_order_primary_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
+            style="@style/Widget.Veggo.OrderActionButton.Primary"
+            android:layout_marginStart="@dimen/spacing_sm"
             android:text="@string/orders_received"
-            android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/orderDetailBuyAgainButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="96dp"
-            android:background="@drawable/bg_button_outline_green"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
+            style="@style/Widget.Veggo.OrderActionButton.Outline"
             android:text="@string/orders_buy_again"
-            android:textColor="@color/primary_main"
-            android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/orderDetailReviewButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="92dp"
+            style="@style/Widget.Veggo.OrderActionButton.Primary"
             android:layout_marginStart="@dimen/spacing_sm"
-            android:background="@drawable/bg_order_primary_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
             android:text="@string/reviews_action"
-            android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/orderDetailAddToFridgeButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:minWidth="104dp"
+            style="@style/Widget.Veggo.OrderActionButton.Primary"
             android:layout_marginStart="@dimen/spacing_sm"
-            android:background="@drawable/bg_order_primary_button"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="Thêm vào tủ"
-            android:textColor="@color/background_main"
-            android:textSize="@dimen/text_sm"
+            android:text="@string/orders_add_to_fridge"
             android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

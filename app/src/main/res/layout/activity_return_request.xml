@@ -233,16 +233,9 @@
 
     <TextView
         android:id="@+id/returnSubmitButton"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
+        style="@style/Widget.Veggo.OrderActionButton.Primary.FullWidth"
         android:layout_marginStart="@dimen/spacing_md"
         android:layout_marginEnd="@dimen/spacing_md"
         android:layout_marginBottom="@dimen/spacing_md"
-        android:background="@drawable/bg_order_primary_button"
-        android:fontFamily="@font/inter_semibold"
-        android:gravity="center"
-        android:text="Gửi yêu cầu"
-        android:textColor="@color/background_main"
-        android:textSize="@dimen/text_md"
-        android:textStyle="bold" />
+        android:text="Gửi yêu cầu" />
 </LinearLayout>
