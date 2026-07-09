@@ -14,7 +14,7 @@ import { HttpClient } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../services/api.service';
 import { interval, Subscription, forkJoin, of } from 'rxjs';
-import { switchMap, catchError, debounceTime, retry, tap, timeout } from 'rxjs/operators';
+import { switchMap, catchError, debounceTime, retry, tap } from 'rxjs/operators';
 import { DashboardVnMapComponent } from './dashboard-vn-map/dashboard-vn-map.component';
 
 Chart.register(...registerables);
@@ -259,7 +259,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   buyersChangeType: 'positive' | 'negative' = 'positive';
 
   // Auto-refresh interval (5 seconds)
-  private readonly REFRESH_INTERVAL = 5000;
+  private readonly REFRESH_INTERVAL = 30000;
 
   // Real-time update state
   isRefreshing: boolean = false;
@@ -348,72 +348,43 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   private buildOrdersFreshnessSignature(orders: any[] = []): string {
     if (!Array.isArray(orders)) return '';
-    return orders
-      .map((order) =>
-        [
-          order.OrderID || order.orderId || order.order_id || order._id || order.id,
-          order.status || order.order_status,
-          order.paymentStatus || order.payment_status,
-          order.totalAmount || order.total_amount || order.total || order.order_total,
-          order.updatedAt || order.updated_at,
-          order.createdAt || order.created_at || order.order_date,
-          Array.isArray(order.items) ? order.items.length : 0,
-        ]
-          .map((value) => this.getFreshnessValue(value))
-          .join(':')
-      )
-      .join('|');
+    // Lightweight signature: count + first/last updated (avoid O(n) stringify trên mỗi lần poll)
+    const first = orders[0];
+    const last = orders[orders.length - 1];
+    return [
+      orders.length,
+      first?.OrderID || first?._id || '',
+      first?.updatedAt || first?.status || '',
+      last?.OrderID || last?._id || '',
+      last?.updatedAt || last?.status || '',
+      first?.totalAmount || '',
+    ].join(':');
   }
 
   private buildUsersFreshnessSignature(users: any[] = []): string {
     if (!Array.isArray(users)) return '';
-    return users
-      .map((user) =>
-        [
-          user.CustomerID || user.customer_id || user._id || user.id,
-          user.RegisterDate || user.register_date || user.createdAt || user.created_at,
-          user.updatedAt || user.updated_at,
-          user.fullName || user.full_name || user.name,
-        ]
-          .map((value) => this.getFreshnessValue(value))
-          .join(':')
-      )
-      .join('|');
+    const first = users[0];
+    return [users.length, first?.CustomerID || first?._id || '', first?.updatedAt || ''].join(':');
   }
 
   private buildProductsFreshnessSignature(products: any[] = []): string {
     if (!Array.isArray(products)) return '';
-    return products
-      .map((product) =>
-        [
-          product.sku || product.SKU || product._id || product.id,
-          product.price || product.salePrice || product.sale_price,
-          product.stock || product.quantity || product.StockQuantity,
-          product.status || product.isActive,
-          product.updatedAt || product.updated_at,
-        ]
-          .map((value) => this.getFreshnessValue(value))
-          .join(':')
-      )
-      .join('|');
+    const first = products[0];
+    return [
+      products.length,
+      first?.sku || first?._id || '',
+      first?.updatedAt || first?.price || '',
+    ].join(':');
   }
 
   private buildPromotionsFreshnessSignature(promotions: any[] = []): string {
     if (!Array.isArray(promotions)) return '';
-    return promotions
-      .map((promotion) =>
-        [
-          promotion.promotion_id || promotion.promotionId || promotion._id || promotion.id,
-          promotion.status || promotion.isActive,
-          promotion.discount || promotion.discountValue || promotion.discount_value,
-          promotion.start_date || promotion.startDate,
-          promotion.end_date || promotion.endDate,
-          promotion.updatedAt || promotion.updated_at,
-        ]
-          .map((value) => this.getFreshnessValue(value))
-          .join(':')
-      )
-      .join('|');
+    const first = promotions[0];
+    return [
+      promotions.length,
+      first?.promotion_id || first?._id || '',
+      first?.updatedAt || first?.status || '',
+    ].join(':');
   }
 
   /**
@@ -446,7 +417,6 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         })
       ),
       products: this.apiService.getProducts().pipe(
-        timeout(6000),
         retry(1),
         catchError((error) => {
           console.error('Error loading products:', error);
@@ -487,19 +457,16 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         // Load và cập nhật recent orders
         this.loadRecentOrders();
 
-        // Load reviews sẽ được gọi riêng vì cần load từ API riêng
-        // (reviews không được load trong forkJoin vì cấu trúc khác)
-        this.loadRecentReviews();
+        // Reviews chỉ cần vài dòng gần đây — không tải lại mỗi vòng auto-refresh
+        if (!this.recentReviews?.length) {
+          this.loadRecentReviews();
+        }
 
         // Cập nhật charts chỉ khi cần thiết
         if (ordersChanged || !this.chart) {
           if (this.chart) {
             this.updateChart();
           }
-        }
-
-        if (ordersChanged || !this.combinedTimelineChartInstance) {
-          this.createCombinedTimelineChart();
         }
 
         // Update status pie chart
@@ -522,9 +489,6 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         // Calculate customers by day of week (based on new account registrations)
         const usersChanged = previousUsersSignature !== this.buildUsersFreshnessSignature(users);
         this.calculateCustomersByDay();
-        if (usersChanged || ordersChanged) {
-          this.createCombinedTimelineChart();
-        }
 
         // Xử lý products data - đảm bảo luôn là array
         let products = data.products || [];
@@ -536,7 +500,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         this.allProducts = Array.isArray(products) ? products : [];
         const productsChanged = previousProductsSignature !== this.buildProductsFreshnessSignature(products);
 
-        if (productsChanged) {
+        if (productsChanged || !this.productsCount) {
           this.calculateProductsStats(products);
           this.calculateTopProducts();
           this.calculateOutOfStockProducts();
@@ -572,7 +536,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           promotions: promotions.length,
           timestamp: this.lastUpdateTime.toISOString(),
         });
-        this.createCombinedTimelineChart();
+
+        // Chỉ rebuild timeline 1 lần / refresh để tránh jank UI
+        if (ordersChanged || usersChanged || !this.combinedTimelineChartInstance) {
+          this.createCombinedTimelineChart();
+        }
       },
       error: (error: any) => {
         console.error('Error loading dashboard data:', error);
@@ -1163,7 +1131,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   loadRecentReviews(): void {
     console.log('🔄 Loading recent reviews from MongoDB...');
 
-    this.apiService.getReviews().subscribe({
+    this.apiService.getReviews(10).subscribe({
       next: (reviewsData) => {
         console.log(`✅ Loaded ${reviewsData.length} reviews from MongoDB`);
         if (Array.isArray(reviewsData) && reviewsData.length > 0) {

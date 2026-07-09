@@ -1,10 +1,10 @@
 package com.veggo.app.presentation.profile;
 
 import android.app.Dialog;
-import android.graphics.Bitmap;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -23,12 +23,18 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.snackbar.Snackbar;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.CameraCaptureHelper;
+import com.veggo.app.core.utils.DatePickerHelper;
 import com.veggo.app.core.utils.ImageCompressor;
+import com.veggo.app.core.utils.KeyboardUtils;
+import com.veggo.app.core.utils.OtpInputHelper;
 import com.veggo.app.data.remote.dto.UserProfileDto;
 import com.veggo.app.MainActivity;
 import com.veggo.app.presentation.common.AssetScreenData;
@@ -36,10 +42,13 @@ import com.veggo.app.presentation.dialog.VeggoDialog;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
+import java.util.Random;
 
 public class PersonalInfoActivity extends BaseActivity {
     private static final String PHONE_REGEX = "^0\\d{9}$";
-    private static final String DEMO_OTP = "123456";
+    private static final int CHANGE_PHONE_OTP_TTL_MS = 60_000;
+    private static final int MAX_CHANGE_PHONE_OTP_ATTEMPTS = 3;
 
     private PersonalInfoViewModel viewModel;
     private AppPreferences appPreferences;
@@ -74,7 +83,7 @@ public class PersonalInfoActivity extends BaseActivity {
     private File pendingAvatarFile;
 
     private ActivityResultLauncher<String> galleryPicker;
-    private ActivityResultLauncher<Void> cameraPicker;
+    private CameraCaptureHelper cameraCaptureHelper;
 
     private boolean isEditMode = false;
     @Nullable
@@ -144,7 +153,7 @@ public class PersonalInfoActivity extends BaseActivity {
         phoneInput.setEnabled(false);
         phoneInput.setFocusable(false);
 
-        com.veggo.app.core.utils.DatePickerHelper.setupDatePicker(
+        DatePickerHelper.setupDatePicker(
                 this,
                 birthdayInput,
                 birthdayIcon
@@ -153,9 +162,19 @@ public class PersonalInfoActivity extends BaseActivity {
         setEditMode(false);
     }
 
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EmulatorSmsSender.handlePermissionResult(this, requestCode, grantResults);
+    }
+
     private void setupAvatarPickers() {
         galleryPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onGalleryImageSelected);
-        cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicturePreview(), this::onCameraImageSelected);
+        cameraCaptureHelper = new CameraCaptureHelper(this);
     }
 
     private void setupActions() {
@@ -283,7 +302,7 @@ public class PersonalInfoActivity extends BaseActivity {
         setFieldText(nameInput, name);
         setFieldText(phoneInput, user.phone);
         setFieldText(emailInput, user.email);
-        setFieldText(birthdayInput, user.birthDay);
+        setFieldText(birthdayInput, DatePickerHelper.formatBirthdayDisplay(user.birthDay));
         bindGender(user.gender);
         updateGenderDisplay();
         updateBirthdayDisplay();
@@ -348,7 +367,12 @@ public class PersonalInfoActivity extends BaseActivity {
         if (!editMode) {
             applyEditableField(birthdayInput, false);
         } else {
-            applyEditableField(birthdayInput, true);
+            birthdayInput.setBackgroundResource(R.drawable.bg_input);
+            birthdayInput.setEnabled(true);
+            birthdayInput.setFocusable(false);
+            birthdayInput.setFocusableInTouchMode(false);
+            birthdayInput.setClickable(true);
+            birthdayInput.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
         }
 
         if (birthdayIcon != null) {
@@ -409,8 +433,8 @@ public class PersonalInfoActivity extends BaseActivity {
     private void applyBottomBarMode(boolean editMode) {
         if (editMode) {
             logoutButton.setText("Huỷ");
-            logoutButton.setTextColor(ContextCompat.getColor(this, R.color.neutral_100));
-            logoutButton.setBackgroundResource(R.drawable.bg_cancel_outline_button);
+            logoutButton.setTextColor(ContextCompat.getColor(this, R.color.danger_main));
+            logoutButton.setBackgroundResource(R.drawable.bg_logout_outline_button);
             actionButton.setText("Lưu");
             actionButton.setBackgroundResource(R.drawable.bg_button_primary);
             actionButton.setTextColor(ContextCompat.getColor(this, R.color.neutral_10));
@@ -437,7 +461,9 @@ public class PersonalInfoActivity extends BaseActivity {
             return;
         }
         String birthday = birthdayInput.getText() == null ? "" : birthdayInput.getText().toString().trim();
-        birthdayDisplay.setText(AssetScreenData.hasText(birthday) ? birthday : "—");
+        birthdayDisplay.setText(AssetScreenData.hasText(birthday)
+                ? DatePickerHelper.formatBirthdayDisplay(birthday)
+                : "—");
     }
 
     @NonNull
@@ -527,7 +553,7 @@ public class PersonalInfoActivity extends BaseActivity {
         setFieldText(nameInput, profile.getName());
         setFieldText(phoneInput, profile.getPhone());
         setFieldText(emailInput, profile.getEmail());
-        setFieldText(birthdayInput, savedBirthday);
+        setFieldText(birthdayInput, DatePickerHelper.formatBirthdayDisplay(savedBirthday));
         bindGender(savedGender);
         updateGenderDisplay();
         updateBirthdayDisplay();
@@ -562,10 +588,36 @@ public class PersonalInfoActivity extends BaseActivity {
         TextView otpDescription = dialog.findViewById(R.id.changePhoneOtpDescription);
         TextView primaryButton = dialog.findViewById(R.id.changePhonePrimaryButton);
         final String[] pendingPhone = {""};
+        final String[] currentOtp = {""};
+        final long[] otpExpiresAt = {0L};
+        final int[] otpFailedAttempts = {0};
+        final CountDownTimer[] otpTimer = {null};
+        final EditText[] otpFields = getChangePhoneOtpFields(dialog);
+        OtpInputHelper.setupAutoShift(otpFields, primaryButton);
+        KeyboardUtils.setupHideKeyboardOnOutsideTap(dialog);
+
+        dialog.setOnDismissListener(d -> {
+            if (otpTimer[0] != null) {
+                otpTimer[0].cancel();
+            }
+        });
 
         dialog.findViewById(R.id.changePhoneCancelButton).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.changePhoneResendButton).setOnClickListener(v ->
-                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show());
+        dialog.findViewById(R.id.changePhoneResendButton).setOnClickListener(v -> {
+            if (!AssetScreenData.hasText(pendingPhone[0])) {
+                return;
+            }
+            dispatchChangePhoneOtp(
+                    pendingPhone[0],
+                    currentOtp,
+                    otpExpiresAt,
+                    otpFailedAttempts,
+                    otpDescription,
+                    otpTimer
+            );
+            OtpInputHelper.clearFields(otpFields);
+            OtpInputHelper.focusFirst(otpFields);
+        });
 
         primaryButton.setOnClickListener(v -> {
             if (otpSection.getVisibility() != View.VISIBLE) {
@@ -576,17 +628,54 @@ public class PersonalInfoActivity extends BaseActivity {
                 pendingPhone[0] = newPhone;
                 inputSection.setVisibility(View.GONE);
                 otpSection.setVisibility(View.VISIBLE);
-                otpDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại " + maskPhone(newPhone));
                 primaryButton.setText("Xác thực");
-                clearOtpFields(getChangePhoneOtpFields(dialog));
-                Toast.makeText(this, "Mã xác thực: " + DEMO_OTP, Toast.LENGTH_SHORT).show();
+                dispatchChangePhoneOtp(
+                        newPhone,
+                        currentOtp,
+                        otpExpiresAt,
+                        otpFailedAttempts,
+                        otpDescription,
+                        otpTimer
+                );
+                OtpInputHelper.clearFields(otpFields);
+                OtpInputHelper.focusFirst(otpFields);
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setSoftInputMode(
+                            android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+                    );
+                }
                 return;
             }
 
-            String otp = getOtpValue(getChangePhoneOtpFields(dialog));
-            if (!DEMO_OTP.equals(otp)) {
-                Toast.makeText(this, "Mã xác thực không đúng", Toast.LENGTH_SHORT).show();
+            String otp = OtpInputHelper.readValue(otpFields);
+            if (otp.length() < 6) {
                 return;
+            }
+            if (System.currentTimeMillis() > otpExpiresAt[0]) {
+                Toast.makeText(this, "Mã xác thực đã hết hạn. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (otpFailedAttempts[0] >= MAX_CHANGE_PHONE_OTP_ATTEMPTS) {
+                Toast.makeText(this, "Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!currentOtp[0].equals(otp)) {
+                otpFailedAttempts[0]++;
+                Toast.makeText(
+                        this,
+                        "Mã xác thực không đúng ("
+                                + otpFailedAttempts[0]
+                                + "/"
+                                + MAX_CHANGE_PHONE_OTP_ATTEMPTS
+                                + ")",
+                        Toast.LENGTH_SHORT
+                ).show();
+                OtpInputHelper.clearFields(otpFields);
+                OtpInputHelper.focusFirst(otpFields);
+                return;
+            }
+            if (otpTimer[0] != null) {
+                otpTimer[0].cancel();
             }
             setFieldText(phoneInput, pendingPhone[0]);
             Toast.makeText(this, "Đã xác thực số điện thoại mới. Bấm Lưu để cập nhật.", Toast.LENGTH_SHORT).show();
@@ -627,25 +716,74 @@ public class PersonalInfoActivity extends BaseActivity {
         };
     }
 
-    private void clearOtpFields(EditText[] fields) {
-        for (EditText field : fields) {
-            field.setText("");
-        }
-    }
-
-    private String getOtpValue(EditText[] fields) {
-        StringBuilder builder = new StringBuilder();
-        for (EditText field : fields) {
-            builder.append(field.getText().toString().trim());
-        }
-        return builder.toString();
-    }
-
     private String maskPhone(String phone) {
         if (phone == null || phone.length() < 4) {
             return phone == null ? "" : phone;
         }
         return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
+    }
+
+    private String generateChangePhoneOtp() {
+        return String.format(Locale.US, "%06d", new Random().nextInt(1_000_000));
+    }
+
+    private void dispatchChangePhoneOtp(
+            @NonNull String phone,
+            @NonNull String[] currentOtpHolder,
+            @NonNull long[] otpExpiresAtHolder,
+            @NonNull int[] otpFailedAttemptsHolder,
+            @NonNull TextView otpDescription,
+            @NonNull CountDownTimer[] timerHolder
+    ) {
+        currentOtpHolder[0] = generateChangePhoneOtp();
+        otpExpiresAtHolder[0] = System.currentTimeMillis() + CHANGE_PHONE_OTP_TTL_MS;
+        otpFailedAttemptsHolder[0] = 0;
+        EmulatorSmsSender.send(
+                this,
+                "VEGGO: Ma OTP doi so dien thoai cua ban la "
+                        + currentOtpHolder[0]
+                        + ". Ma co hieu luc trong 60 giay."
+        );
+        startChangePhoneOtpTimer(otpDescription, phone, timerHolder);
+    }
+
+    private void startChangePhoneOtpTimer(
+            @NonNull TextView otpDescription,
+            @NonNull String phone,
+            @NonNull CountDownTimer[] timerHolder
+    ) {
+        if (timerHolder[0] != null) {
+            timerHolder[0].cancel();
+        }
+        updateChangePhoneOtpDescription(otpDescription, phone, CHANGE_PHONE_OTP_TTL_MS);
+        timerHolder[0] = new CountDownTimer(CHANGE_PHONE_OTP_TTL_MS, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                updateChangePhoneOtpDescription(otpDescription, phone, millisUntilFinished);
+            }
+
+            @Override
+            public void onFinish() {
+                updateChangePhoneOtpDescription(otpDescription, phone, 0);
+                Toast.makeText(PersonalInfoActivity.this, "Mã xác thực đã hết hạn", Toast.LENGTH_SHORT).show();
+            }
+        };
+        timerHolder[0].start();
+    }
+
+    private void updateChangePhoneOtpDescription(
+            @NonNull TextView otpDescription,
+            @NonNull String phone,
+            long millisUntilFinished
+    ) {
+        long seconds = Math.max(0, millisUntilFinished / 1000);
+        String suffix = seconds > 0
+                ? "Mã còn hiệu lực trong " + seconds + " giây."
+                : "Mã xác thực đã hết hạn. Vui lòng gửi lại mã.";
+        otpDescription.setText("Chúng tôi đã gửi mã xác thực đến số điện thoại "
+                + maskPhone(phone)
+                + ". "
+                + suffix);
     }
 
     private void showAvatarSourceDialog() {
@@ -663,7 +801,17 @@ public class PersonalInfoActivity extends BaseActivity {
 
         dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
             dialog.dismiss();
-            cameraPicker.launch(null);
+            cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+                @Override
+                public void onImageCaptured(@NonNull Uri imageUri) {
+                    onCameraImageCaptured(imageUri);
+                }
+
+                @Override
+                public void onPermissionDenied() {
+                    Toast.makeText(PersonalInfoActivity.this, R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();
@@ -681,36 +829,45 @@ public class PersonalInfoActivity extends BaseActivity {
         }
     }
 
-    private void onCameraImageSelected(@Nullable Bitmap bitmap) {
-        if (bitmap == null) {
-            return;
-        }
+    private void onCameraImageCaptured(@NonNull Uri uri) {
         try {
-            pendingAvatarFile = ImageCompressor.compressToJpeg(this, bitmap);
-            if (avatarView != null) {
-                avatarView.setImageBitmap(bitmap);
-            }
+            pendingAvatarFile = ImageCompressor.compressToJpeg(this, uri);
+            showAvatarPreview(uri);
         } catch (IOException exception) {
             Toast.makeText(this, "Không thể xử lý ảnh đã chụp", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void showAvatarPreview(@Nullable String avatarUrl) {
-        if (avatarView == null || !AssetScreenData.hasText(avatarUrl)) {
+        if (avatarView == null) {
             return;
         }
-        Glide.with(this)
-                .load(avatarUrl)
-                .placeholder(R.drawable.ic_profile_avatar)
-                .error(R.drawable.ic_profile_avatar)
-                .into(avatarView);
+        if (!AssetScreenData.hasText(avatarUrl)) {
+            avatarView.setImageResource(R.drawable.ic_profile_avatar);
+            return;
+        }
+        bindAvatarImage(avatarUrl);
     }
 
     private void showAvatarPreview(@Nullable Uri uri) {
         if (avatarView == null || uri == null) {
             return;
         }
-        avatarView.setImageURI(uri);
+        bindAvatarImage(uri);
+    }
+
+    private void bindAvatarImage(@NonNull Object source) {
+        if (avatarView == null) {
+            return;
+        }
+        Glide.with(this)
+                .load(source)
+                .placeholder(R.drawable.ic_profile_avatar)
+                .error(R.drawable.ic_profile_avatar)
+                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .circleCrop()
+                .into(avatarView);
     }
 
     @Nullable
@@ -882,7 +1039,10 @@ public class PersonalInfoActivity extends BaseActivity {
             tvBirthdayError.setVisibility(View.GONE);
             return true;
         }
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+                DatePickerHelper.BIRTHDAY_PATTERN,
+                java.util.Locale.getDefault()
+        );
         sdf.setLenient(false);
         try {
             java.util.Date date = sdf.parse(birthday.trim());

@@ -49,7 +49,7 @@ export class ApiService {
 
   // ==================== ORDERS ====================
   getOrders(): Observable<any[]> {
-    return this.getFresh<any[]>('/orders');
+    return this.getFresh<any[]>('/orders?lite=true');
   }
 
   getOrderById(id: string): Observable<any> {
@@ -61,7 +61,7 @@ export class ApiService {
   }
 
   getOrdersByCustomerId(customerId: string): Observable<any[]> {
-    return this.getFresh<any>(`/orders/customer/${customerId}`).pipe(
+    return this.getFresh<any>(`/orders/customer/${customerId}?lite=true`).pipe(
       map((response) => Array.isArray(response) ? response : response?.orders || []),
       catchError(() => of([]))
     );
@@ -147,8 +147,9 @@ export class ApiService {
   deleteBlog(id: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/blogs/${id}`);
   }
-  getReviews(): Observable<any[]> {
-    return this.getFresh<any[]>('/reviews');
+  getReviews(limit = 20): Observable<any[]> {
+    const q = limit > 0 ? `/reviews?limit=${limit}&lite=true` : '/reviews?lite=true';
+    return this.getFresh<any[]>(q);
   }
   getTree(): Observable<any[]> { return of([]); }
   getCategories(): Observable<string[]> {

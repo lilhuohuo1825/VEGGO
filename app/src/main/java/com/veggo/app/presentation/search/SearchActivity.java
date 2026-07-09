@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.veggo.app.databinding.ActivitySearchBinding;
 import com.veggo.app.di.AppModule;
+import com.veggo.app.assets.AssetModels;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.ProductRepository;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -36,6 +37,7 @@ public class SearchActivity extends AppCompatActivity {
     private com.veggo.app.domain.repository.CategoryRepository categoryRepository;
     private com.veggo.app.speech.SearchVoiceInputController voiceInputController;
     private SwipeRefreshLayout searchRefreshLayout;
+    private List<AssetModels.Category> allCategories = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +123,7 @@ public class SearchActivity extends AppCompatActivity {
         categoryAdapter.setOnCategoryClickListener(category -> {
             Intent intent = new Intent(this, com.veggo.app.MainActivity.class);
             intent.putExtra(com.veggo.app.MainActivity.EXTRA_CATEGORY_ID, category.categoryId);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
         });
 
@@ -141,6 +144,14 @@ public class SearchActivity extends AppCompatActivity {
             public void onFeatureClick(SearchViewModel.FeatureResult feature) {
                 handleFeatureNavigation(feature);
             }
+
+            @Override
+            public void onCategoryClick(AssetModels.Category category) {
+                Intent intent = new Intent(SearchActivity.this, com.veggo.app.MainActivity.class);
+                intent.putExtra(com.veggo.app.MainActivity.EXTRA_CATEGORY_ID, category.categoryId);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
         });
 
         binding.layoutSearch.edtSearch.addTextChangedListener(new TextWatcher() {
@@ -159,7 +170,9 @@ public class SearchActivity extends AppCompatActivity {
 
     private void observeData() {
         viewModel.getCategories().observe(this, categories -> {
-            categoryAdapter.setData(categories);
+            allCategories = categories != null ? categories : new ArrayList<>();
+            categoryAdapter.setData(allCategories);
+            updateResults();
         });
 
         viewModel.getSearchQuery().observe(this, query -> {
@@ -186,8 +199,9 @@ public class SearchActivity extends AppCompatActivity {
     private void updateResults() {
         List<Product> products = viewModel.getProductResults().getValue();
         List<SearchViewModel.FeatureResult> features = viewModel.getFeatureResults().getValue();
-        searchAdapter.setResults(products, features);
         String query = viewModel.getSearchQuery().getValue();
+        List<AssetModels.Category> categories = viewModel.filterCategories(allCategories, query);
+        searchAdapter.setResults(products, features, categories);
         boolean hasQuery = query != null && !query.trim().isEmpty();
         if (!hasQuery) {
             binding.rvCategories.setVisibility(android.view.View.VISIBLE);
@@ -197,7 +211,8 @@ public class SearchActivity extends AppCompatActivity {
         }
         boolean hasProducts = products != null && !products.isEmpty();
         boolean hasFeatures = features != null && !features.isEmpty();
-        boolean showEmpty = !hasProducts && !hasFeatures;
+        boolean hasCategories = !categories.isEmpty();
+        boolean showEmpty = !hasProducts && !hasFeatures && !hasCategories;
         binding.rvCategories.setVisibility(android.view.View.GONE);
         binding.rvSearchResults.setVisibility(showEmpty ? android.view.View.GONE : android.view.View.VISIBLE);
         binding.searchEmptyState.setVisibility(showEmpty ? android.view.View.VISIBLE : android.view.View.GONE);

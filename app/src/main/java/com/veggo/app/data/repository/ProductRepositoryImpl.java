@@ -20,6 +20,7 @@ import com.veggo.app.data.remote.dto.ProductDto;
 import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.ProductDisplayValidator;
 import com.veggo.app.core.utils.ProductImageUtils;
+import com.veggo.app.core.utils.TextSearchUtils;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.model.Recipe;
 import com.veggo.app.domain.model.Review;
@@ -391,62 +392,90 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public LiveData<List<Product>> searchProducts(String query) {
-        if (com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            MutableLiveData<List<Product>> liveData = new MutableLiveData<>();
-            getProductsFromApi(new Callback<List<ProductDto>>() {
+        String trimmedQuery = query != null ? query.trim() : "";
+        MutableLiveData<List<Product>> liveData = new MutableLiveData<>();
+        if (trimmedQuery.isEmpty()) {
+            liveData.setValue(new ArrayList<>());
+            return liveData;
+        }
+
+        if (com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context) && productApi != null) {
+            productApi.searchProducts(trimmedQuery, 50).enqueue(new Callback<List<ProductDto>>() {
                 @Override
                 public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
-                    List<ProductDto> dtos = response.body();
-                    if (response.isSuccessful() && dtos != null) {
-                        List<Product> products = new ArrayList<>();
-                        String lowerQuery = query != null ? query.toLowerCase() : "";
-                        for (ProductDto dto : dtos) {
-                            Product p = ProductMapper.fromDto(dto);
-                            if (ProductDisplayValidator.isDisplayable(p)) {
-                                boolean matches = false;
-                                if (p.getName() != null && p.getName().toLowerCase().contains(lowerQuery)) {
-                                    matches = true;
-                                } else if (p.getSku() != null && p.getSku().toLowerCase().contains(lowerQuery)) {
-                                    matches = true;
-                                }
-                                if (matches) {
-                                    products.add(p);
-                                }
-                            }
-                        }
-                        liveData.postValue(products);
-                    } else {
-                        liveData.postValue(new ArrayList<>());
+                    if (response.isSuccessful() && response.body() != null) {
+                        liveData.postValue(mapSearchResults(response.body()));
+                        return;
                     }
+                    searchProductsFromCache(trimmedQuery, liveData);
                 }
 
                 @Override
                 public void onFailure(Call<List<ProductDto>> call, Throwable t) {
-                    liveData.postValue(new ArrayList<>());
+                    searchProductsFromCache(trimmedQuery, liveData);
                 }
             });
             return liveData;
-        } else {
-            return Transformations.map(productDao.searchProducts(query), projections -> {
-                List<Product> products = new ArrayList<>();
-                if (projections != null) {
-                    for (ProductItemProjection projection : projections) {
-                        if (ProductDisplayValidator.isDisplayable(projection)) {
-                            products.add(ProductMapper.fromProjection(projection));
-                            continue;
-                        }
-                        ProductEntity entity = productDao.getProductById(projection.getId());
-                        if (entity != null) {
-                            enrichEntityImageIfNeeded(entity);
-                            if (ProductDisplayValidator.isDisplayable(entity)) {
-                                products.add(ProductMapper.fromEntity(entity));
-                            }
-                        }
-                    }
-                }
-                return products;
-            });
         }
+
+        return Transformations.map(productDao.searchProducts(trimmedQuery), projections ->
+                filterSearchResults(projections, trimmedQuery));
+    }
+
+    private void searchProductsFromCache(String query, MutableLiveData<List<Product>> liveData) {
+        getProductsFromApi(new Callback<List<ProductDto>>() {
+            @Override
+            public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    liveData.postValue(mapSearchResults(response.body()));
+                } else {
+                    liveData.postValue(new ArrayList<>());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ProductDto>> call, Throwable t) {
+                liveData.postValue(new ArrayList<>());
+            }
+        });
+    }
+
+    private List<Product> mapSearchResults(List<ProductDto> dtos) {
+        List<Product> products = new ArrayList<>();
+        for (ProductDto dto : dtos) {
+            Product product = ProductMapper.fromDto(dto);
+            if (ProductDisplayValidator.isDisplayable(product)) {
+                products.add(product);
+            }
+        }
+        return products;
+    }
+
+    private List<Product> filterSearchResults(List<ProductItemProjection> projections, String query) {
+        List<Product> products = new ArrayList<>();
+        if (projections == null) {
+            return products;
+        }
+        for (ProductItemProjection projection : projections) {
+            Product product;
+            if (ProductDisplayValidator.isDisplayable(projection)) {
+                product = ProductMapper.fromProjection(projection);
+            } else {
+                ProductEntity entity = productDao.getProductById(projection.getId());
+                if (entity == null) {
+                    continue;
+                }
+                enrichEntityImageIfNeeded(entity);
+                if (!ProductDisplayValidator.isDisplayable(entity)) {
+                    continue;
+                }
+                product = ProductMapper.fromEntity(entity);
+            }
+            if (TextSearchUtils.matchesProduct(product, query)) {
+                products.add(product);
+            }
+        }
+        return products;
     }
 
     @Override

@@ -69,7 +69,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
         private final TextView tvProductName;
         private final TextView tvRating;
         private final TextView tvProductPrice;
-        private final TextView btnAddFlashSale;
+        private final View btnAddFlashSale;
 
         FlashSaleViewHolder(@NonNull View itemView) {
             super(itemView);

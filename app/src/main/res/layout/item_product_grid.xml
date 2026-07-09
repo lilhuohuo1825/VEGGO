@@ -124,18 +124,9 @@
                     android:visibility="gone" />
             </LinearLayout>
 
-            <TextView
+            <include
                 android:id="@+id/btnAddProduct"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/bg_circle_light_green"
-                android:contentDescription="Thêm vào giỏ"
-                android:fontFamily="@font/inter_semibold"
-                android:gravity="center"
-                android:text="+"
-                android:textColor="@color/primary_main"
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                layout="@layout/view_grid_add_button" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

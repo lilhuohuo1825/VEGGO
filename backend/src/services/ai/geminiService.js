@@ -1,19 +1,22 @@
 const { GoogleGenAI } = require('@google/genai');
-const { AI_CONFIG, INTENTS } = require('../../config/aiConfig');
+const { AI_CONFIG, INTENTS, VISION_MODEL_FALLBACK_CHAIN } = require('../../config/aiConfig');
 const { INTENT_ANALYSIS_PROMPT, RESPONSE_PROMPT } = require('./chatPrompts');
 
 let aiClient = null;
+let aiClientKey = null;
 let lastGeminiCallAt = 0;
 
 function getClient() {
-  if (!process.env.GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
     const error = new Error('GEMINI_API_KEY chưa được cấu hình');
     error.status = 503;
     throw error;
   }
 
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY.trim() });
+  if (!aiClient || aiClientKey !== apiKey) {
+    aiClient = new GoogleGenAI({ apiKey });
+    aiClientKey = apiKey;
   }
 
   return aiClient;
@@ -28,13 +31,31 @@ function extractJson(text) {
   } catch (_error) {
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
     if (fenced) {
-      return JSON.parse(fenced[1].trim());
+      try {
+        return JSON.parse(fenced[1].trim());
+      } catch (_inner) {
+        // fall through
+      }
+    }
+
+    const arrayStart = raw.indexOf('[');
+    const arrayEnd = raw.lastIndexOf(']');
+    if (arrayStart >= 0 && arrayEnd > arrayStart) {
+      try {
+        return JSON.parse(raw.slice(arrayStart, arrayEnd + 1));
+      } catch (_inner) {
+        // fall through
+      }
     }
 
     const start = raw.indexOf('{');
     const end = raw.lastIndexOf('}');
     if (start >= 0 && end > start) {
-      return JSON.parse(raw.slice(start, end + 1));
+      try {
+        return JSON.parse(raw.slice(start, end + 1));
+      } catch (_inner) {
+        // fall through
+      }
     }
   }
 
@@ -46,7 +67,20 @@ function isModelAccessDenied(error) {
   const message = String(error?.message || '').toLowerCase();
   return status === 403
     || message.includes('permission_denied')
-    || message.includes('denied access');
+    || message.includes('denied access')
+    || message.includes('leaked');
+}
+
+function isModelNotFound(error) {
+  const status = error?.status || error?.statusCode;
+  const message = String(error?.message || '').toLowerCase();
+  return status === 404
+    || message.includes('not found')
+    || message.includes('not supported');
+}
+
+function shouldTryNextModel(error) {
+  return isModelAccessDenied(error) || isModelNotFound(error);
 }
 
 function isQuotaExceeded(error) {
@@ -104,6 +138,11 @@ async function callGeminiWithRetry(prompt, options = {}) {
           break;
         }
 
+        if (isModelNotFound(error)) {
+          console.warn(`[Gemini] Model ${model} không tồn tại/không hỗ trợ, thử model khác...`);
+          break;
+        }
+
         if (isQuotaExceeded(error) && attempt < retries - 1) {
           const waitMs = AI_CONFIG.quotaRetryDelayMs * (attempt + 1);
           console.warn(`[Gemini] 429 quota – đợi ${waitMs}ms rồi thử lại...`);
@@ -138,7 +177,12 @@ function mapGeminiError(error) {
   }
 
   if (isModelAccessDenied(error)) {
-    wrapped.message = 'Model Gemini không khả dụng. Đặt GEMINI_MODEL=gemini-2.0-flash-lite trong .env';
+    const message = String(error?.message || '').toLowerCase();
+    if (message.includes('leaked')) {
+      wrapped.message = 'API key Gemini bị Google đánh dấu leaked. Tạo key mới tại Google AI Studio và cập nhật GEMINI_API_KEY, sau đó restart backend.';
+    } else {
+      wrapped.message = 'Model Gemini không khả dụng với API key hiện tại. Kiểm tra GEMINI_MODEL và GEMINI_API_KEY.';
+    }
     wrapped.status = 503;
     return wrapped;
   }
@@ -231,9 +275,131 @@ Trả lời ngắn gọn:`;
     || 'Xin lỗi, mình chưa thể trả lời câu hỏi này. Bạn thử hỏi lại nhé!';
 }
 
+const FOOD_RECOGNITION_PROMPT = `Bạn là hệ thống nhận diện thực phẩm/nguyên liệu thông minh. Hãy phân tích ảnh này (có thể là hóa đơn, bao bì sản phẩm, ảnh thực phẩm thực tế, hoặc ảnh cửa hàng) và trích xuất TOÀN BỘ các mặt hàng thực phẩm/đồ uống.
+
+Nhận diện TẤT CẢ các loại bao gồm: rau củ quả, thịt cá hải sản, mì tôm/mì gói, đồ ăn liền, bánh kẹo, sữa và chế phẩm, đồ uống (cà phê, trà, nước ngọt), gia vị, dầu ăn, ngũ cốc, đồ khô, đồ đông lạnh, snack, và mọi loại thực phẩm khác.
+
+Trả về JSON với định dạng CHÍNH XÁC là một MẢNG các object (không có text khác ngoài JSON):
+[{"name": "Tên hiển thị chi tiết (vd: Quả dưa leo, Sữa chua Vinamilk 100g)", "searchKeyword": "Danh từ gốc siêu ngắn gọn (chỉ 1-2 từ, không tính từ/trạng thái) để tìm kiếm (vd: Rong biển, Dưa leo, Cà phê)", "generalCategory": "Danh mục chung tiếng Việt để dự phòng (vd: Đồ khô, Rau xanh, Gia vị)", "quantity": số_lượng_hoặc_null, "unit": "đơn vị (cái/gói/kg/l/hộp...)", "purchaseDate": "YYYY-MM-DD nếu có trên hóa đơn, nếu không thì null"}]
+
+Lưu ý:
+- Nếu là hóa đơn: trích xuất tất cả mặt hàng thực phẩm trong đó
+- Nếu là ảnh sản phẩm/bao bì: nhận diện sản phẩm đó
+- Nếu là ảnh thực phẩm thực tế: nhận diện loại thực phẩm
+- Trả về mảng JSON hợp lệ, không thêm markdown hay text giải thích`;
+
+function normalizeRecognitionItems(parsed) {
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (parsed && Array.isArray(parsed.items)) {
+    return parsed.items;
+  }
+  if (parsed && Array.isArray(parsed.ingredients)) {
+    return parsed.ingredients;
+  }
+  if (parsed && typeof parsed === 'object' && parsed.name) {
+    return [parsed];
+  }
+  return [];
+}
+
+async function generateVisionWithModel(client, model, prompt, imagePayload, responseMimeType) {
+  await waitForGlobalCooldown();
+  const response = await client.models.generateContent({
+    model,
+    contents: [
+      prompt,
+      imagePayload,
+    ],
+    config: responseMimeType ? { responseMimeType } : undefined,
+  });
+  lastGeminiCallAt = Date.now();
+  return response.text;
+}
+
+async function recognizeFoodImage(imageBase64, mimeType = 'image/jpeg') {
+  const client = getClient();
+  let cleanBase64 = imageBase64;
+  let resolvedMimeType = mimeType;
+
+  if (String(imageBase64).startsWith('data:')) {
+    const parts = String(imageBase64).split(';');
+    resolvedMimeType = parts[0].split(':')[1] || resolvedMimeType;
+    cleanBase64 = parts[1].split(',')[1];
+  }
+
+  const imagePayload = {
+    inlineData: {
+      data: cleanBase64,
+      mimeType: resolvedMimeType,
+    },
+  };
+
+  const models = VISION_MODEL_FALLBACK_CHAIN.length
+    ? VISION_MODEL_FALLBACK_CHAIN
+    : [AI_CONFIG.model];
+
+  let lastError = null;
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < AI_CONFIG.maxRetries; attempt += 1) {
+      try {
+        const text = await generateVisionWithModel(
+          client,
+          model,
+          FOOD_RECOGNITION_PROMPT,
+          imagePayload,
+          'application/json',
+        );
+        const parsed = extractJson(text);
+        const items = normalizeRecognitionItems(parsed);
+        if (!items.length) {
+          console.warn(`[Gemini Vision] Model ${model} trả về JSON rỗng:`, String(text || '').slice(0, 200));
+          const error = new Error('AI không nhận diện được nguyên liệu trong ảnh');
+          error.status = 422;
+          throw error;
+        }
+        console.log(`[Gemini Vision] Nhận diện thành công bằng ${model}, ${items.length} mục`);
+        return items;
+      } catch (error) {
+        lastError = error;
+
+        if (shouldTryNextModel(error)) {
+          console.warn(`[Gemini Vision] Model ${model} không dùng được (${error.status || 'n/a'}), thử model khác...`);
+          break;
+        }
+
+        if (isQuotaExceeded(error) && attempt < AI_CONFIG.maxRetries - 1) {
+          const waitMs = AI_CONFIG.quotaRetryDelayMs * (attempt + 1);
+          console.warn(`[Gemini Vision] 429 quota – đợi ${waitMs}ms rồi thử lại...`);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+
+        const isRetryable = error.status === 503;
+        if (isRetryable && attempt < AI_CONFIG.maxRetries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, AI_CONFIG.retryDelayMs * (attempt + 1)));
+          continue;
+        }
+
+        if (error.status === 422) {
+          break;
+        }
+
+        console.warn(`[Gemini Vision] Model ${model} lỗi:`, error.message);
+        break;
+      }
+    }
+  }
+
+  throw mapGeminiError(lastError || new Error('Không thể gọi Gemini Vision API'));
+}
+
 module.exports = {
   analyzeIntent,
   generateResponse,
+  recognizeFoodImage,
   extractJson,
   isQuotaExceeded,
   mapGeminiError,

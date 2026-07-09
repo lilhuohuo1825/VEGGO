@@ -1,6 +1,7 @@
 package com.veggo.app.adapter;
 
 import android.graphics.Color;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,9 +24,16 @@ import java.util.Locale;
 
 public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransactionAdapter.ViewHolder> {
     private final List<WalletTransactionDto> transactions;
+    private final ReadState readState;
 
-    public WalletTransactionAdapter(List<WalletTransactionDto> transactions) {
+    public interface ReadState {
+        boolean isUnread(WalletTransactionDto tx);
+        void markRead(WalletTransactionDto tx);
+    }
+
+    public WalletTransactionAdapter(List<WalletTransactionDto> transactions, ReadState readState) {
         this.transactions = transactions;
+        this.readState = readState;
     }
 
     @NonNull
@@ -61,6 +70,14 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
 
         holder.imgIcon.setImageResource(iconRes);
 
+        boolean unread = readState != null && readState.isUnread(tx);
+        if (holder.card != null) {
+            holder.card.setCardBackgroundColor(ContextCompat.getColor(
+                    holder.itemView.getContext(),
+                    unread ? R.color.primary_bg : R.color.background_main
+            ));
+        }
+
         if (amount >= 0) {
             holder.tvAmount.setText("+" + formatted);
             holder.tvAmount.setTextColor(Color.parseColor("#2E7D32")); // Green
@@ -72,6 +89,13 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
             holder.imgIcon.setBackgroundTintList(ContextCompat.getColorStateList(holder.itemView.getContext(), R.color.danger_bg));
             holder.imgIcon.setImageTintList(ContextCompat.getColorStateList(holder.itemView.getContext(), R.color.danger_main));
         }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (readState != null) {
+                readState.markRead(tx);
+                notifyItemChanged(holder.getBindingAdapterPosition());
+            }
+        });
     }
 
     @Override
@@ -106,6 +130,7 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
+        public final CardView card;
         public final TextView tvTitle;
         public final TextView tvDate;
         public final TextView tvAmount;
@@ -113,6 +138,7 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            card = itemView.findViewById(R.id.cardTxItem);
             tvTitle = itemView.findViewById(R.id.tvTxTitle);
             tvDate = itemView.findViewById(R.id.tvTxDate);
             tvAmount = itemView.findViewById(R.id.tvTxAmount);

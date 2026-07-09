@@ -1,7 +1,6 @@
 package com.veggo.app.presentation.community;
 
 import android.app.Dialog;
-import android.graphics.Bitmap;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -16,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -29,6 +29,7 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.core.utils.ImageCompressor;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityCookbookEntity;
@@ -67,7 +68,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
     @Nullable
     private File pendingAvatarFile;
     private ActivityResultLauncher<String> galleryPicker;
-    private ActivityResultLauncher<Void> cameraPicker;
+    private CameraCaptureHelper cameraCaptureHelper;
     private final List<CommunityRecipeEntity> chefRecipes = new ArrayList<>();
     private final List<CommunityCookbookEntity> cookbooks = new ArrayList<>();
 
@@ -121,7 +122,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
 
     private void setupAvatarPickers() {
         galleryPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onGalleryImageSelected);
-        cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicturePreview(), this::onCameraImageSelected);
+        cameraCaptureHelper = new CameraCaptureHelper(this);
     }
 
     @Override
@@ -259,7 +260,17 @@ public class CommunityProfileActivity extends AppCompatActivity {
 
         dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
             dialog.dismiss();
-            cameraPicker.launch(null);
+            cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+                @Override
+                public void onImageCaptured(@NonNull Uri imageUri) {
+                    onCameraImageCaptured(imageUri);
+                }
+
+                @Override
+                public void onPermissionDenied() {
+                    Toast.makeText(CommunityProfileActivity.this, R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();
@@ -278,13 +289,10 @@ public class CommunityProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void onCameraImageSelected(@Nullable Bitmap bitmap) {
-        if (bitmap == null) {
-            return;
-        }
+    private void onCameraImageCaptured(@NonNull Uri uri) {
         try {
-            pendingAvatarFile = ImageCompressor.compressToJpeg(this, bitmap);
-            previewSelectedAvatar(bitmap);
+            pendingAvatarFile = ImageCompressor.compressToJpeg(this, uri);
+            previewSelectedAvatar(uri);
             uploadSelectedAvatar();
         } catch (IOException exception) {
             Toast.makeText(this, "Không thể xử lý ảnh đã chụp", Toast.LENGTH_SHORT).show();

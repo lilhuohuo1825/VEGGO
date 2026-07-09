@@ -131,7 +131,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                     listener.onProductClick(product);
                 }
             });
-            binding.btnAddProduct.setOnClickListener(v -> {
+            binding.btnAddProduct.getRoot().setOnClickListener(v -> {
                 if (addProductClickListener != null) {
                     addProductClickListener.onAddProductClick(product);
                 } else if (listener != null) {

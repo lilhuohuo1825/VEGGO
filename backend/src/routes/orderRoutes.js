@@ -201,12 +201,40 @@ const attachPaymentStatus = (order) => {
   return order;
 };
 
-const attachOrderDetails = async (orders) => {
+const attachOrderDetails = async (orders, { lite = false } = {}) => {
   const orderIds = orders.map(o => o.OrderID).filter(Boolean);
+  const projection = lite
+    ? {
+        OrderID: 1,
+        shippingInfo: 1,
+        promotion_id: 1,
+        shippingPromotionId: 1,
+        shipping_promotion_id: 1,
+        TotalCarbonEmission: 1,
+        CarbonPointEarned: 1,
+        'items.sku': 1,
+        'items.SKU': 1,
+        'items.product_id': 1,
+        'items.productId': 1,
+        'items.ProductID': 1,
+        'items.quantity': 1,
+        'items.qty': 1,
+        'items.Quantity': 1,
+        'items.price': 1,
+        'items.salePrice': 1,
+        'items.sale_price': 1,
+        'items.ProductPrice': 1,
+        'items.base_price': 1,
+        'items.basePrice': 1,
+        'items.name': 1,
+        'items.product_name': 1,
+        'items.ProductName': 1,
+      }
+    : undefined;
   const details = orderIds.length
     ? await mongoose.connection.db
       .collection('order_details')
-      .find({ OrderID: { $in: orderIds } })
+      .find({ OrderID: { $in: orderIds } }, projection ? { projection } : undefined)
       .toArray()
     : [];
 
@@ -230,27 +258,71 @@ const attachOrderDetails = async (orders) => {
   });
 };
 
+let ordersListCache = null;
+let ordersListCacheTime = 0;
+const ORDERS_LIST_CACHE_MS = 10000;
+
+function invalidateOrdersListCache() {
+  ordersListCache = null;
+  ordersListCacheTime = 0;
+}
+
 // Get all orders (active)
 router.get('/', asyncHandler(async (req, res) => {
+  const lite = req.query.lite === 'true';
+  const cacheKey = lite ? 'lite' : 'full';
+  const now = Date.now();
+
+  if (
+    ordersListCache
+    && ordersListCache.key === cacheKey
+    && (now - ordersListCacheTime < ORDERS_LIST_CACHE_MS)
+  ) {
+    return res.json(ordersListCache.data);
+  }
+
+  const orderProjection = lite
+    ? {
+        OrderID: 1,
+        CustomerID: 1,
+        status: 1,
+        paymentStatus: 1,
+        paymentMethod: 1,
+        totalAmount: 1,
+        subtotal: 1,
+        shippingFee: 1,
+        shippingDiscount: 1,
+        discount: 1,
+        cancelReason: 1,
+        returnReason: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        routes: 1,
+      }
+    : undefined;
+
   const orders = await mongoose.connection.db
     .collection('orders')
-    .find({ status: { $ne: 'deleted' } })
+    .find({ status: { $ne: 'deleted' } }, orderProjection ? { projection: orderProjection } : undefined)
     .sort({ createdAt: -1 })
     .toArray();
 
-  const mapped = await attachOrderDetails(orders);
+  const mapped = await attachOrderDetails(orders, { lite });
+  ordersListCache = { key: cacheKey, data: mapped };
+  ordersListCacheTime = now;
 
   res.json(mapped);
 }));
 
 // Get orders by CustomerID (explicit route used by admin detail)
 router.get('/customer/:customerId', asyncHandler(async (req, res) => {
+  const lite = req.query.lite === 'true';
   const orders = await mongoose.connection.db
     .collection('orders')
     .find({ CustomerID: req.params.customerId, status: { $ne: 'deleted' } })
     .sort({ createdAt: -1 })
     .toArray();
-  res.json({ success: true, orders: await attachOrderDetails(orders) });
+  res.json({ success: true, orders: await attachOrderDetails(orders, { lite }) });
 }));
 
 // Get order details by Specific OrderID or ID
@@ -671,6 +743,7 @@ router.post('/', asyncHandler(async (req, res) => {
   await recordPromotionUsage(orderDetailDoc.promotion_id, orderId, customerId);
   await recordPromotionUsage(orderDetailDoc.shippingPromotionId, orderId, customerId);
   await refreshCustomerMetricsAfterOrderChange(customerId, orderId, isDeliveredStatus(status));
+  invalidateOrdersListCache();
 
   res.status(201).json({
     _id: result.insertedId,
@@ -862,8 +935,6 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
     }
   }
 
-  await refreshCustomerMetricsAfterOrderChange(result.CustomerID, result.OrderID, isDeliveredStatus(nextStatus));
-
   await createOrderNotification(
     result.CustomerID,
     result.OrderID,
@@ -883,6 +954,18 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
     });
   }
 
+  // Chỉ recalc spending/carbon khi trạng thái thực sự ảnh hưởng metrics (completed/unreview/reviewed/returned).
+  // Admin workflow (pending→shipping→delivered, returning, rejected…) không cần quét toàn bộ products/orders.
+  const METRIC_REFRESH_STATUSES = new Set(['completed', 'unreview', 'reviewed', 'returned']);
+  if (METRIC_REFRESH_STATUSES.has(nextStatus)) {
+    await refreshCustomerMetricsAfterOrderChange(
+      result.CustomerID,
+      result.OrderID,
+      isDeliveredStatus(nextStatus)
+    );
+  }
+
+  invalidateOrdersListCache();
   res.json({ orderId, status: nextStatus, message: 'Order status updated' });
 }));
 
@@ -917,6 +1000,7 @@ router.patch('/:orderId/payment-status', asyncHandler(async (req, res) => {
     'payment'
   );
 
+  invalidateOrdersListCache();
   res.json({ orderId, paymentStatus, message: 'Payment status updated' });
 }));
 
@@ -1033,6 +1117,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
       statusNotificationBody(updateData.status, updatedOrder.OrderID)
     );
   }
+  invalidateOrdersListCache();
   res.json(updatedOrder);
 }));
 
@@ -1059,6 +1144,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   await mongoose.connection.db.collection('orders').updateOne(query, {
     $set: { status: 'deleted', updatedAt: new Date() }
   });
+  invalidateOrdersListCache();
   res.json({ success: true });
 }));
 

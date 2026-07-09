@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -28,7 +29,10 @@ import com.veggo.app.presentation.community.CommunityHomeActivity;
 import com.veggo.app.presentation.home.HomeFragment;
 import com.veggo.app.presentation.order.OrderHistoryFragment;
 import com.veggo.app.presentation.profile.ProfileFragment;
+import com.veggo.app.core.utils.CameraCaptureHelper;
+import com.veggo.app.core.utils.KeyboardUtils;
 import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
+import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.profile.PostNotificationsActivity;
 import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
 import com.veggo.app.presentation.support.SupportChatActivity;
@@ -51,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private Tab currentTab;
     private boolean supportBubbleInitialized = false;
     private SupportApi supportApi;
-    private android.net.Uri cameraImageUri = null;
+    private CameraCaptureHelper cameraCaptureHelper;
     private boolean isScanReceiptMode = true;
     private View currentNotificationAlert;
     private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
@@ -69,36 +73,10 @@ public class MainActivity extends AppCompatActivity {
                 // Đã xử lý kết quả xin quyền thông báo, không cần làm gì thêm
             });
 
-    private final androidx.activity.result.ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
-            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && cameraImageUri != null) {
-                    Intent intent = new Intent(this, AddFridgeIngredientActivity.class);
-                    if (isScanReceiptMode) {
-                        intent.putExtra("EXTRA_AI_IMAGE_URI", cameraImageUri.toString());
-                    } else {
-                        intent.putExtra("EXTRA_AI_INGREDIENT_URI", cameraImageUri.toString());
-                    }
-                    intent.putExtra("EXTRA_FROM_NAVBAR", true);
-                    startActivity(intent);
-                }
-            }
-    );
-
-    private final androidx.activity.result.ActivityResultLauncher<String[]> cameraPermLauncher = registerForActivityResult(
-            new androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
-            perms -> {
-                if (Boolean.TRUE.equals(perms.get(android.Manifest.permission.CAMERA))) {
-                    launchCamera();
-                } else {
-                    android.widget.Toast.makeText(this, "Cần cấp quyền camera để chụp ảnh", android.widget.Toast.LENGTH_SHORT).show();
-                }
-            }
-    );
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        cameraCaptureHelper = new CameraCaptureHelper(this);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -120,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
                 setBottomNavVisible(true);
+                restoreBaseTabFragment();
             }
             updateSupportChatBubbleVisibility();
         });
@@ -137,8 +116,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             Intent intent = getIntent();
-            if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
-                openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
+            if (intent.hasExtra(EXTRA_CATEGORY_ID) || intent.hasExtra(EXTRA_SUBCATEGORY_ID)) {
+                openCategoryFromIntent(intent);
             } else {
                 boolean fromExternal = intent.getBooleanExtra("from_external", false);
                 openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
@@ -463,8 +442,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (intent.hasExtra(EXTRA_CATEGORY_ID)) {
-            openCategoryDetail(intent.getStringExtra(EXTRA_CATEGORY_ID), intent.getStringExtra(EXTRA_SUBCATEGORY_ID));
+        if (intent.hasExtra(EXTRA_CATEGORY_ID) || intent.hasExtra(EXTRA_SUBCATEGORY_ID)) {
+            openCategoryFromIntent(intent);
         } else {
             boolean fromExternal = intent.getBooleanExtra("from_external", false);
             openTab(tabFromNavItem(intent.getIntExtra(EXTRA_SELECTED_NAV_ITEM, R.id.nav_home)),
@@ -647,6 +626,56 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_CATEGORY_ID = "extra_category_id";
     public static final String EXTRA_SUBCATEGORY_ID = "extra_subcategory_id";
+
+    private void openCategoryFromIntent(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        String categoryId = intent.getStringExtra(EXTRA_CATEGORY_ID);
+        String subcategoryId = intent.getStringExtra(EXTRA_SUBCATEGORY_ID);
+        if (categoryId == null && subcategoryId == null) {
+            return;
+        }
+        ensureHomeTabLoaded();
+        getSupportFragmentManager().executePendingTransactions();
+        openCategoryDetail(categoryId, subcategoryId);
+        intent.removeExtra(EXTRA_CATEGORY_ID);
+        intent.removeExtra(EXTRA_SUBCATEGORY_ID);
+    }
+
+    private void ensureHomeTabLoaded() {
+        Fragment homeFragment = getSupportFragmentManager().findFragmentByTag("HOME_FRAGMENT");
+        if (homeFragment == null || !(homeFragment instanceof HomeFragment) || currentTab != Tab.HOME) {
+            openTab(Tab.HOME, true);
+        }
+    }
+
+    private void restoreBaseTabFragment() {
+        FragmentManager fm = getSupportFragmentManager();
+        Tab tab = currentTab != null ? currentTab : Tab.HOME;
+        String tag = tab == Tab.HOME ? "HOME_FRAGMENT" : tab.name();
+        Fragment baseFragment = fm.findFragmentByTag(tag);
+        if (baseFragment == null) {
+            if (tab == Tab.HOME) {
+                openTab(Tab.HOME, true);
+            }
+            return;
+        }
+
+        androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+        for (Fragment fragment : fm.getFragments()) {
+            if (fragment != null
+                    && fragment.getId() == R.id.mainFragmentContainer
+                    && fragment.isVisible()
+                    && fragment != baseFragment) {
+                ft.hide(fragment);
+            }
+        }
+        if (baseFragment.isHidden()) {
+            ft.show(baseFragment);
+        }
+        ft.commit();
+    }
 
     public void openCategoryDetail(String categoryId, String subcategoryId) {
         Fragment fragment = new com.veggo.app.presentation.category.CategoryDetailFragment();
@@ -852,6 +881,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void openScanScreen() {
+        if (!new AppPreferences(this).isLoggedIn()) {
+            LoginRequiredActivity.open(this, "quét sản phẩm");
+            return;
+        }
+
         android.app.Dialog dialog = new android.app.Dialog(this);
         dialog.setContentView(R.layout.dialog_scan_options);
         if (dialog.getWindow() != null) {
@@ -862,39 +896,42 @@ public class MainActivity extends AppCompatActivity {
         dialog.findViewById(R.id.dialogOptionScanReceipt).setOnClickListener(v -> {
             dialog.dismiss();
             isScanReceiptMode = true;
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                launchCamera();
-            } else {
-                cameraPermLauncher.launch(new String[]{android.Manifest.permission.CAMERA});
-            }
+            launchScanCamera();
         });
 
         dialog.findViewById(R.id.dialogOptionScanIngredient).setOnClickListener(v -> {
             dialog.dismiss();
             isScanReceiptMode = false;
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                launchCamera();
-            } else {
-                cameraPermLauncher.launch(new String[]{android.Manifest.permission.CAMERA});
-            }
+            launchScanCamera();
         });
 
         dialog.show();
     }
 
-    private void launchCamera() {
-        try {
-            String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
-            java.io.File storageDir = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES);
-            java.io.File photoFile = java.io.File.createTempFile("FRIDGE_" + timeStamp + "_", ".jpg", storageDir);
-            cameraImageUri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
-            Intent intent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-            intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraImageUri);
-            cameraLauncher.launch(intent);
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-            android.widget.Toast.makeText(this, "Không thể mở camera", android.widget.Toast.LENGTH_SHORT).show();
-        }
+    private void launchScanCamera() {
+        cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+            @Override
+            public void onImageCaptured(@NonNull android.net.Uri imageUri) {
+                Intent intent = new Intent(MainActivity.this, AddFridgeIngredientActivity.class);
+                if (isScanReceiptMode) {
+                    intent.putExtra("EXTRA_AI_IMAGE_URI", imageUri.toString());
+                } else {
+                    intent.putExtra("EXTRA_AI_INGREDIENT_URI", imageUri.toString());
+                }
+                intent.putExtra("EXTRA_FROM_NAVBAR", true);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onPermissionDenied() {
+                android.widget.Toast.makeText(
+                        MainActivity.this,
+                        R.string.camera_permission_required,
+                        android.widget.Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
     }
 
     public void openCommunityScreen() {
@@ -934,5 +971,11 @@ public class MainActivity extends AppCompatActivity {
         COMMUNITY,
         ORDERS,
         ACCOUNT
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        KeyboardUtils.handleActivityTouchToHideKeyboard(this, event);
+        return super.dispatchTouchEvent(event);
     }
 }

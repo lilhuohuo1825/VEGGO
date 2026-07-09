@@ -1562,6 +1562,51 @@ export class OrderDetail implements OnInit, OnDestroy {
   }
 
   /**
+   * Cập nhật UI ngay sau khi đổi trạng thái, không chờ reload full chain.
+   */
+  private applyStatusUpdateLocally(
+    nextStatus: string,
+    successMessage: string,
+    extra: { rejectReason?: string; navigateAfter?: boolean } = {}
+  ): void {
+    if (this.order) {
+      this.order.status = nextStatus;
+      if (extra.rejectReason) {
+        this.order.rejectReason = extra.rejectReason;
+      }
+      this.order.updatedAt = new Date().toISOString();
+    }
+
+    this.transformOrderDataFromMongoDB();
+
+    if (extra.navigateAfter !== false) {
+      this.shouldNavigateAfterPopup = true;
+    }
+    this.displayPopup(successMessage, 'success');
+
+    // Đồng bộ server ở background — chỉ fetch 1 order, không reload users/stats
+    this.reloadOrderDetailFast();
+  }
+
+  /**
+   * Fetch lại 1 order (không gọi getUsers / getOrdersByCustomerId).
+   */
+  private reloadOrderDetailFast(): void {
+    if (this.isNewOrder) return;
+
+    const orderIdForApi = this.orderId.replace('VG', '');
+    this.apiService.getOrderById(orderIdForApi).subscribe({
+      next: (order) => {
+        this.order = order;
+        this.transformOrderDataFromMongoDB();
+      },
+      error: (error: any) => {
+        console.warn('⚠️ Background order refresh failed:', error);
+      },
+    });
+  }
+
+  /**
    * Confirm order
    */
   confirmOrder(): void {
@@ -1581,11 +1626,10 @@ export class OrderDetail implements OnInit, OnDestroy {
     this.apiService.updateOrderStatus(orderID, 'shipping').subscribe({
       next: (response: any) => {
         console.log('✅ Order status updated successfully:', response);
-        // Reload order data to get latest status from MongoDB
-        this.loadOrderDetail();
-        // Set flag to navigate after popup closes
-        this.shouldNavigateAfterPopup = true;
-        this.displayPopup('Đơn hàng đã được xác nhận và chuyển sang đang giao!', 'success');
+        this.applyStatusUpdateLocally(
+          'shipping',
+          'Đơn hàng đã được xác nhận và chuyển sang đang giao!'
+        );
       },
       error: (error: any) => {
         console.error('❌ Error updating order status:', error);
@@ -1617,11 +1661,7 @@ export class OrderDetail implements OnInit, OnDestroy {
     this.apiService.updateOrderStatus(orderID, 'delivered').subscribe({
       next: (response: any) => {
         console.log('✅ Order status updated to delivered successfully:', response);
-        // Reload order data to get latest status from MongoDB
-        this.loadOrderDetail();
-        // Set flag to navigate after popup closes
-        this.shouldNavigateAfterPopup = true;
-        this.displayPopup('Đã xác nhận đơn hàng đã giao thành công!', 'success');
+        this.applyStatusUpdateLocally('delivered', 'Đã xác nhận đơn hàng đã giao thành công!');
       },
       error: (error: any) => {
         console.error('❌ Error updating order status to delivered:', error);
@@ -1656,13 +1696,9 @@ export class OrderDetail implements OnInit, OnDestroy {
     this.apiService.updateOrderStatus(orderID, nextStatus as any).subscribe({
       next: (response: any) => {
         console.log(`✅ Order status updated to ${nextStatus}:`, response);
-        // Reload order data to get latest status from MongoDB
-        this.loadOrderDetail();
-        // Set flag to navigate after popup closes
-        this.shouldNavigateAfterPopup = true;
-        this.displayPopup(
-          'Đã chấp nhận yêu cầu trả hàng. Đơn hàng đang trong quá trình trả hàng.',
-          'success'
+        this.applyStatusUpdateLocally(
+          nextStatus,
+          'Đã chấp nhận yêu cầu trả hàng. Đơn hàng đang trong quá trình trả hàng.'
         );
       },
       error: (error: any) => {
@@ -1700,13 +1736,9 @@ export class OrderDetail implements OnInit, OnDestroy {
     this.apiService.updateOrderStatus(orderID, nextStatus as any).subscribe({
       next: (response: any) => {
         console.log(`✅ Order status updated to ${nextStatus}:`, response);
-        // Reload order data to get latest status from MongoDB
-        this.loadOrderDetail();
-        // Set flag to navigate after popup closes
-        this.shouldNavigateAfterPopup = true;
-        this.displayPopup(
-          'Đã hoàn tất trả hàng/hoàn tiền! Đơn hàng đã được xử lý xong.',
-          'success'
+        this.applyStatusUpdateLocally(
+          nextStatus,
+          'Đã hoàn tất trả hàng/hoàn tiền! Đơn hàng đã được xử lý xong.'
         );
       },
       error: (error: any) => {
@@ -1807,13 +1839,10 @@ export class OrderDetail implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         console.log(`✅ Order status updated to ${nextStatus} (refund rejected):`, response);
-        // Close reject popup
         this.closeRejectRefundPopup();
-        // Reload order data to get latest status from MongoDB
-        this.loadOrderDetail();
-        // Set flag to navigate after popup closes
-        this.shouldNavigateAfterPopup = true;
-        this.displayPopup('Đã từ chối yêu cầu trả hàng/hoàn tiền!', 'success');
+        this.applyStatusUpdateLocally('rejected', 'Đã từ chối yêu cầu trả hàng/hoàn tiền!', {
+          rejectReason: this.getRejectReasonLabel(this.selectedRejectReason),
+        });
       },
       error: (error: any) => {
         console.error('❌ Error rejecting refund:', error);

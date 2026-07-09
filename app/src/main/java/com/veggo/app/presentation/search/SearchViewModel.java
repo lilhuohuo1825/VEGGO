@@ -6,6 +6,7 @@ import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
 import com.veggo.app.assets.AssetModels;
+import com.veggo.app.core.utils.TextSearchUtils;
 import com.veggo.app.domain.model.Product;
 import com.veggo.app.domain.repository.CategoryRepository;
 import com.veggo.app.domain.repository.ProductRepository;
@@ -60,15 +61,33 @@ public class SearchViewModel extends ViewModel {
         if (query == null || query.trim().isEmpty()) {
             featureResults.setValue(allFeatures);
         } else {
-            String lowerQuery = query.toLowerCase().trim();
             List<FeatureResult> filtered = new ArrayList<>();
             for (FeatureResult f : allFeatures) {
-                if (f.getName().toLowerCase().contains(lowerQuery)) {
+                if (TextSearchUtils.matches(f.getName(), query)) {
                     filtered.add(f);
                 }
             }
             featureResults.setValue(filtered);
         }
+    }
+
+    public List<AssetModels.Category> filterCategories(List<AssetModels.Category> categories, String query) {
+        if (categories == null || categories.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (query == null || query.trim().isEmpty()) {
+            return categories;
+        }
+        List<AssetModels.Category> filtered = new ArrayList<>();
+        for (AssetModels.Category category : categories) {
+            if (category == null) {
+                continue;
+            }
+            if (TextSearchUtils.matches(category.categoryName, query)) {
+                filtered.add(category);
+            }
+        }
+        return filtered;
     }
 
     public LiveData<List<Product>> getProductResults() {

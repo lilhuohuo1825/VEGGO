@@ -411,7 +411,7 @@ public class HomeViewModel extends ViewModel {
                 if (inst != null) {
                     String videoId = extractYoutubeId(dish.video);
                     String thumbnailUrl = videoId != null
-                            ? "https://img.youtube.com/vi/" + videoId + "/0.jpg" : null;
+                            ? "https://img.youtube.com/vi/" + videoId + "/mqdefault.jpg" : null;
                     recipeList.add(new Recipe(dish.id, inst.dishName, inst.cookingTime,
                             0, thumbnailUrl, countIngredients(dish.ingredients)));
                 }

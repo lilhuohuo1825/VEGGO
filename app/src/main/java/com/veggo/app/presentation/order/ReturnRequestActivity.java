@@ -18,11 +18,13 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.data.remote.api.OrderApi;
 import com.veggo.app.presentation.common.AssetScreenData;
 
@@ -46,7 +48,7 @@ public class ReturnRequestActivity extends BaseActivity {
     private LinearLayout evidenceContainer;
     private final List<ReturnEvidence> evidenceItems = new ArrayList<>();
     private ActivityResultLauncher<String> galleryPicker;
-    private ActivityResultLauncher<Void> cameraPicker;
+    private CameraCaptureHelper cameraCaptureHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +73,7 @@ public class ReturnRequestActivity extends BaseActivity {
 
     private void setupEvidencePickers() {
         galleryPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onEvidenceSelected);
-        cameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicturePreview(), this::onCameraEvidenceSelected);
+        cameraCaptureHelper = new CameraCaptureHelper(this);
     }
 
     private void bindOrderSummary() {
@@ -176,7 +178,17 @@ public class ReturnRequestActivity extends BaseActivity {
 
         dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(v -> {
             dialog.dismiss();
-            cameraPicker.launch(null);
+            cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+                @Override
+                public void onImageCaptured(@NonNull Uri imageUri) {
+                    onCameraEvidenceCaptured(imageUri);
+                }
+
+                @Override
+                public void onPermissionDenied() {
+                    Toast.makeText(ReturnRequestActivity.this, R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();
@@ -191,15 +203,12 @@ public class ReturnRequestActivity extends BaseActivity {
         renderEvidence();
     }
 
-    private void onCameraEvidenceSelected(Bitmap bitmap) {
-        if (bitmap == null || evidenceItems.size() >= 5) {
+    private void onCameraEvidenceCaptured(@NonNull Uri uri) {
+        if (evidenceItems.size() >= 5) {
             return;
         }
-        Uri uri = saveBitmapToCache(bitmap);
-        if (uri != null) {
-            evidenceItems.add(new ReturnEvidence(uri, "image/jpeg"));
-            renderEvidence();
-        }
+        evidenceItems.add(new ReturnEvidence(uri, "image/jpeg"));
+        renderEvidence();
     }
 
     private void updateEvidenceButton() {
@@ -307,19 +316,6 @@ public class ReturnRequestActivity extends BaseActivity {
                 retriever.release();
             } catch (Exception ignored) {
             }
-        }
-    }
-
-    private Uri saveBitmapToCache(Bitmap bitmap) {
-        try {
-            File file = new File(getCacheDir(), "return-evidence-" + System.currentTimeMillis() + ".jpg");
-            try (FileOutputStream outputStream = new FileOutputStream(file)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 88, outputStream);
-            }
-            return Uri.fromFile(file);
-        } catch (Exception exception) {
-            Toast.makeText(this, "Không thể xử lý ảnh đã chụp", Toast.LENGTH_SHORT).show();
-            return null;
         }
     }
 

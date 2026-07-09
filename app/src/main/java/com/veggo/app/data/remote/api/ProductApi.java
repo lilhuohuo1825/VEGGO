@@ -30,6 +30,12 @@ public interface ProductApi {
     @GET("products")
     Call<List<ProductDto>> getProducts(@Query("lite") String lite);
 
+    @GET("products/search")
+    Call<List<ProductDto>> searchProducts(
+            @Query("q") String query,
+            @Query("limit") int limit
+    );
+
     @GET("products/{id}")
     Call<ProductDto> getProductById(@Path("id") String productId);
 

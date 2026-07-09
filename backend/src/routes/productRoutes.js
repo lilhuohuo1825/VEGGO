@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
 const Product = require('../models/Product');
+const productService = require('../services/productService');
+const { escapeRegex, dedupeBySku } = require('../utils/productHelpers');
 
 const router = express.Router();
 
@@ -295,7 +297,6 @@ router.get('/', asyncHandler(async (req, res) => {
         reviewCount: 1,
         purchase_count: 1,
         soldCount: 1,
-        liked: 1,
         status: 1,
         isActive: 1,
         post_date: 1,
@@ -329,7 +330,10 @@ router.get('/', asyncHandler(async (req, res) => {
     }
   });
 
-  const flashSaleBySku = await getActiveFlashSaleBySku(products.map(product => product.sku));
+  // Flash-sale pricing is expensive (promotion_targets scan) and not needed for admin lite lists.
+  const flashSaleBySku = lite
+    ? new Map()
+    : await getActiveFlashSaleBySku(products.map(product => product.sku));
 
   const mappedProducts = products.map(product => {
     const priced = applyFlashSalePricing(product, flashSaleBySku.get(String(product.sku)));
@@ -409,6 +413,39 @@ router.get('/metadata/brands', asyncHandler(async (_req, res) => {
     .collection('products')
     .distinct('brand', { brand: { $nin: [null, ''] } });
   res.json({ success: true, data: brands.sort() });
+}));
+
+router.get('/search', asyncHandler(async (req, res) => {
+  const query = String(req.query.q || '').trim();
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+
+  if (!query) {
+    return res.json([]);
+  }
+
+  const [keywordProducts, categoryProducts] = await Promise.all([
+    productService.searchProducts(query, { limit }),
+    findProductsByCategoryKeyword(query, limit),
+  ]);
+
+  const merged = dedupeBySku([...keywordProducts, ...categoryProducts]).slice(0, limit);
+  const mappedProducts = merged.map((product) => {
+    const normalized = normalizeProduct({
+      ...product,
+      _id: product._id || product.id,
+      product_name: product.product_name || product.name,
+      name: product.name || product.product_name,
+      image: product.image,
+      imageUrl: product.imageUrl,
+    });
+    return {
+      ...normalized,
+      image: sanitizeListImage(product.image),
+      imageUrl: sanitizeListImage(product.imageUrl || normalized.imageUrl || firstImage(product.image)),
+    };
+  });
+
+  res.json(mappedProducts);
 }));
 
 router.get('/metadata/products', asyncHandler(async (_req, res) => {
@@ -646,6 +683,68 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
+async function findProductsByCategoryKeyword(keyword, limit = 50) {
+  const pattern = new RegExp(escapeRegex(keyword), 'i');
+  const categories = await mongoose.connection.db.collection('categories').find().toArray();
+  const categoryIds = new Set();
+  const subcategoryIds = new Set();
+
+  categories.forEach((category) => {
+    const categoryName = String(category.CategoryName || category.name || '').trim();
+    const categoryId = category.CategoryID || category.id || category._id?.toString();
+    if (categoryName && pattern.test(categoryName) && categoryId) {
+      categoryIds.add(String(categoryId));
+    }
+
+    if (Array.isArray(category.Subcategories)) {
+      category.Subcategories.forEach((subcategory) => {
+        const subcategoryName = String(subcategory.SubcategoryName || subcategory.name || '').trim();
+        const subcategoryId = subcategory.SubcategoryID || subcategory.id || subcategory._id?.toString();
+        if (subcategoryName && pattern.test(subcategoryName)) {
+          if (subcategoryId) {
+            subcategoryIds.add(String(subcategoryId));
+          }
+          if (categoryId) {
+            categoryIds.add(String(categoryId));
+          }
+        }
+      });
+    }
+  });
+
+  if (!categoryIds.size && !subcategoryIds.size) {
+    return [];
+  }
+
+  const matchConditions = [];
+  if (categoryIds.size) {
+    const ids = [...categoryIds];
+    matchConditions.push({ CategoryID: { $in: ids } });
+    matchConditions.push({ categoryId: { $in: ids } });
+  }
+  if (subcategoryIds.size) {
+    const ids = [...subcategoryIds];
+    matchConditions.push({ SubcategoryID: { $in: ids } });
+    matchConditions.push({ subcategoryId: { $in: ids } });
+  }
+
+  return mongoose.connection.db.collection('products')
+    .find({
+      $and: [
+        {
+          $or: [
+            { isActive: true },
+            { isActive: { $exists: false }, status: { $ne: 'Inactive' } },
+            { status: 'Active' },
+          ],
+        },
+        { $or: matchConditions },
+      ],
+    })
+    .limit(limit)
+    .toArray();
+}
 
 function normalizeProduct(product) {
   return {

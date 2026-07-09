@@ -16,6 +16,8 @@ import com.veggo.app.R;
 import com.veggo.app.core.notification.RecurringInAppNotificationStore;
 import com.veggo.app.core.preferences.AppPreferences;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
@@ -250,9 +252,14 @@ public class PostNotificationsActivity extends BaseActivity {
 
     private void addNotification(LayoutInflater inflater, LinearLayout list, PostNotificationItem item) {
         View itemView = inflater.inflate(R.layout.item_post_notification_like, list, false);
-        itemView.setBackgroundResource(item.unread
-                ? R.drawable.bg_post_notification_featured_card
-                : R.drawable.bg_post_notification_order_card);
+        CardView card = itemView.findViewById(R.id.postNotificationCard);
+        if (card != null) {
+            int color = ContextCompat.getColor(
+                    this,
+                    item.unread ? R.color.primary_bg : R.color.background_main
+            );
+            card.setCardBackgroundColor(color);
+        }
         ImageView icon = itemView.findViewById(R.id.postNotificationIcon);
         if (icon != null) {
             icon.setImageResource(item.iconResId);

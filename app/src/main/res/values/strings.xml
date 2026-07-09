@@ -438,6 +438,8 @@
     <string name="fridge_scan_fast">Scan nhanh đồ đã mua</string>
     <string name="fridge_scan_body">Quét hóa đơn hoặc mã sản phẩm để tự thêm nguyên liệu vào tủ.</string>
     <string name="fridge_open_camera">Mở camera</string>
+    <string name="camera_permission_required">Cần cấp quyền camera để chụp ảnh</string>
+    <string name="camera_open_failed">Không thể mở camera</string>
     <string name="fridge_manual_title">Nhập thủ công</string>
     <string name="fridge_name">Tên nguyên liệu</string>
     <string name="fridge_name_hint">Nhập tên nguyên liệu</string>

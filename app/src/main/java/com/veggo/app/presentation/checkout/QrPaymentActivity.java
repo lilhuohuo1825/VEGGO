@@ -13,6 +13,8 @@ import com.veggo.app.core.notification.EmulatorSmsSender;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.data.remote.api.CartApi;
 import com.veggo.app.data.remote.api.OrderApi;
+import com.veggo.app.presentation.common.AssetScreenData;
+import com.veggo.app.presentation.order.OrderDetailActivity;
 import com.veggo.app.presentation.order.RecurringOrderStore;
 
 import java.util.HashMap;
@@ -67,7 +69,7 @@ public class QrPaymentActivity extends BaseActivity {
         });
         btnConfirmPaid.setOnClickListener(v -> confirmBankTransferPaid());
         btnContinueShopping.setOnClickListener(v -> openMainTab(R.id.nav_home, true));
-        btnTrackOrder.setOnClickListener(v -> openMainTab(R.id.nav_orders, false));
+        btnTrackOrder.setOnClickListener(v -> openOrderDetail());
     }
 
     private void confirmBankTransferPaid() {
@@ -174,6 +176,18 @@ public class QrPaymentActivity extends BaseActivity {
                 // The order is already created; cart cleanup can be retried from backend sync later.
             }
         }).start();
+    }
+
+    private void openOrderDetail() {
+        String orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
+        if (orderId == null || orderId.trim().isEmpty()) {
+            openMainTab(R.id.nav_orders, false);
+            return;
+        }
+        Intent intent = new Intent(this, OrderDetailActivity.class);
+        intent.putExtra(AssetScreenData.EXTRA_ORDER_ID, orderId);
+        startActivity(intent);
+        finish();
     }
 
     private void openMainTab(int navItemId, boolean scrollHomeProducts) {

@@ -628,12 +628,37 @@ function normalizeTasteAlertItem(item) {
 // --- Admin Customer Management Endpoints ---
 
 // Get all users (excluding deactivated ones)
+let usersListCache = null;
+let usersListCacheTime = 0;
+const USERS_LIST_CACHE_MS = 15000;
+
 router.get('/', asyncHandler(async (req, res) => {
+  const now = Date.now();
+  if (usersListCache && (now - usersListCacheTime < USERS_LIST_CACHE_MS)) {
+    return res.json(usersListCache);
+  }
+
   const users = await mongoose.connection.db
     .collection('users')
-    .find({ isActive: { $ne: false } })
+    .find(
+      { isActive: { $ne: false } },
+      {
+        projection: {
+          Password: 0,
+          password: 0,
+          tastePreferences: 0,
+          TastePreferences: 0,
+          FcmTokens: 0,
+          fcmTokens: 0,
+          deviceTokens: 0,
+        },
+      }
+    )
     .sort({ RegisterDate: -1 })
     .toArray();
+
+  usersListCache = users;
+  usersListCacheTime = now;
   res.json(users);
 }));
 

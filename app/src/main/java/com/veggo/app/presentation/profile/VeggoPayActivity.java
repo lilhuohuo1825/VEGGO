@@ -28,9 +28,11 @@ import java.util.concurrent.Executor;
 import com.veggo.app.adapter.BankSpinnerAdapter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.preferences.WalletTransactionReadState;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.data.remote.dto.WalletDto;
+import com.veggo.app.data.remote.dto.WalletTransactionDto;
 import com.veggo.app.data.repository.WalletRepository;
 
 import java.util.List;
@@ -40,14 +42,16 @@ public class VeggoPayActivity extends BaseActivity {
     private TextView tvLinkedBanksHeader;
     private LinearLayout llLinkedBanks;
     private View nsvLinkedBanks;
+    private View cardLinkedBanks;
     private WalletRepository walletRepository;
     private String customerId;
     private List<WalletDto.LinkedBankDto> linkedBanksList;
 
-    // Show/Hide balance variables
-    private boolean isBalanceHidden = false;
+    // Show/Hide balance variables — hidden by default when entering the wallet
+    private boolean isBalanceHidden = true;
     private double currentBalance = 0;
     private ImageView btnToggleBalance;
+    private TextView tvNotificationBadge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +65,9 @@ public class VeggoPayActivity extends BaseActivity {
         tvLinkedBanksHeader = findViewById(R.id.tvLinkedBanksHeader);
         llLinkedBanks = findViewById(R.id.llLinkedBanks);
         nsvLinkedBanks = findViewById(R.id.nsvLinkedBanks);
+        cardLinkedBanks = findViewById(R.id.cardLinkedBanks);
         btnToggleBalance = findViewById(R.id.btnToggleBalance);
+        tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
 
         walletRepository = AppModule.provideWalletRepository();
         customerId = new AppPreferences(this).getCustomerId();
@@ -69,13 +75,8 @@ public class VeggoPayActivity extends BaseActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnDeposit).setOnClickListener(v -> showDepositDialog());
         findViewById(R.id.btnLinkBank).setOnClickListener(v -> showLinkBankDialog());
-        TextView tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
-        findViewById(R.id.btnHistory).setOnClickListener(v -> {
-            if (tvNotificationBadge != null) {
-                tvNotificationBadge.setVisibility(View.GONE);
-            }
-            startActivity(new Intent(this, VeggoPayHistoryActivity.class));
-        });
+        findViewById(R.id.btnHistory).setOnClickListener(v ->
+                startActivity(new Intent(this, VeggoPayHistoryActivity.class)));
 
         findViewById(R.id.btnScanQr).setOnClickListener(v -> startActivity(new Intent(this, VeggoPayScanActivity.class)));
         findViewById(R.id.btnTransfer).setOnClickListener(v -> startActivity(new Intent(this, VeggoPayTransferActivity.class)));
@@ -111,6 +112,42 @@ public class VeggoPayActivity extends BaseActivity {
         }
 
         checkWalletStatus();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshUnreadBadge();
+    }
+
+    private void refreshUnreadBadge() {
+        if (TextUtils.isEmpty(customerId) || walletRepository == null) {
+            updateUnreadBadgeUi(0);
+            return;
+        }
+        walletRepository.getTransactions(customerId, new WalletRepository.ResultCallback<List<WalletTransactionDto>>() {
+            @Override
+            public void onSuccess(List<WalletTransactionDto> result) {
+                runOnUiThread(() -> updateUnreadBadgeUi(
+                        WalletTransactionReadState.countUnread(VeggoPayActivity.this, result)
+                ));
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                runOnUiThread(() -> updateUnreadBadgeUi(0));
+            }
+        });
+    }
+
+    private void updateUnreadBadgeUi(int unreadCount) {
+        if (tvNotificationBadge == null) return;
+        if (unreadCount <= 0) {
+            tvNotificationBadge.setVisibility(View.GONE);
+            return;
+        }
+        tvNotificationBadge.setText(unreadCount > 99 ? "99+" : String.valueOf(unreadCount));
+        tvNotificationBadge.setVisibility(View.VISIBLE);
     }
 
     private void checkWalletStatus() {
@@ -203,7 +240,8 @@ public class VeggoPayActivity extends BaseActivity {
                     runOnUiThread(() -> {
                         hideProgress();
                         Toast.makeText(VeggoPayActivity.this, "Truy cập ví VeggoPay thành công!", Toast.LENGTH_SHORT).show();
-                        loadWalletInfo(); // Proceed loading wallet details
+                        loadWalletInfo();
+                        refreshUnreadBadge();
                     });
                 }
 
@@ -287,8 +325,10 @@ public class VeggoPayActivity extends BaseActivity {
                     linkedBanksList = banks;
                     if (banks != null && !banks.isEmpty()) {
                         tvLinkedBanksHeader.setVisibility(View.VISIBLE);
+                        if (cardLinkedBanks != null) {
+                            cardLinkedBanks.setVisibility(View.VISIBLE);
+                        }
                         if (nsvLinkedBanks != null) {
-                            nsvLinkedBanks.setVisibility(View.VISIBLE);
                             ViewGroup.LayoutParams params = nsvLinkedBanks.getLayoutParams();
                             if (banks.size() > 3) {
                                 float density = getResources().getDisplayMetrics().density;
@@ -372,8 +412,8 @@ public class VeggoPayActivity extends BaseActivity {
                         }
                     } else {
                         tvLinkedBanksHeader.setVisibility(View.GONE);
-                        if (nsvLinkedBanks != null) {
-                            nsvLinkedBanks.setVisibility(View.GONE);
+                        if (cardLinkedBanks != null) {
+                            cardLinkedBanks.setVisibility(View.GONE);
                         }
                     }
                 });
@@ -854,6 +894,7 @@ public class VeggoPayActivity extends BaseActivity {
                 runOnUiThread(() -> {
                     Toast.makeText(VeggoPayActivity.this, "Truy cập ví VeggoPay thành công!", Toast.LENGTH_SHORT).show();
                     loadWalletInfo();
+                    refreshUnreadBadge();
                 });
             }
 

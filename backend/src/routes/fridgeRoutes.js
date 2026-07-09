@@ -5,11 +5,248 @@ const FridgeItem = require('../models/FridgeItem');
 const FridgeLocation = require('../models/FridgeLocation');
 const Product = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
-const { AI_CONFIG } = require('../config/aiConfig');
+const { VISION_MODEL_FALLBACK_CHAIN } = require('../config/aiConfig');
+const {
+  ACTIVE_PRODUCT_FILTER,
+  escapeRegex,
+  formatProductSummary,
+} = require('../utils/productHelpers');
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const router = express.Router();
+
+const FOOD_RECOGNITION_PROMPT = `Bạn là hệ thống nhận diện thực phẩm/nguyên liệu thông minh. Hãy phân tích ảnh này (có thể là hóa đơn, bao bì sản phẩm, ảnh thực phẩm thực tế, hoặc ảnh cửa hàng) và trích xuất TOÀN BỘ các mặt hàng thực phẩm/đồ uống.
+
+Nhận diện TẤT CẢ các loại bao gồm: rau củ quả, thịt cá hải sản, mì tôm/mì gói, đồ ăn liền, bánh kẹo, sữa và chế phẩm, đồ uống (cà phê, trà, nước ngọt), gia vị, dầu ăn, ngũ cốc, đồ khô, đồ đông lạnh, snack, và mọi loại thực phẩm khác.
+
+Trả về JSON với định dạng CHÍNH XÁC là một MẢNG các object (không có text khác ngoài JSON):
+[{"name": "Tên hiển thị chi tiết (vd: Quả dưa leo, Sữa chua Vinamilk 100g)", "searchKeyword": "Danh từ gốc siêu ngắn gọn (chỉ 1-2 từ, không tính từ/trạng thái) để tìm kiếm (vd: Rong biển, Dưa leo, Cà phê)", "generalCategory": "Danh mục chung tiếng Việt để dự phòng (vd: Đồ khô, Rau xanh, Gia vị)", "quantity": số_lượng_hoặc_null, "unit": "đơn vị (cái/gói/kg/l/hộp...)", "purchaseDate": "YYYY-MM-DD nếu có trên hóa đơn, nếu không thì null"}]
+
+Lưu ý:
+- Nếu là hóa đơn: trích xuất tất cả mặt hàng thực phẩm trong đó
+- Nếu là ảnh sản phẩm/bao bì: nhận diện sản phẩm đó
+- Nếu là ảnh thực phẩm thực tế: nhận diện loại thực phẩm
+- Trả về mảng JSON hợp lệ, không thêm markdown hay text giải thích`;
+
+function createGeminiClient() {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    const error = new Error('GEMINI_API_KEY chưa được cấu hình');
+    error.status = 503;
+    throw error;
+  }
+  return new GoogleGenAI({ apiKey });
+}
+
+function parseRecognitionResult(textResponse) {
+  const raw = String(textResponse || '').trim();
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    if (parsed && Array.isArray(parsed.items)) {
+      return parsed.items;
+    }
+    if (parsed && typeof parsed === 'object' && parsed.name) {
+      return [parsed];
+    }
+  } catch (_error) {
+    const arrayStart = raw.indexOf('[');
+    const arrayEnd = raw.lastIndexOf(']');
+    if (arrayStart >= 0 && arrayEnd > arrayStart) {
+      try {
+        const parsed = JSON.parse(raw.slice(arrayStart, arrayEnd + 1));
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (_inner) {
+        // fall through
+      }
+    }
+  }
+
+  return [];
+}
+
+function shouldTryNextVisionModel(error) {
+  const status = error?.status || error?.statusCode;
+  const message = String(error?.message || '').toLowerCase();
+  return status === 404
+    || status === 403
+    || message.includes('not found')
+    || message.includes('not supported')
+    || message.includes('permission_denied')
+    || message.includes('denied access')
+    || message.includes('leaked');
+}
+
+async function recognizeFoodItems(imageBase64) {
+  let cleanBase64 = imageBase64;
+  let mimeType = 'image/jpeg';
+  if (String(imageBase64).startsWith('data:')) {
+    const parts = String(imageBase64).split(';');
+    mimeType = parts[0].split(':')[1] || mimeType;
+    cleanBase64 = parts[1].split(',')[1];
+  }
+
+  const ai = createGeminiClient();
+  const models = VISION_MODEL_FALLBACK_CHAIN.length
+    ? VISION_MODEL_FALLBACK_CHAIN
+    : ['gemini-2.5-flash'];
+
+  let lastError = null;
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [
+            FOOD_RECOGNITION_PROMPT,
+            {
+              inlineData: {
+                data: cleanBase64,
+                mimeType,
+              },
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const result = parseRecognitionResult(response.text);
+        if (!result.length) {
+          console.warn(`[Scan] Model ${model} trả về mảng rỗng`);
+          lastError = new Error('AI không nhận diện được nguyên liệu trong ảnh');
+          lastError.status = 422;
+          break;
+        }
+
+        console.log(`[Scan] Nhận diện thành công bằng ${model}, ${result.length} mục`);
+        return result;
+      } catch (error) {
+        lastError = error;
+        if (error.status === 422) {
+          break;
+        }
+        if (shouldTryNextVisionModel(error)) {
+          console.warn(`[Scan] Model ${model} không khả dụng, thử model khác...`);
+          break;
+        }
+        if (error.status === 503 && attempt < 2) {
+          const delay = 2000 * (attempt + 1);
+          console.warn(`[Scan] Gemini 503, retry in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        if (error.status === 429 && attempt < 2) {
+          const delay = 3000 * (attempt + 1);
+          console.warn(`[Scan] Gemini 429, retry in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        console.warn(`[Scan] Model ${model} lỗi:`, error.message);
+        break;
+      }
+    }
+  }
+
+  if (lastError?.status === 422) {
+    throw lastError;
+  }
+
+  const wrapped = new Error(lastError?.message || 'Lỗi nhận diện AI');
+  wrapped.status = lastError?.status || 500;
+  throw wrapped;
+}
+
+function mapMatchedProduct(product) {
+  const summary = formatProductSummary(product);
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    _id: summary.id,
+    id: summary.id,
+    name: summary.name,
+    price: summary.price,
+    originalPrice: summary.originalPrice,
+    imageUrl: summary.image || '',
+    image: summary.image || '',
+    unit: summary.unit || '',
+    sku: summary.sku || '',
+    rating: summary.rating,
+    soldCount: summary.soldCount,
+    weight: summary.weight || '',
+  };
+}
+
+async function findMatchedProducts(item) {
+  const keyword = item.searchKeyword || item.name;
+  const safeKeyword = escapeRegex(keyword);
+  const safeName = escapeRegex(item.name);
+
+  const nameFilters = [
+    { name: { $regex: safeKeyword, $options: 'i' } },
+    { product_name: { $regex: safeKeyword, $options: 'i' } },
+    { name: { $regex: safeName, $options: 'i' } },
+    { product_name: { $regex: safeName, $options: 'i' } },
+    { ingredients: { $regex: safeKeyword, $options: 'i' } },
+    { brand: { $regex: safeKeyword, $options: 'i' } },
+  ];
+
+  let matchedProducts = await Product.find({
+    $and: [
+      ACTIVE_PRODUCT_FILTER,
+      { $or: nameFilters },
+    ],
+  }).lean();
+
+  if (matchedProducts.length === 0 && item.generalCategory) {
+    const safeCategory = escapeRegex(item.generalCategory);
+    matchedProducts = await Product.find({
+      $and: [
+        ACTIVE_PRODUCT_FILTER,
+        {
+          $or: [
+            { name: { $regex: safeCategory, $options: 'i' } },
+            { product_name: { $regex: safeCategory, $options: 'i' } },
+          ],
+        },
+      ],
+    }).lean();
+  }
+
+  const searchLower = String(keyword || '').toLowerCase();
+  matchedProducts.sort((a, b) => {
+    const nameA = String(a.name || a.product_name || '').toLowerCase();
+    const nameB = String(b.name || b.product_name || '').toLowerCase();
+
+    if (nameA === searchLower) return -1;
+    if (nameB === searchLower) return 1;
+
+    return nameA.length - nameB.length;
+  });
+
+  if (matchedProducts.length > 0) {
+    const topName = String(matchedProducts[0].name || matchedProducts[0].product_name || '').toLowerCase();
+    if (topName === searchLower) {
+      matchedProducts = [matchedProducts[0]];
+    } else {
+      matchedProducts = matchedProducts.slice(0, 10);
+    }
+  }
+
+  return matchedProducts
+    .map(mapMatchedProduct)
+    .filter(Boolean);
+}
 
 // Lấy danh sách nguyên liệu của user
 router.get('/:userId', asyncHandler(async (req, res) => {
@@ -26,135 +263,11 @@ router.post('/ai/recognize', asyncHandler(async (req, res) => {
   }
 
   try {
-    const prompt = `Bạn là hệ thống nhận diện thực phẩm/nguyên liệu thông minh. Hãy phân tích ảnh này (có thể là hóa đơn, bao bì sản phẩm, ảnh thực phẩm thực tế, hoặc ảnh cửa hàng) và trích xuất TOÀN BỘ các mặt hàng thực phẩm/đồ uống.
+    const result = await recognizeFoodItems(imageBase64);
 
-Nhận diện TẤT CẢ các loại bao gồm: rau củ quả, thịt cá hải sản, mì tôm/mì gói, đồ ăn liền, bánh kẹo, sữa và chế phẩm, đồ uống (cà phê, trà, nước ngọt), gia vị, dầu ăn, ngũ cốc, đồ khô, đồ đông lạnh, snack, và mọi loại thực phẩm khác.
-
-Trả về JSON với định dạng CHÍNH XÁC là một MẢNG các object (không có text khác ngoài JSON):
-[{"name": "Tên hiển thị chi tiết (vd: Quả dưa leo, Sữa chua Vinamilk 100g)", "searchKeyword": "Danh từ gốc siêu ngắn gọn (chỉ 1-2 từ, không tính từ/trạng thái) để tìm kiếm (vd: Rong biển, Dưa leo, Cà phê)", "generalCategory": "Danh mục chung tiếng Việt để dự phòng (vd: Đồ khô, Rau xanh, Gia vị)", "quantity": số_lượng_hoặc_null, "unit": "đơn vị (cái/gói/kg/l/hộp...)", "purchaseDate": "YYYY-MM-DD nếu có trên hóa đơn, nếu không thì null"}]
-
-Lưu ý: 
-- Nếu là hóa đơn: trích xuất tất cả mặt hàng thực phẩm trong đó
-- Nếu là ảnh sản phẩm/bao bì: nhận diện sản phẩm đó 
-- Nếu là ảnh thực phẩm thực tế: nhận diện loại thực phẩm
-- Trả về mảng JSON hợp lệ, không thêm markdown hay text giải thích`;
-
-    // The imageBase64 sent from Android might or might not have a data URI prefix
-    let cleanBase64 = imageBase64;
-    let mimeType = 'image/jpeg';
-    if (imageBase64.startsWith('data:')) {
-      const parts = imageBase64.split(';');
-      mimeType = parts[0].split(':')[1];
-      cleanBase64 = parts[1].split(',')[1];
-    }
-
-    const callGeminiWithRetry = async (retries = 3, delay = 2000) => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          return await ai.models.generateContent({
-            model: AI_CONFIG.model,
-            contents: [
-              prompt,
-              {
-                inlineData: {
-                  data: cleanBase64,
-                  mimeType: mimeType
-                }
-              }
-            ],
-            config: {
-              responseMimeType: "application/json",
-            }
-          });
-        } catch (error) {
-          if (error.status === 503 && i < retries - 1) {
-            console.warn(`Gemini 503 Error. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2; // Exponential backoff
-          } else {
-            throw error;
-          }
-        }
-      }
-    };
-
-    const response = await callGeminiWithRetry();
-
-    const textResponse = response.text;
-    const result = JSON.parse(textResponse);
-
-    // Hàm escape regex để tránh lỗi khi keyword chứa ký tự đặc biệt (VD: dấu ngoặc)
-    const escapeRegex = (text) => {
-      return (text || '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-    };
-
-    // Add product search matching for each item
-    for (let item of result) {
+    for (const item of result) {
       if (item.name) {
-        const keyword = item.searchKeyword || item.name;
-
-        const safeKeyword = escapeRegex(keyword);
-        const safeName = escapeRegex(item.name);
-
-        // Search by keyword, limiting to 4 items as requested
-        let matchedProducts = await Product.find({
-          $or: [
-            { name: { $regex: safeKeyword, $options: 'i' } },
-            { product_name: { $regex: safeKeyword, $options: 'i' } },
-            { name: { $regex: safeName, $options: 'i' } },
-            { product_name: { $regex: safeName, $options: 'i' } }
-          ],
-          status: 'Active'
-        }).lean();
-
-        if (matchedProducts.length === 0 && item.generalCategory) {
-          const safeCategory = escapeRegex(item.generalCategory);
-          matchedProducts = await Product.find({
-            $or: [
-              { name: { $regex: safeCategory, $options: 'i' } },
-              { product_name: { $regex: safeCategory, $options: 'i' } }
-            ],
-            status: 'Active'
-          }).lean();
-        }
-
-        // Cải thiện độ chính xác: Ưu tiên tên trùng khớp hoàn toàn, sau đó ưu tiên tên ngắn hơn (gần với từ khóa nhất)
-        const searchLower = keyword.toLowerCase();
-        matchedProducts.sort((a, b) => {
-          const nameA = (a.name || a.product_name || '').toLowerCase();
-          const nameB = (b.name || b.product_name || '').toLowerCase();
-
-          if (nameA === searchLower) return -1;
-          if (nameB === searchLower) return 1;
-
-          return nameA.length - nameB.length;
-        });
-
-        // Nếu món đầu tiên khớp chính xác 100% với từ khóa thì lấy duy nhất món đó để bật popup
-        if (matchedProducts.length > 0) {
-          const topName = (matchedProducts[0].name || matchedProducts[0].product_name || '').toLowerCase();
-          if (topName === searchLower) {
-            matchedProducts = [matchedProducts[0]];
-          } else {
-            matchedProducts = matchedProducts.slice(0, 10);
-          }
-        }
-
-        item.matchedProducts = matchedProducts.map(p => {
-          let imageUrl = p.imageUrl;
-          if (!imageUrl && p.image) {
-            imageUrl = Array.isArray(p.image) ? p.image[0] : p.image;
-          }
-          return {
-            _id: String(p._id),
-            name: p.name || p.product_name || '',
-            price: p.price || 0,
-            originalPrice: p.originalPrice || p.base_price || p.price || 0,
-            imageUrl: imageUrl || '',
-            unit: p.unit || '',
-            sku: p.sku || ''
-          };
-        });
+        item.matchedProducts = await findMatchedProducts(item);
       } else {
         item.matchedProducts = [];
       }
@@ -162,8 +275,12 @@ Lưu ý:
 
     res.json(result);
   } catch (error) {
-    console.error("Gemini AI Error:", error);
-    res.status(500).json({ message: 'Lỗi nhận diện AI', error: error.message });
+    console.error('Gemini AI Error:', error);
+    const status = error.status || 500;
+    res.status(status).json({
+      message: error.message || 'Lỗi nhận diện AI',
+      error: error.message,
+    });
   }
 }));
 
@@ -221,7 +338,7 @@ router.post('/:userId/batch', asyncHandler(async (req, res) => {
     if (item.orderId && item.sku) {
       const existing = await FridgeItem.findOne({ userId: cleanUserId, orderId: item.orderId, sku: item.sku });
       if (existing) {
-        continue; // Bỏ qua item đã tồn tại trong tủ lạnh
+        continue;
       }
     }
     newFridgeItems.push({
@@ -242,7 +359,7 @@ router.post('/:userId/batch', asyncHandler(async (req, res) => {
   }
 
   if (newFridgeItems.length === 0) {
-    return res.status(200).json([]); // Không có gì mới để thêm
+    return res.status(200).json([]);
   }
 
   const savedItems = await FridgeItem.insertMany(newFridgeItems);
@@ -289,14 +406,12 @@ router.delete('/:userId/:itemId', asyncHandler(async (req, res) => {
 
 // --- Locations CRUD ---
 
-// Lấy danh sách location của user
 router.get('/:userId/locations', asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const locations = await FridgeLocation.find({ userId });
   res.json(locations);
 }));
 
-// Thêm location
 router.post('/:userId/locations', asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { locationCode, name } = req.body;

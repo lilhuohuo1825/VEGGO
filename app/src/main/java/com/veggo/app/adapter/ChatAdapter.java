@@ -157,7 +157,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             suggestionClickListener.onProductClick(productId, false);
         });
-        binding.btnAddProduct.setOnClickListener(v -> {
+        binding.btnAddProduct.getRoot().setOnClickListener(v -> {
             if (suggestionClickListener == null || TextUtils.isEmpty(productId)) {
                 return;
             }

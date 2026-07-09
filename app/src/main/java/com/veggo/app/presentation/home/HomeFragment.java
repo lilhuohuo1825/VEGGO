@@ -27,6 +27,7 @@ import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.PullToRefreshHelper;
+import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
 import com.veggo.app.data.remote.dto.CartDto;
@@ -36,6 +37,7 @@ import com.veggo.app.databinding.LayoutHomeStickyTabsBinding;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.presentation.about.AboutUsActivity;
 import com.veggo.app.presentation.checkout.PendingCheckoutStore;
+import com.veggo.app.presentation.product.AddToCartBottomSheetHelper;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -107,13 +109,19 @@ public class HomeFragment extends Fragment {
     private SwipeRefreshLayout homeRefreshLayout;
     private boolean homeRefreshPending;
 
+    private static final int BANNER_LOOP_ANCHOR = Integer.MAX_VALUE / 2;
+
     private final Handler bannerHandler = new Handler(Looper.getMainLooper());
     private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
     private final Runnable bannerRunnable = () -> {
-        if (binding != null && binding.vpBanners != null
-                && bannerAdapter != null && bannerAdapter.getRealCount() > 0) {
-            binding.vpBanners.setCurrentItem(binding.vpBanners.getCurrentItem() + 1, true);
+        if (binding == null || binding.vpBanners == null
+                || bannerAdapter == null || bannerAdapter.getRealCount() <= 0) {
+            return;
         }
+        int count = bannerAdapter.getRealCount();
+        int current = binding.vpBanners.getCurrentItem();
+        int nextIndex = (Math.floorMod(current, count) + 1) % count;
+        binding.vpBanners.setCurrentItem(resolveBannerLoopPosition(nextIndex), true);
     };
 
     @Nullable
@@ -176,6 +184,29 @@ public class HomeFragment extends Fragment {
             binding.homeScrollView.smoothScrollTo(0, 0);
         }
         return true;
+    }
+
+    private int resolveBannerLoopPosition(int realIndex) {
+        int count = bannerAdapter != null ? bannerAdapter.getRealCount() : 0;
+        if (count <= 0) {
+            return 0;
+        }
+        int normalizedIndex = Math.floorMod(realIndex, count);
+        int aligned = BANNER_LOOP_ANCHOR - (BANNER_LOOP_ANCHOR % count);
+        return aligned + normalizedIndex;
+    }
+
+    private void anchorBannerPositionIfNeeded() {
+        if (binding == null || bannerAdapter == null || bannerAdapter.getRealCount() <= 0) {
+            return;
+        }
+        int count = bannerAdapter.getRealCount();
+        int pos = binding.vpBanners.getCurrentItem();
+        int aligned = BANNER_LOOP_ANCHOR - (BANNER_LOOP_ANCHOR % count);
+        int realIndex = Math.floorMod(pos, count);
+        if (pos < aligned - count * 20 || pos > aligned + count * 20) {
+            binding.vpBanners.setCurrentItem(aligned + realIndex, false);
+        }
     }
 
     private void setupPullToRefresh() {
@@ -370,6 +401,7 @@ public class HomeFragment extends Fragment {
     private void setupRecyclerViews() {
         // Banners
         bannerAdapter = new BannerAdapter();
+        binding.vpBanners.setOffscreenPageLimit(1);
         binding.vpBanners.setAdapter(bannerAdapter);
         bannerAdapter.setOnBannerClickListener(banner -> {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.promotion.PromotionDetailActivity.class);
@@ -379,10 +411,18 @@ public class HomeFragment extends Fragment {
         binding.vpBanners.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
-                if (bannerAdapter.getRealCount() > 0)
-                    updateBannerIndicators(position % bannerAdapter.getRealCount());
+                if (bannerAdapter.getRealCount() > 0) {
+                    updateBannerIndicators(Math.floorMod(position, bannerAdapter.getRealCount()));
+                }
                 bannerHandler.removeCallbacks(bannerRunnable);
                 bannerHandler.postDelayed(bannerRunnable, 10000);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                if (state == ViewPager2.SCROLL_STATE_IDLE) {
+                    anchorBannerPositionIfNeeded();
+                }
             }
         });
 
@@ -442,7 +482,7 @@ public class HomeFragment extends Fragment {
         flashSaleAdapter = new FlashSaleAdapter();
         binding.rvFlashSale.setAdapter(flashSaleAdapter);
         flashSaleAdapter.setOnFlashSaleClickListener(flashSale -> openFlashSaleProduct(flashSale, false));
-        flashSaleAdapter.setOnFlashSaleAddClickListener(flashSale -> openFlashSaleProduct(flashSale, true));
+        flashSaleAdapter.setOnFlashSaleAddClickListener(this::openFlashSaleAddToCart);
 
         // Recipes
         recipeAdapter = new RecipeAdapter();
@@ -464,12 +504,13 @@ public class HomeFragment extends Fragment {
             intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
             startActivity(intent);
         });
-        productAdapter.setOnAddProductClickListener(product -> {
-            Intent intent = new Intent(requireContext(), com.veggo.app.presentation.product.ProductDetailActivity.class);
-            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
-            intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, true);
-            startActivity(intent);
-        });
+        productAdapter.setOnAddProductClickListener(product ->
+                com.veggo.app.presentation.product.AddToCartBottomSheetHelper.show(
+                        requireContext(),
+                        product,
+                        this::refreshCartBadge
+                )
+        );
 
         binding.btnLoadMore.setOnClickListener(v -> homeViewModel.loadMoreProducts());
     }
@@ -482,6 +523,41 @@ public class HomeFragment extends Fragment {
         intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_FLASH_SALE_DISCOUNT_LABEL, flashSale.getDiscount());
         intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, openAddToCart);
         startActivity(intent);
+    }
+
+    private void openFlashSaleAddToCart(com.veggo.app.domain.model.FlashSale flashSale) {
+        if (flashSale == null) {
+            return;
+        }
+
+        com.veggo.app.domain.model.Product matchedProduct = null;
+        for (com.veggo.app.domain.model.Product product : productAdapter.getProducts()) {
+            if (flashSale.getId().equals(product.getId())) {
+                matchedProduct = product;
+                break;
+            }
+        }
+
+        AddToCartBottomSheetHelper.Options options = AddToCartBottomSheetHelper.Options.forFlashSale(
+                flashSale.getPrice(),
+                flashSale.getOriginalPrice()
+        );
+
+        if (matchedProduct != null) {
+            com.veggo.app.domain.model.Product pricedProduct = matchedProduct.withPricing(
+                    flashSale.getPrice(),
+                    flashSale.getOriginalPrice() > 0 ? flashSale.getOriginalPrice() : matchedProduct.getOriginalPrice()
+            );
+            AddToCartBottomSheetHelper.show(requireContext(), pricedProduct, options, this::refreshCartBadge);
+            return;
+        }
+
+        AddToCartBottomSheetHelper.showForProductId(
+                requireContext(),
+                flashSale.getId(),
+                options,
+                this::refreshCartBadge
+        );
     }
 
     private void setupBannerIndicators() {
@@ -648,7 +724,7 @@ public class HomeFragment extends Fragment {
                     return;
                 }
                 int count = response.isSuccessful() && response.body() != null
-                        ? countCartItems(response.body())
+                        ? CartCountUtils.countLineItems(response.body())
                         : 0;
                 requireActivity().runOnUiThread(() -> updateCartBadges(count));
             }
@@ -672,17 +748,6 @@ public class HomeFragment extends Fragment {
             customerId = new PendingCheckoutStore(requireContext()).guestId();
         }
         return customerId;
-    }
-
-    private int countCartItems(CartDto cartDto) {
-        if (cartDto == null || cartDto.getItems() == null) {
-            return 0;
-        }
-        int count = 0;
-        for (CartDto.CartItemDto item : cartDto.getItems()) {
-            count += Math.max(0, item.getQuantity());
-        }
-        return count;
     }
 
     private void updateCartBadges(int count) {
@@ -736,10 +801,8 @@ public class HomeFragment extends Fragment {
             // Post lên main thread để đảm bảo RecyclerView đã measure xong
             binding.vpBanners.post(() -> {
                 if (bannerAdapter.getRealCount() == 0) return;
-                // Vị trí giữa MAX_VALUE, align với bội số của size để vòng lặp đúng
                 int realCount = bannerAdapter.getRealCount();
-                int startPos = (Integer.MAX_VALUE / 2) - ((Integer.MAX_VALUE / 2) % realCount);
-                binding.vpBanners.setCurrentItem(startPos, false);
+                binding.vpBanners.setCurrentItem(resolveBannerLoopPosition(0), false);
                 updateBannerIndicators(0);
                 // Tự động chạy timer banner
                 bannerHandler.removeCallbacks(bannerRunnable);

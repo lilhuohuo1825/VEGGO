@@ -35,6 +35,7 @@ import com.veggo.app.domain.repository.ProductRepository;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.speech.SearchVoiceInputController;
+import com.veggo.app.presentation.product.AddToCartBottomSheetHelper;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 import com.veggo.app.presentation.profile.TastePreferenceStore;
 
@@ -144,12 +145,13 @@ public class CategoryDetailFragment extends Fragment {
             intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
             startActivity(intent);
         });
-        productAdapter.setOnAddProductClickListener(product -> {
-            Intent intent = new Intent(requireContext(), ProductDetailActivity.class);
-            intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
-            intent.putExtra(ProductDetailActivity.EXTRA_OPEN_ADD_TO_CART, true);
-            startActivity(intent);
-        });
+        productAdapter.setOnAddProductClickListener(product ->
+                com.veggo.app.presentation.product.AddToCartBottomSheetHelper.show(
+                        requireContext(),
+                        product,
+                        null
+                )
+        );
 
         // Local search + voice input on category product list
         binding.layoutSearch.edtSearch.setFocusable(true);

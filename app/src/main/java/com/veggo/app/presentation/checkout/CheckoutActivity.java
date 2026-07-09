@@ -30,6 +30,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatRadioButton;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -68,6 +70,7 @@ import com.veggo.app.domain.repository.AddressRepository;
 import com.veggo.app.presentation.cart.CartViewModel;
 import com.veggo.app.presentation.profile.AddressFormActivity;
 import com.veggo.app.presentation.order.RecurringCheckoutStore;
+import com.veggo.app.presentation.promotion.PromotionVoucherHelper;
 import com.veggo.app.presentation.order.RecurringOrderStore;
 
 import java.util.ArrayList;
@@ -123,6 +126,9 @@ public class CheckoutActivity extends BaseActivity {
     private TextView tvAddressPhone;
     private TextView tvAddressDetail;
     private TextView tvAddressDefaultBadge;
+    private View layoutAddressSaved;
+    private View layoutAddressEmpty;
+    private TextView tvVoucherLabel;
     private TextView tvCheckoutDeliveryOriginAddress;
     private TextView tvCheckoutDeliveryOriginDistance;
     private TextView tvCheckoutSubtotal;
@@ -142,13 +148,18 @@ public class CheckoutActivity extends BaseActivity {
     private AddressRepository addressRepository;
     private WalletRepository walletRepository;
     private double veggoPayBalance = 0;
+    private List<WalletDto.LinkedBankDto> veggoPayLinkedBanks = new ArrayList<>();
     private String currentWalletPassword = "";
     private String customerId;
     private AppCompatRadioButton radioPaymentMomo;
     private AppCompatRadioButton radioPaymentBank;
     private AppCompatRadioButton radioPaymentCod;
     private AppCompatRadioButton radioPaymentVnpay;
-    private String selectedPaymentMethod = "vnpay";
+    private View layoutPaymentMomo;
+    private TextView tvPaymentMomoLabel;
+    private TextView btnVeggoPayTopUp;
+    private boolean pendingSelectVeggoPayAfterTopUp = false;
+    private String selectedPaymentMethod = "cod";
     private long currentPaymentTotal;
     private long currentSubtotal;
     private long currentProductDiscount;
@@ -163,6 +174,7 @@ public class CheckoutActivity extends BaseActivity {
     private final List<PaymentItemAdapter.PaymentItemUiModel> previewItems = new ArrayList<>();
     private final List<CartDto.CartItemDto> cartItems = new ArrayList<>();
     private final List<VoucherOptionAdapter.VoucherItemUiModel> voucherItems = new ArrayList<>();
+    private final List<VoucherOptionAdapter.VoucherItemUiModel> allVoucherItems = new ArrayList<>();
     private final List<LocationOptionAdapter.LocationItemUiModel> locationItems = new ArrayList<>();
     private Set<String> selectedCartLineKeys;
     private int selectedLocationIndex;
@@ -176,6 +188,7 @@ public class CheckoutActivity extends BaseActivity {
     private DeliveryTimeUtils.DeliveryWindow fastDeliveryWindow;
     private DeliveryTimeUtils.DeliveryWindow scheduledDeliveryWindow;
     private boolean isSearchingVoucher = false;
+    private PromotionVoucherHelper.VoucherFilter activeVoucherFilter = PromotionVoucherHelper.VoucherFilter.PRODUCT;
     private final CheckoutWarehouseHelper warehouseHelper = new CheckoutWarehouseHelper();
     private final ActivityResultLauncher<Intent> addAddressLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -187,7 +200,7 @@ public class CheckoutActivity extends BaseActivity {
                     return;
                 }
                 addLocationFromResult(result.getData());
-                applySelectedLocationToAddressCard();
+                updateAddressDisplayMode();
             });
 
     @Override
@@ -215,6 +228,10 @@ public class CheckoutActivity extends BaseActivity {
         tvAddressPhone = findViewById(R.id.tvAddressPhone);
         tvAddressDetail = findViewById(R.id.tvAddressDetail);
         tvAddressDefaultBadge = findViewById(R.id.tvAddressDefaultBadge);
+        layoutAddressSaved = findViewById(R.id.layoutAddressSaved);
+        layoutAddressEmpty = findViewById(R.id.layoutAddressEmpty);
+        TextView btnOpenAddressBook = findViewById(R.id.btnOpenAddressBook);
+        tvVoucherLabel = findViewById(R.id.tvVoucherLabel);
         tvCheckoutDeliveryOriginAddress = findViewById(R.id.tvCheckoutDeliveryOriginAddress);
         tvCheckoutDeliveryOriginDistance = findViewById(R.id.tvCheckoutDeliveryOriginDistance);
         tvCheckoutSubtotal = findViewById(R.id.tvCheckoutSubtotal);
@@ -232,6 +249,9 @@ public class CheckoutActivity extends BaseActivity {
         radioPaymentBank = findViewById(R.id.radioPaymentCard);
         radioPaymentCod = findViewById(R.id.radioPaymentCod);
         radioPaymentVnpay = findViewById(R.id.radioPaymentVnpay);
+        layoutPaymentMomo = findViewById(R.id.layoutPaymentMomo);
+        tvPaymentMomoLabel = findViewById(R.id.tvPaymentMomoLabel);
+        btnVeggoPayTopUp = findViewById(R.id.btnVeggoPayTopUp);
         tvCheckoutNote.setText("");
         tvCheckoutNote.setHint("Nhập ghi chú");
         buyNowMode = getIntent().getBooleanExtra(EXTRA_BUY_NOW, false);
@@ -252,9 +272,12 @@ public class CheckoutActivity extends BaseActivity {
         loadAddresses();
         selectDeliveryMode(true);
         prefetchVoucherData();
-        layoutAddress.setOnClickListener(v -> showPopup(R.layout.dialog_location));
+        layoutAddress.setOnClickListener(v -> showLocationDialog());
+        if (btnOpenAddressBook != null) {
+            btnOpenAddressBook.setOnClickListener(v -> showLocationDialog());
+        }
         layoutDeliveryOrigin.setOnClickListener(v -> warehouseHelper.showSelectionDialog(this, this::bindSelectedWarehouseUi, null));
-        layoutVoucher.setOnClickListener(v -> showPopup(R.layout.dialog_voucher));
+        layoutVoucher.setOnClickListener(v -> showVoucherDialog());
         layoutNote.setOnClickListener(v -> showNoteDialog());
         layoutFastDelivery.setOnClickListener(v -> selectDeliveryMode(true));
         layoutScheduleDelivery.setOnClickListener(v -> {
@@ -306,10 +329,11 @@ public class CheckoutActivity extends BaseActivity {
             public void onSuccess(WalletDto result) {
                 runOnUiThread(() -> {
                     veggoPayBalance = result.getBalance();
-                    TextView tvLabel = findViewById(R.id.tvPaymentMomoLabel);
-                    if (tvLabel != null) {
-                        tvLabel.setText("Ví VeggoPay (Số dư: " + com.veggo.app.core.utils.CurrencyFormatter.formatVnd((long) veggoPayBalance) + ")");
+                    veggoPayLinkedBanks = result.getLinkedBanks() == null ? new ArrayList<>() : result.getLinkedBanks();
+                    if (tvPaymentMomoLabel != null) {
+                        tvPaymentMomoLabel.setText("Ví VeggoPay (Số dư: " + com.veggo.app.core.utils.CurrencyFormatter.formatVnd((long) veggoPayBalance) + ")");
                     }
+                    updateVeggoPayPaymentRowUi();
                 });
             }
 
@@ -366,17 +390,28 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void setupPaymentMethods() {
-        selectPaymentMethod("vnpay");
-        radioPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
+        selectPaymentMethod("cod");
+        radioPaymentMomo.setOnClickListener(v -> {
+            if (canPayWithVeggoPay()) {
+                selectPaymentMethod("veggopay");
+            } else {
+                openVeggoPayTopUp();
+            }
+        });
         radioPaymentBank.setOnClickListener(v -> selectPaymentMethod("bank"));
         radioPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
         if (radioPaymentVnpay != null) radioPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
-        View layoutPaymentMomo = findViewById(R.id.layoutPaymentMomo);
         View layoutPaymentCod = findViewById(R.id.layoutPaymentCod);
         View layoutPaymentBank = findViewById(R.id.layoutPaymentBank);
         View layoutPaymentVnpay = findViewById(R.id.layoutPaymentVnpay);
         if (layoutPaymentMomo != null) {
-            layoutPaymentMomo.setOnClickListener(v -> selectPaymentMethod("veggopay"));
+            layoutPaymentMomo.setOnClickListener(v -> {
+                if (canPayWithVeggoPay()) {
+                    selectPaymentMethod("veggopay");
+                } else {
+                    openVeggoPayTopUp();
+                }
+            });
         }
         if (layoutPaymentCod != null) {
             layoutPaymentCod.setOnClickListener(v -> selectPaymentMethod("cod"));
@@ -387,6 +422,11 @@ public class CheckoutActivity extends BaseActivity {
         if (layoutPaymentVnpay != null) {
             layoutPaymentVnpay.setOnClickListener(v -> selectPaymentMethod("vnpay"));
         }
+
+        if (btnVeggoPayTopUp != null) {
+            btnVeggoPayTopUp.setOnClickListener(v -> openVeggoPayTopUp());
+        }
+        updateVeggoPayPaymentRowUi();
     }
 
     private void selectPaymentMethod(String method) {
@@ -410,9 +450,13 @@ public class CheckoutActivity extends BaseActivity {
             findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
         }
-        if (selectedLocationIndex < 0 || selectedLocationIndex >= locationItems.size() || 
-            tvAddressDetail.getText().toString().equals("Vui lòng thêm địa chỉ giao hàng") || 
-            tvAddressDetail.getText().toString().trim().isEmpty()) {
+        if (locationItems.isEmpty()) {
+            Toast.makeText(this, "Vui lòng thêm địa chỉ vào sổ địa chỉ để đặt hàng", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.btnPlaceOrder).setEnabled(true);
+            return;
+        }
+        if (selectedLocationIndex < 0 || selectedLocationIndex >= locationItems.size()
+                || tvAddressDetail.getText().toString().trim().isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn địa chỉ giao hàng hợp lệ", Toast.LENGTH_SHORT).show();
             findViewById(R.id.btnPlaceOrder).setEnabled(true);
             return;
@@ -821,10 +865,15 @@ public class CheckoutActivity extends BaseActivity {
         String phone = tvAddressPhone != null ? safeText(tvAddressPhone.getText().toString()) : "";
         String fullAddress = tvAddressDetail != null ? safeText(tvAddressDetail.getText().toString()) : "";
         String[] addressParts = fullAddress.split("\\s*,\\s*");
-        address.put("detail", addressParts.length > 0 ? addressParts[0] : fullAddress);
-        address.put("ward", addressParts.length > 1 ? addressParts[1] : "");
-        address.put("district", addressParts.length > 2 ? addressParts[2] : "");
-        address.put("city", addressParts.length > 3 ? addressParts[3] : "");
+        String detail = addressParts.length > 0 ? addressParts[0] : fullAddress;
+        String ward = addressParts.length > 1 ? addressParts[1] : "";
+        String district = addressParts.length > 2 ? addressParts[2] : "";
+        String city = addressParts.length > 3 ? addressParts[3] : "";
+
+        address.put("detail", detail);
+        address.put("ward", ward);
+        address.put("district", district);
+        address.put("city", city);
 
         shippingInfo.put("fullName", receiverName);
         shippingInfo.put("phone", phone);
@@ -984,7 +1033,10 @@ public class CheckoutActivity extends BaseActivity {
             shippingDiscount = Math.min(shippingFee, Math.max(shippingDiscount,
                     calculatePromotionDiscount(selectedShippingVoucher.promotion, shippingFee)));
         }
-        long total = Math.max(0, currentSubtotal + shippingFee - voucherDiscount - shippingDiscount);
+        long total = Math.max(
+                0,
+                currentSubtotal - currentProductDiscount + shippingFee - voucherDiscount - shippingDiscount
+        );
         currentPaymentTotal = total;
         currentVoucherDiscount = voucherDiscount;
         currentShippingFee = shippingFee;
@@ -998,6 +1050,268 @@ public class CheckoutActivity extends BaseActivity {
         tvCheckoutPaymentTotal.setText(formatCurrency(total));
         tvCheckoutBottomTotal.setText(formatCurrency(total));
         setCarbonPointsText(currentCarbonPoints);
+        updateVeggoPayPaymentRowUi();
+    }
+
+    private boolean canPayWithVeggoPay() {
+        return veggoPayBalance >= currentPaymentTotal;
+    }
+
+    private void updateVeggoPayPaymentRowUi() {
+        if (radioPaymentMomo == null || btnVeggoPayTopUp == null) {
+            return;
+        }
+        boolean enough = canPayWithVeggoPay();
+        radioPaymentMomo.setVisibility(enough ? View.VISIBLE : View.GONE);
+        btnVeggoPayTopUp.setVisibility(enough ? View.GONE : View.VISIBLE);
+
+        if (!enough && "veggopay".equals(selectedPaymentMethod)) {
+            selectPaymentMethod("cod");
+        }
+
+        if (pendingSelectVeggoPayAfterTopUp && enough) {
+            pendingSelectVeggoPayAfterTopUp = false;
+            selectPaymentMethod("veggopay");
+        }
+    }
+
+    private void openVeggoPayTopUp() {
+        pendingSelectVeggoPayAfterTopUp = true;
+        showDepositDialogInCheckout();
+    }
+
+    private void showDepositDialogInCheckout() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_wallet_deposit);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        EditText edtAmount = dialog.findViewById(R.id.edtAmount);
+        Button btnCancel = dialog.findViewById(R.id.btnCancel);
+        Button btnConfirm = dialog.findViewById(R.id.btnConfirm);
+
+        if (veggoPayLinkedBanks == null || veggoPayLinkedBanks.isEmpty()) {
+            Toast.makeText(this, "Vui lòng liên kết tài khoản ngân hàng trước khi nạp tiền!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        final WalletDto.LinkedBankDto[] selectedBankArr = new WalletDto.LinkedBankDto[1];
+        for (WalletDto.LinkedBankDto b : veggoPayLinkedBanks) {
+            if (b.isDefault()) {
+                selectedBankArr[0] = b;
+                break;
+            }
+        }
+        if (selectedBankArr[0] == null) {
+            selectedBankArr[0] = veggoPayLinkedBanks.get(0);
+        }
+
+        View layoutSelectBank = dialog.findViewById(R.id.layoutSelectBank);
+        ImageView imgSelectedBankLogo = dialog.findViewById(R.id.imgSelectedBankLogo);
+        TextView tvSelectedBankInfo = dialog.findViewById(R.id.tvSelectedBankInfo);
+
+        autoUpdateSelectedBankDisplay(selectedBankArr[0], imgSelectedBankLogo, tvSelectedBankInfo);
+
+        if (layoutSelectBank != null) {
+            layoutSelectBank.setOnClickListener(v -> {
+                String[] bankOptions = new String[veggoPayLinkedBanks.size()];
+                for (int i = 0; i < veggoPayLinkedBanks.size(); i++) {
+                    WalletDto.LinkedBankDto bankItem = veggoPayLinkedBanks.get(i);
+                    bankOptions[i] = bankItem.getBankCode() + " - " + bankItem.getAccountNumber() + (bankItem.isDefault() ? " (Mặc định)" : "");
+                }
+
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Chọn tài khoản ngân hàng nguồn")
+                        .setItems(bankOptions, (dialogInterface, index) -> {
+                            selectedBankArr[0] = veggoPayLinkedBanks.get(index);
+                            autoUpdateSelectedBankDisplay(selectedBankArr[0], imgSelectedBankLogo, tvSelectedBankInfo);
+                        })
+                        .show();
+            });
+        }
+
+        if (edtAmount != null) {
+            edtAmount.addTextChangedListener(new TextWatcher() {
+                private String current = "";
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (!s.toString().equals(current)) {
+                        edtAmount.removeTextChangedListener(this);
+
+                        String cleanString = s.toString().replaceAll("[.,]", "");
+                        if (!cleanString.isEmpty()) {
+                            try {
+                                double parsed = Double.parseDouble(cleanString);
+                                java.text.DecimalFormat formatter = (java.text.DecimalFormat) java.text.NumberFormat.getInstance(java.util.Locale.US);
+                                formatter.applyPattern("#,###");
+                                String formatted = formatter.format(parsed).replace(",", ".");
+                                current = formatted;
+                                edtAmount.setText(formatted);
+                                edtAmount.setSelection(formatted.length());
+                            } catch (NumberFormatException ignored) {}
+                        } else {
+                            current = "";
+                            edtAmount.setText("");
+                        }
+
+                        edtAmount.addTextChangedListener(this);
+                    }
+                }
+            });
+        }
+
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnConfirm != null) {
+            btnConfirm.setOnClickListener(v -> {
+                String rawAmount = edtAmount == null ? "" : edtAmount.getText().toString().trim().replaceAll("[.,]", "");
+                if (rawAmount.isEmpty()) {
+                    Toast.makeText(this, "Vui lòng nhập số tiền", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                double amount;
+                try {
+                    amount = Double.parseDouble(rawAmount);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(this, "Số tiền không hợp lệ", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (amount < 10000) {
+                    Toast.makeText(this, "Số tiền nạp tối thiểu là 10,000 ₫", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                dialog.dismiss();
+                showDepositPasswordConfirmDialogInCheckout(amount, selectedBankArr[0].getBankCode());
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void autoUpdateSelectedBankDisplay(WalletDto.LinkedBankDto bank, ImageView imgLogo, TextView tvInfo) {
+        if (bank == null || imgLogo == null || tvInfo == null) return;
+        tvInfo.setText(bank.getBankCode() + " - " + bank.getAccountNumber());
+        int logoRes = R.drawable.ic_card;
+        String codeLower = bank.getBankCode().toLowerCase();
+        if (codeLower.contains("vietcombank") || codeLower.equals("vcb")) {
+            logoRes = R.drawable.logo_vcb;
+        } else if (codeLower.contains("techcombank") || codeLower.equals("tcb")) {
+            logoRes = R.drawable.logo_tcb;
+        } else if (codeLower.contains("mb") || codeLower.contains("mbbank")) {
+            logoRes = R.drawable.logo_mb;
+        } else if (codeLower.contains("bidv")) {
+            logoRes = R.drawable.logo_bidv;
+        } else if (codeLower.contains("vietin") || codeLower.equals("ctg")) {
+            logoRes = R.drawable.logo_ctg;
+        }
+        imgLogo.setImageResource(logoRes);
+    }
+
+    private void showDepositPasswordConfirmDialogInCheckout(final double amount, final String bankCode) {
+        Dialog pinDialog = new Dialog(this);
+        pinDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        pinDialog.setContentView(R.layout.dialog_veggopay_password_input);
+        if (pinDialog.getWindow() != null) {
+            pinDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            pinDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvTitle = pinDialog.findViewById(R.id.tvPinTitle);
+        TextView tvDesc = pinDialog.findViewById(R.id.tvPinDescription);
+        TextView btnCancel = pinDialog.findViewById(R.id.btnCancel);
+        TextView btnConfirm = pinDialog.findViewById(R.id.btnConfirm);
+
+        if (tvTitle != null) tvTitle.setText("Xác thực giao dịch");
+        if (tvDesc != null) tvDesc.setText("Nhập mật khẩu ví 6 số để xác nhận nạp " + com.veggo.app.core.utils.CurrencyFormatter.formatVnd((long) amount));
+
+        EditText[] pinFields = new EditText[] {
+                pinDialog.findViewById(R.id.edtPin1),
+                pinDialog.findViewById(R.id.edtPin2),
+                pinDialog.findViewById(R.id.edtPin3),
+                pinDialog.findViewById(R.id.edtPin4),
+                pinDialog.findViewById(R.id.edtPin5),
+                pinDialog.findViewById(R.id.edtPin6)
+        };
+
+        for (int i = 0; i < pinFields.length; i++) {
+            final int index = i;
+            if (pinFields[i] == null) continue;
+            pinFields[i].addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (s.length() == 1) {
+                        if (index < pinFields.length - 1 && pinFields[index + 1] != null) {
+                            pinFields[index + 1].requestFocus();
+                        } else if (btnConfirm != null) {
+                            btnConfirm.performClick();
+                        }
+                    }
+                }
+            });
+            pinFields[i].setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (pinFields[index].getText().length() == 0 && index > 0 && pinFields[index - 1] != null) {
+                        pinFields[index - 1].requestFocus();
+                        pinFields[index - 1].setText("");
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        if (pinFields[0] != null) pinFields[0].requestFocus();
+        if (pinDialog.getWindow() != null) {
+            pinDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
+
+        if (btnCancel != null) btnCancel.setOnClickListener(v -> pinDialog.dismiss());
+        if (btnConfirm != null) {
+            btnConfirm.setOnClickListener(v -> {
+                StringBuilder pinBuilder = new StringBuilder();
+                for (EditText edt : pinFields) {
+                    if (edt != null) pinBuilder.append(edt.getText().toString().trim());
+                }
+                String pinCode = pinBuilder.toString();
+                if (pinCode.length() < 6) {
+                    Toast.makeText(this, "Vui lòng nhập đủ 6 chữ số mật khẩu", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                pinDialog.dismiss();
+                showProgress("Đang xử lý nạp tiền...");
+                walletRepository.deposit(customerId, amount, bankCode, pinCode, new WalletRepository.ResultCallback<WalletDto>() {
+                    @Override
+                    public void onSuccess(WalletDto result) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            Toast.makeText(CheckoutActivity.this, "Nạp tiền thành công!", Toast.LENGTH_SHORT).show();
+                            loadWalletInfo();
+                        });
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            Toast.makeText(CheckoutActivity.this, "Nạp tiền thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+            });
+        }
+
+        pinDialog.show();
     }
 
     private List<PaymentItemAdapter.PaymentItemUiModel> getVisiblePreviewItems() {
@@ -1038,16 +1352,46 @@ public class CheckoutActivity extends BaseActivity {
         TextView btnSearchVoucher = dialogView.findViewById(R.id.btnSearchVoucher);
         TextView tvEmptyState = dialogView.findViewById(R.id.tvVoucherEmptyState);
         TextView tvListTitle = dialogView.findViewById(R.id.tvVoucherListTitle);
+        TextView tvFilterProduct = dialogView.findViewById(R.id.tvVoucherFilterProduct);
+        TextView tvFilterShipping = dialogView.findViewById(R.id.tvVoucherFilterShipping);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvSelectedCount.setText("Đang tải khuyến mãi...");
         tvSelectedTitle.setText("");
-        recyclerView.setAdapter(new VoucherOptionAdapter(
-                new ArrayList<>(),
-                null,
-                null,
-                (productVoucher, shippingVoucher) -> { }
-        ));
+
+        VoucherOptionAdapter adapter = new VoucherOptionAdapter(
+                voucherItems,
+                selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
+                (productVoucher, shippingVoucher) -> {
+                    if (activeVoucherFilter == PromotionVoucherHelper.VoucherFilter.PRODUCT) {
+                        selectedProductVoucher = productVoucher;
+                    } else {
+                        selectedShippingVoucher = shippingVoucher;
+                    }
+                    updateSelectedVoucherUi();
+                    bindPaymentSummary();
+                    updateVoucherSelectionText(tvSelectedCount, tvSelectedTitle);
+                }
+        );
+        recyclerView.setAdapter(adapter);
+
+        Runnable refreshFilteredList = () -> applyVoucherFilter(
+                recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle
+        );
+        tvFilterProduct.setOnClickListener(v -> {
+            activeVoucherFilter = PromotionVoucherHelper.VoucherFilter.PRODUCT;
+            updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
+            refreshFilteredList.run();
+        });
+        tvFilterShipping.setOnClickListener(v -> {
+            activeVoucherFilter = PromotionVoucherHelper.VoucherFilter.SHIPPING;
+            updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
+            refreshFilteredList.run();
+        });
+        updateVoucherFilterTags(tvFilterProduct, tvFilterShipping);
+
+        isSearchingVoucher = false;
         loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
 
         BottomSheetDialog dialog = createHalfHeightBottomSheetDialog(dialogView);
@@ -1055,15 +1399,95 @@ public class CheckoutActivity extends BaseActivity {
         btnSearchVoucher.setOnClickListener(v -> {
             String code = edtVoucherCode.getText().toString().trim();
             if (code.isEmpty()) {
+                isSearchingVoucher = false;
                 loadVoucherOptions(recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
             } else {
                 if (customerId == null) {
                     customerId = resolveCustomerId();
                 }
+                isSearchingVoucher = true;
                 searchVoucher(code, recyclerView, tvSelectedCount, tvSelectedTitle, tvEmptyState, tvListTitle);
             }
         });
         dialog.show();
+    }
+
+    private void updateVoucherFilterTags(TextView productTag, TextView shippingTag) {
+        boolean productSelected = activeVoucherFilter == PromotionVoucherHelper.VoucherFilter.PRODUCT;
+        productTag.setBackground(null);
+        shippingTag.setBackground(null);
+        productTag.setTextColor(getColor(productSelected ? R.color.primary_main : R.color.neutral_60));
+        shippingTag.setTextColor(getColor(productSelected ? R.color.neutral_60 : R.color.primary_main));
+    }
+
+    private void applyVoucherFilter(
+            RecyclerView recyclerView,
+            TextView selectedCountView,
+            TextView selectedTitleView,
+            TextView tvEmptyState,
+            TextView tvListTitle
+    ) {
+        voucherItems.clear();
+        for (VoucherOptionAdapter.VoucherItemUiModel item : allVoucherItems) {
+            boolean showProduct = activeVoucherFilter == PromotionVoucherHelper.VoucherFilter.PRODUCT && !item.shipping;
+            boolean showShipping = activeVoucherFilter == PromotionVoucherHelper.VoucherFilter.SHIPPING && item.shipping;
+            if (showProduct || showShipping) {
+                voucherItems.add(item);
+            }
+        }
+        syncSelectedVoucherReferences();
+
+        if (voucherItems.isEmpty()) {
+            tvEmptyState.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            if (tvListTitle != null) {
+                tvListTitle.setVisibility(View.GONE);
+            }
+        } else {
+            tvEmptyState.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+            if (tvListTitle != null) {
+                tvListTitle.setVisibility(View.VISIBLE);
+            }
+        }
+
+        RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+        if (adapter instanceof VoucherOptionAdapter) {
+            ((VoucherOptionAdapter) adapter).setSelectedPromotionIds(
+                    selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
+                    selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId
+            );
+        } else if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+        updateVoucherSelectionText(selectedCountView, selectedTitleView);
+    }
+
+    private void syncSelectedVoucherReferences() {
+        if (selectedProductVoucher != null) {
+            VoucherOptionAdapter.VoucherItemUiModel resolved = findVoucherItem(selectedProductVoucher.promotionId, false);
+            selectedProductVoucher = resolved;
+        }
+        if (selectedShippingVoucher != null) {
+            VoucherOptionAdapter.VoucherItemUiModel resolved = findVoucherItem(selectedShippingVoucher.promotionId, true);
+            selectedShippingVoucher = resolved;
+        }
+    }
+
+    @Nullable
+    private VoucherOptionAdapter.VoucherItemUiModel findVoucherItem(
+            @Nullable String promotionId,
+            boolean shipping
+    ) {
+        if (promotionId == null) {
+            return null;
+        }
+        for (VoucherOptionAdapter.VoucherItemUiModel item : allVoucherItems) {
+            if (promotionId.equals(item.promotionId) && item.shipping == shipping) {
+                return item;
+            }
+        }
+        return null;
     }
 
     private List<PromotionTargetDto> cachedTargets = new ArrayList<>();
@@ -1094,7 +1518,7 @@ public class CheckoutActivity extends BaseActivity {
                             tvListTitle.setVisibility(View.VISIBLE);
                             tvListTitle.setText("Kết quả tìm kiếm cho '" + code + "'");
                             recyclerView.setVisibility(View.VISIBLE);
-                            renderVoucherOptions(foundPromotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                            renderVoucherOptions(foundPromotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
                         }
                     });
                 } else {
@@ -1114,6 +1538,7 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void showVoucherEmptyState(String message, RecyclerView recyclerView, TextView selectedCountView, TextView selectedTitleView, TextView tvEmptyState, TextView tvListTitle) {
+        allVoucherItems.clear();
         voucherItems.clear();
         if (recyclerView.getAdapter() != null) recyclerView.getAdapter().notifyDataSetChanged();
         tvEmptyState.setText(message);
@@ -1148,7 +1573,7 @@ public class CheckoutActivity extends BaseActivity {
                         tvListTitle.setVisibility(View.VISIBLE);
                         tvListTitle.setText("Mã giảm giá");
                     }
-                    renderVoucherOptions(promotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView);
+                    renderVoucherOptions(promotions, cachedTargets, cachedUsages, recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
                 });
             }
         };
@@ -1185,8 +1610,9 @@ public class CheckoutActivity extends BaseActivity {
 
     private void renderVoucherOptions(List<PromotionDto> promotions, List<PromotionTargetDto> targets,
                                       List<PromotionUsageDto> usages, RecyclerView recyclerView,
-                                      TextView selectedCountView, TextView selectedTitleView) {
-        voucherItems.clear();
+                                      TextView selectedCountView, TextView selectedTitleView,
+                                      TextView tvEmptyState, TextView tvListTitle) {
+        allVoucherItems.clear();
         Map<String, PromotionTargetDto> targetByPromotion = new HashMap<>();
         for (PromotionTargetDto target : targets) {
             if (target.getPromotionId() != null) targetByPromotion.put(target.getPromotionId(), target);
@@ -1200,15 +1626,18 @@ public class CheckoutActivity extends BaseActivity {
             if (promotion.getPromotionKind() != null && "FlashSale".equalsIgnoreCase(promotion.getPromotionKind())) {
                 continue;
             }
+            if (!isSearchingVoucher && PromotionVoucherHelper.isPromotionExpired(promotion)) {
+                continue;
+            }
             PromotionTargetDto target = targetByPromotion.get(promotion.getPromotionId());
             PromotionUsageDto usage = usageByPromotion.get(promotion.getPromotionId());
             String disabledReason = disabledReason(promotion, target, usage);
             boolean enabled = disabledReason == null;
 
-            voucherItems.add(new VoucherOptionAdapter.VoucherItemUiModel(
-                    voucherTitle(promotion),
-                    voucherCondition(promotion, target, disabledReason),
-                    voucherExpiry(promotion),
+            allVoucherItems.add(new VoucherOptionAdapter.VoucherItemUiModel(
+                    PromotionVoucherHelper.voucherTitle(promotion),
+                    PromotionVoucherHelper.voucherCondition(promotion, target, disabledReason),
+                    PromotionVoucherHelper.voucherExpiry(promotion),
                     R.drawable.ic_voucher,
                     promotion.getPromotionId(),
                     enabled,
@@ -1216,7 +1645,7 @@ public class CheckoutActivity extends BaseActivity {
             ));
         }
 
-        java.util.Collections.sort(voucherItems, (v1, v2) -> {
+        java.util.Collections.sort(allVoucherItems, (v1, v2) -> {
             if (v1.enabled && !v2.enabled) {
                 return -1;
             } else if (!v1.enabled && v2.enabled) {
@@ -1225,19 +1654,10 @@ public class CheckoutActivity extends BaseActivity {
             return 0;
         });
 
-        updateVoucherSelectionText(selectedCountView, selectedTitleView);
-        recyclerView.setAdapter(new VoucherOptionAdapter(
-                voucherItems,
-                selectedProductVoucher == null ? null : selectedProductVoucher.promotionId,
-                selectedShippingVoucher == null ? null : selectedShippingVoucher.promotionId,
-                (productVoucher, shippingVoucher) -> {
-                    selectedProductVoucher = productVoucher;
-                    selectedShippingVoucher = shippingVoucher;
-                    updateVoucherSelectionText(selectedCountView, selectedTitleView);
-                    updateSelectedVoucherUi();
-                    bindPaymentSummary();
-                }
-        ));
+        syncSelectedVoucherReferences();
+        applyVoucherFilter(recyclerView, selectedCountView, selectedTitleView, tvEmptyState, tvListTitle);
+        updateSelectedVoucherUi();
+        bindPaymentSummary();
     }
 
     private boolean validateSelectedVouchersBeforeCheckout() {
@@ -1289,13 +1709,18 @@ public class CheckoutActivity extends BaseActivity {
         TextView btnConfirmLocation = dialogView.findViewById(R.id.btnConfirmLocation);
         TextView btnAddLocation = dialogView.findViewById(R.id.btnAddLocation);
 
+        BottomSheetDialog dialog = createBottomSheetDialog(dialogView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         ensureLocationItems();
-        recyclerView.setAdapter(new LocationOptionAdapter(locationItems, selectedLocationIndex, item ->
-                selectedLocationIndex = locationItems.indexOf(item)
+        recyclerView.setAdapter(new LocationOptionAdapter(
+                locationItems,
+                selectedLocationIndex,
+                item -> selectedLocationIndex = locationItems.indexOf(item),
+                item -> {
+                    dialog.dismiss();
+                    openEditAddressFromLocationItem(item);
+                }
         ));
-
-        BottomSheetDialog dialog = createBottomSheetDialog(dialogView);
         btnCancelLocation.setOnClickListener(v -> dialog.dismiss());
         btnConfirmLocation.setOnClickListener(v -> {
             applySelectedLocationToAddressCard();
@@ -1306,6 +1731,51 @@ public class CheckoutActivity extends BaseActivity {
             openAddAddressForm();
         });
         dialog.show();
+    }
+
+    private void openEditAddressFromLocationItem(@NonNull LocationOptionAdapter.LocationItemUiModel item) {
+        if (customerId == null || customerId.trim().isEmpty() || addressRepository == null) {
+            openAddAddressForm();
+            return;
+        }
+        addressRepository.getAddresses(customerId, new AddressRepository.Callback<List<Address>>() {
+            @Override
+            public void onSuccess(List<Address> addresses) {
+                if (addresses == null) {
+                    openAddAddressForm();
+                    return;
+                }
+                for (Address address : addresses) {
+                    String displayName = joinNameAndPhone(address.getName(), address.getPhone());
+                    String displayAddress = joinAddress(address.getDetail(), address.getWard(), address.getDistrict(), address.getProvince());
+                    if (displayName.equals(item.name) && displayAddress.equals(item.address)) {
+                        openEditAddressForm(address);
+                        return;
+                    }
+                }
+                openAddAddressForm();
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                openAddAddressForm();
+            }
+        });
+    }
+
+    private void openEditAddressForm(@NonNull Address address) {
+        Intent intent = new Intent(this, AddressFormActivity.class);
+        intent.putExtra(AddressFormActivity.EXTRA_ADDRESS_ID, address.getId());
+        intent.putExtra(AddressFormActivity.EXTRA_NAME, address.getName());
+        intent.putExtra(AddressFormActivity.EXTRA_PHONE, address.getPhone());
+        intent.putExtra(AddressFormActivity.EXTRA_EMAIL, address.getEmail());
+        intent.putExtra(AddressFormActivity.EXTRA_DETAIL, address.getDetail());
+        intent.putExtra(AddressFormActivity.EXTRA_WARD, address.getWard());
+        intent.putExtra(AddressFormActivity.EXTRA_DISTRICT, address.getDistrict());
+        intent.putExtra(AddressFormActivity.EXTRA_CITY, address.getProvince());
+        intent.putExtra(AddressFormActivity.EXTRA_IS_DEFAULT, address.isDefault());
+        intent.putExtra(AddressFormActivity.EXTRA_EDIT_MODE, true);
+        addAddressLauncher.launch(intent);
     }
 
     private void showNoteDialog() {
@@ -1356,10 +1826,17 @@ public class CheckoutActivity extends BaseActivity {
             );
             if (bottomSheet != null) {
                 int halfScreenHeight = getResources().getDisplayMetrics().heightPixels / 2;
-                bottomSheet.setBackgroundResource(R.drawable.bg_bottom_sheet_rounded);
+                bottomSheet.setBackgroundResource(android.R.color.transparent);
                 bottomSheet.setPadding(0, 0, 0, 0);
-                bottomSheet.getLayoutParams().height = halfScreenHeight;
-                bottomSheet.requestLayout();
+                ViewCompat.setOnApplyWindowInsetsListener(bottomSheet, (view, windowInsets) -> {
+                    int bottomInset = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                    ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+                    layoutParams.height = halfScreenHeight + bottomInset;
+                    view.setLayoutParams(layoutParams);
+                    view.setPadding(0, 0, 0, bottomInset);
+                    return windowInsets;
+                });
+                ViewCompat.requestApplyInsets(bottomSheet);
                 BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
                 behavior.setPeekHeight(halfScreenHeight, true);
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
@@ -1463,13 +1940,13 @@ public class CheckoutActivity extends BaseActivity {
             return;
         }
         int selectedCount = countSelectedVouchers();
-        if (selectedCount > 0) {
-            tvCheckoutSelectedVoucher.setText(buildSelectedVoucherSummary());
-            tvCheckoutSelectedVoucher.setTextColor(getResources().getColor(R.color.primary_main, getTheme()));
-        } else {
-            tvCheckoutSelectedVoucher.setText("Chọn hoặc nhập mã");
-            tvCheckoutSelectedVoucher.setTextColor(android.graphics.Color.parseColor("#616161"));
-        }
+        PromotionVoucherHelper.bindVoucherSelectionRow(
+                tvVoucherLabel,
+                tvCheckoutSelectedVoucher,
+                selectedCount > 0 ? buildSelectedVoucherSummary() : null,
+                getResources().getColor(R.color.primary_main, getTheme()),
+                android.graphics.Color.parseColor("#616161")
+        );
     }
 
     private int countSelectedVouchers() {
@@ -1502,7 +1979,7 @@ public class CheckoutActivity extends BaseActivity {
         if (selectedCount > 0) {
             selectedCountView.setText(selectedCount + " mã đã được chọn");
             selectedTitleView.setText(buildSelectedVoucherSummary());
-        } else if (voucherItems.isEmpty()) {
+        } else if (allVoucherItems.isEmpty()) {
             selectedCountView.setText("Không có mã khuyến mãi khả dụng");
             selectedTitleView.setText("");
         } else {
@@ -1519,7 +1996,6 @@ public class CheckoutActivity extends BaseActivity {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     cachedTargets.clear();
                     cachedTargets.addAll(response.body().getData());
-                    validateAppliedVoucher();
                 }
             }
             @Override public void onFailure(Call<ApiListResponseDto<PromotionTargetDto>> call, Throwable t) {}
@@ -1531,7 +2007,6 @@ public class CheckoutActivity extends BaseActivity {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     cachedUsages.clear();
                     cachedUsages.addAll(response.body().getData());
-                    validateAppliedVoucher();
                 }
             }
             @Override public void onFailure(Call<ApiListResponseDto<PromotionUsageDto>> call, Throwable t) {}
@@ -1539,6 +2014,11 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void validateAppliedVoucher() {
+        if (cartItems.isEmpty() || currentSubtotal <= 0) {
+            return;
+        }
+        boolean hadProductVoucher = selectedProductVoucher != null;
+        boolean hadShippingVoucher = selectedShippingVoucher != null;
         boolean changed = false;
         if (validateVoucherSelection(selectedProductVoucher) != null) {
             selectedProductVoucher = null;
@@ -1551,54 +2031,24 @@ public class CheckoutActivity extends BaseActivity {
         if (changed) {
             updateSelectedVoucherUi();
             bindPaymentSummary();
-            Toast.makeText(this, "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
+            if (hadProductVoucher || hadShippingVoucher) {
+                Toast.makeText(this, "Voucher đã được hủy vì giỏ hàng không còn đáp ứng điều kiện áp dụng.", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
     private String disabledReason(PromotionDto promotion, PromotionTargetDto target, PromotionUsageDto usage) {
-        if (promotion == null) return null;
-
-        if (!Boolean.TRUE.equals(promotion.getActive())) {
-            return "Mã đã bị vô hiệu hóa";
+        if (customerId == null) {
+            customerId = resolveCustomerId();
         }
-
-        long now = System.currentTimeMillis();
-        Long start = parseDateMillis(promotion.getStartDate());
-        Long end = parseDateMillis(promotion.getEndDate());
-        if (start != null && now < start) {
-            return "Chưa đến thời gian bắt đầu";
-        }
-        if (end != null && now > end) {
-            return "Mã đã hết hạn";
-        }
-
-        double minOrder = promotion.getMinOrderValue() != null ? promotion.getMinOrderValue() : 0;
-        if (currentSubtotal < minOrder) {
-            return "Đơn tối thiểu " + formatCurrency((long) minOrder);
-        }
-        if (!matchesTarget(target)) {
-            // Check if it's a shipping voucher or specific type that might not have target metadata
-            if ("Shipping".equalsIgnoreCase(promotion.getPromotionKind())) {
-                return null; // Let shipping logic handle it
-            }
-            return "Không áp dụng cho sản phẩm trong giỏ";
-        }
-        if (promotion.getUsageLimit() != null && promotion.getUsageLimit() > 0 && usage != null
-                && usage.getOrderIds() != null
-                && usage.getOrderIds().size() >= promotion.getUsageLimit()) {
-            return "Mã đã hết lượt sử dụng";
-        }
-        if (promotion.getUserLimit() != null && promotion.getUserLimit() > 0 && usage != null && usage.getUserIds() != null) {
-            int userUseCount = 0;
-            String currentCustId = customerId != null ? customerId : resolveCustomerId();
-            for (String userId : usage.getUserIds()) {
-                if (currentCustId != null && currentCustId.equals(userId)) userUseCount++;
-            }
-            if (userUseCount >= promotion.getUserLimit()) {
-                return "Bạn đã hết lượt dùng mã này";
-            }
-        }
-        return null;
+        return PromotionVoucherHelper.evaluateDisabledReason(
+                promotion,
+                target,
+                usage,
+                currentSubtotal,
+                customerId,
+                matchesTarget(target)
+        );
     }
 
     private boolean matchesTarget(PromotionTargetDto target) {
@@ -1646,69 +2096,11 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {
-        if (promotion == null || !Boolean.TRUE.equals(promotion.getActive())) return false;
-        long now = System.currentTimeMillis();
-        Long start = parseDateMillis(promotion.getStartDate());
-        Long end = parseDateMillis(promotion.getEndDate());
-        return (start == null || now >= start) && (end == null || now <= end);
-    }
-
-    private Long parseDateMillis(String value) {
-        if (value == null || value.trim().isEmpty()) return null;
-        String normalized = value.trim();
-        String[] patterns = {
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                "yyyy-MM-dd HH:mm:ss",
-                "yyyy-MM-dd"
-        };
-        for (String pattern : patterns) {
-            try {
-                java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat(pattern, Locale.US);
-                if (pattern.endsWith("'Z'")) {
-                    formatter.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-                }
-                Date date = formatter.parse(normalized);
-                if (date != null) return date.getTime();
-            } catch (Exception ignored) {
-            }
+        if (promotion == null || !Boolean.TRUE.equals(promotion.getActive())) {
+            return false;
         }
-        return null;
-    }
-
-    private String voucherTitle(PromotionDto promotion) {
-        if (promotion.getName() != null && !promotion.getName().trim().isEmpty()) return promotion.getName();
-        if (promotion.getCode() != null && !promotion.getCode().trim().isEmpty()) return promotion.getCode();
-        return promotion.getPromotionId() != null ? promotion.getPromotionId() : "Khuyến mãi";
-    }
-
-    private String voucherCondition(PromotionDto promotion, PromotionTargetDto target, String disabledReason) {
-        StringBuilder text = new StringBuilder();
-        Double discountValue = promotion.getDiscountValue();
-        if (discountValue != null && discountValue > 0) {
-            boolean fixed = "fixed".equalsIgnoreCase(promotion.getDiscountType());
-            text.append(fixed ? "Giảm " + formatCurrency(discountValue.longValue()) : "Giảm " + trimTrailingZeros(discountValue) + "%");
-        } else if (isShippingPromotion(promotion)) {
-            text.append("Miễn phí vận chuyển");
-        } else {
-            text.append(promotion.getDescription() != null ? promotion.getDescription() : "Khuyến mãi");
-        }
-        if (promotion.getMinOrderValue() != null && promotion.getMinOrderValue() > 0) {
-            text.append(" | Đơn từ ").append(formatCurrency(promotion.getMinOrderValue().longValue()));
-        }
-        if (target != null && target.getTargetType() != null) {
-            text.append(" | Áp dụng: ").append(target.getTargetType());
-        }
-        if (disabledReason != null) {
-            text.append(" | ").append(disabledReason);
-        }
-        return text.toString();
-    }
-
-    private String voucherExpiry(PromotionDto promotion) {
-        return promotion.getEndDate() != null && !promotion.getEndDate().trim().isEmpty()
-                ? "Hết hạn: " + promotion.getEndDate()
-                : "Không giới hạn thời gian";
+        return !PromotionVoucherHelper.isPromotionExpired(promotion)
+                && !PromotionVoucherHelper.isPromotionNotStarted(promotion);
     }
 
     private boolean isShippingPromotion(PromotionDto promotion) {
@@ -1734,16 +2126,14 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private void ensureLocationItems() {
-        if (!locationItems.isEmpty()) {
-            return;
-        }
-        addFallbackLocation();
+        // Allow opening address book even when the list is empty.
     }
 
     private void loadAddresses() {
         if (customerId == null || customerId.trim().isEmpty() || addressRepository == null) {
-            addFallbackLocation();
-            applySelectedLocationToAddressCard();
+            locationItems.clear();
+            selectedLocationIndex = 0;
+            updateAddressDisplayMode();
             return;
         }
 
@@ -1765,20 +2155,17 @@ public class CheckoutActivity extends BaseActivity {
                         }
                     }
                 }
-                if (locationItems.isEmpty()) {
-                    addFallbackLocation();
-                }
                 applyRecurringAddressIfNeeded();
-                applySelectedLocationToAddressCard();
+                updateAddressDisplayMode();
             }
 
             @Override
             public void onError(Throwable t) {
                 if (locationItems.isEmpty()) {
-                    addFallbackLocation();
+                    selectedLocationIndex = 0;
                 }
                 applyRecurringAddressIfNeeded();
-                applySelectedLocationToAddressCard();
+                updateAddressDisplayMode();
             }
         });
     }
@@ -1812,20 +2199,17 @@ public class CheckoutActivity extends BaseActivity {
         selectedLocationIndex = 0;
     }
 
-    private void addFallbackLocation() {
-        AppPreferences preferences = new AppPreferences(this);
-        String name = safeText(preferences.getFullName());
-        String phone = safeText(preferences.getCurrentPhone());
-        String displayName = joinNameAndPhone(
-                name.isEmpty() ? "Người nhận" : name,
-                phone
-        );
-        locationItems.add(new LocationOptionAdapter.LocationItemUiModel(
-                displayName,
-                "Vui lòng chọn hoặc thêm địa chỉ giao hàng",
-                true
-        ));
-        selectedLocationIndex = 0;
+    private void updateAddressDisplayMode() {
+        boolean hasSavedAddress = !locationItems.isEmpty();
+        if (layoutAddressSaved != null) {
+            layoutAddressSaved.setVisibility(hasSavedAddress ? View.VISIBLE : View.GONE);
+        }
+        if (layoutAddressEmpty != null) {
+            layoutAddressEmpty.setVisibility(hasSavedAddress ? View.GONE : View.VISIBLE);
+        }
+        if (hasSavedAddress) {
+            applySelectedLocationToAddressCard();
+        }
     }
 
     private void openAddAddressForm() {
@@ -1863,6 +2247,7 @@ public class CheckoutActivity extends BaseActivity {
 
         locationItems.add(new LocationOptionAdapter.LocationItemUiModel(displayName, displayAddress, isDefault));
         selectedLocationIndex = locationItems.size() - 1;
+        updateAddressDisplayMode();
     }
 
     private String joinNameAndPhone(String name, String phone) {

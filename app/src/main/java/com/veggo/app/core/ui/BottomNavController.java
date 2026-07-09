@@ -31,7 +31,7 @@ public final class BottomNavController {
         binding.navAccountButton.setOnClickListener(v -> openMainTab(activity, selectedItemId, R.id.nav_profile));
         binding.navScanButton.setOnClickListener(v -> {
             if (!new AppPreferences(activity).isLoggedIn()) {
-                LoginRequiredActivity.open(activity, "tủ lạnh thông minh");
+                LoginRequiredActivity.open(activity, "quét sản phẩm");
                 return;
             }
             if (activity instanceof MainActivity) {

@@ -304,40 +304,6 @@
 
             <include layout="@layout/profile_menu_info_rows" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/profileLoginRegisterRow"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="@dimen/spacing_md"
-            android:background="@drawable/bg_profile_card"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="@dimen/spacing_md"
-            android:paddingEnd="@dimen/spacing_md">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:contentDescription="@string/profile_logout"
-                android:src="@drawable/ic_profile_logout" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/spacing_md"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/profile_logout"
-                android:textColor="@color/veggo_danger"
-                android:textSize="16sp" />
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@string/profile_logout"
-                android:src="@drawable/ic_chevron_right" />
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>
 </FrameLayout>

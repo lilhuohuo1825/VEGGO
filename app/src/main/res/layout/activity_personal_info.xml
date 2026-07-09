@@ -67,16 +67,17 @@
                 android:paddingBottom="18dp">
 
                 <FrameLayout
-                    android:layout_width="104dp"
-                    android:layout_height="104dp"
+                    android:layout_width="76dp"
+                    android:layout_height="76dp"
                     android:background="@drawable/bg_profile_avatar">
 
                     <ImageView
                         android:id="@+id/personalInfoAvatarImage"
-                        android:layout_width="74dp"
-                        android:layout_height="74dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
                         android:layout_gravity="center"
                         android:contentDescription="Ảnh đại diện"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/ic_profile_avatar" />
 
                     <TextView
@@ -284,8 +285,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:background="@drawable/bg_input"
-                                android:hint="Ngày sinh"
-                                android:inputType="date"
+                                android:hint="dd/mm/yyyy"
+                                android:inputType="text"
                                 android:paddingStart="14dp"
                                 android:paddingEnd="40dp"
                                 android:textColor="@color/neutral_100"
@@ -299,7 +300,7 @@
                                 android:layout_marginEnd="12dp"
                                 android:contentDescription="Ngày sinh"
                                 android:src="@drawable/ic_calendar"
-                                android:tint="@color/neutral_40" />
+                                app:tint="@color/primary_main" />
                         </FrameLayout>
 
                         <TextView

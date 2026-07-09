@@ -149,6 +149,13 @@ public class PromotionDetailActivity extends BaseActivity {
                     product.getId());
             startActivity(intent);
         });
+        productAdapter.setOnAddProductClickListener(product ->
+                com.veggo.app.presentation.product.AddToCartBottomSheetHelper.show(
+                        PromotionDetailActivity.this,
+                        product,
+                        null
+                )
+        );
 
         btnLoadMore.setOnClickListener(v -> loadMoreProducts());
 

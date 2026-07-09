@@ -9,7 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -23,14 +22,15 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.data.remote.api.FridgeApi;
 import com.veggo.app.data.remote.dto.AiRecognitionRequestDto;
 import com.veggo.app.data.remote.dto.AiRecognitionItemDto;
@@ -38,7 +38,6 @@ import com.veggo.app.data.remote.dto.FridgeBatchRequestDto;
 import com.veggo.app.data.remote.dto.FridgeLocationDto;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -58,8 +57,8 @@ public class AddFridgeIngredientActivity extends BaseActivity {
     private final List<String> locationOptions = new ArrayList<>();
     private final List<FridgeLocationDto> fetchedLocations = new ArrayList<>();
 
-    private Uri cameraImageUri = null;
-    private int activeBlockIndex = -1; // Track which block initiated camera/gallery
+    private int activeBlockIndex = -1;
+    private CameraCaptureHelper cameraCaptureHelper;
 
     private static final int MODE_BLOCK_IMAGE = 0;
     private static final int MODE_SCAN_RECEIPT = 1;
@@ -121,41 +120,6 @@ public class AddFridgeIngredientActivity extends BaseActivity {
             }
     );
 
-    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && cameraImageUri != null) {
-                    if (cameraMode == MODE_SCAN_RECEIPT) {
-                        analyzeImageWithAI(cameraImageUri);
-                    } else if (cameraMode == MODE_SCAN_INGREDIENT && activeBlockIndex >= 0 && activeBlockIndex < blocks.size()) {
-                        ManualBlockViewHolder block = blocks.get(activeBlockIndex);
-                        if (isBlockEmpty(block)) {
-                            addImageToBlock(block, cameraImageUri);
-                            recognizeIngredientFromImage(cameraImageUri, block);
-                        } else {
-                            addManualBlock(null);
-                            ManualBlockViewHolder newBlock = blocks.get(blocks.size() - 1);
-                            addImageToBlock(newBlock, cameraImageUri);
-                            recognizeIngredientFromImage(cameraImageUri, newBlock);
-                        }
-                    } else if (activeBlockIndex >= 0 && activeBlockIndex < blocks.size()) {
-                        addImageToBlock(blocks.get(activeBlockIndex), cameraImageUri);
-                    }
-                }
-            }
-    );
-
-    private final ActivityResultLauncher<String[]> cameraPermLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestMultiplePermissions(),
-            perms -> {
-                if (Boolean.TRUE.equals(perms.get(Manifest.permission.CAMERA))) {
-                    launchCamera();
-                } else {
-                    Toast.makeText(this, "Cần cấp quyền camera để chụp ảnh", Toast.LENGTH_SHORT).show();
-                }
-            }
-    );
-
     private final ActivityResultLauncher<String[]> galleryPermLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
             perms -> {
@@ -176,6 +140,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
             return;
         }
         setContentView(R.layout.activity_add_fridge_ingredient);
+        cameraCaptureHelper = new CameraCaptureHelper(this);
 
         blocksContainer = findViewById(R.id.fridgeManualBlocksContainer);
         isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -201,22 +166,23 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(android.view.MotionEvent event) {
-        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-            android.view.View v = getCurrentFocus();
-            if (v instanceof android.widget.EditText) {
-                android.graphics.Rect outRect = new android.graphics.Rect();
-                v.getGlobalVisibleRect(outRect);
-                if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
-                    v.clearFocus();
-                    android.view.inputmethod.InputMethodManager imm =
-                            (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                    if (imm != null) imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+    private String readApiErrorMessage(retrofit2.Response<?> response, String fallback) {
+        try {
+            if (response.errorBody() != null) {
+                String raw = response.errorBody().string();
+                if (raw.contains("\"message\"")) {
+                    int start = raw.indexOf("\"message\"");
+                    int valueStart = raw.indexOf(':', start) + 1;
+                    int firstQuote = raw.indexOf('"', valueStart);
+                    int secondQuote = raw.indexOf('"', firstQuote + 1);
+                    if (firstQuote >= 0 && secondQuote > firstQuote) {
+                        return raw.substring(firstQuote + 1, secondQuote);
+                    }
                 }
             }
+        } catch (Exception ignored) {
         }
-        return super.dispatchTouchEvent(event);
+        return fallback;
     }
 
     private void setupListeners() {
@@ -479,10 +445,39 @@ public class AddFridgeIngredientActivity extends BaseActivity {
     }
 
     private void checkCameraPermAndOpen() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            launchCamera();
-        } else {
-            cameraPermLauncher.launch(new String[]{Manifest.permission.CAMERA});
+        cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+            @Override
+            public void onImageCaptured(@NonNull Uri uri) {
+                handleCameraCapture(uri);
+            }
+
+            @Override
+            public void onPermissionDenied() {
+                Toast.makeText(AddFridgeIngredientActivity.this, R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void handleCameraCapture(Uri uri) {
+        if (cameraMode == MODE_SCAN_RECEIPT) {
+            analyzeImageWithAI(uri);
+            return;
+        }
+        if (cameraMode == MODE_SCAN_INGREDIENT && activeBlockIndex >= 0 && activeBlockIndex < blocks.size()) {
+            ManualBlockViewHolder block = blocks.get(activeBlockIndex);
+            if (isBlockEmpty(block)) {
+                addImageToBlock(block, uri);
+                recognizeIngredientFromImage(uri, block);
+            } else {
+                addManualBlock(null);
+                ManualBlockViewHolder newBlock = blocks.get(blocks.size() - 1);
+                addImageToBlock(newBlock, uri);
+                recognizeIngredientFromImage(uri, newBlock);
+            }
+            return;
+        }
+        if (activeBlockIndex >= 0 && activeBlockIndex < blocks.size()) {
+            addImageToBlock(blocks.get(activeBlockIndex), uri);
         }
     }
 
@@ -491,25 +486,6 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         intent.setType("image/*");
         galleryLauncher.launch(intent);
-    }
-
-    private void launchCamera() {
-        try {
-            File photoFile = createImageFile();
-            cameraImageUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-            cameraLauncher.launch(intent);
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Không thể mở camera", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private File createImageFile() throws IOException {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        return File.createTempFile("FRIDGE_" + timeStamp + "_", ".jpg", storageDir);
     }
 
     private void addImageToBlock(ManualBlockViewHolder block, Uri uri) {
@@ -548,7 +524,14 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         new Thread(() -> {
             try {
                 InputStream is = getContentResolver().openInputStream(imageUri);
+                if (is == null) {
+                    throw new IOException("Không đọc được ảnh");
+                }
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
+                is.close();
+                if (bitmap == null) {
+                    throw new IOException("Ảnh không hợp lệ");
+                }
                 int maxDim = Math.max(bitmap.getWidth(), bitmap.getHeight());
                 if (maxDim > 1000) {
                     float scale = 1000f / maxDim;
@@ -607,12 +590,12 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                             Toast.makeText(this, "AI không tìm thấy nguyên liệu nào trong ảnh", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(this, "AI phân tích thất bại", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, readApiErrorMessage(response, "AI phân tích thất bại"), Toast.LENGTH_LONG).show();
                     }
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Lỗi phân tích AI", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Lỗi kết nối AI: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -623,7 +606,14 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         new Thread(() -> {
             try {
                 InputStream is = getContentResolver().openInputStream(imageUri);
+                if (is == null) {
+                    throw new IOException("Không đọc được ảnh");
+                }
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
+                is.close();
+                if (bitmap == null) {
+                    throw new IOException("Ảnh không hợp lệ");
+                }
                 int maxDim = Math.max(bitmap.getWidth(), bitmap.getHeight());
                 if (maxDim > 1000) {
                     float scale = 1000f / maxDim;
@@ -653,12 +643,12 @@ public class AddFridgeIngredientActivity extends BaseActivity {
                             }
                         }
                     } else {
-                        Toast.makeText(this, "Không nhận diện được nguyên liệu", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, readApiErrorMessage(response, "Không nhận diện được nguyên liệu"), Toast.LENGTH_LONG).show();
                     }
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Lỗi nhận diện AI", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Lỗi kết nối AI: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -784,7 +774,7 @@ public class AddFridgeIngredientActivity extends BaseActivity {
             
             rv.setAdapter(adapter);
         }
-        
+
         dialog.show();
     }
 

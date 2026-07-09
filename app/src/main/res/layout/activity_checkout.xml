@@ -72,6 +72,14 @@
                 android:background="@drawable/bg_checkout_card_white"
                 android:orientation="vertical"
                 android:padding="10dp">
+
+                <LinearLayout
+                    android:id="@+id/layoutAddressSaved"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
                 <LinearLayout
                     android:id="@+id/layoutAddress"
                     android:layout_width="match_parent"
@@ -102,7 +110,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/inter_medium"
-                                android:text="Nguyễn Minh Anh"
+                                android:text=""
                                 android:textColor="#1E1E1E"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -121,7 +129,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="6dp"
                                 android:fontFamily="@font/inter_medium"
-                                android:text="0901 234 567"
+                                android:text=""
                                 android:textColor="#616161"
                                 android:textSize="14sp" />
                         </LinearLayout>
@@ -133,7 +141,7 @@
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
-                            android:text="123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh"
+                            android:text=""
                             android:textColor="#616161"
                             android:textSize="12sp" />
 
@@ -147,13 +155,51 @@
                             android:gravity="center"
                             android:text="Mặc định"
                             android:textColor="#FFFFFF"
-                            android:textSize="10sp" />
+                            android:textSize="10sp"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layoutAddressEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/inter_regular"
+                        android:gravity="start"
+                        android:maxLines="2"
+                        android:text="Vui lòng thêm địa chỉ vào sổ địa chỉ để đặt hàng"
+                        android:textColor="#616161"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/btnOpenAddressBook"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/bg_button_primary"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:text="Sổ địa chỉ"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <View
@@ -453,6 +499,22 @@
                         android:textColor="#1E1E1E"
                         android:textSize="14sp" />
 
+                    <TextView
+                        android:id="@+id/btnVeggoPayTopUp"
+                        android:layout_width="72dp"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_button_outline_green"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_semibold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:text="Nạp tiền"
+                        android:textColor="@color/primary_main"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
                     <androidx.appcompat.widget.AppCompatRadioButton
                         android:id="@+id/radioPaymentMomo"
                         android:layout_width="36dp"
@@ -566,9 +628,11 @@
             <LinearLayout
                 android:id="@+id/layoutVoucher"
                 android:layout_width="match_parent"
-                android:layout_height="43dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="15dp"
                 android:background="@drawable/bg_checkout_card_white"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="10dp"
@@ -580,10 +644,10 @@
                     android:src="@drawable/ic_voucher" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/tvVoucherLabel"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
                     android:fontFamily="@font/inter_medium"
                     android:text="Veggo Voucher"
                     android:textColor="#0F172A"
@@ -592,9 +656,14 @@
 
                 <TextView
                     android:id="@+id/tvCheckoutSelectedVoucher"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
                     android:fontFamily="@font/inter_regular"
+                    android:gravity="end"
+                    android:maxLines="1"
                     android:text="Chọn hoặc nhập mã"
                     android:textColor="#616161"
                     android:textSize="12sp" />

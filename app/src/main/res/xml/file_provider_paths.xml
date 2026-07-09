@@ -6,6 +6,9 @@
     <cache-path
         name="fridge_cache"
         path="images/" />
+    <cache-path
+        name="camera_cache"
+        path="camera/" />
     <files-path
         name="community_images"
         path="community_images/" />

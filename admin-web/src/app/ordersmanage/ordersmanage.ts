@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { Subscription, filter, interval } from 'rxjs';
+import { Subscription, filter, interval, of } from 'rxjs';
 import {
   formatDeliveryWindowText,
   getOrderSourceClass,
@@ -27,7 +27,7 @@ export class OrdersManage implements OnInit, OnDestroy {
   private routerSubscription?: Subscription;
   private dataRefreshSubscription?: Subscription;
   private isLoadingOrders = false;
-  private readonly REFRESH_INTERVAL = 5000;
+  private readonly REFRESH_INTERVAL = 30000;
 
   // Statistics
   statistics = {
@@ -196,7 +196,12 @@ export class OrdersManage implements OnInit, OnDestroy {
     if (!silent) {
       console.log('🔄 Loading orders from MongoDB...');
     }
-    // Try MongoDB first
+
+    const users$ =
+      silent && Array.isArray(this.users) && this.users.length > 0
+        ? of(this.users)
+        : this.apiService.getUsers();
+
     this.apiService.getOrders().subscribe({
       next: (ordersData) => {
         if (!silent) {
@@ -218,8 +223,7 @@ export class OrdersManage implements OnInit, OnDestroy {
           console.log(`✅ Loaded ${ordersData.length} orders from MongoDB`);
         }
 
-        // Load users to map CustomerID to customer name
-        this.apiService.getUsers().subscribe({
+        users$.subscribe({
           next: (usersData) => {
             if (!silent) {
               console.log(`✅ Loaded ${usersData.length} users from MongoDB`);

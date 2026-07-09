@@ -12,6 +12,7 @@ import com.veggo.app.R;
 import com.veggo.app.adapter.WalletTransactionAdapter;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.preferences.WalletTransactionReadState;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.data.remote.dto.WalletTransactionDto;
 import com.veggo.app.data.repository.WalletRepository;
@@ -49,9 +50,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         customerId = new AppPreferences(this).getCustomerId();
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-        findViewById(R.id.btnReadAll).setOnClickListener(v -> 
-            Toast.makeText(this, "Đã đánh dấu đọc tất cả thông báo biến động số dư", Toast.LENGTH_SHORT).show()
-        );
+        findViewById(R.id.btnReadAll).setOnClickListener(v -> markAllTransactionsRead());
 
         // Initialize tabs
         tabAll = findViewById(R.id.tabAll);
@@ -71,7 +70,17 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         tabSend.setOnClickListener(v -> selectTab("send"));
 
         rvTransactions.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new WalletTransactionAdapter(transactionsList);
+        adapter = new WalletTransactionAdapter(transactionsList, new WalletTransactionAdapter.ReadState() {
+            @Override
+            public boolean isUnread(WalletTransactionDto tx) {
+                return WalletTransactionReadState.isUnread(VeggoPayHistoryActivity.this, tx);
+            }
+
+            @Override
+            public void markRead(WalletTransactionDto tx) {
+                WalletTransactionReadState.markRead(VeggoPayHistoryActivity.this, tx);
+            }
+        });
         rvTransactions.setAdapter(adapter);
 
         loadTransactions();
@@ -119,6 +128,25 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         adapter.notifyDataSetChanged();
     }
 
+    private void markAllTransactionsRead() {
+        if (!hasUnreadTransactions()) {
+            Toast.makeText(this, "Không có thông báo chưa đọc", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        WalletTransactionReadState.markAllRead(this);
+        adapter.notifyDataSetChanged();
+        Toast.makeText(this, "Đã đánh dấu tất cả là đã đọc", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean hasUnreadTransactions() {
+        for (WalletTransactionDto tx : allTransactions) {
+            if (WalletTransactionReadState.isUnread(this, tx)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void loadTransactions() {
         if (TextUtils.isEmpty(customerId)) return;
         showProgress("Đang tải lịch sử giao dịch...");
@@ -131,6 +159,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
                     if (result != null && !result.isEmpty()) {
                         allTransactions.addAll(result);
                     }
+                    WalletTransactionReadState.ensureBaselineIfNeeded(VeggoPayHistoryActivity.this, allTransactions);
                     applyFilter();
                 });
             }

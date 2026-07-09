@@ -38,7 +38,7 @@ export class NotificationService {
   private newNotificationSubject = new BehaviorSubject<AdminNotification | null>(null);
   public newNotification$: Observable<AdminNotification | null> = this.newNotificationSubject.asObservable();
 
-  private pollingInterval = 5000; // 5 seconds for real-time updates
+  private pollingInterval = 30000; // 30s – tránh spam API khi admin mở lâu
   private previousNotificationIds: Set<string> = new Set();
 
   constructor(private http: HttpClient) {

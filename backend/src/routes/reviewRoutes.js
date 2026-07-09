@@ -151,17 +151,58 @@ router.get('/sku/:sku', asyncHandler(async (req, res) => {
  * Trả về mảng phẳng đã sort theo thời gian mới nhất
  */
 router.get('/', asyncHandler(async (req, res) => {
-  const limit = parseInt(req.query.limit) || 0; // 0 = lấy hết
+  const limit = parseInt(req.query.limit, 10) || 0; // 0 = lấy hết
+  const lite = req.query.lite === 'true';
   const now = Date.now();
+
+  const slimReview = (review) => {
+    if (!lite) return review;
+    return {
+      fullname: review.fullname,
+      customer_id: review.customer_id,
+      content: review.content,
+      rating: review.rating,
+      time: review.time,
+      order_id: review.order_id,
+      sku: review.sku,
+      productId: review.productId,
+    };
+  };
+
+  // Admin dashboard chỉ cần vài review gần đây — dùng aggregation + limit, tránh flatten toàn bộ DB.
+  if (limit > 0 && limit <= 50) {
+    const recent = await mongoose.connection.db.collection('reviews').aggregate([
+      { $unwind: '$reviews' },
+      {
+        $project: {
+          _id: 0,
+          fullname: '$reviews.fullname',
+          customer_id: '$reviews.customer_id',
+          content: '$reviews.content',
+          rating: '$reviews.rating',
+          time: '$reviews.time',
+          order_id: '$reviews.order_id',
+          images: lite ? { $literal: [] } : '$reviews.images',
+          likes: lite ? { $literal: 0 } : '$reviews.likes',
+          replies: lite ? { $literal: [] } : '$reviews.replies',
+          sku: 1,
+          productId: { $ifNull: ['$productId', '$product_id'] },
+        },
+      },
+      { $sort: { time: -1 } },
+      { $limit: limit },
+    ]).toArray();
+    return res.json(recent.map(slimReview));
+  }
 
   if (reviewsCache && (now - reviewsCacheTime < 30000)) {
     const result = limit > 0 ? reviewsCache.slice(0, limit) : reviewsCache;
-    return res.json(result);
+    return res.json(result.map(slimReview));
   }
 
   const reviewDocs = await mongoose.connection.db
     .collection('reviews')
-    .find({})
+    .find({}, { projection: { sku: 1, productId: 1, product_id: 1, reviews: 1 } })
     .toArray();
 
   // Flatten tất cả reviews từ mọi document
@@ -203,7 +244,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const result = limit > 0 ? validReviews.slice(0, limit) : validReviews;
 
-  res.json(result);
+  res.json(result.map(slimReview));
 }));
 
 router.post('/uploads/media', mediaUpload.array('media', 8), asyncHandler(async (req, res) => {

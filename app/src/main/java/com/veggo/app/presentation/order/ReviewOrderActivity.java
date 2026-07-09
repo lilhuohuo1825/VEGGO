@@ -24,6 +24,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 
 import com.bumptech.glide.Glide;
 import com.veggo.app.R;
@@ -31,6 +32,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.data.remote.api.ReviewApi;
@@ -65,7 +67,7 @@ public class ReviewOrderActivity extends BaseActivity {
     private boolean activeMediaIsVideo;
     private ActivityResultLauncher<String> mediaPicker;
     private ActivityResultLauncher<PickVisualMediaRequest> multiImagePicker;
-    private ActivityResultLauncher<Void> imageCameraPicker;
+    private CameraCaptureHelper imageCameraHelper;
     private ActivityResultLauncher<Intent> videoCameraPicker;
 
     @Override
@@ -126,19 +128,7 @@ public class ReviewOrderActivity extends BaseActivity {
                 activeMediaForm.renderMedia(this);
             }
         });
-        imageCameraPicker = registerForActivityResult(new ActivityResultContracts.TakePicturePreview(), bitmap -> {
-            if (bitmap != null && activeMediaForm != null) {
-                if (activeMediaForm.imageCount() >= 3) {
-                    Toast.makeText(this, "Chỉ được chọn tối đa 3 ảnh", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                Uri uri = saveBitmapToCache(bitmap);
-                if (uri != null) {
-                    activeMediaForm.media.add(new ReviewMedia(uri, "review-camera.jpg", "image/jpeg"));
-                    activeMediaForm.renderMedia(this);
-                }
-            }
-        });
+        imageCameraHelper = new CameraCaptureHelper(this);
         videoCameraPicker = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null
                     && result.getData().getData() != null && activeMediaForm != null) {
@@ -345,7 +335,25 @@ public class ReviewOrderActivity extends BaseActivity {
             if (isVideo) {
                 videoCameraPicker.launch(new Intent(MediaStore.ACTION_VIDEO_CAPTURE));
             } else {
-                imageCameraPicker.launch(null);
+                imageCameraHelper.openCamera(new CameraCaptureHelper.Listener() {
+                    @Override
+                    public void onImageCaptured(@NonNull Uri imageUri) {
+                        if (activeMediaForm == null) {
+                            return;
+                        }
+                        if (activeMediaForm.imageCount() >= 3) {
+                            Toast.makeText(ReviewOrderActivity.this, "Chỉ được chọn tối đa 3 ảnh", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        activeMediaForm.media.add(new ReviewMedia(imageUri, "review-camera.jpg", "image/jpeg"));
+                        activeMediaForm.renderMedia(ReviewOrderActivity.this);
+                    }
+
+                    @Override
+                    public void onPermissionDenied() {
+                        Toast.makeText(ReviewOrderActivity.this, R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 
@@ -520,19 +528,6 @@ public class ReviewOrderActivity extends BaseActivity {
                 out.write(buffer, 0, read);
             }
             return out.toByteArray();
-        }
-    }
-
-    private Uri saveBitmapToCache(Bitmap bitmap) {
-        try {
-            File file = new File(getCacheDir(), "review-camera-" + System.currentTimeMillis() + ".jpg");
-            try (FileOutputStream outputStream = new FileOutputStream(file)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 88, outputStream);
-            }
-            return Uri.fromFile(file);
-        } catch (Exception exception) {
-            Toast.makeText(this, "Không thể xử lý ảnh đã chụp", Toast.LENGTH_SHORT).show();
-            return null;
         }
     }
 

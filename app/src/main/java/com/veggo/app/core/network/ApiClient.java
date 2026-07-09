@@ -23,7 +23,7 @@ public final class ApiClient {
 
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(15, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
                     .addInterceptor(new AuthInterceptor(VeggoApplication.getInstance()))
                     .addInterceptor(logging)

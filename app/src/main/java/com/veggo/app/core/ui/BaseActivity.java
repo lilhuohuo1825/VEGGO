@@ -2,10 +2,13 @@ package com.veggo.app.core.ui;
 
 import android.os.Build;
 import android.view.DisplayCutout;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.veggo.app.core.utils.KeyboardUtils;
 
 import java.util.WeakHashMap;
 
@@ -70,5 +73,11 @@ public abstract class BaseActivity extends AppCompatActivity {
             return insets;
         });
         root.requestApplyInsets();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        KeyboardUtils.handleActivityTouchToHideKeyboard(this, event);
+        return super.dispatchTouchEvent(event);
     }
 }

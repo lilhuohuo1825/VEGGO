@@ -312,7 +312,19 @@ async function recalculateCustomerCarbon(customerId) {
     : [];
   const detailMap = new Map(details.map((detail) => [detail.OrderID, detail]));
 
-  const products = await db().collection('products').find({}).toArray();
+  const skuSet = new Set();
+  for (const order of orders) {
+    const detail = detailMap.get(order.OrderID) || {};
+    const items = Array.isArray(detail.items) ? detail.items : Array.isArray(order.items) ? order.items : [];
+    items.forEach((item) => {
+      const sku = String(item.sku || item.SKU || '').trim();
+      if (sku) skuSet.add(sku);
+    });
+  }
+
+  const products = skuSet.size
+    ? await db().collection('products').find({ sku: { $in: [...skuSet] } }).toArray()
+    : [];
   const productLookup = buildProductLookup(products);
   const reviewDocs = await db().collection('reviews')
     .find({ 'reviews.customer_id': customerId })

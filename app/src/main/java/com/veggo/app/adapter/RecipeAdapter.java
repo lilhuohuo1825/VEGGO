@@ -79,6 +79,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         
         Glide.with(holder.itemView.getContext())
                 .load(recipe.getImageUrl())
+                .centerCrop()
                 .placeholder(R.drawable.logo)
                 .into(holder.ivRecipeImage);
 

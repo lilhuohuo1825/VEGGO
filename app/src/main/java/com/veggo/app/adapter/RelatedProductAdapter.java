@@ -96,7 +96,7 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
                 if (productClickListener != null) productClickListener.onProductClick(product);
             });
 
-            binding.btnAddRelated.setOnClickListener(v -> {
+            binding.btnAddRelated.getRoot().setOnClickListener(v -> {
                 if (addListener != null) addListener.onAdd(product);
             });
         }

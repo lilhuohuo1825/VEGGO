@@ -31,6 +31,7 @@ import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.core.network.ApiHttpException;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.remote.dto.CartDto;
+import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.utils.ProductImageUtils;
 import com.veggo.app.core.ui.BaseActivity;
@@ -923,7 +924,7 @@ public class ProductDetailActivity extends BaseActivity {
             @Override
             public void onResponse(Call<CartDto> call, Response<CartDto> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    int count = countCartItems(response.body());
+                    int count = CartCountUtils.countLineItems(response.body());
                     runOnUiThread(() -> {
                         updateProductCartBadge(count);
                         if (animate) {
@@ -942,17 +943,6 @@ public class ProductDetailActivity extends BaseActivity {
                 }
             }
         });
-    }
-
-    private int countCartItems(CartDto cartDto) {
-        if (cartDto == null || cartDto.getItems() == null) {
-            return 0;
-        }
-        int count = 0;
-        for (CartDto.CartItemDto item : cartDto.getItems()) {
-            count += Math.max(0, item.getQuantity());
-        }
-        return count;
     }
 
     private void updateProductCartBadge(int count) {

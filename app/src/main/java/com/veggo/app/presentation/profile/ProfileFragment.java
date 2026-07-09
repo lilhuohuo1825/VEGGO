@@ -34,6 +34,9 @@ public class ProfileFragment extends BaseFragment {
         view.findViewById(R.id.profileAddressRow).setOnClickListener(v ->
                 LoginRequiredActivity.open(requireContext(), "sổ địa chỉ")
         );
+        view.findViewById(R.id.profileWalletRow).setOnClickListener(v ->
+                LoginRequiredActivity.open(requireContext(), "ví VeggoPay")
+        );
         view.findViewById(R.id.profileCarbonRow).setOnClickListener(v ->
                 LoginRequiredActivity.open(requireContext(), "điểm carbon")
         );
@@ -71,7 +74,6 @@ public class ProfileFragment extends BaseFragment {
                 startActivity(new Intent(requireContext(), LoginActivity.class));
 
         view.findViewById(R.id.profileLoginButton).setOnClickListener(openLoginListener);
-        view.findViewById(R.id.profileLoginRegisterRow).setOnClickListener(openLoginListener);
     }
 
     private void openOrders(@Nullable String status) {
