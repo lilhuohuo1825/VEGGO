@@ -12,6 +12,7 @@ import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.data.remote.dto.PromotionDto;
 import com.veggo.app.data.remote.dto.PromotionTargetDto;
 import com.veggo.app.data.remote.dto.PromotionUsageDto;
+import com.veggo.app.data.remote.dto.ProductDto;
 
 import java.util.Date;
 import java.util.List;
@@ -270,5 +271,45 @@ public final class PromotionVoucherHelper {
             text = text.substring(0, text.length() - 1);
         }
         return text;
+    }
+
+    public static boolean matchesTargetRef(@Nullable String targetType, @Nullable List<String> targetRefs,
+                                         @Nullable String sku, @Nullable ProductDto product) {
+        if (targetType == null || targetRefs == null || targetRefs.isEmpty()) {
+            return true;
+        }
+        if ("User".equalsIgnoreCase(targetType)
+                || "Shipping".equalsIgnoreCase(targetType)
+                || "Order".equalsIgnoreCase(targetType)) {
+            return true;
+        }
+        for (String ref : targetRefs) {
+            if (ref == null || ref.trim().isEmpty()) {
+                continue;
+            }
+            String normalizedRef = ref.trim();
+            if ("Product".equalsIgnoreCase(targetType)) {
+                if (sku != null && normalizedRef.equalsIgnoreCase(sku.trim())) {
+                    return true;
+                }
+                if (product != null && product.getSku() != null
+                        && normalizedRef.equalsIgnoreCase(product.getSku().trim())) {
+                    return true;
+                }
+            } else if (product != null) {
+                String value = null;
+                if ("Category".equalsIgnoreCase(targetType)) {
+                    value = product.getCategoryId();
+                } else if ("Subcategory".equalsIgnoreCase(targetType)) {
+                    value = product.getSubcategoryId();
+                } else if ("Brand".equalsIgnoreCase(targetType)) {
+                    value = product.getBrand();
+                }
+                if (value != null && normalizedRef.equalsIgnoreCase(value.trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

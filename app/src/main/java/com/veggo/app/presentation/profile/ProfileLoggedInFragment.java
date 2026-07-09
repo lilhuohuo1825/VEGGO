@@ -17,6 +17,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.presentation.dialog.VeggoDialog;
@@ -185,36 +186,7 @@ public class ProfileLoggedInFragment extends BaseFragment {
     }
 
     private void updateOrderBadge(@Nullable TextView badgeView, int count) {
-        if (badgeView == null) {
-            return;
-        }
-        if (count <= 0) {
-            badgeView.setVisibility(View.GONE);
-            return;
-        }
-        badgeView.setText(count > 99 ? "99+" : String.valueOf(count));
-        badgeView.setVisibility(View.VISIBLE);
-        ViewGroup.LayoutParams params = badgeView.getLayoutParams();
-        if (params != null && count > 9) {
-            params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            int horizontalPadding = dp(4);
-            int verticalPadding = dp(1);
-            badgeView.setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
-            badgeView.setMinWidth(dp(18));
-            badgeView.setMinHeight(dp(18));
-        } else if (params != null) {
-            params.width = dp(18);
-            params.height = dp(18);
-            badgeView.setPadding(0, 0, 0, 0);
-            badgeView.setMinWidth(0);
-            badgeView.setMinHeight(0);
-        }
-        badgeView.requestLayout();
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+        BadgeUiHelper.applyAlertBadge(badgeView, count);
     }
 
     private void showLogoutDialog() {

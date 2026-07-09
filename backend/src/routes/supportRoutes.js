@@ -80,11 +80,6 @@ router.get('/conversations', asyncHandler(async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
     const convo = await ensureConversationForCustomer(customerId);
-    await SupportConversation.updateOne(
-      { _id: convo._id },
-      { $set: { unreadCountUser: 0 } }
-    );
-    convo.unreadCountUser = 0;
     return res.json({ success: true, data: [serializeConversation(convo)] });
   }
 
@@ -129,17 +124,31 @@ router.get('/conversations/:id/messages', asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 }));
 
-// POST /api/support/conversations/:id/mark-read (admin only)
+// POST /api/support/conversations/:id/mark-read
 router.post('/conversations/:id/mark-read', asyncHandler(async (req, res) => {
   const auth = getAuthFromRequest(req);
   if (!auth) return res.status(401).json({ success: false, message: 'Unauthorized' });
-  if (auth.type !== 'admin') return res.status(403).json({ success: false, message: 'Forbidden' });
 
   const conversationId = String(req.params.id || '').trim();
-  await SupportConversation.updateOne(
-    { _id: conversationId },
-    { $set: { unreadCountAdmin: 0 } }
-  );
+  const convo = await SupportConversation.findById(conversationId).lean();
+  if (!convo) return res.status(404).json({ success: false, message: 'Conversation not found' });
+
+  if (auth.type === 'user') {
+    if (convo.customerId !== auth.customerId) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    await SupportConversation.updateOne(
+      { _id: conversationId },
+      { $set: { unreadCountUser: 0 } }
+    );
+  } else if (auth.type === 'admin') {
+    await SupportConversation.updateOne(
+      { _id: conversationId },
+      { $set: { unreadCountAdmin: 0 } }
+    );
+  } else {
+    return res.status(403).json({ success: false, message: 'Forbidden' });
+  }
   res.json({ success: true });
 }));
 

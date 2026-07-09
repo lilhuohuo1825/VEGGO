@@ -146,7 +146,7 @@ public class RecurringOrderDetailActivity extends BaseActivity {
     private void confirmDelete() {
         VeggoDialog.show(
                 this,
-                R.drawable.ic_order_cancel_dialog,
+                R.drawable.ic_trash,
                 "Xoá đơn định kỳ",
                 "Bạn có chắc chắn muốn xoá đơn định kỳ này không?",
                 "Xoá",

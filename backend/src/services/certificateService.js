@@ -301,6 +301,21 @@ async function recalculateCustomerSpending(customerId) {
   };
 }
 
+async function getRedeemedCarbonFromLedger(customerId) {
+  if (!customerId) return 0;
+  try {
+    const txs = await db().collection('wallet_transactions')
+      .find({ customerId, type: 'carbon_watering', status: 'completed' })
+      .toArray();
+    return txs.reduce((sum, tx) => {
+      const pts = toNumber(tx.carbonPoints, 0);
+      return sum + Math.abs(pts);
+    }, 0);
+  } catch (e) {
+    return 0;
+  }
+}
+
 async function recalculateCustomerCarbon(customerId) {
   const orders = await db().collection('orders')
     .find({ CustomerID: customerId, status: { $in: COMPLETED_ORDER_STATUSES } })
@@ -398,13 +413,21 @@ async function recalculateCustomerCarbon(customerId) {
     });
   }
 
+  // Redeemed carbon points from ledger (watering tree in VeggoPay donate).
+  // IMPORTANT: use wallet_transactions, not tree.totalWaterCount, so balance stays
+  // consistent even when history was missing or watering cost changed.
+  const redeemedCarbonPoint = await getRedeemedCarbonFromLedger(customerId);
+
+  const netCarbonPoint = Math.max(0, Math.round(totalCarbonPoint - redeemedCarbonPoint));
+
   await db().collection('users').updateOne(
     { CustomerID: customerId },
     {
       $set: {
-        CarbonPoint: totalCarbonPoint,
+        CarbonPoint: netCarbonPoint,
         TotalCarbonEmission: Number(totalCarbonEmission.toFixed(3)),
-        CarbonPointUpdatedAt: new Date()
+        CarbonPointUpdatedAt: new Date(),
+        CarbonPointRedeemed: redeemedCarbonPoint
       }
     }
   );
@@ -412,7 +435,8 @@ async function recalculateCustomerCarbon(customerId) {
   return {
     CustomerID: customerId,
     totalCarbonEmission: Number(totalCarbonEmission.toFixed(3)),
-    totalCarbonPoint,
+    totalCarbonPoint: netCarbonPoint,
+    redeemedCarbonPoint,
     orders: orderSummaries
   };
 }
@@ -555,6 +579,7 @@ module.exports = {
   refreshCustomerOrderMetrics,
   recalculateCustomerSpending,
   recalculateCustomerCarbon,
+  getRedeemedCarbonFromLedger,
   evaluateAllDeliveredCustomers,
   isDeliveredStatus
 };

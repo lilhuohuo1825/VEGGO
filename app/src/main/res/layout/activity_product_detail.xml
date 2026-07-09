@@ -10,7 +10,9 @@
         android:id="@+id/productDetailScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -382,7 +384,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_search_bar"
+                    android:background="@drawable/bg_consultation_outline"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
@@ -466,11 +468,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
+        android:background="@drawable/bg_product_detail_top_scrim"
         android:elevation="12dp"
         android:paddingStart="18dp"
         android:paddingTop="16dp"
         android:paddingEnd="14dp"
-        android:paddingBottom="0dp">
+        android:paddingBottom="12dp">
 
         <FrameLayout
             android:id="@+id/btnBack"
@@ -490,7 +493,7 @@
                 android:contentDescription=""
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_left"
-                app:tint="@color/primary_main" />
+                app:tint="@color/primary_hover" />
         </FrameLayout>
 
         <LinearLayout

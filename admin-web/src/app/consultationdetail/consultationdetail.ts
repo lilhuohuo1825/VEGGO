@@ -17,6 +17,16 @@ interface Question {
   status: 'pending' | 'answered';
   createdAt: Date;
   updatedAt: Date;
+  replies?: UserReply[];
+}
+
+interface UserReply {
+  _id?: string;
+  customerId: string;
+  customerName: string;
+  content: string;
+  isAdmin?: boolean;
+  createdAt?: Date | string;
 }
 
 interface Consultation {

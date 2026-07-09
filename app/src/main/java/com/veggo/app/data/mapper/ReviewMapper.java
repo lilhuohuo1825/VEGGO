@@ -1,8 +1,10 @@
 package com.veggo.app.data.mapper;
 
 import com.veggo.app.data.local.entity.ReviewEntity;
+import com.veggo.app.core.utils.UserAvatarHelper;
 import com.veggo.app.domain.model.Review;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,11 +54,25 @@ public final class ReviewMapper {
                 formattedTime,
                 dto.getRating(),
                 dto.getContent(),
-                null,
-                dto.getImages(),
+                UserAvatarHelper.resolveUrl(dto.getAvatarUrl()),
+                resolveImageUrls(dto.getImages()),
                 likes.size(),
                 likes
         );
+    }
+
+    private static List<String> resolveImageUrls(List<String> images) {
+        if (images == null || images.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> resolved = new ArrayList<>();
+        for (String image : images) {
+            String url = UserAvatarHelper.resolveUrl(image);
+            if (url != null && !url.trim().isEmpty()) {
+                resolved.add(url);
+            }
+        }
+        return resolved;
     }
 
     public static ReviewEntity toEntity(Review domain, String productId, String id) {

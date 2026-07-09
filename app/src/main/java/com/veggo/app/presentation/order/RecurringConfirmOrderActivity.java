@@ -222,7 +222,7 @@ public class RecurringConfirmOrderActivity extends BaseActivity {
 
         VeggoDialog.show(
                 this,
-                R.drawable.ic_order_cancel_dialog,
+                R.drawable.ic_trash,
                 getString(R.string.recurring_confirm_cancel_title),
                 getString(messageRes),
                 getString(R.string.recurring_confirm_cancel_occurrence),

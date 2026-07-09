@@ -164,6 +164,19 @@
             </span>
           </div>
         </div>
+
+        <div class="user-replies-section" *ngIf="question.replies?.length">
+          <div class="section-label">Phản hồi từ khách hàng ({{ question.replies?.length }}):</div>
+          <div class="user-reply-item" *ngFor="let reply of question.replies">
+            <p class="user-reply-content">{{ reply.content }}</p>
+            <div class="user-reply-meta">
+              <span class="customer-name">{{ reply.customerName }}</span>
+              <span class="question-time" *ngIf="reply.createdAt">
+                {{ formatTimeAgo(reply.createdAt) }}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="question-actions">

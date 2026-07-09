@@ -18,6 +18,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
@@ -28,6 +29,7 @@ import com.veggo.app.presentation.community.CommunityProfileActivity;
 import com.veggo.app.presentation.community.CommunityRecipeDetailActivity;
 import com.veggo.app.presentation.order.OrderDetailActivity;
 import com.veggo.app.presentation.order.RecurringConfirmOrderActivity;
+import com.veggo.app.presentation.order.RecurringOrderStore;
 import com.veggo.app.presentation.order.ReviewsActivity;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 import com.veggo.app.presentation.promotion.PromotionDetailActivity;
@@ -95,6 +97,8 @@ public class PostNotificationsActivity extends BaseActivity {
 
     private void loadNotifications() {
         new Thread(() -> {
+            String customerId = new AppPreferences(this).getCustomerId();
+            new RecurringOrderStore(this).syncFromRemote(customerId);
             List<OrderNotificationDto> orderNotifications = loadOrderNotifications();
             runOnUiThread(() -> {
                 buildNotifications(orderNotifications);
@@ -538,11 +542,7 @@ public class PostNotificationsActivity extends BaseActivity {
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
         }
         if (badge != null) {
-            badge.setText(String.valueOf(count));
-            badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
-            badge.setBackgroundResource(selected
-                    ? R.drawable.bg_notification_badge_alert
-                    : R.drawable.bg_notification_badge_dark);
+            BadgeUiHelper.applyTabBadge(badge, count, selected);
         }
         if (indicator != null) {
             indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);

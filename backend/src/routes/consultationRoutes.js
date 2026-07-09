@@ -25,13 +25,29 @@ async function findUserByCustomerId(customerId) {
   return User.findOne({ CustomerID: customerId }).select('FullName avatarUrl name').lean();
 }
 
-async function resolveAvatarUrl(customerId, fallbackUrl) {
+function resolvePublicBaseUrl(req) {
+  if (req) {
+    return (process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  }
+  return String(process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+}
+
+function toAbsoluteAvatarUrl(req, avatarUrl) {
+  const value = String(avatarUrl || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  const base = resolvePublicBaseUrl(req);
+  if (!base) return value;
+  return value.startsWith('/') ? `${base}${value}` : `${base}/${value}`;
+}
+
+async function resolveAvatarUrl(req, customerId, fallbackUrl) {
   const trimmedFallback = typeof fallbackUrl === 'string' ? fallbackUrl.trim() : '';
   if (trimmedFallback) {
-    return trimmedFallback;
+    return toAbsoluteAvatarUrl(req, trimmedFallback);
   }
   const user = await findUserByCustomerId(customerId);
-  return user?.avatarUrl || '';
+  return toAbsoluteAvatarUrl(req, user?.avatarUrl || '');
 }
 
 function sanitizeQuestion(question) {
@@ -50,7 +66,7 @@ function sanitizeQuestion(question) {
   return plain;
 }
 
-async function enrichConsultation(consultation) {
+async function enrichConsultation(consultation, req) {
   if (!consultation) {
     return consultation;
   }
@@ -62,13 +78,19 @@ async function enrichConsultation(consultation) {
   const enrichedQuestions = [];
   for (const question of plain.questions) {
     const sanitized = sanitizeQuestion(question);
-    if (!sanitized.customerAvatarUrl) {
-      sanitized.customerAvatarUrl = await resolveAvatarUrl(sanitized.customerId, '');
-    }
+    sanitized.customerAvatarUrl = await resolveAvatarUrl(
+      req,
+      sanitized.customerId,
+      sanitized.customerAvatarUrl || ''
+    );
     if (Array.isArray(sanitized.replies)) {
       for (const reply of sanitized.replies) {
-        if (!reply.isAdmin && !reply.customerAvatarUrl) {
-          reply.customerAvatarUrl = await resolveAvatarUrl(reply.customerId, '');
+        if (!reply.isAdmin) {
+          reply.customerAvatarUrl = await resolveAvatarUrl(
+            req,
+            reply.customerId,
+            reply.customerAvatarUrl || ''
+          );
         }
       }
     }
@@ -78,9 +100,9 @@ async function enrichConsultation(consultation) {
   return plain;
 }
 
-async function consultationResponse(consultation) {
+async function consultationResponse(consultation, req) {
   const sorted = sortQuestionsByCreatedAt(consultation);
-  return enrichConsultation(sorted);
+  return enrichConsultation(sorted, req);
 }
 
 async function createConsultationAdminNotification({ sku, productName, customerName, customerId, questionId }) {
@@ -191,7 +213,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const allConsultations = await Consultation.find({});
   const enriched = [];
   for (const item of allConsultations) {
-    enriched.push(await consultationResponse(item));
+    enriched.push(await consultationResponse(item, req));
   }
   res.json(enriched);
 }));
@@ -206,7 +228,7 @@ router.get('/:sku', asyncHandler(async (req, res) => {
       questions: [],
     });
   }
-  res.json(await consultationResponse(result));
+  res.json(await consultationResponse(result, req));
 }));
 
 // POST /api/consultations/:sku/questions
@@ -242,7 +264,7 @@ router.post('/:sku/questions', asyncHandler(async (req, res) => {
     return res.status(401).json({ message: 'Vui lòng đăng nhập để gửi câu hỏi tư vấn' });
   }
 
-  const customerAvatarUrl = await resolveAvatarUrl(customerId, req.body.customerAvatarUrl);
+  const customerAvatarUrl = await resolveAvatarUrl(req, customerId, req.body.customerAvatarUrl);
 
   consultation.questions.push({
     question,
@@ -265,7 +287,7 @@ router.post('/:sku/questions', asyncHandler(async (req, res) => {
     questionId: createdQuestion._id.toString(),
   });
 
-  res.status(201).json(await consultationResponse(consultation));
+  res.status(201).json(await consultationResponse(consultation, req));
 }));
 
 // POST /api/consultations/:sku/questions/:questionId/like
@@ -313,7 +335,7 @@ router.post('/:sku/questions/:questionId/like', asyncHandler(async (req, res) =>
   }
 
   await consultation.save();
-  res.json(await consultationResponse(consultation));
+  res.json(await consultationResponse(consultation, req));
 }));
 
 // POST /api/consultations/:sku/questions/:questionId/replies
@@ -341,7 +363,11 @@ router.post('/:sku/questions/:questionId/replies', asyncHandler(async (req, res)
     return res.status(404).json({ success: false, message: 'Question not found' });
   }
 
-  const customerAvatarUrl = await resolveAvatarUrl(customerId, req.body.customerAvatarUrl);
+  if (question.customerId && question.customerId === customerId) {
+    return res.status(400).json({ success: false, message: 'Không thể trả lời câu hỏi của chính bạn' });
+  }
+
+  const customerAvatarUrl = await resolveAvatarUrl(req, customerId, req.body.customerAvatarUrl);
   if (!Array.isArray(question.replies)) {
     question.replies = [];
   }
@@ -356,6 +382,16 @@ router.post('/:sku/questions/:questionId/replies', asyncHandler(async (req, res)
 
   await consultation.save();
 
+  if (question.status === 'pending') {
+    await createConsultationAdminNotification({
+      sku: consultation.sku,
+      productName: consultation.productName,
+      customerName: `${customerName} (phản hồi)`,
+      customerId,
+      questionId: question._id.toString(),
+    });
+  }
+
   if (question.customerId && question.customerId !== customerId) {
     await createConsultationReplyNotification({
       customerId: question.customerId,
@@ -367,7 +403,7 @@ router.post('/:sku/questions/:questionId/replies', asyncHandler(async (req, res)
     });
   }
 
-  res.status(201).json(await consultationResponse(consultation));
+  res.status(201).json(await consultationResponse(consultation, req));
 }));
 
 // POST /api/consultations/:sku/answer/:questionId
@@ -418,7 +454,7 @@ router.post('/:sku/answer/:questionId', asyncHandler(async (req, res) => {
     }
   );
 
-  res.json({ success: true, data: await consultationResponse(consultation) });
+  res.json({ success: true, data: await consultationResponse(consultation, req) });
 }));
 
 // DELETE /api/consultations/:sku/question/:questionId

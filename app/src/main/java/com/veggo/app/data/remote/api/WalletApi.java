@@ -19,13 +19,22 @@ public interface WalletApi {
     Call<Map<String, Object>> findRecipient(@Query("phone") String phone);
 
     @GET("wallet/transactions")
-    Call<WalletTransactionsResponseDto> getTransactions(@Query("customerId") String customerId);
+    Call<WalletTransactionsResponseDto> getTransactions(
+            @Query("customerId") String customerId,
+            @Query("type") String type
+    );
 
     @POST("wallet/link-bank")
     Call<WalletResponseDto> linkBank(@Body Map<String, Object> body);
 
     @POST("wallet/set-default-bank")
     Call<WalletResponseDto> setDefaultBank(@Body Map<String, Object> body);
+
+    @POST("wallet/update-linked-bank")
+    Call<WalletResponseDto> updateLinkedBank(@Body Map<String, Object> body);
+
+    @POST("wallet/unlink-bank")
+    Call<WalletResponseDto> unlinkBank(@Body Map<String, Object> body);
 
     @POST("wallet/deposit")
     Call<WalletResponseDto> deposit(@Body Map<String, Object> body);

@@ -3,7 +3,6 @@ package com.veggo.app.presentation.product;
 import com.veggo.app.domain.model.Consultation;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -12,22 +11,15 @@ public final class ConsultationUiHelper {
 
     private ConsultationUiHelper() {}
 
+    /**
+     * Shows all consultations so users can reply to each other's questions
+     * (including pending ones waiting for admin).
+     */
     public static List<Consultation> filterForUser(List<Consultation> source, String customerId) {
         if (source == null || source.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Consultation> filtered = new ArrayList<>();
-        for (Consultation item : source) {
-            if (isAnswered(item)) {
-                filtered.add(item);
-                continue;
-            }
-            if (isPending(item) && customerId != null && !customerId.isEmpty()
-                    && customerId.equals(item.getCustomerId())) {
-                filtered.add(item);
-            }
-        }
-        return sortForDisplay(filtered);
+        return sortForDisplay(new ArrayList<>(source));
     }
 
     public static List<Consultation> limit(List<Consultation> source, int maxItems) {
@@ -53,9 +45,5 @@ public final class ConsultationUiHelper {
                 && "answered".equalsIgnoreCase(item.getStatus())
                 && item.getAnswer() != null
                 && !item.getAnswer().trim().isEmpty();
-    }
-
-    private static boolean isPending(Consultation item) {
-        return item != null && "pending".equalsIgnoreCase(item.getStatus());
     }
 }

@@ -26,15 +26,16 @@ import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.utils.UserAvatarHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.core.utils.ProductCatalogImageResolver;
 import com.veggo.app.core.utils.ProductImageUtils;
+import com.veggo.app.core.utils.ReviewMediaHelper;
 import com.veggo.app.data.remote.api.ReviewApi;
 import com.veggo.app.data.remote.dto.ReviewMediaUploadResponseDto;
 import com.veggo.app.presentation.common.AssetScreenData;
@@ -282,8 +283,8 @@ public class ReviewOrderActivity extends BaseActivity {
         Object imagesObj = data.get("images");
         if (imagesObj instanceof List) {
             for (Object imageObj : (List<?>) imagesObj) {
-                String url = String.valueOf(imageObj);
-                if (url.trim().isEmpty()) {
+                String url = UserAvatarHelper.resolveUrl(String.valueOf(imageObj));
+                if (url == null || url.trim().isEmpty()) {
                     continue;
                 }
                 String lower = url.toLowerCase();
@@ -317,6 +318,19 @@ public class ReviewOrderActivity extends BaseActivity {
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView title = dialog.findViewById(R.id.dialogSourceTitle);
+        TextView galleryLabel = dialog.findViewById(R.id.dialogOptionGalleryLabel);
+        TextView cameraLabel = dialog.findViewById(R.id.dialogOptionCameraLabel);
+        if (isVideo) {
+            if (title != null) title.setText("Nguồn video");
+            if (galleryLabel != null) galleryLabel.setText("Chọn video từ thư viện");
+            if (cameraLabel != null) cameraLabel.setText("Quay video bằng camera");
+        } else {
+            if (title != null) title.setText("Nguồn ảnh");
+            if (galleryLabel != null) galleryLabel.setText("Chọn từ thư viện");
+            if (cameraLabel != null) cameraLabel.setText("Chụp ảnh bằng camera");
         }
 
         dialog.findViewById(R.id.dialogOptionGallery).setOnClickListener(v -> {
@@ -655,8 +669,7 @@ public class ReviewOrderActivity extends BaseActivity {
 
             if (mediaItem.isVideo()) {
                 if (mediaItem.remoteUrl != null && !mediaItem.remoteUrl.trim().isEmpty()) {
-                    Glide.with(context).load(mediaItem.remoteUrl).into(image);
-                    frame.addView(overlayLabel(context, "Video"));
+                    ReviewMediaHelper.loadThumbnail(context, image, mediaItem.remoteUrl);
                 } else {
                     Bitmap thumbnail = getVideoThumbnail(context, mediaItem.uri);
                     if (thumbnail != null) {
@@ -664,12 +677,16 @@ public class ReviewOrderActivity extends BaseActivity {
                     } else {
                         image.setImageResource(R.drawable.ic_camera);
                     }
-                    frame.addView(overlayLabel(context, "Video"));
                 }
+                frame.addView(playOverlay(context));
             } else if (mediaItem.remoteUrl != null && !mediaItem.remoteUrl.trim().isEmpty()) {
-                Glide.with(context).load(mediaItem.remoteUrl).into(image);
+                ReviewMediaHelper.loadThumbnail(context, image, mediaItem.remoteUrl);
             } else {
                 image.setImageURI(mediaItem.uri);
+            }
+
+            if (!editable) {
+                frame.setOnClickListener(v -> openMediaItem(context, mediaItem));
             }
 
             if (editable) {
@@ -707,19 +724,31 @@ public class ReviewOrderActivity extends BaseActivity {
             }
         }
 
-        private TextView overlayLabel(Context context, String text) {
-            TextView label = new TextView(context);
-            label.setText(text);
-            label.setTextColor(context.getColor(R.color.background_main));
-            label.setTextSize(12);
-            label.setGravity(android.view.Gravity.CENTER);
-            label.setBackgroundColor(0x66000000);
-            label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            label.setLayoutParams(new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-            ));
-            return label;
+        private ImageView playOverlay(Context context) {
+            ImageView play = new ImageView(context);
+            play.setImageResource(R.drawable.ic_play_overlay);
+            int size = dp(context, 36);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(size, size);
+            params.gravity = android.view.Gravity.CENTER;
+            play.setLayoutParams(params);
+            return play;
+        }
+
+        private void openMediaItem(Context context, ReviewMedia mediaItem) {
+            if (mediaItem.remoteUrl != null && !mediaItem.remoteUrl.trim().isEmpty()) {
+                ReviewMediaHelper.openMedia(context, mediaItem.remoteUrl);
+                return;
+            }
+            if (mediaItem.uri == null) {
+                return;
+            }
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(mediaItem.uri, mediaItem.mimeType);
+                context.startActivity(Intent.createChooser(intent, "Xem media"));
+            } catch (Exception exception) {
+                Toast.makeText(context, "Không thể mở video/ảnh đánh giá", Toast.LENGTH_SHORT).show();
+            }
         }
 
         private int dp(Context context, int value) {

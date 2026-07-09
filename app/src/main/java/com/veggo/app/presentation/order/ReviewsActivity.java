@@ -20,6 +20,7 @@ import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
@@ -154,9 +155,7 @@ public class ReviewsActivity extends BaseActivity {
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
         textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
         if (badge != null) {
-            badge.setBackgroundResource(active
-                    ? R.drawable.bg_notification_badge_alert
-                    : R.drawable.bg_notification_badge_dark);
+            BadgeUiHelper.styleTabBadge(badge, active);
         }
     }
 

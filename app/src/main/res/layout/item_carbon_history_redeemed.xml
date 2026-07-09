@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="86dp"
+    android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/spacing_md"
     android:background="@drawable/bg_profile_card"
     android:gravity="center_vertical"
+    android:minHeight="86dp"
     android:orientation="horizontal"
     android:padding="@dimen/spacing_md">
 
@@ -26,6 +27,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/spacing_md"
+        android:layout_marginEnd="@dimen/spacing_sm"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -33,7 +35,10 @@
             android:id="@+id/carbonHistoryTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
             android:fontFamily="@font/inter_semibold"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="3"
             android:text="Đổi voucher freeship xanh"
             android:textColor="@color/neutral_100"
             android:textSize="@dimen/text_sm" />
@@ -43,6 +48,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="7dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="24/05/2026"
             android:textColor="@color/neutral_70"
             android:textSize="@dimen/text_xs" />
@@ -50,11 +57,13 @@
 
     <TextView
         android:id="@+id/carbonHistoryPoints"
-        android:layout_width="80dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_semibold"
         android:gravity="end"
+        android:maxLines="2"
+        android:minWidth="64dp"
         android:text="Đã nhận"
         android:textColor="@color/danger_main"
-        android:textSize="@dimen/text_md" />
+        android:textSize="@dimen/text_sm" />
 </LinearLayout>

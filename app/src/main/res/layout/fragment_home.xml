@@ -283,33 +283,18 @@
                     android:textColor="@color/neutral_100"
                     android:textSize="18sp" />
 
-                <LinearLayout
+                <TextView
                     android:id="@+id/btnViewMoreCategories"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
-                    android:background="?attr/selectableItemBackgroundBorderless">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
-                        android:textStyle="normal"
-                        android:text="Xem thêm"
-                        android:textColor="@color/primary_main"
-                        android:textSize="14sp" />
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_marginStart="6dp"
-                        android:src="@drawable/ic_chevron_down"
-                        app:tint="@color/primary_main"
-                        android:contentDescription="@null" />
-                </LinearLayout>
+                    android:fontFamily="@font/inter"
+                    android:text="@string/show_more"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -351,8 +336,21 @@
                         android:fontFamily="@font/inter"
                         android:textStyle="bold"
                         android:text="Flash sale🔥"
-                        android:textColor="@color/neutral_100"
+                        android:textColor="@color/white"
                         android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/btnViewMoreFlashSale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/show_more"
+                        android:textColor="@color/primary_main"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                 </LinearLayout>
 
@@ -387,9 +385,22 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/inter"
                     android:textStyle="bold"
-                    android:text="Công thức phổ biến"
+                    android:text="@string/popular_recipes_title"
                     android:textColor="@color/neutral_100"
                     android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/btnViewMoreRecipes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/show_more"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
@@ -577,6 +588,31 @@
                             android:background="@drawable/bg_order_tab_indicator"
                             android:visibility="invisible" />
                     </LinearLayout>
+
+                    <!-- Tab 6: Khuyến mãi (promotion) -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="24dp"
+                        android:orientation="vertical"
+                        android:gravity="bottom|center_horizontal">
+                        <TextView
+                            android:id="@+id/tabPromotion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/inter"
+                            android:gravity="center"
+                            android:text="@string/home_tab_promotion"
+                            android:textColor="@color/neutral_60"
+                            android:textSize="14sp" />
+                        <View
+                            android:id="@+id/tabPromotionIndicator"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_order_tab_indicator"
+                            android:visibility="invisible" />
+                    </LinearLayout>
                 </LinearLayout>
             </HorizontalScrollView>
 
@@ -614,6 +650,47 @@
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="2"
                 tools:listitem="@layout/item_product_grid" />
+
+            <LinearLayout
+                android:id="@+id/homeProductsEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/spacing_xl"
+                android:paddingTop="32dp"
+                android:paddingEnd="@dimen/spacing_xl"
+                android:paddingBottom="48dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="220dp"
+                    android:layout_height="220dp"
+                    android:contentDescription="@string/products_empty_title"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/mascot_sad" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:fontFamily="@font/encodesans_bold"
+                    android:gravity="center"
+                    android:text="@string/products_empty_title"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="@string/products_empty_body"
+                    android:textColor="@color/neutral_70"
+                    android:textSize="@dimen/text_sm" />
+            </LinearLayout>
 
             <!-- Nút "Xem thêm" (tải phân trang) -->
             <LinearLayout

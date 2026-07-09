@@ -22,6 +22,7 @@ import java.util.Map;
 
 public class VeggoPayDonateActivity extends AppCompatActivity {
 
+    private static final int WATER_CARBON_COST = 5;
     private ImageView imgTree, imgWaterCanAnim;
     private TextView tvStatusBubble, tvTreeName, tvWaterProgress, btnActivateSeed, btnWaterTree;
     private LinearLayout layoutActivate, layoutWater;
@@ -29,6 +30,7 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
     private String customerId;
     private RotateAnimation standardSwayAnim;
     private TextView tvTotalPlanted;
+    private TextView tvCarbonPoints;
     private TextView tvStageProgress, tvTotalProgress;
     private LinearLayout layoutStageSegments, layoutTotalSegments;
     private android.widget.RelativeLayout rlGarden;
@@ -48,6 +50,7 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
         layoutActivate = findViewById(R.id.layoutActivate);
         layoutWater = findViewById(R.id.layoutWater);
         tvTotalPlanted = findViewById(R.id.tvTotalPlanted);
+        tvCarbonPoints = findViewById(R.id.tvCarbonPoints);
         tvStageProgress = findViewById(R.id.tvStageProgress);
         tvTotalProgress = findViewById(R.id.tvTotalProgress);
         layoutStageSegments = findViewById(R.id.layoutStageSegments);
@@ -78,6 +81,12 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
         btnWaterTree.setOnClickListener(v -> performWatering());
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadTreeStatus();
+    }
+
     private void loadTreeStatus() {
         walletRepository.getTreeStatus(customerId, new WalletRepository.ResultCallback<Map<String, Object>>() {
             @Override
@@ -95,6 +104,16 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
     private void updateTreeUi(Map<String, Object> treeData) {
         if (treeData == null) return;
 
+        // Some APIs may wrap data into { tree: {...}, carbonPoint: n }
+        if (treeData.containsKey("tree") && treeData.get("tree") instanceof Map) {
+            Map<String, Object> inner = (Map<String, Object>) treeData.get("tree");
+            // Merge carbonPoint into inner if present on wrapper
+            if (treeData.containsKey("carbonPoint") && !inner.containsKey("carbonPoint")) {
+                inner.put("carbonPoint", treeData.get("carbonPoint"));
+            }
+            treeData = inner;
+        }
+
         String status = (String) treeData.get("status");
         Double waterCountObj = (Double) treeData.get("waterCount");
         int waterCount = waterCountObj != null ? waterCountObj.intValue() : 0;
@@ -111,6 +130,19 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
         }
         tvTotalPlanted.setText("Đã trồng: " + plantedCount + " cây");
         populateMiniForest(plantedCount);
+
+        if (tvCarbonPoints != null) {
+            int carbonPoint = 0;
+            Object carbonRaw = treeData.get("carbonPoint");
+            if (carbonRaw instanceof Double) {
+                carbonPoint = ((Double) carbonRaw).intValue();
+            } else if (carbonRaw instanceof Integer) {
+                carbonPoint = (Integer) carbonRaw;
+            } else if (carbonRaw instanceof Long) {
+                carbonPoint = ((Long) carbonRaw).intValue();
+            }
+            tvCarbonPoints.setText("Carbon: " + carbonPoint + " điểm");
+        }
 
         if ("none".equals(status) || "mature".equals(status) || waterCount >= 24) {
             layoutActivate.setVisibility(View.VISIBLE);
@@ -138,19 +170,19 @@ public class VeggoPayDonateActivity extends AppCompatActivity {
 
             if (waterCount >= 0 && waterCount <= 5) {
                 imgTree.setImageResource(R.drawable.ic_tree_stage_1);
-                tvStatusBubble.setText("Hạt giống đang nảy mầm! Hãy tưới thêm nước nhé (10 điểm Carbon/lần)");
+                tvStatusBubble.setText("Hạt giống đang nảy mầm! Hãy tưới thêm nước nhé (" + WATER_CARBON_COST + " điểm Carbon/lần)");
             } else if (waterCount >= 6 && waterCount <= 11) {
                 imgTree.setImageResource(R.drawable.ic_tree_stage_2);
-                tvStatusBubble.setText("Cây con đang vươn lên đón nắng! (10 điểm Carbon/lần)");
+                tvStatusBubble.setText("Cây con đang vươn lên đón nắng! (" + WATER_CARBON_COST + " điểm Carbon/lần)");
             } else if (waterCount >= 12 && waterCount <= 17) {
                 imgTree.setImageResource(R.drawable.ic_tree_stage_3);
-                tvStatusBubble.setText("Cây của bạn đang phát triển rất tốt! (10 điểm Carbon/lần)");
+                tvStatusBubble.setText("Cây của bạn đang phát triển rất tốt! (" + WATER_CARBON_COST + " điểm Carbon/lần)");
             } else if (waterCount >= 18 && waterCount <= 23) {
                 imgTree.setImageResource(R.drawable.ic_tree_stage_4);
-                tvStatusBubble.setText("Cây sắp trưởng thành rồi đấy! (10 điểm Carbon/lần)");
+                tvStatusBubble.setText("Cây sắp trưởng thành rồi đấy! (" + WATER_CARBON_COST + " điểm Carbon/lần)");
             } else {
                 imgTree.setImageResource(R.drawable.ic_tree_stage_5);
-                tvStatusBubble.setText("Chúc mừng cây đã trưởng thành cổ thụ! (10 điểm Carbon/lần)");
+                tvStatusBubble.setText("Chúc mừng cây đã trưởng thành cổ thụ! (" + WATER_CARBON_COST + " điểm Carbon/lần)");
             }
         }
     }

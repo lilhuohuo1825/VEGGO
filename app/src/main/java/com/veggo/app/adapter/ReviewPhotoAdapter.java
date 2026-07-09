@@ -8,8 +8,8 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.utils.ReviewMediaHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +19,7 @@ public class ReviewPhotoAdapter extends RecyclerView.Adapter<ReviewPhotoAdapter.
     private List<String> photos = new ArrayList<>();
 
     public void setPhotos(List<String> photos) {
-        this.photos = photos;
+        this.photos = photos != null ? new ArrayList<>(photos) : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -42,16 +42,16 @@ public class ReviewPhotoAdapter extends RecyclerView.Adapter<ReviewPhotoAdapter.
 
     static class PhotoViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imvReviewPhoto;
+        private final View card;
 
-        public PhotoViewHolder(@NonNull View itemView) {
+        PhotoViewHolder(@NonNull View itemView) {
             super(itemView);
+            card = itemView;
             imvReviewPhoto = itemView.findViewById(R.id.imvReviewPhoto);
         }
 
         public void bind(String url) {
-            if (url != null && !url.isEmpty()) {
-                Glide.with(itemView.getContext()).load(url).into(imvReviewPhoto);
-            }
+            ReviewMediaHelper.bindMediaCard(card, imvReviewPhoto, url);
         }
     }
 }

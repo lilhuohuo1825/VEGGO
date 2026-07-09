@@ -25,6 +25,7 @@ import com.veggo.app.core.favorite.FavoriteStore;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.utils.CurrencyFormatter;
@@ -134,17 +135,17 @@ public class FavoritesActivity extends BaseActivity {
         tabProductsText.setTextColor(tab == FavTab.PRODUCTS ? activeColor : inactiveColor);
         tabProductsText.setTypeface(null, tab == FavTab.PRODUCTS ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         tabProductsIndicator.setVisibility(tab == FavTab.PRODUCTS ? View.VISIBLE : View.INVISIBLE);
-        tabProductsBadge.setBackgroundResource(tab == FavTab.PRODUCTS ? R.drawable.bg_notification_badge_alert : R.drawable.bg_notification_badge_dark);
+        BadgeUiHelper.styleTabBadge(tabProductsBadge, tab == FavTab.PRODUCTS);
 
         tabBlogsText.setTextColor(tab == FavTab.BLOGS ? activeColor : inactiveColor);
         tabBlogsText.setTypeface(null, tab == FavTab.BLOGS ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         tabBlogsIndicator.setVisibility(tab == FavTab.BLOGS ? View.VISIBLE : View.INVISIBLE);
-        tabBlogsBadge.setBackgroundResource(tab == FavTab.BLOGS ? R.drawable.bg_notification_badge_alert : R.drawable.bg_notification_badge_dark);
+        BadgeUiHelper.styleTabBadge(tabBlogsBadge, tab == FavTab.BLOGS);
 
         tabDishesText.setTextColor(tab == FavTab.DISHES ? activeColor : inactiveColor);
         tabDishesText.setTypeface(null, tab == FavTab.DISHES ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         tabDishesIndicator.setVisibility(tab == FavTab.DISHES ? View.VISIBLE : View.INVISIBLE);
-        tabDishesBadge.setBackgroundResource(tab == FavTab.DISHES ? R.drawable.bg_notification_badge_alert : R.drawable.bg_notification_badge_dark);
+        BadgeUiHelper.styleTabBadge(tabDishesBadge, tab == FavTab.DISHES);
 
         // Toggle Section Visibility
         sectionProducts.setVisibility(tab == FavTab.PRODUCTS ? View.VISIBLE : View.GONE);

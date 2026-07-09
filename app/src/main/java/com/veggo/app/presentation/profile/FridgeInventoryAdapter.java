@@ -131,7 +131,7 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
         }
 
         View foreground = holder.itemView.findViewById(R.id.fridgeItemForeground);
-        View deleteBg = holder.itemView.findViewById(R.id.fridgeItemDeleteBg);
+        View deleteView = holder.itemView.findViewById(R.id.tvDeleteFridgeItem);
         
         if (foreground != null) {
             foreground.setTranslationX(0f);
@@ -149,7 +149,9 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
 
                 @Override
                 public boolean onTouch(View v, android.view.MotionEvent event) {
-                    float deleteWidth = deleteBg != null && deleteBg.getWidth() > 0 ? deleteBg.getWidth() : 80f * holder.itemView.getResources().getDisplayMetrics().density;
+                    float deleteWidth = deleteView != null && deleteView.getWidth() > 0
+                            ? deleteView.getWidth()
+                            : 76f * holder.itemView.getResources().getDisplayMetrics().density;
                     switch (event.getActionMasked()) {
                         case android.view.MotionEvent.ACTION_DOWN:
                             downX = event.getX();
@@ -205,8 +207,8 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
             });
         }
         
-        if (deleteBg != null) {
-            deleteBg.setOnClickListener(v -> {
+        if (deleteView != null) {
+            deleteView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onDeleteClick(item, holder.getAdapterPosition());
                 }

@@ -8,6 +8,10 @@ import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.data.remote.api.RecurringOrderApi;
+import com.veggo.app.data.remote.dto.RecurringNotificationDto;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -28,12 +32,14 @@ public class RecurringInAppNotificationStore {
     private static final String KEY_ITEMS = "items";
     private static final int MAX_ITEMS = 80;
 
+    private final Context appContext;
     private final SharedPreferences prefs;
     private final Gson gson = new Gson();
     private final Type listType = new TypeToken<List<Entry>>() {}.getType();
 
     public RecurringInAppNotificationStore(@NonNull Context context) {
-        prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        appContext = context.getApplicationContext();
+        prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     public void addPushNotification(
@@ -77,6 +83,7 @@ public class RecurringInAppNotificationStore {
                 existing.createdAt = System.currentTimeMillis();
                 existing.read = false;
                 save(items);
+                pushRemoteAsync(existing);
                 return;
             }
         }
@@ -97,6 +104,22 @@ public class RecurringInAppNotificationStore {
         if (items.size() > MAX_ITEMS) {
             items = new ArrayList<>(items.subList(0, MAX_ITEMS));
         }
+        save(items);
+        pushRemoteAsync(entry);
+    }
+
+    public void replaceFromRemote(@Nullable List<RecurringNotificationDto> remoteItems) {
+        if (remoteItems == null) {
+            return;
+        }
+        List<Entry> items = new ArrayList<>();
+        for (RecurringNotificationDto dto : remoteItems) {
+            Entry entry = fromDto(dto);
+            if (entry != null) {
+                items.add(entry);
+            }
+        }
+        items.sort(Comparator.comparingLong((Entry entry) -> entry.createdAt).reversed());
         save(items);
     }
 
@@ -130,6 +153,7 @@ public class RecurringInAppNotificationStore {
             if (id.equals(entry.id)) {
                 entry.read = true;
                 save(items);
+                pushMarkReadAsync(id);
                 return;
             }
         }
@@ -141,6 +165,7 @@ public class RecurringInAppNotificationStore {
             entry.read = true;
         }
         save(items);
+        pushMarkAllReadAsync();
     }
 
     @NonNull
@@ -155,6 +180,84 @@ public class RecurringInAppNotificationStore {
 
     private void save(List<Entry> items) {
         prefs.edit().putString(KEY_ITEMS, gson.toJson(items, listType)).apply();
+    }
+
+    private void pushRemoteAsync(@NonNull Entry entry) {
+        new Thread(() -> {
+            try {
+                String customerId = new AppPreferences(appContext).getCustomerId();
+                if (customerId == null || customerId.trim().isEmpty()) {
+                    return;
+                }
+                RecurringNotificationDto dto = new RecurringNotificationDto();
+                dto.setCustomerId(customerId);
+                dto.setRecurringOrderId(entry.recurringOrderId);
+                dto.setOccurrenceDate(entry.occurrenceDate);
+                dto.setType(entry.type);
+                dto.setTitle(entry.title);
+                dto.setBody(entry.body);
+                dto.setAction(entry.action);
+                dto.setOutsideApp(entry.outsideApp);
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                retrofit2.Response<RecurringNotificationDto> response = api.createNotification(dto).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().getId() != null) {
+                    entry.id = response.body().getId();
+                    save(all());
+                }
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void pushMarkReadAsync(@NonNull String id) {
+        if (id.length() != 24) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                api.markNotificationRead(id).execute();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void pushMarkAllReadAsync() {
+        new Thread(() -> {
+            try {
+                String customerId = new AppPreferences(appContext).getCustomerId();
+                if (customerId == null || customerId.trim().isEmpty()) {
+                    return;
+                }
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                api.markAllNotificationsRead(customerId).execute();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    @Nullable
+    private static Entry fromDto(@Nullable RecurringNotificationDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        Entry entry = new Entry();
+        entry.id = dto.getId() != null && !dto.getId().trim().isEmpty()
+                ? dto.getId()
+                : UUID.randomUUID().toString();
+        entry.recurringOrderId = dto.getRecurringOrderId();
+        entry.occurrenceDate = dto.getOccurrenceDate();
+        entry.type = dto.getType();
+        entry.title = dto.getTitle();
+        entry.body = dto.getBody();
+        entry.action = dto.getAction();
+        entry.createdAt = dto.getCreatedAt() > 0 ? dto.getCreatedAt() : System.currentTimeMillis();
+        entry.read = dto.isRead();
+        entry.outsideApp = dto.isOutsideApp();
+        return entry;
     }
 
     public static class Entry {

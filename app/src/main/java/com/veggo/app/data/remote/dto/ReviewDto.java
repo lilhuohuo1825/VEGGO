@@ -31,6 +31,9 @@ public class ReviewDto {
     @SerializedName("likes")
     private List<String> likes;
 
+    @SerializedName("avatarUrl")
+    private String avatarUrl;
+
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -50,4 +53,6 @@ public class ReviewDto {
     public void setOrderId(String orderId) { this.orderId = orderId; }
     public List<String> getLikes() { return likes; }
     public void setLikes(List<String> likes) { this.likes = likes; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

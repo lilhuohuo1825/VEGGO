@@ -20,6 +20,7 @@ import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
@@ -186,9 +187,7 @@ public class ReturnsActivity extends BaseActivity {
         textView.setTextColor(ContextCompat.getColor(this, colorRes));
         textView.setTypeface(Typeface.DEFAULT, active ? Typeface.BOLD : Typeface.NORMAL);
         if (badge != null) {
-            badge.setBackgroundResource(active
-                    ? R.drawable.bg_notification_badge_alert
-                    : R.drawable.bg_notification_badge_dark);
+            BadgeUiHelper.styleTabBadge(badge, active);
         }
     }
 
@@ -311,11 +310,6 @@ public class ReturnsActivity extends BaseActivity {
             cancelRequestButton.setOnClickListener(v -> confirmCancelReturnRequest(order));
         }
 
-        TextView completeButton = item.findViewById(R.id.returnCompleteButton);
-        if (completeButton != null && layout == R.layout.item_return_processing) {
-            completeButton.setOnClickListener(v -> confirmReturnCompleted(order));
-        }
-
         TextView buyAgainButton = item.findViewById(R.id.returnBuyAgainButton);
         if (buyAgainButton != null && (layout == R.layout.item_return_completed || layout == R.layout.item_return_rejected)) {
             buyAgainButton.setOnClickListener(v -> {
@@ -328,7 +322,7 @@ public class ReturnsActivity extends BaseActivity {
     private void confirmCancelReturnRequest(AssetModels.Order order) {
         VeggoDialog.show(
                 this,
-                R.drawable.ic_order_cancel_dialog,
+                R.drawable.ic_trash,
                 "Hủy yêu cầu đổi/trả",
                 "Bạn có chắc chắn muốn hủy yêu cầu đổi/trả cho đơn hàng này?",
                 "Xác nhận",
@@ -343,20 +337,7 @@ public class ReturnsActivity extends BaseActivity {
     }
 
     private void confirmReturnCompleted(AssetModels.Order order) {
-        VeggoDialog.show(
-                this,
-                R.drawable.ic_order_delivered_box,
-                "Xác nhận đã hoàn/trả",
-                "Bạn xác nhận đơn hàng đã được hoàn/trả xong?",
-                "Xác nhận",
-                "Đóng",
-                new VeggoDialog.DialogListener() {
-                    @Override
-                    public void onConfirm() {
-                        updateOrderStatus(order, "returned");
-                    }
-                }
-        );
+        // Deprecated: confirmation moved to admin side.
     }
 
     private void updateOrderStatus(AssetModels.Order order, String newStatus) {

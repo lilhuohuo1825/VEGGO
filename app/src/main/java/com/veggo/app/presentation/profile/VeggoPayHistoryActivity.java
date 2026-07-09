@@ -3,6 +3,7 @@ package com.veggo.app.presentation.profile;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -10,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.veggo.app.R;
 import com.veggo.app.adapter.WalletTransactionAdapter;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.WalletTransactionReadState;
@@ -31,7 +33,8 @@ public class VeggoPayHistoryActivity extends BaseActivity {
 
     // Tabs widgets
     private View tabAll, tabReceive, tabSend;
-    private android.widget.TextView tvTabAll, tvTabReceive, tvTabSend;
+    private TextView tvTabAll, tvTabReceive, tvTabSend;
+    private TextView badgeTabAll, badgeTabReceive, badgeTabSend;
     private View indicatorAll, indicatorReceive, indicatorSend;
     private String currentFilter = "all"; // all, receive, send
 
@@ -60,6 +63,9 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         tvTabAll = findViewById(R.id.tvTabAll);
         tvTabReceive = findViewById(R.id.tvTabReceive);
         tvTabSend = findViewById(R.id.tvTabSend);
+        badgeTabAll = findViewById(R.id.badgeTabAll);
+        badgeTabReceive = findViewById(R.id.badgeTabReceive);
+        badgeTabSend = findViewById(R.id.badgeTabSend);
 
         indicatorAll = findViewById(R.id.indicatorAll);
         indicatorReceive = findViewById(R.id.indicatorReceive);
@@ -79,10 +85,17 @@ public class VeggoPayHistoryActivity extends BaseActivity {
             @Override
             public void markRead(WalletTransactionDto tx) {
                 WalletTransactionReadState.markRead(VeggoPayHistoryActivity.this, tx);
+                updateTabBadges();
             }
         });
         rvTransactions.setAdapter(adapter);
 
+        loadTransactions();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadTransactions();
     }
 
@@ -102,7 +115,32 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         tvTabSend.setTextColor("send".equals(filter) ? activeColor : inactiveColor);
         indicatorSend.setVisibility("send".equals(filter) ? View.VISIBLE : View.INVISIBLE);
 
+        updateTabBadges();
         applyFilter();
+    }
+
+    private void updateTabBadges() {
+        BadgeUiHelper.applyTabBadge(badgeTabAll, countUnreadForFilter("all"), "all".equals(currentFilter));
+        BadgeUiHelper.applyTabBadge(badgeTabReceive, countUnreadForFilter("receive"), "receive".equals(currentFilter));
+        BadgeUiHelper.applyTabBadge(badgeTabSend, countUnreadForFilter("send"), "send".equals(currentFilter));
+    }
+
+    private int countUnreadForFilter(String filter) {
+        int count = 0;
+        for (WalletTransactionDto tx : allTransactions) {
+            if (!WalletTransactionReadState.isUnread(this, tx)) {
+                continue;
+            }
+            double amount = tx.getAmount();
+            if ("all".equals(filter)) {
+                count++;
+            } else if ("receive".equals(filter) && amount >= 0) {
+                count++;
+            } else if ("send".equals(filter) && amount < 0) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void applyFilter() {
@@ -135,6 +173,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         }
         WalletTransactionReadState.markAllRead(this);
         adapter.notifyDataSetChanged();
+        updateTabBadges();
         Toast.makeText(this, "Đã đánh dấu tất cả là đã đọc", Toast.LENGTH_SHORT).show();
     }
 
@@ -160,6 +199,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
                         allTransactions.addAll(result);
                     }
                     WalletTransactionReadState.ensureBaselineIfNeeded(VeggoPayHistoryActivity.this, allTransactions);
+                    updateTabBadges();
                     applyFilter();
                 });
             }

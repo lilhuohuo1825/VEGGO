@@ -13,19 +13,24 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.veggo.app.R;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import java.util.concurrent.Executor;
 import com.veggo.app.adapter.BankSpinnerAdapter;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.WalletTransactionReadState;
@@ -38,6 +43,7 @@ import com.veggo.app.data.repository.WalletRepository;
 import java.util.List;
 
 public class VeggoPayActivity extends BaseActivity {
+    private static final String[] BANK_NAMES = {"Vietcombank", "Techcombank", "MB Bank", "BIDV", "VietinBank"};
     private TextView tvBalance;
     private TextView tvLinkedBanksHeader;
     private LinearLayout llLinkedBanks;
@@ -141,13 +147,7 @@ public class VeggoPayActivity extends BaseActivity {
     }
 
     private void updateUnreadBadgeUi(int unreadCount) {
-        if (tvNotificationBadge == null) return;
-        if (unreadCount <= 0) {
-            tvNotificationBadge.setVisibility(View.GONE);
-            return;
-        }
-        tvNotificationBadge.setText(unreadCount > 99 ? "99+" : String.valueOf(unreadCount));
-        tvNotificationBadge.setVisibility(View.VISIBLE);
+        BadgeUiHelper.applyAlertBadge(tvNotificationBadge, unreadCount);
     }
 
     private void checkWalletStatus() {
@@ -355,60 +355,10 @@ public class VeggoPayActivity extends BaseActivity {
                             }
                             
                             // Bind logo based on bank code
-                            int logoRes = R.drawable.ic_card; // fallback generic card icon
-                            String codeLower = bank.getBankCode().toLowerCase();
-                            if (codeLower.contains("vietcombank") || codeLower.equals("vcb")) {
-                                logoRes = R.drawable.logo_vcb;
-                            } else if (codeLower.contains("techcombank") || codeLower.equals("tcb")) {
-                                logoRes = R.drawable.logo_tcb;
-                            } else if (codeLower.contains("mb") || codeLower.contains("mbbank")) {
-                                logoRes = R.drawable.logo_mb;
-                            } else if (codeLower.contains("bidv")) {
-                                logoRes = R.drawable.logo_bidv;
-                            } else if (codeLower.contains("vietin") || codeLower.equals("ctg")) {
-                                logoRes = R.drawable.logo_ctg;
-                            }
-                            imgLogo.setImageResource(logoRes);
-                             
-                             // Set click listener to change default bank
-                             itemView.setOnClickListener(v -> {
-                                 if (bank.isDefault()) {
-                                     Toast.makeText(VeggoPayActivity.this, "Tài khoản này đang là mặc định", Toast.LENGTH_SHORT).show();
-                                     return;
-                                 }
-                                 com.veggo.app.presentation.dialog.VeggoDialog.show(
-                                         VeggoPayActivity.this,
-                                         R.drawable.ic_card,
-                                         "Đặt tài khoản mặc định",
-                                         "Bạn có muốn chọn tài khoản " + bank.getBankCode() + " làm mặc định không?",
-                                         "Đồng ý",
-                                         "Hủy",
-                                         new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
-                                             @Override
-                                             public void onConfirm() {
-                                                 showProgress("Đang cập nhật tài khoản mặc định...");
-                                                 walletRepository.setDefaultBank(customerId, bank.getBankCode(), bank.getAccountNumber(), new WalletRepository.ResultCallback<WalletDto>() {
-                                                     @Override
-                                                     public void onSuccess(WalletDto result) {
-                                                         runOnUiThread(() -> {
-                                                             hideProgress();
-                                                             Toast.makeText(VeggoPayActivity.this, "Cập nhật tài khoản mặc định thành công!", Toast.LENGTH_SHORT).show();
-                                                             loadWalletInfo();
-                                                         });
-                                                     }
-                                                     @Override
-                                                     public void onError(Throwable error) {
-                                                         runOnUiThread(() -> {
-                                                             hideProgress();
-                                                             Toast.makeText(VeggoPayActivity.this, "Thao tác thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                                                         });
-                                                     }
-                                                 });
-                                             }
-                                         }
-                                 );
-                             });
-                             llLinkedBanks.addView(itemView);
+                            imgLogo.setImageResource(resolveBankLogoRes(bank.getBankCode()));
+
+                            itemView.setOnClickListener(v -> showLinkedBankActions(bank));
+                            llLinkedBanks.addView(itemView);
                         }
                     } else {
                         tvLinkedBanksHeader.setVisibility(View.GONE);
@@ -424,6 +374,157 @@ public class VeggoPayActivity extends BaseActivity {
                 runOnUiThread(() -> Toast.makeText(VeggoPayActivity.this, "Lỗi tải thông tin ví", Toast.LENGTH_SHORT).show());
             }
         });
+    }
+
+    private void showLinkedBankActions(WalletDto.LinkedBankDto bank) {
+        View contentView = getLayoutInflater().inflate(R.layout.dialog_linked_bank_actions, null, false);
+        BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
+        dialog.setContentView(contentView);
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.setOnShowListener(dialogInterface -> {
+            FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                bottomSheet.setBackgroundResource(R.drawable.bg_bottom_sheet_rounded);
+                bottomSheet.setPadding(0, 0, 0, 0);
+                BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                behavior.setSkipCollapsed(true);
+            }
+        });
+
+        ImageView imgBankLogo = contentView.findViewById(R.id.imgBankLogo);
+        TextView tvBankTitle = contentView.findViewById(R.id.tvBankTitle);
+        View optionSetDefault = contentView.findViewById(R.id.optionSetDefault);
+
+        tvBankTitle.setText(bank.getBankCode() + " - " + bank.getAccountNumber());
+        imgBankLogo.setImageResource(resolveBankLogoRes(bank.getBankCode()));
+
+        if (bank.isDefault()) {
+            optionSetDefault.setVisibility(View.GONE);
+            View optionEdit = contentView.findViewById(R.id.optionEdit);
+            ViewGroup.MarginLayoutParams editParams = (ViewGroup.MarginLayoutParams) optionEdit.getLayoutParams();
+            editParams.topMargin = (int) (16 * getResources().getDisplayMetrics().density);
+            optionEdit.setLayoutParams(editParams);
+        }
+
+        optionSetDefault.setOnClickListener(v -> {
+            dialog.dismiss();
+            confirmSetDefaultBank(bank);
+        });
+        contentView.findViewById(R.id.optionEdit).setOnClickListener(v -> {
+            dialog.dismiss();
+            showLinkBankDialog(bank);
+        });
+        contentView.findViewById(R.id.optionUnlink).setOnClickListener(v -> {
+            dialog.dismiss();
+            confirmUnlinkBank(bank);
+        });
+        contentView.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private int resolveBankLogoRes(String bankCode) {
+        if (bankCode == null) return R.drawable.ic_card;
+        String codeLower = bankCode.toLowerCase();
+        if (codeLower.contains("vietcombank") || codeLower.equals("vcb")) {
+            return R.drawable.logo_vcb;
+        } else if (codeLower.contains("techcombank") || codeLower.equals("tcb")) {
+            return R.drawable.logo_tcb;
+        } else if (codeLower.contains("mb") || codeLower.contains("mbbank")) {
+            return R.drawable.logo_mb;
+        } else if (codeLower.contains("bidv")) {
+            return R.drawable.logo_bidv;
+        } else if (codeLower.contains("vietin") || codeLower.equals("ctg")) {
+            return R.drawable.logo_ctg;
+        }
+        return R.drawable.ic_card;
+    }
+
+    private void confirmSetDefaultBank(WalletDto.LinkedBankDto bank) {
+        com.veggo.app.presentation.dialog.VeggoDialog.show(
+                this,
+                R.drawable.ic_card,
+                "Đặt tài khoản mặc định",
+                "Bạn có muốn chọn tài khoản " + bank.getBankCode() + " làm mặc định không?",
+                "Đồng ý",
+                "Hủy",
+                new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        showProgress("Đang cập nhật tài khoản mặc định...");
+                        walletRepository.setDefaultBank(customerId, bank.getBankCode(), bank.getAccountNumber(), new WalletRepository.ResultCallback<WalletDto>() {
+                            @Override
+                            public void onSuccess(WalletDto result) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Cập nhật tài khoản mặc định thành công!", Toast.LENGTH_SHORT).show();
+                                    loadWalletInfo();
+                                });
+                            }
+
+                            @Override
+                            public void onError(Throwable error) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Thao tác thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        });
+                    }
+                }
+        );
+    }
+
+    private void confirmUnlinkBank(WalletDto.LinkedBankDto bank) {
+        com.veggo.app.presentation.dialog.VeggoDialog.show(
+                this,
+                R.drawable.ic_card,
+                "Xóa liên kết ngân hàng",
+                "Bạn có chắc muốn xóa liên kết " + bank.getBankCode() + " - " + bank.getAccountNumber() + "?",
+                "Xóa",
+                "Hủy",
+                new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
+                    @Override
+                    public void onConfirm() {
+                        showProgress("Đang xóa liên kết...");
+                        walletRepository.unlinkBank(customerId, bank.getBankCode(), bank.getAccountNumber(), new WalletRepository.ResultCallback<WalletDto>() {
+                            @Override
+                            public void onSuccess(WalletDto result) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Xóa liên kết thành công!", Toast.LENGTH_SHORT).show();
+                                    loadWalletInfo();
+                                });
+                            }
+
+                            @Override
+                            public void onError(Throwable error) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Xóa liên kết thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        });
+                    }
+                }
+        );
+    }
+
+    private int findBankSpinnerIndex(String bankCode) {
+        if (bankCode == null) return 0;
+        String codeLower = bankCode.toLowerCase();
+        for (int i = 0; i < BANK_NAMES.length; i++) {
+            if (codeLower.equals(BANK_NAMES[i].toLowerCase())) {
+                return i;
+            }
+        }
+        if (codeLower.contains("vietcombank") || codeLower.equals("vcb")) return 0;
+        if (codeLower.contains("techcombank") || codeLower.equals("tcb")) return 1;
+        if (codeLower.contains("mb") || codeLower.contains("mbbank")) return 2;
+        if (codeLower.contains("bidv")) return 3;
+        if (codeLower.contains("vietin") || codeLower.equals("ctg")) return 4;
+        return 0;
     }
 
     private void showDepositDialog() {
@@ -546,20 +647,7 @@ public class VeggoPayActivity extends BaseActivity {
     private void autoUpdateSelectedBankDisplay(WalletDto.LinkedBankDto bank, ImageView imgLogo, TextView tvInfo) {
         if (bank == null) return;
         tvInfo.setText(bank.getBankCode() + " - " + bank.getAccountNumber());
-        int logoRes = R.drawable.ic_card;
-        String codeLower = bank.getBankCode().toLowerCase();
-        if (codeLower.contains("vietcombank") || codeLower.equals("vcb")) {
-            logoRes = R.drawable.logo_vcb;
-        } else if (codeLower.contains("techcombank") || codeLower.equals("tcb")) {
-            logoRes = R.drawable.logo_tcb;
-        } else if (codeLower.contains("mb") || codeLower.contains("mbbank")) {
-            logoRes = R.drawable.logo_mb;
-        } else if (codeLower.contains("bidv")) {
-            logoRes = R.drawable.logo_bidv;
-        } else if (codeLower.contains("vietin") || codeLower.equals("ctg")) {
-            logoRes = R.drawable.logo_ctg;
-        }
-        imgLogo.setImageResource(logoRes);
+        imgLogo.setImageResource(resolveBankLogoRes(bank.getBankCode()));
     }
 
     private void showDepositPasswordConfirmDialog(final double amount, final String bankCode) {
@@ -632,6 +720,10 @@ public class VeggoPayActivity extends BaseActivity {
     }
 
     private void showLinkBankDialog() {
+        showLinkBankDialog(null);
+    }
+
+    private void showLinkBankDialog(@Nullable WalletDto.LinkedBankDto editingBank) {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_wallet_link_bank);
@@ -640,16 +732,29 @@ public class VeggoPayActivity extends BaseActivity {
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
 
+        TextView tvDialogTitle = dialog.findViewById(R.id.tvDialogTitle);
         Spinner spinnerBank = dialog.findViewById(R.id.spinnerBank);
         EditText edtAccountNum = dialog.findViewById(R.id.edtAccountNumber);
         EditText edtHolder = dialog.findViewById(R.id.edtAccountHolder);
         Button btnCancel = dialog.findViewById(R.id.btnCancel);
         Button btnConfirm = dialog.findViewById(R.id.btnConfirm);
 
-        // Bind custom Spinner Adapter with logo images
-        String[] banks = {"Vietcombank", "Techcombank", "MB Bank", "BIDV", "VietinBank"};
-        BankSpinnerAdapter bankAdapter = new BankSpinnerAdapter(this, banks);
+        boolean isEdit = editingBank != null;
+        if (tvDialogTitle != null) {
+            tvDialogTitle.setText(isEdit ? "Chỉnh sửa tài khoản liên kết" : "Liên kết ngân hàng");
+        }
+        btnConfirm.setText(isEdit ? "Lưu" : "Liên kết");
+
+        BankSpinnerAdapter bankAdapter = new BankSpinnerAdapter(this, BANK_NAMES);
         spinnerBank.setAdapter(bankAdapter);
+
+        if (isEdit) {
+            spinnerBank.setSelection(findBankSpinnerIndex(editingBank.getBankCode()));
+            edtAccountNum.setText(editingBank.getAccountNumber());
+            if (!TextUtils.isEmpty(editingBank.getAccountHolder())) {
+                edtHolder.setText(editingBank.getAccountHolder());
+            }
+        }
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnConfirm.setOnClickListener(v -> {
@@ -663,25 +768,55 @@ public class VeggoPayActivity extends BaseActivity {
             }
 
             dialog.dismiss();
-            showProgress("Đang liên kết ngân hàng...");
-            walletRepository.linkBank(customerId, bankCode, accountNum, holder, new WalletRepository.ResultCallback<WalletDto>() {
-                @Override
-                public void onSuccess(WalletDto result) {
-                    runOnUiThread(() -> {
-                        hideProgress();
-                        Toast.makeText(VeggoPayActivity.this, "Liên kết thành công!", Toast.LENGTH_SHORT).show();
-                        loadWalletInfo();
-                    });
-                }
+            if (isEdit) {
+                showProgress("Đang cập nhật tài khoản...");
+                walletRepository.updateLinkedBank(
+                        customerId,
+                        editingBank.getBankCode(),
+                        editingBank.getAccountNumber(),
+                        bankCode,
+                        accountNum,
+                        holder,
+                        new WalletRepository.ResultCallback<WalletDto>() {
+                            @Override
+                            public void onSuccess(WalletDto result) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                                    loadWalletInfo();
+                                });
+                            }
 
-                @Override
-                public void onError(Throwable error) {
-                    runOnUiThread(() -> {
-                        hideProgress();
-                        Toast.makeText(VeggoPayActivity.this, "Liên kết thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
+                            @Override
+                            public void onError(Throwable error) {
+                                runOnUiThread(() -> {
+                                    hideProgress();
+                                    Toast.makeText(VeggoPayActivity.this, "Cập nhật thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        }
+                );
+            } else {
+                showProgress("Đang liên kết ngân hàng...");
+                walletRepository.linkBank(customerId, bankCode, accountNum, holder, new WalletRepository.ResultCallback<WalletDto>() {
+                    @Override
+                    public void onSuccess(WalletDto result) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            Toast.makeText(VeggoPayActivity.this, "Liên kết thành công!", Toast.LENGTH_SHORT).show();
+                            loadWalletInfo();
+                        });
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        runOnUiThread(() -> {
+                            hideProgress();
+                            Toast.makeText(VeggoPayActivity.this, "Liên kết thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+            }
         });
 
         dialog.show();

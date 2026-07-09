@@ -1,5 +1,6 @@
 const express = require('express');
 const Review = require('../models/Reviews');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +22,71 @@ let reviewsCacheTime = 0;
 
 function invalidateReviewsCache() {
   reviewsCache = null;
+}
+
+function resolvePublicBaseUrl(req) {
+  return (process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+}
+
+function toAbsoluteAvatarUrl(req, avatarUrl) {
+  const value = String(avatarUrl || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  const base = resolvePublicBaseUrl(req);
+  return value.startsWith('/') ? `${base}${value}` : `${base}/${value}`;
+}
+
+function toAbsoluteMediaUrl(req, mediaUrl) {
+  return toAbsoluteAvatarUrl(req, mediaUrl);
+}
+
+function normalizeReviewImages(req, images) {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((image) => toAbsoluteMediaUrl(req, image))
+    .filter(Boolean);
+}
+
+async function resolveAvatarForCustomer(req, customerId, fallbackUrl = '') {
+  const trimmedFallback = String(fallbackUrl || '').trim();
+  if (trimmedFallback) {
+    return toAbsoluteAvatarUrl(req, trimmedFallback);
+  }
+  const normalizedCustomerId = String(customerId || '').trim();
+  if (!normalizedCustomerId) {
+    return '';
+  }
+  const user = await User.findOne({ CustomerID: normalizedCustomerId })
+    .select('avatarUrl')
+    .lean();
+  return toAbsoluteAvatarUrl(req, user?.avatarUrl || '');
+}
+
+async function enrichReviewsWithAvatars(req, reviews) {
+  if (!Array.isArray(reviews)) {
+    return [];
+  }
+  const enriched = [];
+  for (const review of reviews) {
+    const plain = review && typeof review === 'object' ? { ...review } : review;
+    plain.avatarUrl = await resolveAvatarForCustomer(
+      req,
+      plain.customer_id || plain.customerId,
+      plain.avatarUrl || plain.avatar_url || ''
+    );
+    plain.images = normalizeReviewImages(req, plain.images);
+    enriched.push(plain);
+  }
+  return enriched;
+}
+
+async function enrichReviewDocument(req, doc) {
+  if (!doc) {
+    return doc;
+  }
+  const plain = doc.toObject ? doc.toObject() : { ...doc };
+  plain.reviews = await enrichReviewsWithAvatars(req, plain.reviews);
+  return plain;
 }
 
 
@@ -115,10 +181,11 @@ router.get('/order/:orderId', asyncHandler(async (req, res) => {
         sku,
         rating: item.rating,
         content: item.content || '',
-        images: Array.isArray(item.images) ? item.images : [],
+        images: normalizeReviewImages(req, Array.isArray(item.images) ? item.images : []),
         time: item.time || null,
-        carbonPoints: item.carbonPoints ?? getReviewCarbonPoints(item),
-        isPremiumReview: item.isPremiumReview ?? isPremiumReview(item),
+        // Always compute from current rules to avoid legacy/incorrect stored values.
+        carbonPoints: getReviewCarbonPoints(item),
+        isPremiumReview: isPremiumReview(item),
         canEdit: editable,
         editDeadline: deadline,
       };
@@ -141,7 +208,7 @@ router.get('/sku/:sku', asyncHandler(async (req, res) => {
   if (!result) {
     return res.status(404).json({ message: 'No reviews found for this SKU' });
   }
-  res.json(result);
+  res.json(await enrichReviewDocument(req, result));
 }));
 
 /**
@@ -156,7 +223,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const now = Date.now();
 
   const slimReview = (review) => {
-    if (!lite) return review;
+    if (!lite) {
+      return {
+        ...review,
+        images: normalizeReviewImages(req, review.images),
+      };
+    }
     return {
       fullname: review.fullname,
       customer_id: review.customer_id,
@@ -426,7 +498,8 @@ router.post('/sku/:sku/reviews/:reviewId/like', asyncHandler(async (req, res) =>
 
   invalidateReviewsCache();
 
-  res.json({ sku, reviews: updatedReviews });
+  const enrichedReviews = await enrichReviewsWithAvatars(req, updatedReviews);
+  res.json({ sku, reviews: enrichedReviews });
 }));
 
 module.exports = router;

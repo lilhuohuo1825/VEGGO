@@ -9,49 +9,53 @@
     android:fitsSystemWindows="true">
 
     <!-- Header Toolbar -->
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:paddingHorizontal="16dp">
+        android:layout_height="64dp"
+        android:background="@color/background_main"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
 
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_centerVertical="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Quay lại"
-            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/orders_back"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_left"
-            app:tint="@color/primary_main" />
+            app:tint="@color/primary_hover" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:fontFamily="@font/inter"
-            android:text="Biến động số dư"
-            android:textColor="#1E1E1E"
-            android:textSize="18sp"
+            android:layout_weight="1"
+            android:fontFamily="@font/inter_bold"
+            android:gravity="center"
+            android:text="@string/veggopay_history_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/btnReadAll"
             android:layout_width="72dp"
             android:layout_height="40dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:fontFamily="@font/inter_semibold"
-            android:gravity="center"
-            android:text="Đọc tất cả"
-            android:textColor="@color/primary_hover"
-            android:textSize="12sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
-    </RelativeLayout>
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:text="@string/mark_all_read"
+            android:textColor="@color/primary_hover"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <!-- 3 Tabs Filter Bar -->
     <LinearLayout
@@ -70,16 +74,39 @@
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackground">
-            <TextView
-                android:id="@+id/tvTabAll"
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:fontFamily="@font/inter"
-                android:text="Tất cả"
-                android:textColor="@color/primary_main"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvTabAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:text="Tất cả"
+                    android:textColor="@color/primary_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/badgeTabAll"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_notification_badge_tab"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_xs"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <View
                 android:id="@+id/indicatorAll"
                 android:layout_width="70dp"
@@ -97,16 +124,39 @@
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackground">
-            <TextView
-                android:id="@+id/tvTabReceive"
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:fontFamily="@font/inter"
-                android:text="Nhận tiền"
-                android:textColor="#707070"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvTabReceive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:text="Nhận tiền"
+                    android:textColor="#707070"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/badgeTabReceive"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_notification_badge_dark"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_xs"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <View
                 android:id="@+id/indicatorReceive"
                 android:layout_width="70dp"
@@ -125,16 +175,39 @@
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackground">
-            <TextView
-                android:id="@+id/tvTabSend"
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:fontFamily="@font/inter"
-                android:text="Chuyển tiền"
-                android:textColor="#707070"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvTabSend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:text="Chuyển tiền"
+                    android:textColor="#707070"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/badgeTabSend"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_notification_badge_dark"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/background_main"
+                    android:textSize="@dimen/text_xs"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <View
                 android:id="@+id/indicatorSend"
                 android:layout_width="70dp"

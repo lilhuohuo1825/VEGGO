@@ -26,6 +26,15 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     private OnProductClickListener listener;
     private OnAddProductClickListener addProductClickListener;
     private boolean horizontalScrollMode;
+    private boolean promotionGridMode;
+
+    public void setPromotionGridMode(boolean promotionGridMode) {
+        if (this.promotionGridMode == promotionGridMode) {
+            return;
+        }
+        this.promotionGridMode = promotionGridMode;
+        notifyDataSetChanged();
+    }
 
     public interface OnProductClickListener {
         void onProductClick(Product product);
@@ -63,8 +72,9 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     @NonNull
     @Override
     public ProductViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ItemProductGridBinding binding = ItemProductGridBinding.inflate(
-                LayoutInflater.from(parent.getContext()), parent, false);
+        int layoutRes = promotionGridMode ? R.layout.item_promotion_grid : R.layout.item_product_grid;
+        View inflated = LayoutInflater.from(parent.getContext()).inflate(layoutRes, parent, false);
+        ItemProductGridBinding binding = ItemProductGridBinding.bind(inflated);
         if (horizontalScrollMode) {
             float density = parent.getResources().getDisplayMetrics().density;
             int width = Math.round(HORIZONTAL_CARD_WIDTH_DP * density);

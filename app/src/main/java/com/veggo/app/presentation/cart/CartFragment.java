@@ -29,6 +29,7 @@ import com.veggo.app.adapter.VoucherOptionAdapter;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.ui.ViewModelFactory;
@@ -223,11 +224,7 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     }
 
     private void updateNotificationBadge(int count) {
-        if (cartNotificationBadge == null) {
-            return;
-        }
-        cartNotificationBadge.setText(count > 99 ? "99+" : String.valueOf(count));
-        cartNotificationBadge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        BadgeUiHelper.applyAlertBadge(cartNotificationBadge, count);
     }
 
     private void openShoppingCategoryList() {
@@ -1337,37 +1334,16 @@ public class CartFragment extends BaseFragment implements CartAdapter.CartItemAc
     }
 
     private boolean matchesTargetGroup(String targetType, List<String> targetRefs) {
-        if (targetType == null || targetRefs == null || targetRefs.isEmpty()) {
-            return true;
-        }
-        if ("User".equalsIgnoreCase(targetType)
-                || "Shipping".equalsIgnoreCase(targetType)
-                || "Order".equalsIgnoreCase(targetType)) {
-            return true;
-        }
-        Set<String> refs = new HashSet<>(targetRefs);
         for (CartAdapter.CartItemUiModel cartItem : cartItems) {
             if (!cartItem.isChecked) {
                 continue;
             }
-            if ("Product".equalsIgnoreCase(targetType) && refs.contains(cartItem.sku)) {
-                return true;
-            }
-            ProductDto product = cartItem.product;
-            if (product == null) {
-                continue;
-            }
-            if ("Category".equalsIgnoreCase(targetType) && refs.contains(product.getCategoryId())) {
-                return true;
-            }
-            if ("Subcategory".equalsIgnoreCase(targetType) && refs.contains(product.getSubcategoryId())) {
-                return true;
-            }
-            if ("Brand".equalsIgnoreCase(targetType) && refs.contains(product.getBrand())) {
+            if (PromotionVoucherHelper.matchesTargetRef(
+                    targetType, targetRefs, cartItem.sku, cartItem.product)) {
                 return true;
             }
         }
-        return false;
+        return PromotionVoucherHelper.matchesTargetRef(targetType, targetRefs, null, null);
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {

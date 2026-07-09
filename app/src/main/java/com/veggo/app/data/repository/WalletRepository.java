@@ -74,7 +74,7 @@ public class WalletRepository {
     }
 
     public void getTransactions(String customerId, ResultCallback<List<WalletTransactionDto>> callback) {
-        walletApi.getTransactions(customerId).enqueue(new Callback<WalletTransactionsResponseDto>() {
+        walletApi.getTransactions(customerId, null).enqueue(new Callback<WalletTransactionsResponseDto>() {
             @Override
             public void onResponse(Call<WalletTransactionsResponseDto> call, Response<WalletTransactionsResponseDto> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {
@@ -122,6 +122,57 @@ public class WalletRepository {
         body.put("accountNumber", accountNumber);
 
         walletApi.setDefaultBank(body).enqueue(new Callback<WalletResponseDto>() {
+            @Override
+            public void onResponse(Call<WalletResponseDto> call, Response<WalletResponseDto> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {
+                    callback.onSuccess(response.body().getData());
+                    return;
+                }
+                callback.onError(new ApiHttpException(response.code(), parseErrorMessage(response)));
+            }
+
+            @Override
+            public void onFailure(Call<WalletResponseDto> call, Throwable t) {
+                callback.onError(new IOException(ChatRepository.mapNetworkError(t), t));
+            }
+        });
+    }
+
+    public void updateLinkedBank(String customerId, String oldBankCode, String oldAccountNumber,
+                                 String bankCode, String accountNumber, String accountHolder,
+                                 ResultCallback<WalletDto> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("customerId", customerId);
+        body.put("oldBankCode", oldBankCode);
+        body.put("oldAccountNumber", oldAccountNumber);
+        body.put("bankCode", bankCode);
+        body.put("accountNumber", accountNumber);
+        body.put("accountHolder", accountHolder);
+
+        walletApi.updateLinkedBank(body).enqueue(new Callback<WalletResponseDto>() {
+            @Override
+            public void onResponse(Call<WalletResponseDto> call, Response<WalletResponseDto> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {
+                    callback.onSuccess(response.body().getData());
+                    return;
+                }
+                callback.onError(new ApiHttpException(response.code(), parseErrorMessage(response)));
+            }
+
+            @Override
+            public void onFailure(Call<WalletResponseDto> call, Throwable t) {
+                callback.onError(new IOException(ChatRepository.mapNetworkError(t), t));
+            }
+        });
+    }
+
+    public void unlinkBank(String customerId, String bankCode, String accountNumber, ResultCallback<WalletDto> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("customerId", customerId);
+        body.put("bankCode", bankCode);
+        body.put("accountNumber", accountNumber);
+
+        walletApi.unlinkBank(body).enqueue(new Callback<WalletResponseDto>() {
             @Override
             public void onResponse(Call<WalletResponseDto> call, Response<WalletResponseDto> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {

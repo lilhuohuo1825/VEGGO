@@ -27,7 +27,7 @@
                 android:src="@drawable/ic_left"
                 android:padding="10dp"
                 android:scaleType="centerInside"
-                app:tint="@color/neutral_100" />
+                app:tint="@color/primary_hover" />
 
             <TextView
                 android:layout_width="wrap_content"

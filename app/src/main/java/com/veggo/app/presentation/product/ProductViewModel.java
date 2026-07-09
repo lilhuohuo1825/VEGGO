@@ -225,7 +225,6 @@ public class ProductViewModel extends ViewModel {
             callback.onError(new IllegalArgumentException("Reply cannot be empty"));
             return;
         }
-        isSubmittingQuestion.postValue(true);
         consultationRepository.submitReply(
                 sku,
                 questionId,
@@ -233,7 +232,7 @@ public class ProductViewModel extends ViewModel {
                 customerId,
                 customerName,
                 customerAvatarUrl != null ? customerAvatarUrl.trim() : "",
-                wrapConsultationCallback(callback, true)
+                wrapConsultationCallback(callback, false)
         );
     }
 

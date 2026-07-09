@@ -49,6 +49,7 @@ public class HomeViewModel extends ViewModel {
     public static final String TAB_TRENDING   = "trending";
     public static final String TAB_NEWEST     = "newest";
     public static final String TAB_TOP_RATED  = "top_rated";
+    public static final String TAB_PROMOTION  = "promotion";
     public static final String TAB_PRICE_DESC = "price_desc";
     public static final String TAB_PRICE_ASC  = "price_asc";
     // ─── LiveData ────────────────────────────────────────────────────────
@@ -145,7 +146,10 @@ public class HomeViewModel extends ViewModel {
 
     private void loadProductsFromApi(String tab, boolean isRefresh) {
         _loadingProducts.setValue(true);
-        if (isRefresh) _productError.setValue(null);
+        if (isRefresh) {
+            _productError.setValue(null);
+            _products.setValue(new ArrayList<>());
+        }
 
         productApi.getHomeProducts(tab, PAGE_SIZE, currentSkip).enqueue(new Callback<HomeProductResponse>() {
             @Override
@@ -178,14 +182,20 @@ public class HomeViewModel extends ViewModel {
                         _products.setValue(updated);
                     }
                 } else {
-                    if (isRefresh) _productError.setValue("Không thể tải sản phẩm. Vui lòng thử lại.");
+                    if (isRefresh) {
+                        _products.setValue(new ArrayList<>());
+                        _productError.setValue("Không thể tải sản phẩm. Vui lòng thử lại.");
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<HomeProductResponse> call, Throwable t) {
                 _loadingProducts.setValue(false);
-                if (isRefresh) _productError.setValue("Lỗi kết nối: " + t.getMessage());
+                if (isRefresh) {
+                    _products.setValue(new ArrayList<>());
+                    _productError.setValue("Lỗi kết nối: " + t.getMessage());
+                }
             }
         });
     }

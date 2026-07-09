@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -63,12 +66,32 @@ public class ReturnRequestActivity extends BaseActivity {
         evidenceCount = findViewById(R.id.returnEvidenceCount);
         evidenceContainer = findViewById(R.id.returnEvidenceContainer);
 
+        tintRequiredAsterisk(findViewById(R.id.returnReasonLabel));
+        tintRequiredAsterisk(findViewById(R.id.returnDescriptionLabel));
+        tintRequiredAsterisk(findViewById(R.id.returnEvidenceLabel));
+
         setupEvidencePickers();
         findViewById(R.id.returnRequestBackButton).setOnClickListener(v -> finish());
         submitButton.setOnClickListener(v -> submitReturnRequest());
         evidenceButton.setOnClickListener(v -> showEvidenceSourceDialog());
         updateEvidenceButton();
         bindOrderSummary();
+    }
+
+    private void tintRequiredAsterisk(TextView label) {
+        if (label == null) return;
+        CharSequence text = label.getText();
+        if (text == null) return;
+        int starIndex = text.toString().indexOf('*');
+        if (starIndex < 0) return;
+        SpannableString spannable = new SpannableString(text);
+        spannable.setSpan(
+                new ForegroundColorSpan(getColor(R.color.danger_main)),
+                starIndex,
+                starIndex + 1,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+        label.setText(spannable);
     }
 
     private void setupEvidencePickers() {

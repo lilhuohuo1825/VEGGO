@@ -23,20 +23,21 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvLocationName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_toStartOf="@+id/tvLocationEdit"
-                android:layout_toLeftOf="@+id/tvLocationEdit"
-                android:layout_marginEnd="8dp"
                 android:ellipsize="end"
+                android:gravity="start"
                 android:maxLines="1"
                 android:textColor="#1E1E1E"
                 android:textSize="13sp"
@@ -44,46 +45,52 @@
                 tools:text="Nguyen Minh Khoi - 0987654321" />
 
             <TextView
+                android:id="@+id/tvLocationAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#616161"
+                android:textSize="11sp"
+                tools:text="123 Nguyen Trai, Phuong 2, Quan 5, Thanh pho Ho Chi Minh" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
                 android:id="@+id/tvLocationEdit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentRight="true"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:gravity="end"
                 android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingEnd="0dp"
                 android:text="Sửa"
                 android:textColor="@color/primary_main"
                 android:textSize="12sp"
                 android:textStyle="bold" />
-        </RelativeLayout>
 
-        <TextView
-            android:id="@+id/tvLocationAddress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="#616161"
-            android:textSize="11sp"
-            tools:text="123 Nguyen Trai, Phuong 2, Quan 5, Thanh pho Ho Chi Minh" />
+            <TextView
+                android:id="@+id/tvLocationDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_default_yellow"
+                android:gravity="center"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="Mặc định"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvLocationDefault"
-        android:layout_width="wrap_content"
-        android:layout_height="22dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/bg_default_yellow"
-        android:gravity="center"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:text="Mac dinh"
-        android:textColor="#FFFFFF"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:visibility="gone" />
 
 </LinearLayout>

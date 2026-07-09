@@ -78,15 +78,24 @@ public class RecurringOrdersActivity extends BaseActivity {
             return;
         }
 
-        bindRecurringOrders();
+        new Thread(() -> {
+            store.syncFromRemote(customerId);
+            runOnUiThread(this::bindRecurringOrders);
+        }).start();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (preferences != null && preferences.isLoggedIn()) {
-            RecurringConfirmationScheduler.runCheckNow(this);
-            bindRecurringOrders();
+            customerId = preferences.getCustomerId();
+            new Thread(() -> {
+                store.syncFromRemote(customerId);
+                runOnUiThread(() -> {
+                    RecurringConfirmationScheduler.runCheckNow(this);
+                    bindRecurringOrders();
+                });
+            }).start();
         }
     }
 

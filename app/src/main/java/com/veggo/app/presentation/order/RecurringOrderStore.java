@@ -4,12 +4,21 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.notification.RecurringConfirmationHelper;
+import com.veggo.app.core.notification.RecurringInAppNotificationStore;
+import com.veggo.app.data.remote.api.RecurringOrderApi;
 import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.data.remote.dto.ProductDto;
+import com.veggo.app.data.remote.dto.RecurringNotificationDto;
+import com.veggo.app.data.remote.dto.RecurringOrderDto;
+import com.veggo.app.data.remote.dto.RecurringOrderOccurrenceDto;
+import com.veggo.app.data.remote.dto.RecurringOrderSyncRequestDto;
+import com.veggo.app.data.remote.dto.RecurringOrderSyncResponseDto;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -25,6 +34,7 @@ public class RecurringOrderStore {
     private static final String KEY_ORDERS = "orders";
     private static final String KEY_OCCURRENCES = "occurrences";
 
+    private final Context appContext;
     private final SharedPreferences prefs;
     private final Gson gson = new Gson();
     private final Type listType = new TypeToken<List<RecurringOrder>>() {}.getType();
@@ -32,13 +42,15 @@ public class RecurringOrderStore {
     private final SimpleDateFormat storageFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
     public RecurringOrderStore(@NonNull Context context) {
-        prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        appContext = context.getApplicationContext();
+        prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     public void add(@NonNull RecurringOrder order) {
         List<RecurringOrder> orders = all();
         orders.add(order);
-        prefs.edit().putString(KEY_ORDERS, gson.toJson(orders, listType)).apply();
+        saveOrders(orders);
+        pushOrderRemoteAsync(order);
     }
 
     public void update(@NonNull RecurringOrder updatedOrder) {
@@ -46,7 +58,8 @@ public class RecurringOrderStore {
         for (int i = 0; i < orders.size(); i++) {
             if (safe(updatedOrder.id).equals(safe(orders.get(i).id))) {
                 orders.set(i, updatedOrder);
-                prefs.edit().putString(KEY_ORDERS, gson.toJson(orders, listType)).apply();
+                saveOrders(orders);
+                pushOrderRemoteAsync(updatedOrder);
                 return;
             }
         }
@@ -59,7 +72,8 @@ public class RecurringOrderStore {
                 orders.remove(i);
             }
         }
-        prefs.edit().putString(KEY_ORDERS, gson.toJson(orders, listType)).apply();
+        saveOrders(orders);
+        pushDeleteRemoteAsync(orderId);
     }
 
     public RecurringOrder findById(String orderId) {
@@ -147,11 +161,13 @@ public class RecurringOrderStore {
             if (key.equals(RecurringConfirmationHelper.occurrenceKey(existing.orderId, existing.date))) {
                 occurrences.set(i, state);
                 saveOccurrences(occurrences);
+                pushOccurrenceRemoteAsync(state);
                 return;
             }
         }
         occurrences.add(state);
         saveOccurrences(occurrences);
+        pushOccurrenceRemoteAsync(state);
     }
 
     public void markOccurrencePending(String orderId, String date) {
@@ -413,6 +429,307 @@ public class RecurringOrderStore {
 
     private void saveOccurrences(List<OccurrenceState> occurrences) {
         prefs.edit().putString(KEY_OCCURRENCES, gson.toJson(occurrences, occurrenceListType)).apply();
+    }
+
+    private void saveOrders(List<RecurringOrder> orders) {
+        prefs.edit().putString(KEY_ORDERS, gson.toJson(orders, listType)).apply();
+    }
+
+    public boolean syncFromRemote(@Nullable String customerId) {
+        if (!hasText(customerId)) {
+            return false;
+        }
+        try {
+            RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+            retrofit2.Response<RecurringOrderSyncResponseDto> response =
+                    api.getCustomerData(customerId).execute();
+            if (!response.isSuccessful() || response.body() == null) {
+                return uploadLocalDataIfNeeded(customerId);
+            }
+
+            RecurringOrderSyncResponseDto body = response.body();
+            if (body.getOrders() == null || body.getOrders().isEmpty()) {
+                boolean uploaded = uploadLocalDataIfNeeded(customerId);
+                if (uploaded) {
+                    retrofit2.Response<RecurringOrderSyncResponseDto> refreshed =
+                            api.getCustomerData(customerId).execute();
+                    if (refreshed.isSuccessful() && refreshed.body() != null) {
+                        applyRemoteData(refreshed.body(), customerId);
+                        return true;
+                    }
+                }
+                return uploaded;
+            }
+
+            applyRemoteData(body, customerId);
+            return true;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean uploadLocalDataIfNeeded(String customerId) {
+        List<RecurringOrder> localOrders = forCustomer(customerId);
+        List<OccurrenceState> localOccurrences = occurrencesForCustomer(customerId);
+        if (localOrders.isEmpty() && localOccurrences.isEmpty()) {
+            return false;
+        }
+        try {
+            RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+            RecurringOrderSyncRequestDto request = new RecurringOrderSyncRequestDto(customerId);
+            request.setOrders(toDtoList(localOrders));
+            request.setOccurrences(toOccurrenceDtoList(localOccurrences, customerId));
+            retrofit2.Response<RecurringOrderSyncResponseDto> response = api.syncOrders(request).execute();
+            if (response.isSuccessful() && response.body() != null) {
+                applyRemoteData(response.body(), customerId);
+                return true;
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return false;
+    }
+
+    private void applyRemoteData(@NonNull RecurringOrderSyncResponseDto body, @NonNull String customerId) {
+        List<RecurringOrder> mergedOrders = new ArrayList<>();
+        List<String> replacedOrderIds = new ArrayList<>();
+        for (RecurringOrder order : all()) {
+            if (customerId.equals(safe(order.customerId))) {
+                replacedOrderIds.add(safe(order.id));
+            } else {
+                mergedOrders.add(order);
+            }
+        }
+        if (body.getOrders() != null) {
+            for (RecurringOrderDto dto : body.getOrders()) {
+                RecurringOrder order = fromDto(dto);
+                if (order != null && customerId.equals(safe(order.customerId))) {
+                    mergedOrders.add(order);
+                }
+            }
+        }
+        saveOrders(mergedOrders);
+
+        List<OccurrenceState> mergedOccurrences = new ArrayList<>();
+        for (OccurrenceState existing : allOccurrences()) {
+            if (!replacedOrderIds.contains(safe(existing.orderId))) {
+                mergedOccurrences.add(existing);
+            }
+        }
+        if (body.getOccurrences() != null) {
+            for (RecurringOrderOccurrenceDto dto : body.getOccurrences()) {
+                OccurrenceState state = fromOccurrenceDto(dto);
+                if (state != null) {
+                    mergedOccurrences.add(state);
+                }
+            }
+        }
+        saveOccurrences(mergedOccurrences);
+
+        if (body.getNotifications() != null) {
+            new RecurringInAppNotificationStore(appContext).replaceFromRemote(body.getNotifications());
+        }
+    }
+
+    private List<OccurrenceState> occurrencesForCustomer(String customerId) {
+        List<OccurrenceState> result = new ArrayList<>();
+        for (OccurrenceState state : allOccurrences()) {
+            RecurringOrder order = findById(state.orderId);
+            if (order != null && customerId.equals(safe(order.customerId))) {
+                result.add(state);
+            }
+        }
+        return result;
+    }
+
+    private void pushOrderRemoteAsync(@NonNull RecurringOrder order) {
+        new Thread(() -> {
+            try {
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                RecurringOrderDto dto = toDto(order);
+                retrofit2.Response<RecurringOrderDto> response = api.updateOrder(order.id, dto).execute();
+                if (!response.isSuccessful()) {
+                    api.createOrder(dto).execute();
+                }
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void pushDeleteRemoteAsync(String orderId) {
+        if (!hasText(orderId)) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                api.deleteOrder(orderId).execute();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void pushOccurrenceRemoteAsync(@NonNull OccurrenceState state) {
+        RecurringOrder order = findById(state.orderId);
+        if (order == null || !hasText(order.customerId)) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                RecurringOrderApi api = ApiClient.createService(RecurringOrderApi.class);
+                api.upsertOccurrence(state.orderId, state.date, toOccurrenceDto(state, order.customerId)).execute();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start();
+    }
+
+    private static RecurringOrderDto toDto(@NonNull RecurringOrder order) {
+        RecurringOrderDto dto = new RecurringOrderDto();
+        dto.setId(order.id);
+        dto.setCustomerId(order.customerId);
+        dto.setName(order.name);
+        dto.setFrequency(order.frequency);
+        dto.setDeliveryDate(order.deliveryDate);
+        dto.setDeliverySlot(order.deliverySlot);
+        dto.setReceiverName(order.receiverName);
+        dto.setReceiverPhone(order.receiverPhone);
+        dto.setCity(order.city);
+        dto.setDistrict(order.district);
+        dto.setWard(order.ward);
+        dto.setDetailAddress(order.detailAddress);
+        dto.setItemSummary(order.itemSummary);
+        dto.setEstimatedTotal(order.estimatedTotal);
+        dto.setCarbonPoints(order.carbonPoints);
+        dto.setStatus(order.status);
+        dto.setCreatedAt(order.createdAt);
+        List<RecurringOrderDto.RecurringProductItemDto> items = new ArrayList<>();
+        if (order.items != null) {
+            for (RecurringProductItem item : order.items) {
+                RecurringOrderDto.RecurringProductItemDto itemDto =
+                        new RecurringOrderDto.RecurringProductItemDto();
+                itemDto.setProductId(item.productId);
+                itemDto.setSku(item.sku);
+                itemDto.setName(item.name);
+                itemDto.setImageUrl(item.imageUrl);
+                itemDto.setUnit(item.unit);
+                itemDto.setQuantity(item.quantity);
+                itemDto.setSelectedWeight(item.selectedWeight);
+                itemDto.setUnitPrice(item.unitPrice);
+                itemDto.setBaseUnitPrice(item.baseUnitPrice);
+                itemDto.setBaseCarbonSavingPoint(item.baseCarbonSavingPoint);
+                itemDto.setEmissionFactor(item.emissionFactor);
+                itemDto.setHasWeightOptions(item.hasWeightOptions);
+                itemDto.setCarbonPoints(item.carbonPoints);
+                items.add(itemDto);
+            }
+        }
+        dto.setItems(items);
+        return dto;
+    }
+
+    private static List<RecurringOrderDto> toDtoList(List<RecurringOrder> orders) {
+        List<RecurringOrderDto> result = new ArrayList<>();
+        for (RecurringOrder order : orders) {
+            result.add(toDto(order));
+        }
+        return result;
+    }
+
+    @Nullable
+    private static RecurringOrder fromDto(@Nullable RecurringOrderDto dto) {
+        if (dto == null || !hasText(dto.getId())) {
+            return null;
+        }
+        RecurringOrder order = new RecurringOrder();
+        order.id = dto.getId();
+        order.customerId = dto.getCustomerId();
+        order.name = dto.getName();
+        order.frequency = dto.getFrequency();
+        order.deliveryDate = dto.getDeliveryDate();
+        order.deliverySlot = dto.getDeliverySlot();
+        order.receiverName = dto.getReceiverName();
+        order.receiverPhone = dto.getReceiverPhone();
+        order.city = dto.getCity();
+        order.district = dto.getDistrict();
+        order.ward = dto.getWard();
+        order.detailAddress = dto.getDetailAddress();
+        order.itemSummary = dto.getItemSummary();
+        order.estimatedTotal = dto.getEstimatedTotal();
+        order.carbonPoints = dto.getCarbonPoints();
+        order.status = dto.getStatus();
+        order.createdAt = dto.getCreatedAt();
+        order.items = new ArrayList<>();
+        if (dto.getItems() != null) {
+            for (RecurringOrderDto.RecurringProductItemDto itemDto : dto.getItems()) {
+                RecurringProductItem item = new RecurringProductItem();
+                item.productId = itemDto.getProductId();
+                item.sku = itemDto.getSku();
+                item.name = itemDto.getName();
+                item.imageUrl = itemDto.getImageUrl();
+                item.unit = itemDto.getUnit();
+                item.quantity = itemDto.getQuantity();
+                item.selectedWeight = itemDto.getSelectedWeight();
+                item.unitPrice = itemDto.getUnitPrice();
+                item.baseUnitPrice = itemDto.getBaseUnitPrice();
+                item.baseCarbonSavingPoint = itemDto.getBaseCarbonSavingPoint();
+                item.emissionFactor = itemDto.getEmissionFactor();
+                item.hasWeightOptions = itemDto.isHasWeightOptions();
+                item.carbonPoints = itemDto.getCarbonPoints();
+                order.items.add(item);
+            }
+        }
+        return order;
+    }
+
+    private static RecurringOrderOccurrenceDto toOccurrenceDto(
+            @NonNull OccurrenceState state,
+            @NonNull String customerId
+    ) {
+        RecurringOrderOccurrenceDto dto = new RecurringOrderOccurrenceDto();
+        dto.setOrderId(state.orderId);
+        dto.setCustomerId(customerId);
+        dto.setDate(state.date);
+        dto.setStatus(state.status);
+        dto.setPlacedOrderId(state.placedOrderId);
+        dto.setConfirmNotifiedAt(state.confirmNotifiedAt);
+        dto.setDeliveryReminderNotifiedAt(state.deliveryReminderNotifiedAt);
+        dto.setNotifiedAt(state.notifiedAt);
+        return dto;
+    }
+
+    private static List<RecurringOrderOccurrenceDto> toOccurrenceDtoList(
+            List<OccurrenceState> states,
+            String customerId
+    ) {
+        List<RecurringOrderOccurrenceDto> result = new ArrayList<>();
+        for (OccurrenceState state : states) {
+            result.add(toOccurrenceDto(state, customerId));
+        }
+        return result;
+    }
+
+    @Nullable
+    private static OccurrenceState fromOccurrenceDto(@Nullable RecurringOrderOccurrenceDto dto) {
+        if (dto == null || !hasText(dto.getOrderId()) || !hasText(dto.getDate())) {
+            return null;
+        }
+        OccurrenceState state = new OccurrenceState();
+        state.orderId = dto.getOrderId();
+        state.date = dto.getDate();
+        state.status = dto.getStatus();
+        state.placedOrderId = dto.getPlacedOrderId();
+        state.confirmNotifiedAt = dto.getConfirmNotifiedAt();
+        state.deliveryReminderNotifiedAt = dto.getDeliveryReminderNotifiedAt();
+        state.notifiedAt = dto.getNotifiedAt();
+        return state;
+    }
+
+    private static boolean hasText(@Nullable String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private static String safe(String value) {

@@ -26,6 +26,7 @@ import com.veggo.app.adapter.ProductAdapter;
 import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -36,6 +37,7 @@ import com.veggo.app.databinding.FragmentHomeBinding;
 import com.veggo.app.databinding.LayoutHomeStickyTabsBinding;
 import com.veggo.app.di.AppModule;
 import com.veggo.app.presentation.about.AboutUsActivity;
+import com.veggo.app.presentation.home.PopularRecipesActivity;
 import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 import com.veggo.app.presentation.product.AddToCartBottomSheetHelper;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
@@ -92,7 +94,8 @@ public class HomeFragment extends Fragment {
             HomeViewModel.TAB_TRENDING,
             HomeViewModel.TAB_NEWEST,
             "PRICE_PLACEHOLDER",
-            HomeViewModel.TAB_TOP_RATED
+            HomeViewModel.TAB_TOP_RATED,
+            HomeViewModel.TAB_PROMOTION
     };
 
     /** Top Y của HorizontalScrollView chứa tabs (tính trong ScrollView content) */
@@ -217,12 +220,21 @@ public class HomeFragment extends Fragment {
     }
 
     public void scrollToProductsSection() {
+        scrollToPromotionTabSection();
+    }
+
+    public void scrollToPromotionTabSection() {
         if (binding == null) return;
         binding.homeScrollView.post(() -> {
             if (binding == null) return;
-            int anchorTop = getViewTopInScrollContent(binding.productAnchor);
-            int targetScrollY = Math.max(0, anchorTop - stickyHeaderHeight);
+            View hsv = (View) binding.tabContainer.getParent();
+            if (tabBarTop == Integer.MAX_VALUE) {
+                tabBarTop = getViewTopInScrollContent(hsv);
+            }
+            int targetScrollY = Math.max(0, tabBarTop - stickyHeaderHeight);
             binding.homeScrollView.smoothScrollTo(0, targetScrollY);
+            binding.stickyTabs.getRoot().setVisibility(View.VISIBLE);
+            scrollToActiveTab(HomeViewModel.TAB_PROMOTION);
         });
     }
 
@@ -281,6 +293,7 @@ public class HomeFragment extends Fragment {
             }
             restoreChatbotPosition(fab);
             attachChatbotDragBehavior(fab);
+            notifySupportBubbleReposition();
         });
     }
 
@@ -370,7 +383,10 @@ public class HomeFragment extends Fragment {
         fab.animate()
                 .x(targetX)
                 .setDuration(180L)
-                .withEndAction(() -> saveChatbotPosition(fab))
+                .withEndAction(() -> {
+                    saveChatbotPosition(fab);
+                    notifySupportBubbleReposition();
+                })
                 .start();
     }
 
@@ -396,6 +412,12 @@ public class HomeFragment extends Fragment {
                 .putFloat(KEY_CHATBOT_FAB_X, fab.getX())
                 .putFloat(KEY_CHATBOT_FAB_Y, fab.getY())
                 .apply();
+    }
+
+    private void notifySupportBubbleReposition() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).repositionSupportChatBubbleIfNeeded();
+        }
     }
 
     private void setupRecyclerViews() {
@@ -477,6 +499,14 @@ public class HomeFragment extends Fragment {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).openCategoryDetail(null, null);
         });
+
+        binding.btnViewMoreFlashSale.setOnClickListener(v -> {
+            homeViewModel.selectTab(HomeViewModel.TAB_PROMOTION);
+            binding.homeScrollView.postDelayed(this::scrollToPromotionTabSection, 150);
+        });
+
+        binding.btnViewMoreRecipes.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PopularRecipesActivity.class)));
 
         // Flash Sale
         flashSaleAdapter = new FlashSaleAdapter();
@@ -616,6 +646,7 @@ public class HomeFragment extends Fragment {
         binding.tabTrending.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_TRENDING));
         binding.tabNewest.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_NEWEST));
         binding.tabTopRated.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_TOP_RATED));
+        binding.tabPromotion.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_PROMOTION));
 
         // Giá: toggle cao→thấp / thấp→cao
         binding.tabBestPriceContainer.setOnClickListener(v -> togglePriceTab());
@@ -627,6 +658,7 @@ public class HomeFragment extends Fragment {
         stickyTabsBinding.stickyTabTrending.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_TRENDING));
         stickyTabsBinding.stickyTabNewest.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_NEWEST));
         stickyTabsBinding.stickyTabTopRated.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_TOP_RATED));
+        stickyTabsBinding.stickyTabPromotion.setOnClickListener(v -> homeViewModel.selectTab(HomeViewModel.TAB_PROMOTION));
         
         stickyTabsBinding.stickyTabBestPriceContainer.setOnClickListener(v -> togglePriceTab());
         stickyTabsBinding.stickyTabBestPrice.setOnClickListener(v -> togglePriceTab());
@@ -756,11 +788,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void setCartBadge(TextView badge, int count) {
-        if (badge == null) {
-            return;
-        }
-        badge.setText(count > 99 ? "99+" : String.valueOf(count));
-        badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        BadgeUiHelper.applyAlertBadge(badge, count);
     }
 
     private void refreshNotificationState(boolean allowAlert) {
@@ -830,6 +858,8 @@ public class HomeFragment extends Fragment {
         homeViewModel.getProducts().observe(getViewLifecycleOwner(), products -> {
             if (products != null) {
                 productAdapter.submitList(products);
+                updateProductsEmptyState(products.isEmpty()
+                        && !Boolean.TRUE.equals(homeViewModel.getLoadingProducts().getValue()));
                 // Sau khi list thay đổi, đo lại vị trí tabBar vì chiều cao RecyclerView đổi
                 binding.tabContainer.post(() -> {
                     View hsv = (View) binding.tabContainer.getParent();
@@ -846,9 +876,14 @@ public class HomeFragment extends Fragment {
                 PullToRefreshHelper.finish(homeRefreshLayout);
             }
             binding.progressProducts.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-            // Hide RecyclerView if it's the initial load (products list is empty)
             boolean isInitialLoad = isLoading && productAdapter.getItemCount() == 0;
             binding.rvProducts.setVisibility(isInitialLoad ? View.INVISIBLE : View.VISIBLE);
+            if (isLoading) {
+                binding.homeProductsEmptyState.setVisibility(View.GONE);
+            } else {
+                List<com.veggo.app.domain.model.Product> products = homeViewModel.getProducts().getValue();
+                updateProductsEmptyState(products == null || products.isEmpty());
+            }
 
             // Hide btnLoadMore while loading
             if (isLoading) {
@@ -875,6 +910,7 @@ public class HomeFragment extends Fragment {
         homeViewModel.getCurrentTab().observe(getViewLifecycleOwner(), tab -> {
             updateTabStyles(tab);
             scrollToActiveTab(tab);
+            productAdapter.setPromotionGridMode(HomeViewModel.TAB_PROMOTION.equals(tab));
 
             // Cuộn dọc ScrollView lên phần sản phẩm của tab mới nếu đang ở dưới
             if (binding != null) {
@@ -891,6 +927,15 @@ public class HomeFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void updateProductsEmptyState(boolean showEmpty) {
+        if (binding == null) return;
+        binding.rvProducts.setVisibility(showEmpty ? View.GONE : View.VISIBLE);
+        binding.homeProductsEmptyState.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
+        if (showEmpty) {
+            binding.btnLoadMore.setVisibility(View.GONE);
+        }
     }
 
     /**
@@ -924,6 +969,10 @@ public class HomeFragment extends Fragment {
                 activeView = binding.tabTopRated;
                 stickyActiveView = stickyTabsBinding.stickyTabTopRated;
                 break;
+            case HomeViewModel.TAB_PROMOTION:
+                activeView = binding.tabPromotion;
+                stickyActiveView = stickyTabsBinding.stickyTabPromotion;
+                break;
         }
 
         if (activeView != null && inlineTabsHsv != null) {
@@ -954,22 +1003,23 @@ public class HomeFragment extends Fragment {
         // Inline tabs (không tính Giá tốt, xử lý riêng bên dưới)
         TextView[] inlineTabs = {
                 binding.tabPopular, binding.tabTrending, binding.tabNewest,
-                null /* bestPrice handled separately */, binding.tabTopRated
+                null /* bestPrice handled separately */, binding.tabTopRated, binding.tabPromotion
         };
         View[] inlineIndicators = {
                 binding.tabPopularIndicator, binding.tabTrendingIndicator, binding.tabNewestIndicator,
-                binding.tabBestPriceIndicator, binding.tabTopRatedIndicator
+                binding.tabBestPriceIndicator, binding.tabTopRatedIndicator, binding.tabPromotionIndicator
         };
 
         // Sticky tabs
         TextView[] stickyTabs = {
                 stickyTabsBinding.stickyTabPopular, stickyTabsBinding.stickyTabTrending,
-                stickyTabsBinding.stickyTabNewest, null /* bestPrice */, stickyTabsBinding.stickyTabTopRated
+                stickyTabsBinding.stickyTabNewest, null /* bestPrice */, stickyTabsBinding.stickyTabTopRated,
+                stickyTabsBinding.stickyTabPromotion
         };
         View[] stickyIndicators = {
                 stickyTabsBinding.stickyTabPopularIndicator, stickyTabsBinding.stickyTabTrendingIndicator,
                 stickyTabsBinding.stickyTabNewestIndicator, stickyTabsBinding.stickyTabBestPriceIndicator,
-                stickyTabsBinding.stickyTabTopRatedIndicator
+                stickyTabsBinding.stickyTabTopRatedIndicator, stickyTabsBinding.stickyTabPromotionIndicator
         };
 
         for (int i = 0; i < TAB_KEYS.length; i++) {

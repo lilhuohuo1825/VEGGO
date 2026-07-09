@@ -5,6 +5,7 @@ import com.veggo.app.data.remote.dto.SupportMessagesResponseDto;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -18,5 +19,8 @@ public interface SupportApi {
             @Query("before") String before,
             @Query("limit") int limit
     );
+
+    @POST("support/conversations/{id}/mark-read")
+    Call<SupportConversationsResponseDto> markConversationRead(@Path("id") String conversationId);
 }
 

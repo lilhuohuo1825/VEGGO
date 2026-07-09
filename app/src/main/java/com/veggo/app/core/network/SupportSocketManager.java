@@ -20,6 +20,7 @@ public class SupportSocketManager {
         void onDisconnected();
         void onNewMessage(JSONObject messageJson);
         void onTypingUpdate(JSONObject typingJson);
+        void onUnreadUpdate(int unreadCountUser);
         void onError(String message);
     }
 
@@ -61,6 +62,13 @@ public class SupportSocketManager {
                 if (listener == null || args == null || args.length == 0) return;
                 if (args[0] instanceof JSONObject) {
                     listener.onTypingUpdate((JSONObject) args[0]);
+                }
+            });
+            socket.on("support:unread", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    JSONObject json = (JSONObject) args[0];
+                    listener.onUnreadUpdate(json.optInt("unreadCountUser", 0));
                 }
             });
             socket.connect();

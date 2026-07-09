@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.veggo.app.R;
@@ -21,6 +22,7 @@ import com.veggo.app.presentation.product.ConsultationAvatarHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapter.ViewHolder> {
 
@@ -41,8 +43,11 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
     private String expandedReplyQuestionId;
 
     public void setQuestions(List<Consultation> questions) {
-        this.questions = questions != null ? new ArrayList<>(questions) : new ArrayList<>();
-        notifyDataSetChanged();
+        List<Consultation> newList = questions != null ? new ArrayList<>(questions) : new ArrayList<>();
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(
+                new ConsultationDiffCallback(this.questions, newList, currentCustomerId));
+        this.questions = newList;
+        diffResult.dispatchUpdatesTo(this);
     }
 
     public void setCurrentCustomerId(@Nullable String currentCustomerId) {
@@ -69,6 +74,48 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
     @Override
     public int getItemCount() {
         return questions.size();
+    }
+
+    private static final class ConsultationDiffCallback extends DiffUtil.Callback {
+        private final List<Consultation> oldList;
+        private final List<Consultation> newList;
+        @Nullable
+        private final String currentCustomerId;
+
+        ConsultationDiffCallback(List<Consultation> oldList, List<Consultation> newList,
+                                   @Nullable String currentCustomerId) {
+            this.oldList = oldList;
+            this.newList = newList;
+            this.currentCustomerId = currentCustomerId;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return Objects.equals(oldList.get(oldItemPosition).getId(), newList.get(newItemPosition).getId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            Consultation oldItem = oldList.get(oldItemPosition);
+            Consultation newItem = newList.get(newItemPosition);
+            return Objects.equals(oldItem.getQuestion(), newItem.getQuestion())
+                    && Objects.equals(oldItem.getAnswer(), newItem.getAnswer())
+                    && Objects.equals(oldItem.getStatus(), newItem.getStatus())
+                    && oldItem.getHelpfulCount() == newItem.getHelpfulCount()
+                    && oldItem.getReplies().size() == newItem.getReplies().size()
+                    && oldItem.isLikedBy(currentCustomerId) == newItem.isLikedBy(currentCustomerId)
+                    && Objects.equals(oldItem.getCreatedAt(), newItem.getCreatedAt());
+        }
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
@@ -146,8 +193,7 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
                     actionListener.onLoginRequired();
                     return;
                 }
-                if (currentCustomerId != null
-                        && currentCustomerId.equals(question.getCustomerId())) {
+                if (isOwnQuestion(question)) {
                     return;
                 }
                 actionListener.onToggleLike(question);
@@ -159,6 +205,9 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
                 }
                 if (!isLoggedIn()) {
                     actionListener.onLoginRequired();
+                    return;
+                }
+                if (isOwnQuestion(question)) {
                     return;
                 }
                 expandedReplyQuestionId = question.getId().equals(expandedReplyQuestionId)
@@ -202,10 +251,15 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
         }
 
         private void bindLikeState(Consultation question) {
-            boolean isOwnQuestion = currentCustomerId != null
-                    && question.getCustomerId() != null
-                    && currentCustomerId.equals(question.getCustomerId());
-            btnLike.setVisibility(isOwnQuestion ? View.GONE : View.VISIBLE);
+            boolean isOwnQuestion = isOwnQuestion(question);
+            if (isOwnQuestion) {
+                llActions.setVisibility(View.GONE);
+                return;
+            }
+
+            llActions.setVisibility(View.VISIBLE);
+            btnLike.setVisibility(View.VISIBLE);
+            btnReply.setVisibility(View.VISIBLE);
 
             boolean liked = question.isLikedBy(currentCustomerId);
             tvHelpful.setText(itemView.getContext().getString(
@@ -219,10 +273,13 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
                 ivLikeIcon.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.neutral_60));
                 tvHelpful.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.neutral_60));
             }
-            llActions.setVisibility(View.VISIBLE);
         }
 
         private void bindReplyInput(Consultation question) {
+            if (isOwnQuestion(question)) {
+                llReplyInput.setVisibility(View.GONE);
+                return;
+            }
             boolean expanded = question.getId() != null && question.getId().equals(expandedReplyQuestionId);
             llReplyInput.setVisibility(expanded ? View.VISIBLE : View.GONE);
             if (expanded && edtReply.getText().length() == 0) {
@@ -238,6 +295,9 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
                 actionListener.onLoginRequired();
                 return;
             }
+            if (isOwnQuestion(question)) {
+                return;
+            }
             String content = edtReply.getText().toString().trim();
             if (content.isEmpty()) {
                 return;
@@ -245,6 +305,12 @@ public class ConsultationAdapter extends RecyclerView.Adapter<ConsultationAdapte
             actionListener.onSubmitReply(question, content);
             edtReply.setText("");
             expandedReplyQuestionId = null;
+        }
+
+        private boolean isOwnQuestion(Consultation question) {
+            return currentCustomerId != null
+                    && question.getCustomerId() != null
+                    && currentCustomerId.equals(question.getCustomerId());
         }
 
         private boolean isLoggedIn() {

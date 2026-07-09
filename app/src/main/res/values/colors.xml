@@ -30,6 +30,11 @@
     <color name="danger_hover">#CA3E3C</color>
     <color name="danger_bg">#FFE8E8</color>
 
+    <!-- Linked bank action sheet (extra-light tints) -->
+    <color name="linked_bank_option_green">#F5FAF4</color>
+    <color name="linked_bank_option_yellow">#FFFCF5</color>
+    <color name="linked_bank_option_red">#FEF6F6</color>
+
     <!-- Info -->
     <color name="info_main">#42A5F5</color>
     <color name="info_hover">#2E7DD1</color>

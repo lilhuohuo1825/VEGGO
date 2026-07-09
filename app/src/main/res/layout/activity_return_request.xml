@@ -78,6 +78,7 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/returnReasonLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_lg"
@@ -145,6 +146,7 @@
             </RadioGroup>
 
             <TextView
+                android:id="@+id/returnDescriptionLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_md"
@@ -170,6 +172,7 @@
                 android:textSize="@dimen/text_sm" />
 
             <TextView
+                android:id="@+id/returnEvidenceLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_md"

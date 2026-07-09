@@ -83,14 +83,20 @@ public final class WalletTransactionReadState {
         if (prefs.getBoolean(KEY_READ_BASELINE_INITIALIZED, false)) {
             return;
         }
-        long baseline = System.currentTimeMillis();
+        // Mark only transactions that already exist on first open as read (by id),
+        // so new movements after this point still show as unread.
+        Set<String> readIds = new HashSet<>();
         if (transactions != null) {
             for (WalletTransactionDto tx : transactions) {
-                baseline = Math.max(baseline, parseIsoMillis(tx.getCreatedAt()));
+                String txId = safeTxId(tx);
+                if (txId != null && !txId.isEmpty()) {
+                    readIds.add(txId);
+                }
             }
         }
         prefs.edit()
-                .putLong(KEY_LAST_READ_ALL_TS, baseline)
+                .putStringSet(KEY_READ_TX_IDS, readIds)
+                .putLong(KEY_LAST_READ_ALL_TS, System.currentTimeMillis())
                 .putBoolean(KEY_READ_BASELINE_INITIALIZED, true)
                 .apply();
     }

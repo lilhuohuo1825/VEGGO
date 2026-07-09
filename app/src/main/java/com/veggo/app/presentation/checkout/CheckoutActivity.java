@@ -1092,6 +1092,17 @@ public class CheckoutActivity extends BaseActivity {
         EditText edtAmount = dialog.findViewById(R.id.edtAmount);
         Button btnCancel = dialog.findViewById(R.id.btnCancel);
         Button btnConfirm = dialog.findViewById(R.id.btnConfirm);
+        TextView tvCheckoutDepositNote = dialog.findViewById(R.id.tvCheckoutDepositNote);
+
+        long shortfall = Math.max(0L, currentPaymentTotal - (long) Math.ceil(veggoPayBalance));
+        long minDepositForOrder = Math.max(shortfall, 10_000L);
+        if (tvCheckoutDepositNote != null && shortfall > 0) {
+            tvCheckoutDepositNote.setText(
+                    "Nạp tối thiểu " + com.veggo.app.core.utils.CurrencyFormatter.formatVnd(minDepositForOrder)
+                            + " để đặt hàng bằng ví VeggoPay"
+            );
+            tvCheckoutDepositNote.setVisibility(View.VISIBLE);
+        }
 
         if (veggoPayLinkedBanks == null || veggoPayLinkedBanks.isEmpty()) {
             Toast.makeText(this, "Vui lòng liên kết tài khoản ngân hàng trước khi nạp tiền!", Toast.LENGTH_LONG).show();
@@ -2067,32 +2078,13 @@ public class CheckoutActivity extends BaseActivity {
     }
 
     private boolean matchesTargetGroup(String targetType, List<String> targetRefs) {
-        if (targetType == null || targetRefs == null || targetRefs.isEmpty()) {
-            return true;
-        }
-        if ("User".equalsIgnoreCase(targetType)
-                || "Shipping".equalsIgnoreCase(targetType)
-                || "Order".equalsIgnoreCase(targetType)) {
-            return true;
-        }
-        Set<String> refs = new HashSet<>(targetRefs);
         for (CartDto.CartItemDto item : cartItems) {
-            if ("Product".equalsIgnoreCase(targetType) && refs.contains(item.getSku())) {
-                return true;
-            }
-            ProductDto product = item.getProduct();
-            if (product == null) continue;
-            if ("Category".equalsIgnoreCase(targetType) && refs.contains(product.getCategoryId())) {
-                return true;
-            }
-            if ("Subcategory".equalsIgnoreCase(targetType) && refs.contains(product.getSubcategoryId())) {
-                return true;
-            }
-            if ("Brand".equalsIgnoreCase(targetType) && refs.contains(product.getBrand())) {
+            if (PromotionVoucherHelper.matchesTargetRef(
+                    targetType, targetRefs, item.getSku(), item.getProduct())) {
                 return true;
             }
         }
-        return false;
+        return PromotionVoucherHelper.matchesTargetRef(targetType, targetRefs, null, null);
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {

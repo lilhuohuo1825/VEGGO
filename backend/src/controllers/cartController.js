@@ -139,7 +139,11 @@ function buildProductSnapshot(product) {
   return {
     _id: String(product._id),
     id: String(product._id),
+    sku: product.sku != null ? String(product.sku) : '',
     product_name: product.product_name,
+    brand: product.brand || '',
+    CategoryID: product.CategoryID || product.categoryId || '',
+    SubcategoryID: product.SubcategoryID || product.subcategoryId || '',
     image: getPrimaryImage(product.image),
     price: product.price,
     originalPrice: product.originalPrice || product.base_price || product.price,

@@ -2288,32 +2288,13 @@ public class CheckoutGuestActivity extends BaseActivity {
     }
 
     private boolean matchesTargetGroup(String targetType, List<String> targetRefs) {
-        if (targetType == null || targetRefs == null || targetRefs.isEmpty()) {
-            return true;
-        }
-        if ("User".equalsIgnoreCase(targetType)
-                || "Shipping".equalsIgnoreCase(targetType)
-                || "Order".equalsIgnoreCase(targetType)) {
-            return true;
-        }
-        Set<String> refs = new HashSet<>(targetRefs);
         for (CartDto.CartItemDto item : cartItems) {
-            if ("Product".equalsIgnoreCase(targetType) && refs.contains(item.getSku())) {
-                return true;
-            }
-            ProductDto product = item.getProduct();
-            if (product == null) continue;
-            if ("Category".equalsIgnoreCase(targetType) && refs.contains(product.getCategoryId())) {
-                return true;
-            }
-            if ("Subcategory".equalsIgnoreCase(targetType) && refs.contains(product.getSubcategoryId())) {
-                return true;
-            }
-            if ("Brand".equalsIgnoreCase(targetType) && refs.contains(product.getBrand())) {
+            if (PromotionVoucherHelper.matchesTargetRef(
+                    targetType, targetRefs, item.getSku(), item.getProduct())) {
                 return true;
             }
         }
-        return false;
+        return PromotionVoucherHelper.matchesTargetRef(targetType, targetRefs, null, null);
     }
 
     private boolean isActivePromotion(PromotionDto promotion) {

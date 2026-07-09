@@ -24,7 +24,8 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Quay lại"
             android:padding="8dp"
-            android:src="@drawable/ic_left" />
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -347,7 +348,7 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/ic_tree_border_only"
+                            android:src="@drawable/ic_tree_outline"
                             app:tint="@color/primary_main" />
 
                         <TextView

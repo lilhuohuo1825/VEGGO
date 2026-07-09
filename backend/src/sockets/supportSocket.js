@@ -42,6 +42,8 @@ function createSupportSocket(io) {
 
     if (auth && auth.type === 'admin') {
       socket.join('support:admin');
+    } else if (auth && auth.type === 'user' && auth.customerId) {
+      socket.join(`support:user:${auth.customerId}`);
     }
 
     socket.on('conversation:join', async (payload, cb) => {
@@ -125,6 +127,13 @@ function createSupportSocket(io) {
 
         const room = `support:${String(convo._id)}`;
         io.to(room).emit('message:new', dto);
+        if (auth.type === 'admin') {
+          const unreadCountUser = update.unreadCountUser ?? convo.unreadCountUser ?? 0;
+          io.to(`support:user:${convo.customerId}`).emit('support:unread', {
+            conversationId: String(convo._id),
+            unreadCountUser,
+          });
+        }
         io.to('support:admin').emit('conversation:updated', {
           conversationId: String(convo._id),
           customerId: convo.customerId,

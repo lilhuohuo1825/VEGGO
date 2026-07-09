@@ -36,7 +36,8 @@
                     android:focusable="true"
                     android:padding="6dp"
                     android:scaleType="centerInside"
-                    android:src="@drawable/ic_left" />
+                    android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
 
                 <TextView
                     android:layout_width="0dp"

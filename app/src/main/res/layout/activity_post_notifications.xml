@@ -47,7 +47,7 @@
             android:focusable="true"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
-            android:text="Đọc tất cả"
+            android:text="@string/mark_all_read"
             android:textColor="@color/primary_hover"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -188,7 +188,7 @@
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_notification_badge_alert"
+                        android:background="@drawable/bg_notification_badge_tab"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:text="6"

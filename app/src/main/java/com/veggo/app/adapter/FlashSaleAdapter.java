@@ -1,5 +1,6 @@
 package com.veggo.app.adapter;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,6 +70,7 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
         private final TextView tvProductName;
         private final TextView tvRating;
         private final TextView tvProductPrice;
+        private final TextView tvOriginalPrice;
         private final View btnAddFlashSale;
 
         FlashSaleViewHolder(@NonNull View itemView) {
@@ -78,12 +80,20 @@ public class FlashSaleAdapter extends ListAdapter<FlashSale, FlashSaleAdapter.Fl
             tvProductName = itemView.findViewById(R.id.tvProductName);
             tvRating = itemView.findViewById(R.id.tvRating);
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
+            tvOriginalPrice = itemView.findViewById(R.id.tvOriginalPrice);
             btnAddFlashSale = itemView.findViewById(R.id.btnAddFlashSale);
         }
 
         void bind(FlashSale flashSale, OnFlashSaleClickListener listener, OnFlashSaleAddClickListener addListener) {
             tvProductName.setText(flashSale.getName());
             tvProductPrice.setText(CurrencyFormatter.formatVnd(flashSale.getPrice()));
+            if (flashSale.getOriginalPrice() > flashSale.getPrice()) {
+                tvOriginalPrice.setText(CurrencyFormatter.formatVnd(flashSale.getOriginalPrice()));
+                tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                tvOriginalPrice.setVisibility(View.VISIBLE);
+            } else {
+                tvOriginalPrice.setVisibility(View.GONE);
+            }
             tvRating.setText(String.valueOf(flashSale.getRating()));
             
             if (flashSale.getDiscount() != null && !flashSale.getDiscount().isEmpty()) {

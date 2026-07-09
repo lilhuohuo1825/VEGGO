@@ -24,7 +24,7 @@
             android:contentDescription="Quay lại"
             android:padding="4dp"
             android:src="@drawable/ic_left"
-            app:tint="@color/primary_main" />
+            app:tint="@color/primary_hover" />
 
         <TextView
             android:id="@+id/tvHeaderTitle"

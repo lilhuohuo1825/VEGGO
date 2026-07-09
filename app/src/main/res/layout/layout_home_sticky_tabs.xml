@@ -185,6 +185,31 @@
                     android:visibility="invisible" />
             </LinearLayout>
 
+            <!-- Tab 6: Khuyến mãi -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:orientation="vertical"
+                android:gravity="bottom|center_horizontal">
+                <TextView
+                    android:id="@+id/stickyTabPromotion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:text="@string/home_tab_promotion"
+                    android:textColor="@color/neutral_60"
+                    android:textSize="14sp" />
+                <View
+                    android:id="@+id/stickyTabPromotionIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_order_tab_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
         </LinearLayout>
     </HorizontalScrollView>
 

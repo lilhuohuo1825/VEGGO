@@ -604,7 +604,7 @@
             android:id="@+id/orderDetailReceivedButton"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:minWidth="92dp"
+            android:minWidth="128dp"
             android:layout_marginStart="@dimen/spacing_md"
             android:background="@drawable/bg_order_primary_button"
             android:fontFamily="@font/inter_semibold"

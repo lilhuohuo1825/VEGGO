@@ -2,6 +2,10 @@ const Wallet = require('../models/Wallet');
 const WalletTransaction = require('../models/WalletTransaction');
 const User = require('../models/User');
 const Tree = require('../models/Tree');
+const { recalculateCustomerCarbon } = require('../services/certificateService');
+
+const CARBON_SYNC_VERSION = 2;
+const WATER_CARBON_COST = 5;
 
 // Find VeggoPay recipient by phone number
 exports.findRecipient = async (req, res) => {
@@ -39,6 +43,57 @@ function generateTransactionId() {
   const timestamp = Date.now().toString().slice(-6);
   const random = Math.floor(1000 + Math.random() * 9000);
   return `VP${timestamp}${random}`;
+}
+
+/** Record a wallet balance movement for "Biến động số dư" history. */
+async function recordWalletTransaction({
+  customerId,
+  amount,
+  type,
+  description,
+  referenceId = '',
+  carbonPoints = 0,
+  status = 'completed',
+}) {
+  const transaction = new WalletTransaction({
+    transactionId: generateTransactionId(),
+    customerId,
+    amount,
+    type,
+    status,
+    referenceId,
+    description,
+    carbonPoints,
+  });
+  await transaction.save();
+  return transaction;
+}
+
+/**
+ * One-time reset so tree progress and carbon ledger stay in sync.
+ * Clears legacy watering counts/transactions and recalculates carbon from orders.
+ */
+async function ensureTreeCarbonSync(customerId, tree) {
+  if (!tree || toTreeNumber(tree.carbonSyncVersion) >= CARBON_SYNC_VERSION) {
+    return tree;
+  }
+
+  tree.waterCount = 0;
+  tree.totalWaterCount = 0;
+  tree.plantedCount = 0;
+  tree.status = 'none';
+  tree.carbonSyncVersion = CARBON_SYNC_VERSION;
+  await tree.save();
+
+  await WalletTransaction.deleteMany({ customerId, type: 'carbon_watering' });
+  await recalculateCustomerCarbon(customerId);
+
+  return tree;
+}
+
+function toTreeNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
 }
 
 // Get wallet balance and linked banks (lazily creates wallet if not exists)
@@ -125,17 +180,26 @@ exports.verifyWalletPassword = async (req, res) => {
   }
 };
 
-// Get transaction history
+// Get transaction history (wallet balance movements only; carbon watering excluded)
 exports.getTransactions = async (req, res) => {
   try {
-    const { customerId } = req.query;
+    const { customerId, type } = req.query;
     if (!customerId) {
       return res.status(400).json({ success: false, message: 'Thiếu mã khách hàng' });
     }
 
-    const transactions = await WalletTransaction.find({ customerId })
+    const filter = { customerId };
+    if (type) {
+      filter.type = type;
+    } else {
+      // Carbon watering is tracked separately in carbon history, not wallet balance.
+      filter.type = { $ne: 'carbon_watering' };
+    }
+
+    const transactions = await WalletTransaction.find(filter)
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(500)
+      .lean();
 
     res.json({ success: true, data: transactions });
   } catch (error) {
@@ -201,6 +265,84 @@ exports.setDefaultBank = async (req, res) => {
   }
 };
 
+// Update linked bank account details
+exports.updateLinkedBank = async (req, res) => {
+  try {
+    const { customerId, oldBankCode, oldAccountNumber, bankCode, accountNumber, accountHolder } = req.body;
+    if (!customerId || !oldBankCode || !oldAccountNumber || !bankCode || !accountNumber || !accountHolder) {
+      return res.status(400).json({ success: false, message: 'Thông tin cập nhật không đầy đủ' });
+    }
+
+    const wallet = await Wallet.findOne({ customerId });
+    if (!wallet) {
+      return res.status(404).json({ success: false, message: 'Ví không tồn tại' });
+    }
+
+    const targetIndex = wallet.linkedBanks.findIndex(
+      b => b.bankCode === oldBankCode && b.accountNumber === oldAccountNumber
+    );
+    if (targetIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản liên kết' });
+    }
+
+    const duplicate = wallet.linkedBanks.some(
+      (b, index) => index !== targetIndex && b.bankCode === bankCode && b.accountNumber === accountNumber
+    );
+    if (duplicate) {
+      return res.status(400).json({ success: false, message: 'Tài khoản ngân hàng này đã được liên kết' });
+    }
+
+    const wasDefault = wallet.linkedBanks[targetIndex].isDefault;
+    wallet.linkedBanks[targetIndex] = {
+      bankCode,
+      accountNumber,
+      accountHolder,
+      isDefault: wasDefault
+    };
+    await wallet.save();
+
+    res.json({ success: true, message: 'Cập nhật tài khoản liên kết thành công', data: wallet });
+  } catch (error) {
+    console.error('[updateLinkedBank] Error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+// Remove linked bank account
+exports.unlinkBank = async (req, res) => {
+  try {
+    const { customerId, bankCode, accountNumber } = req.body;
+    if (!customerId || !bankCode || !accountNumber) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin yêu cầu' });
+    }
+
+    const wallet = await Wallet.findOne({ customerId });
+    if (!wallet) {
+      return res.status(404).json({ success: false, message: 'Ví không tồn tại' });
+    }
+
+    const targetIndex = wallet.linkedBanks.findIndex(
+      b => b.bankCode === bankCode && b.accountNumber === accountNumber
+    );
+    if (targetIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản liên kết' });
+    }
+
+    const wasDefault = wallet.linkedBanks[targetIndex].isDefault;
+    wallet.linkedBanks.splice(targetIndex, 1);
+
+    if (wasDefault && wallet.linkedBanks.length > 0) {
+      wallet.linkedBanks[0].isDefault = true;
+    }
+
+    await wallet.save();
+    res.json({ success: true, message: 'Xóa liên kết ngân hàng thành công', data: wallet });
+  } catch (error) {
+    console.error('[unlinkBank] Error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
 exports.deposit = async (req, res) => {
   try {
     const { customerId, amount, bankCode, password } = req.body;
@@ -222,21 +364,15 @@ exports.deposit = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mật khẩu ví không đúng' });
     }
 
-    // Increase balance
     wallet.balance += numAmount;
     await wallet.save();
 
-    // Create completed transaction record
-    const transactionId = generateTransactionId();
-    const transaction = new WalletTransaction({
-      transactionId,
+    const transaction = await recordWalletTransaction({
       customerId,
       amount: numAmount,
       type: 'deposit',
-      status: 'completed',
-      description: `Nạp tiền từ ngân hàng ${bankCode || 'Liên kết'}`
+      description: `Nạp tiền từ ngân hàng ${bankCode || 'Liên kết'}`,
     });
-    await transaction.save();
 
     res.json({
       success: true,
@@ -298,34 +434,27 @@ exports.transferMoney = async (req, res) => {
       });
     }
 
-    // 4. Update balances
     senderWallet.balance -= numAmount;
     recipientWallet.balance += numAmount;
 
     await senderWallet.save();
     await recipientWallet.save();
 
-    // 5. Create transactions
     const txId = generateTransactionId();
-    const senderTx = new WalletTransaction({
-      transactionId: txId,
+    await recordWalletTransaction({
       customerId: senderCustomerId,
       amount: -numAmount,
       type: 'transfer_send',
-      status: 'completed',
-      description: description || `Chuyển tiền đến ${recipientUser.FullName || recipientPhone}`
+      description: description || `Chuyển tiền đến ${recipientUser.FullName || recipientPhone}`,
+      referenceId: txId,
     });
-    const recipientTx = new WalletTransaction({
-      transactionId: txId,
+    await recordWalletTransaction({
       customerId: recipientCustomerId,
       amount: numAmount,
       type: 'transfer_receive',
-      status: 'completed',
-      description: `Nhận tiền từ ${senderWallet.customerId}`
+      description: `Nhận tiền từ ${senderWallet.customerId}`,
+      referenceId: txId,
     });
-
-    await senderTx.save();
-    await recipientTx.save();
 
     res.json({
       success: true,
@@ -346,13 +475,31 @@ exports.getTreeStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu mã khách hàng' });
     }
 
+    const user = await User.findOne({ CustomerID: customerId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
     let tree = await Tree.findOne({ customerId });
     if (!tree) {
-      tree = new Tree({ customerId, status: 'none', waterCount: 0 });
+      tree = new Tree({ customerId, status: 'none', waterCount: 0, totalWaterCount: 0 });
       await tree.save();
     }
 
-    res.json({ success: true, data: tree });
+    tree = await ensureTreeCarbonSync(customerId, tree);
+
+    const syncedUser = await User.findOne({ CustomerID: customerId });
+    const carbonPoint = syncedUser ? toTreeNumber(syncedUser.CarbonPoint, 0) : 0;
+    const plantedCount = toTreeNumber(tree.plantedCount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        ...tree.toObject(),
+        plantedCount,
+        carbonPoint,
+      }
+    });
   } catch (error) {
     console.error('[getTreeStatus] Error:', error);
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
@@ -386,28 +533,27 @@ exports.activateSeed = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Hạt giống đã được kích hoạt trước đó và đang phát triển' });
     }
 
-    // Deduct wallet
+    // Record wallet movement first so "Biến động số dư" never misses a deduction.
+    const transaction = await recordWalletTransaction({
+      customerId,
+      amount: -seedCost,
+      type: 'donation',
+      description: 'Kích hoạt hạt giống trồng cây VeggoPay (-10.000₫)',
+      referenceId: 'tree_seed',
+    });
+
     wallet.balance -= seedCost;
     await wallet.save();
 
-    // Set tree status to seed
     tree.status = 'seed';
     tree.waterCount = 0;
     await tree.save();
 
-    // Create donation transaction
-    const txId = generateTransactionId();
-    const transaction = new WalletTransaction({
-      transactionId: txId,
-      customerId,
-      amount: -seedCost,
-      type: 'donation',
-      status: 'completed',
-      description: 'Kích hoạt hạt giống Quyên góp trồng rừng Veggo'
+    res.json({
+      success: true,
+      message: 'Gieo hạt giống thành công!',
+      data: { tree, wallet, transaction },
     });
-    await transaction.save();
-
-    res.json({ success: true, message: 'Gieo hạt giống thành công!', data: { tree, wallet } });
   } catch (error) {
     console.error('[activateSeed] Error:', error);
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
@@ -423,7 +569,13 @@ exports.waterTree = async (req, res) => {
     }
 
     let tree = await Tree.findOne({ customerId });
-    if (!tree || tree.status === 'none') {
+    if (!tree) {
+      return res.status(400).json({ success: false, message: 'Chưa kích hoạt hạt giống để tưới nước' });
+    }
+
+    tree = await ensureTreeCarbonSync(customerId, tree);
+
+    if (tree.status === 'none') {
       return res.status(400).json({ success: false, message: 'Chưa kích hoạt hạt giống để tưới nước' });
     }
 
@@ -431,34 +583,48 @@ exports.waterTree = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cây đã trưởng thành hoàn toàn, hãy trồng cây mới!' });
     }
 
-    const user = await User.findOne({ CustomerID: customerId });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    const carbonSummary = await recalculateCustomerCarbon(customerId);
+    if (carbonSummary.totalCarbonPoint < WATER_CARBON_COST) {
+      return res.status(400).json({
+        success: false,
+        message: `Số dư điểm Carbon không đủ để tưới nước (Cần ${WATER_CARBON_COST} điểm)`
+      });
     }
 
-    const carbonCost = 10;
-    if (user.CarbonPoint < carbonCost) {
-      return res.status(400).json({ success: false, message: 'Số dư điểm Carbon không đủ để tưới nước (Cần 10 điểm)' });
-    }
-
-    // Deduct Carbon Points
-    user.CarbonPoint -= carbonCost;
-    await user.save();
+    // Record carbon history first so balance + history always stay aligned.
+    await recordWalletTransaction({
+      customerId,
+      amount: 0,
+      type: 'carbon_watering',
+      referenceId: String(tree._id || ''),
+      carbonPoints: -WATER_CARBON_COST,
+      description: `Tưới nước cho cây VeggoPay (-${WATER_CARBON_COST} điểm Carbon)`,
+    });
 
     tree.waterCount += 1;
+    tree.totalWaterCount = (tree.totalWaterCount || 0) + 1;
     if (tree.waterCount >= 24) {
       tree.status = 'mature';
       tree.plantedCount = (tree.plantedCount || 0) + 1;
-    } else if (tree.waterCount >= 18) {
-      tree.status = 'growing';
-    } else if (tree.waterCount >= 12) {
-      tree.status = 'growing';
+      tree.waterCount = 0;
     } else if (tree.waterCount >= 6) {
       tree.status = 'growing';
+    } else {
+      tree.status = 'seed';
     }
 
     await tree.save();
-    res.json({ success: true, message: 'Tưới nước thành công!', data: tree });
+
+    const updatedCarbon = await recalculateCustomerCarbon(customerId);
+
+    res.json({
+      success: true,
+      message: 'Tưới nước thành công!',
+      data: {
+        ...tree.toObject(),
+        carbonPoint: updatedCarbon.totalCarbonPoint
+      }
+    });
   } catch (error) {
     console.error('[waterTree] Error:', error);
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });

@@ -555,6 +555,7 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
                     return;
                 }
                 conversationId = convos.get(0).getId();
+                markConversationRead();
                 loadMessages();
                 if (socketConnected && !TextUtils.isEmpty(conversationId)) {
                     socketManager.joinConversation(conversationId, args -> {});
@@ -678,6 +679,11 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
             }
 
             @Override
+            public void onUnreadUpdate(int unreadCountUser) {
+                // Handled in MainActivity when user is on home screen.
+            }
+
+            @Override
             public void onError(String message) {
                 runOnUiThread(() -> binding.tvSubTitle.setText("Lỗi kết nối"));
             }
@@ -701,6 +707,21 @@ public class SupportChatActivity extends AppCompatActivity implements SpeechCall
 
         String clientMessageId = UUID.randomUUID().toString();
         socketManager.sendMessage(conversationId, text, clientMessageId, args -> {});
+    }
+
+    private void markConversationRead() {
+        if (TextUtils.isEmpty(conversationId)) return;
+        supportApi.markConversationRead(conversationId).enqueue(new Callback<SupportConversationsResponseDto>() {
+            @Override
+            public void onResponse(Call<SupportConversationsResponseDto> call, Response<SupportConversationsResponseDto> response) {
+                // no-op
+            }
+
+            @Override
+            public void onFailure(Call<SupportConversationsResponseDto> call, Throwable t) {
+                // no-op
+            }
+        });
     }
 
     private void scrollToBottom() {

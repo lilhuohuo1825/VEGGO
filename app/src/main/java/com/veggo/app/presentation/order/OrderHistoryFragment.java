@@ -24,15 +24,19 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.utils.FridgeOrderHelper;
 import com.veggo.app.presentation.common.AssetScreenData;
 import com.veggo.app.core.ui.BaseFragment;
 import com.veggo.app.data.remote.api.CartApi;
+import com.veggo.app.data.remote.api.FridgeApi;
 import com.veggo.app.data.remote.api.OrderApi;
 import com.veggo.app.data.remote.dto.CartItemRequestDto;
+import com.veggo.app.data.remote.dto.FridgeItemDto;
 import com.veggo.app.data.remote.dto.OrderDto;
 import com.veggo.app.presentation.cart.CartFragment;
 import com.veggo.app.presentation.dialog.VeggoDialog;
@@ -61,6 +65,7 @@ public class OrderHistoryFragment extends BaseFragment {
     private String currentStatus;
     private String searchQuery = "";
     private String pendingStatusAfterLoad;
+    private List<FridgeItemDto> fridgeItems = new ArrayList<>();
 
     public static OrderHistoryFragment newInstance(boolean showBackButton) {
         OrderHistoryFragment fragment = new OrderHistoryFragment();
@@ -173,11 +178,13 @@ public class OrderHistoryFragment extends BaseFragment {
     private void loadOrders(boolean fromSwipeRefresh) {
         new Thread(() -> {
             AssetScreenData.Snapshot loaded = AssetScreenData.load(requireContext());
+            List<FridgeItemDto> loadedFridgeItems = fetchFridgeItems();
             if (!isAdded()) {
                 return;
             }
             requireActivity().runOnUiThread(() -> {
                 snapshot = loaded;
+                fridgeItems = loadedFridgeItems;
                 String statusToShow = pendingStatusAfterLoad != null ? pendingStatusAfterLoad : currentStatus;
                 pendingStatusAfterLoad = null;
                 showOrders(statusToShow);
@@ -186,6 +193,23 @@ public class OrderHistoryFragment extends BaseFragment {
                 }
             });
         }).start();
+    }
+
+    private List<FridgeItemDto> fetchFridgeItems() {
+        List<FridgeItemDto> items = new ArrayList<>();
+        try {
+            String customerId = new AppPreferences(requireContext()).getCustomerId();
+            if (customerId != null && !customerId.trim().isEmpty()) {
+                FridgeApi api = ApiClient.createService(FridgeApi.class);
+                retrofit2.Response<List<FridgeItemDto>> response = api.getFridgeItems(customerId).execute();
+                if (response.isSuccessful() && response.body() != null) {
+                    items = response.body();
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return items;
     }
 
     private void showOrders(String status) {
@@ -312,8 +336,12 @@ public class OrderHistoryFragment extends BaseFragment {
                 || "cancelled".equals(cleanStatus)) {
             return cleanStatus;
         }
-        if ("delivered".equals(cleanStatus)
-                || "completed".equals(cleanStatus)
+        // "delivered" means the courier delivered but user has not confirmed receipt yet.
+        // Keep these orders under "shipping" so the user can "Đối/hoàn" or "Đã nhận hàng".
+        if ("delivered".equals(cleanStatus)) {
+            return "shipping";
+        }
+        if ("completed".equals(cleanStatus)
                 || "unreview".equals(cleanStatus)
                 || "reviewed".equals(cleanStatus)
                 || "rejected".equals(cleanStatus)) {
@@ -432,11 +460,7 @@ public class OrderHistoryFragment extends BaseFragment {
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
         }
         if (badge != null) {
-            badge.setText(String.valueOf(count));
-            badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
-            badge.setBackgroundResource(selected
-                    ? R.drawable.bg_notification_badge_alert
-                    : R.drawable.bg_notification_badge_dark);
+            BadgeUiHelper.applyTabBadge(badge, count, selected);
         }
         if (indicator != null) {
             indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
@@ -483,18 +507,30 @@ public class OrderHistoryFragment extends BaseFragment {
         }
 
         String status = order.status == null ? "" : order.status;
-        if ("unreview".equals(status) || "reviewed".equals(status)
-                || "completed".equals(status) || "rejected".equals(status)) {
+        if (FridgeOrderHelper.supportsFridgeActions(status)) {
             leftButton.setText("Mua lại");
-            rightButton.setText("Thêm vào tủ");
             leftButton.setOnClickListener(v -> {
                 v.setEnabled(false);
                 buyAgainOrder(order, v);
             });
-            rightButton.setOnClickListener(v -> openOrderDetail(order.orderId));
+
+            AssetModels.OrderDetail detail = snapshot == null
+                    ? null
+                    : snapshot.detailByOrderId.get(order.orderId);
+            boolean hasAddableItems = detail != null
+                    && FridgeOrderHelper.hasAddableFridgeItems(order.orderId, detail, fridgeItems);
+            if (hasAddableItems) {
+                rightButton.setVisibility(View.VISIBLE);
+                rightButton.setText("Thêm vào tủ");
+                rightButton.setOnClickListener(v -> openOrderDetail(order.orderId));
+            } else {
+                rightButton.setVisibility(View.GONE);
+                rightButton.setOnClickListener(null);
+            }
         } else {
             leftButton.setText(R.string.orders_return_refund);
             rightButton.setText(R.string.orders_received);
+            rightButton.setVisibility(View.VISIBLE);
             leftButton.setOnClickListener(v -> openReturnRequest(order.orderId));
             rightButton.setOnClickListener(v -> confirmReceived(order));
         }
@@ -518,7 +554,7 @@ public class OrderHistoryFragment extends BaseFragment {
     private void confirmCancel(AssetModels.Order order) {
         VeggoDialog.show(
                 requireContext(),
-                R.drawable.ic_order_cancel_dialog,
+                R.drawable.ic_trash,
                 "Xác nhận hủy đơn",
                 "Bạn có chắc chắn muốn hủy đơn hàng này không?",
                 "Đồng ý",

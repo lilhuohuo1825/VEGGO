@@ -55,11 +55,14 @@
         <TextView
             android:id="@+id/returnCancelRequestButton"
             android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:layout_height="match_parent"
             android:background="@drawable/bg_order_cancel_button"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:minWidth="104dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:text="@string/returns_cancel_request"
             android:textColor="@color/primary_main"
             android:textSize="@dimen/text_sm" />

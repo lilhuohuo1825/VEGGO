@@ -20,6 +20,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
+import com.veggo.app.core.utils.FridgeOrderHelper;
 import com.veggo.app.data.remote.api.FridgeApi;
 import com.veggo.app.data.remote.api.OrderApi;
 import com.veggo.app.data.remote.dto.CartItemRequestDto;
@@ -258,7 +259,7 @@ public class OrderDetailActivity extends BaseActivity {
                     btnCancel.setOnClickListener(v -> {
                         com.veggo.app.presentation.dialog.VeggoDialog.show(
                                 this,
-                                R.drawable.ic_order_cancel_dialog,
+                                R.drawable.ic_trash,
                                 "Xác nhận hủy đơn",
                                 "Bạn có chắc chắn muốn hủy đơn hàng này không?",
                                 "Đồng ý",
@@ -322,26 +323,8 @@ public class OrderDetailActivity extends BaseActivity {
                     break;
 
                 case "returning":
-                    btnReceived.setVisibility(View.VISIBLE);
-                    if (btnReceived instanceof TextView) {
-                        ((TextView) btnReceived).setText("Đã hoàn");
-                    }
-                    btnReceived.setOnClickListener(v -> {
-                        com.veggo.app.presentation.dialog.VeggoDialog.show(
-                                this,
-                                null,
-                                "Xác nhận đã hoàn/trả",
-                                "Bạn xác nhận đơn hàng đã được hoàn/trả xong?",
-                                "Xác nhận",
-                                "Đóng",
-                                new com.veggo.app.presentation.dialog.VeggoDialog.DialogListener() {
-                                    @Override
-                                    public void onConfirm() {
-                                        updateOrderStatus(order, "returned", "Đã xác nhận hoàn/trả thành công");
-                                    }
-                                }
-                        );
-                    });
+                    // User no longer confirms "Đã hoàn" — handled by admin.
+                    bottomActions.setVisibility(View.GONE);
                     break;
 
                 case "returned":
@@ -558,13 +541,7 @@ public class OrderDetailActivity extends BaseActivity {
                 clickArea.setOnClickListener(v -> openProductDetail(item, skuToIdMap));
             }
 
-            boolean alreadyAdded = false;
-            for (com.veggo.app.data.remote.dto.FridgeItemDto fItem : fridgeItems) {
-                if (sameText(orderId, fItem.getOrderId()) && sameText(item.sku, fItem.getSku())) {
-                    alreadyAdded = true;
-                    break;
-                }
-            }
+            boolean alreadyAdded = FridgeOrderHelper.isOrderItemInFridge(orderId, item, fridgeItems);
 
             // Checkbox cho tủ lạnh
             View checkBoxContainer = row.findViewById(R.id.orderDetailProductCheckBoxContainer);
@@ -632,7 +609,8 @@ public class OrderDetailActivity extends BaseActivity {
                 }
             }
         }
-        hasAddableFridgeItems = isDeliveredOrder && totalAddable > 0;
+        hasAddableFridgeItems = isDeliveredOrder
+                && FridgeOrderHelper.hasAddableFridgeItems(orderId, detail, fridgeItems);
     }
 
     private void openProductDetail(
@@ -650,13 +628,6 @@ public class OrderDetailActivity extends BaseActivity {
         intent.putExtra(com.veggo.app.presentation.product.ProductDetailActivity.EXTRA_PRODUCT_ID, productId);
         startActivity(intent);
     }
-
-    private boolean sameText(String left, String right) {
-        return left != null
-                && right != null
-                && left.trim().equalsIgnoreCase(right.trim());
-    }
-
     private void updateSelectAllCheckboxState() {
         LinearLayout container = findViewById(R.id.orderDetailProducts);
         if (container == null) return;

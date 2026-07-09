@@ -5,9 +5,11 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -18,6 +20,7 @@ import androidx.core.view.WindowCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BottomNavController;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
@@ -41,6 +44,7 @@ import com.veggo.app.data.remote.api.SupportApi;
 import com.veggo.app.data.remote.dto.SupportConversationDto;
 import com.veggo.app.data.remote.dto.SupportConversationsResponseDto;
 import com.veggo.app.core.network.ApiClient;
+import com.veggo.app.core.network.SupportSocketManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -55,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
     private Tab currentTab;
     private boolean supportBubbleInitialized = false;
     private SupportApi supportApi;
+    private SupportSocketManager supportSocketManager;
+    private boolean supportSocketConnecting = false;
+    private boolean supportSocketActive = false;
+    private int lastSupportUnreadCount = 0;
     private CameraCaptureHelper cameraCaptureHelper;
     private boolean isScanReceiptMode = true;
     private View currentNotificationAlert;
@@ -65,6 +73,15 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             refreshGlobalNotificationAlert(true);
             notificationHandler.postDelayed(this, 30000);
+        }
+    };
+    private final Runnable supportChatPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (shouldShowSupportChatBubble() && new AppPreferences(MainActivity.this).isLoggedIn()) {
+                fetchSupportChatUnreadCount();
+            }
+            notificationHandler.postDelayed(this, 15000);
         }
     };
 
@@ -169,10 +186,16 @@ public class MainActivity extends AppCompatActivity {
             float savedX = prefs.getFloat("x", -1f);
             float savedY = prefs.getFloat("y", -1f);
             bubble.post(() -> {
-                if (savedX >= 0f) bubble.setX(savedX);
-                if (savedY >= 0f) bubble.setY(savedY);
+                View chatbot = findHomeChatbotBubble();
+                boolean hasSavedPosition = savedX >= 0f && savedY >= 0f;
+                if (hasSavedPosition) {
+                    bubble.setX(savedX);
+                    bubble.setY(savedY);
+                } else if (chatbot != null) {
+                    placeSupportBubbleAboveChatbot(bubble, chatbot);
+                }
+                repositionSupportBubbleIfNeeded(bubble);
                 clampSupportBubbleWithinScreen(bubble);
-                avoidOverlapWithHomeChatbotBubble(bubble);
             });
 
             bubble.setOnClickListener(v -> {
@@ -180,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
                     android.widget.Toast.makeText(this, "Vui lòng đăng nhập để chat hỗ trợ", android.widget.Toast.LENGTH_SHORT).show();
                     return;
                 }
+                updateSupportChatUnreadBadge(0);
                 startActivity(new Intent(this, SupportChatActivity.class));
             });
 
@@ -218,16 +242,19 @@ public class MainActivity extends AppCompatActivity {
         boolean show = shouldShowSupportChatBubble();
         bubble.setVisibility(show ? View.VISIBLE : View.GONE);
         if (!show) {
+            disconnectSupportChatSocket();
             return;
         }
         fetchSupportChatUnreadCount();
+        updateSupportChatSocketListener();
         Runnable positionBubble = () -> {
+            repositionSupportBubbleIfNeeded(bubble);
             clampSupportBubbleWithinScreen(bubble);
-            avoidOverlapWithHomeChatbotBubble(bubble);
         };
         ViewGroup parent = (ViewGroup) bubble.getParent();
         if (parent != null && parent.getWidth() > 0 && parent.getHeight() > 0) {
             positionBubble.run();
+            bubble.post(positionBubble);
         } else {
             bubble.post(positionBubble);
         }
@@ -271,11 +298,100 @@ public class MainActivity extends AppCompatActivity {
         if (binding == null) return;
         android.widget.TextView tvBadge = binding.tvSupportChatUnreadBadge;
         if (tvBadge == null) return;
-        if (count > 0) {
-            tvBadge.setText(String.valueOf(count));
-            tvBadge.setVisibility(View.VISIBLE);
-        } else {
-            tvBadge.setVisibility(View.GONE);
+        boolean shouldAnimate = count > lastSupportUnreadCount && count > 0;
+        lastSupportUnreadCount = count;
+        BadgeUiHelper.applyAlertBadge(tvBadge, count);
+        if (count > 0 && shouldAnimate) {
+            playSupportBubbleAttentionAnimation();
+        }
+    }
+
+    private void playSupportBubbleAttentionAnimation() {
+        if (binding == null || binding.supportChatBubble == null) return;
+        final View bubble = binding.supportChatBubble;
+        final float bounce = -10f * getResources().getDisplayMetrics().density;
+        bubble.animate().cancel();
+        bubble.setTranslationY(0f);
+        bubble.animate()
+                .translationY(bounce)
+                .setDuration(110)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .withEndAction(() -> bubble.animate()
+                        .translationY(0f)
+                        .setDuration(110)
+                        .setInterpolator(new AccelerateDecelerateInterpolator())
+                        .withEndAction(() -> bubble.animate()
+                                .translationY(bounce * 0.55f)
+                                .setDuration(90)
+                                .setInterpolator(new AccelerateDecelerateInterpolator())
+                                .withEndAction(() -> bubble.animate()
+                                        .translationY(0f)
+                                        .setDuration(90)
+                                        .setInterpolator(new AccelerateDecelerateInterpolator())
+                                        .start())
+                                .start())
+                        .start())
+                .start();
+    }
+
+    private void updateSupportChatSocketListener() {
+        if (!shouldShowSupportChatBubble() || !new AppPreferences(this).isLoggedIn()) {
+            disconnectSupportChatSocket();
+            return;
+        }
+        connectSupportChatSocketIfNeeded();
+    }
+
+    private void connectSupportChatSocketIfNeeded() {
+        if (supportSocketConnecting || supportSocketActive) return;
+        String token = new PreferencesManager(this).getAccessToken();
+        if (TextUtils.isEmpty(token)) return;
+
+        if (supportSocketManager == null) {
+            supportSocketManager = new SupportSocketManager();
+        }
+        supportSocketConnecting = true;
+        supportSocketManager.connect(token.trim(), new SupportSocketManager.Listener() {
+            @Override
+            public void onConnected() {
+                supportSocketConnecting = false;
+                supportSocketActive = true;
+            }
+
+            @Override
+            public void onDisconnected() {
+                supportSocketConnecting = false;
+                supportSocketActive = false;
+            }
+
+            @Override
+            public void onNewMessage(org.json.JSONObject messageJson) {
+                // Badge updates are pushed via support:unread while user is on home.
+            }
+
+            @Override
+            public void onTypingUpdate(org.json.JSONObject typingJson) {
+                // no-op on home screen
+            }
+
+            @Override
+            public void onUnreadUpdate(int unreadCountUser) {
+                runOnUiThread(() -> updateSupportChatUnreadBadge(unreadCountUser));
+            }
+
+            @Override
+            public void onError(String message) {
+                supportSocketConnecting = false;
+                supportSocketActive = false;
+            }
+        });
+    }
+
+    private void disconnectSupportChatSocket() {
+        supportSocketConnecting = false;
+        supportSocketActive = false;
+        if (supportSocketManager != null) {
+            supportSocketManager.disconnect();
         }
     }
 
@@ -329,7 +445,8 @@ public class MainActivity extends AppCompatActivity {
                         view.setPressed(false);
                         if (dragging) {
                             snapToEdge(view, parent, edgeMargin, prefs);
-                            avoidOverlapWithHomeChatbotBubble(view);
+                            repositionSupportBubbleIfNeeded(view);
+                            clampSupportBubbleWithinScreen(view);
                             prefs.edit().putFloat("x", view.getX()).putFloat("y", view.getY()).apply();
                             dragging = false;
                             return true;
@@ -375,58 +492,131 @@ public class MainActivity extends AppCompatActivity {
         if (parent == null) return;
         final float density = getResources().getDisplayMetrics().density;
         final float edgeMargin = 16f * density;
-        final float bottomSafeMargin = 168f * density;
+        final float minY = 12f * density;
+        final float gap = 12f * density;
+
         bubble.setX(clampX(bubble, parent, bubble.getX(), edgeMargin));
-        bubble.setY(clampY(bubble, parent, bubble.getY(), edgeMargin, bottomSafeMargin));
+
+        float maxY = parent.getHeight() - bubble.getHeight() - 96f * density;
+        View chatbot = findHomeChatbotBubble();
+        if (chatbot != null) {
+            int[] parentLoc = new int[2];
+            int[] chatbotLoc = new int[2];
+            parent.getLocationOnScreen(parentLoc);
+            chatbot.getLocationOnScreen(chatbotLoc);
+            float chatbotTopInParent = chatbotLoc[1] - parentLoc[1];
+            maxY = Math.min(maxY, chatbotTopInParent - bubble.getHeight() - gap);
+        } else {
+            maxY = parent.getHeight() - bubble.getHeight() - 168f * density;
+        }
+        if (maxY < minY) {
+            maxY = minY;
+        }
+        bubble.setY(Math.max(minY, Math.min(bubble.getY(), maxY)));
     }
 
-    private void avoidOverlapWithHomeChatbotBubble(View supportBubble) {
-        try {
-            Fragment fragment = getVisibleMainFragment();
-            if (!(fragment instanceof HomeFragment)) {
-                return;
-            }
-            if (fragment.getView() == null) return;
-            View chatbot = fragment.getView().findViewById(R.id.btnChatbot);
-            if (chatbot == null || chatbot.getVisibility() != View.VISIBLE || supportBubble.getVisibility() != View.VISIBLE) {
-                return;
-            }
-
-            int[] supportLoc = new int[2];
-            int[] chatbotLoc = new int[2];
-            supportBubble.getLocationOnScreen(supportLoc);
-            chatbot.getLocationOnScreen(chatbotLoc);
-
-            android.graphics.RectF supportRect = new android.graphics.RectF(
-                    supportLoc[0],
-                    supportLoc[1],
-                    supportLoc[0] + supportBubble.getWidth(),
-                    supportLoc[1] + supportBubble.getHeight()
-            );
-            android.graphics.RectF chatbotRect = new android.graphics.RectF(
-                    chatbotLoc[0],
-                    chatbotLoc[1],
-                    chatbotLoc[0] + chatbot.getWidth(),
-                    chatbotLoc[1] + chatbot.getHeight()
-            );
-
-            final float gap = 12f * getResources().getDisplayMetrics().density;
-            if (android.graphics.RectF.intersects(supportRect, chatbotRect)) {
-                // Prefer moving support bubble upward to avoid covering chatbot.
-                float newY = supportBubble.getY() - (chatbot.getHeight() + gap);
-                supportBubble.setY(newY);
-                clampSupportBubbleWithinScreen(supportBubble);
-            }
-        } catch (Exception ignored) {
+    @androidx.annotation.Nullable
+    private View findHomeChatbotBubble() {
+        Fragment fragment = getVisibleMainFragment();
+        if (!(fragment instanceof HomeFragment) || fragment.getView() == null) {
+            return null;
         }
+        View chatbot = fragment.getView().findViewById(R.id.btnChatbot);
+        if (chatbot == null || chatbot.getVisibility() != View.VISIBLE) {
+            return null;
+        }
+        return chatbot;
+    }
+
+    public void repositionSupportChatBubbleIfNeeded() {
+        if (binding == null || binding.supportChatBubble == null) {
+            return;
+        }
+        View bubble = binding.supportChatBubble;
+        if (bubble.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        bubble.post(() -> {
+            repositionSupportBubbleIfNeeded(bubble);
+            clampSupportBubbleWithinScreen(bubble);
+        });
+    }
+
+    private void placeSupportBubbleAboveChatbot(View supportBubble, View chatbot) {
+        ViewGroup parent = (ViewGroup) supportBubble.getParent();
+        if (parent == null) {
+            return;
+        }
+        final float density = getResources().getDisplayMetrics().density;
+        final float edgeMargin = 16f * density;
+        final float gap = 12f * density;
+
+        int[] parentLoc = new int[2];
+        int[] chatbotLoc = new int[2];
+        parent.getLocationOnScreen(parentLoc);
+        chatbot.getLocationOnScreen(chatbotLoc);
+
+        float chatbotTopInParent = chatbotLoc[1] - parentLoc[1];
+        float targetX = parent.getWidth() - supportBubble.getWidth() - edgeMargin;
+        float targetY = chatbotTopInParent - supportBubble.getHeight() - gap;
+
+        supportBubble.setX(clampX(supportBubble, parent, targetX, edgeMargin));
+        supportBubble.setY(targetY);
+    }
+
+    private void repositionSupportBubbleIfNeeded(View supportBubble) {
+        View chatbot = findHomeChatbotBubble();
+        if (chatbot == null || supportBubble.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        ViewGroup parent = (ViewGroup) supportBubble.getParent();
+        if (parent == null) {
+            return;
+        }
+
+        final float density = getResources().getDisplayMetrics().density;
+        final float gap = 12f * density;
+        final float edgeMargin = 16f * density;
+
+        int[] parentLoc = new int[2];
+        int[] supportLoc = new int[2];
+        int[] chatbotLoc = new int[2];
+        parent.getLocationOnScreen(parentLoc);
+        supportBubble.getLocationOnScreen(supportLoc);
+        chatbot.getLocationOnScreen(chatbotLoc);
+
+        android.graphics.RectF supportRect = new android.graphics.RectF(
+                supportLoc[0],
+                supportLoc[1],
+                supportLoc[0] + supportBubble.getWidth(),
+                supportLoc[1] + supportBubble.getHeight()
+        );
+        android.graphics.RectF chatbotRect = new android.graphics.RectF(
+                chatbotLoc[0],
+                chatbotLoc[1],
+                chatbotLoc[0] + chatbot.getWidth(),
+                chatbotLoc[1] + chatbot.getHeight()
+        );
+        supportRect.inset(-gap, -gap);
+        if (!android.graphics.RectF.intersects(supportRect, chatbotRect)) {
+            return;
+        }
+
+        float chatbotTopInParent = chatbotLoc[1] - parentLoc[1];
+        float targetY = chatbotTopInParent - supportBubble.getHeight() - gap;
+        float targetX = parent.getWidth() - supportBubble.getWidth() - edgeMargin;
+        supportBubble.setX(clampX(supportBubble, parent, targetX, edgeMargin));
+        supportBubble.setY(targetY);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         notificationHandler.removeCallbacks(notificationPollRunnable);
+        notificationHandler.removeCallbacks(supportChatPollRunnable);
         refreshGlobalNotificationAlert(true);
         notificationHandler.postDelayed(notificationPollRunnable, 30000);
+        notificationHandler.postDelayed(supportChatPollRunnable, 15000);
 
         // Re-check login/token state after returning to MainActivity
         setupSupportChatBubble();
@@ -436,6 +626,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         notificationHandler.removeCallbacks(notificationPollRunnable);
+        notificationHandler.removeCallbacks(supportChatPollRunnable);
+        disconnectSupportChatSocket();
+    }
+
+    @Override
+    protected void onDestroy() {
+        disconnectSupportChatSocket();
+        super.onDestroy();
     }
 
     @Override

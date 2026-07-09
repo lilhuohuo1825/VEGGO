@@ -38,7 +38,7 @@
             android:layout_height="20dp"
             android:layout_gravity="center"
             android:scaleType="centerInside"
-            app:tint="#57AF37"
+            app:tint="@color/primary_hover"
                 android:src="@drawable/ic_left"
                 android:contentDescription="" />
         </FrameLayout>

@@ -10,6 +10,7 @@ public class WalletTransactionDto {
     private String status; // 'pending', 'completed', 'failed'
     private String referenceId;
     private String description;
+    private Integer carbonPoints;
     private String createdAt;
 
     public String getTransactionId() {
@@ -38,6 +39,10 @@ public class WalletTransactionDto {
 
     public String getDescription() {
         return description;
+    }
+
+    public Integer getCarbonPoints() {
+        return carbonPoints;
     }
 
     public String getCreatedAt() {

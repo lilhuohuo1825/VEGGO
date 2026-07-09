@@ -2,27 +2,25 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="@dimen/spacing_md">
+    android:layout_marginTop="@dimen/spacing_md"
+    android:background="@drawable/bg_rounded_clip_outline"
+    android:clipToOutline="true">
 
-    <!-- Background Delete View -->
-    <LinearLayout
-        android:id="@+id/fridgeItemDeleteBg"
-        android:layout_width="80dp"
+    <!-- Background Delete View (giống giỏ hàng) -->
+    <TextView
+        android:id="@+id/tvDeleteFridgeItem"
+        android:layout_width="76dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
-        android:background="@drawable/bg_order_card"
-        android:backgroundTint="#FFE5E5"
+        android:background="@drawable/bg_swipe_delete_action"
         android:clickable="true"
         android:focusable="true"
+        android:fontFamily="@font/inter_medium"
         android:gravity="center"
-        android:orientation="vertical">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_trash"
-            android:tint="#F44336" />
-    </LinearLayout>
+        android:text="Xoá"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <!-- Foreground Content View -->
     <LinearLayout

@@ -8,6 +8,8 @@ router.get('/find-recipient', asyncHandler(walletController.findRecipient));
 router.get('/transactions', asyncHandler(walletController.getTransactions));
 router.post('/link-bank', asyncHandler(walletController.linkBank));
 router.post('/set-default-bank', asyncHandler(walletController.setDefaultBank));
+router.post('/update-linked-bank', asyncHandler(walletController.updateLinkedBank));
+router.post('/unlink-bank', asyncHandler(walletController.unlinkBank));
 router.post('/deposit', asyncHandler(walletController.deposit));
 router.post('/activate', asyncHandler(walletController.activateWallet));
 router.post('/verify-password', asyncHandler(walletController.verifyWalletPassword));

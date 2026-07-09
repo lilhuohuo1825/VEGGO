@@ -54,24 +54,7 @@ public class VeggoDialog {
         TextView btnConfirm = dialog.findViewById(R.id.btnConfirm);
         TextView btnCancel = dialog.findViewById(R.id.btnCancel);
 
-        // Hiển thị và cài đặt Icon
-        if (iconResId != null) {
-            imgIcon.setImageResource(iconResId);
-            imgIcon.setVisibility(View.VISIBLE);
-            boolean isDangerIcon = iconResId == R.drawable.ic_profile_logout;
-            iconContainer.setBackgroundResource(isDangerIcon
-                    ? R.drawable.bg_dialog_icon_circle_danger
-                    : R.drawable.bg_dialog_icon_circle);
-            ImageViewCompat.setImageTintList(
-                    imgIcon,
-                    ContextCompat.getColorStateList(
-                            context,
-                            isDangerIcon ? R.color.danger_main : R.color.primary_main
-                    )
-            );
-        } else {
-            imgIcon.setVisibility(View.GONE);
-        }
+        configureDialogIcon(context, imgIcon, iconContainer, iconResId);
 
         // Hiển thị Title
         if (title != null && !title.isEmpty()) {
@@ -133,23 +116,7 @@ public class VeggoDialog {
         TextView btnConfirm = dialog.findViewById(R.id.btnConfirm);
         TextView btnCancel = dialog.findViewById(R.id.btnCancel);
 
-        if (iconResId != null) {
-            imgIcon.setImageResource(iconResId);
-            imgIcon.setVisibility(View.VISIBLE);
-            boolean isDangerIcon = iconResId == R.drawable.ic_profile_logout;
-            iconContainer.setBackgroundResource(isDangerIcon
-                    ? R.drawable.bg_dialog_icon_circle_danger
-                    : R.drawable.bg_dialog_icon_circle);
-            ImageViewCompat.setImageTintList(
-                    imgIcon,
-                    ContextCompat.getColorStateList(
-                            context,
-                            isDangerIcon ? R.color.danger_main : R.color.primary_main
-                    )
-            );
-        } else {
-            imgIcon.setVisibility(View.GONE);
-        }
+        configureDialogIcon(context, imgIcon, iconContainer, iconResId);
 
         if (title != null && !title.isEmpty()) {
             tvTitle.setText(title);
@@ -196,5 +163,46 @@ public class VeggoDialog {
 
         dialog.setCancelable(false);
         dialog.show();
+    }
+
+    private static void configureDialogIcon(
+            Context context,
+            ImageView imgIcon,
+            FrameLayout iconContainer,
+            Integer iconResId
+    ) {
+        if (iconResId == null) {
+            imgIcon.setVisibility(View.GONE);
+            return;
+        }
+
+        imgIcon.setImageResource(iconResId);
+        imgIcon.setVisibility(View.VISIBLE);
+
+        boolean isDangerIcon = iconResId == R.drawable.ic_profile_logout;
+
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imgIcon.getLayoutParams();
+        if (layoutParams == null) {
+            layoutParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        iconContainer.setBackgroundResource(isDangerIcon
+                ? R.drawable.bg_dialog_icon_circle_danger
+                : R.drawable.bg_dialog_icon_circle);
+        ImageViewCompat.setImageTintList(
+                imgIcon,
+                ContextCompat.getColorStateList(
+                        context,
+                        isDangerIcon ? R.color.danger_main : R.color.primary_main
+                )
+        );
+        int iconSize = (int) (32f * context.getResources().getDisplayMetrics().density);
+        layoutParams.width = iconSize;
+        layoutParams.height = iconSize;
+        layoutParams.gravity = android.view.Gravity.CENTER;
+        imgIcon.setLayoutParams(layoutParams);
     }
 }

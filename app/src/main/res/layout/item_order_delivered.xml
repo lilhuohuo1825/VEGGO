@@ -80,11 +80,14 @@
         <TextView
             android:id="@+id/orderReturnRefundButton"
             android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:layout_height="match_parent"
             android:background="@drawable/bg_button_outline_green"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:minWidth="84dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:text="@string/orders_return_refund"
             android:textColor="@color/primary_main"
             android:textSize="@dimen/text_sm" />
@@ -92,12 +95,15 @@
         <TextView
             android:id="@+id/orderReceivedButton"
             android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:layout_height="match_parent"
             android:layout_marginStart="@dimen/spacing_sm"
             android:background="@drawable/bg_order_primary_button"
             android:fontFamily="@font/inter_semibold"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:minWidth="84dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:text="@string/orders_received"
             android:textColor="@color/background_main"
             android:textSize="@dimen/text_sm" />

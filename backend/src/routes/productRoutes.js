@@ -22,7 +22,7 @@ function invalidateProductsCache() {
 // Constants
 // ─────────────────────────────────────────────
 
-const VALID_TABS = ['popular', 'trending', 'newest', 'best_price', 'price_desc', 'price_asc', 'top_rated'];
+const VALID_TABS = ['popular', 'trending', 'newest', 'best_price', 'price_desc', 'price_asc', 'top_rated', 'promotion'];
 const DEFAULT_TAB = 'popular';
 const HOME_LIMIT = 24;
 
@@ -90,6 +90,33 @@ function getTargetRefsByType(target, targetType) {
     .flatMap(group => group.target_ref);
 }
 
+async function getAllActiveFlashSaleSkus() {
+  const db = mongoose.connection.db;
+  const targets = await db.collection('promotion_targets').find({}).toArray();
+  const promotionIds = [...new Set(targets.map(target => target.promotion_id).filter(Boolean))];
+  if (!promotionIds.length) return [];
+
+  const now = new Date();
+  const promos = await db.collection('promotions')
+    .find({ promotion_id: { $in: promotionIds }, show_on_app: { $ne: false }, status: { $ne: 'Inactive' } })
+    .toArray();
+  const activeFlashSaleById = new Map(
+    promos
+      .filter(promo => isPromotionCurrentlyActive(promo, now) && isFlashSalePromotion(promo))
+      .map(promo => [promo.promotion_id, promo])
+  );
+
+  const skuSet = new Set();
+  targets.forEach(target => {
+    if (!activeFlashSaleById.has(target.promotion_id)) return;
+    getTargetRefsByType(target, 'Product').forEach(sku => {
+      const key = String(sku || '').trim();
+      if (key) skuSet.add(key);
+    });
+  });
+  return [...skuSet];
+}
+
 async function getActiveFlashSaleBySku(skus) {
   const cleanSkus = [...new Set((skus || []).map(sku => String(sku || '').trim()).filter(Boolean))];
   const result = new Map();
@@ -131,7 +158,7 @@ async function getActiveFlashSaleBySku(skus) {
   return result;
 }
 
-function applyFlashSalePricing(product, promo) {
+function applyPromotionPricing(product, promo) {
   if (!product || !promo) return product;
   const listPrice = Number(product.price || 0);
   const salePrice = calculateFlashSalePrice(listPrice, promo);
@@ -142,6 +169,10 @@ function applyFlashSalePricing(product, promo) {
     activePromotionId: promo.promotion_id,
     activePromotionKind: promo.promotion_kind,
   };
+}
+
+function applyFlashSalePricing(product, promo) {
+  return applyPromotionPricing(product, promo);
 }
 
 function hasDisplayDiscount(product) {
@@ -217,21 +248,43 @@ function getPipelineByTab(tab, limit, skip = 0) {
 router.get('/home', asyncHandler(async (req, res) => {
   const rawTab = req.query.tab;
   const tab = VALID_TABS.includes(rawTab) ? rawTab : DEFAULT_TAB;
-  
+
   const limit = parseInt(req.query.limit) || HOME_LIMIT;
   const skip = parseInt(req.query.skip) || 0;
 
-  const pipeline = getPipelineByTab(tab, limit, skip);
+  let products;
+  if (tab === 'promotion') {
+    const flashSaleSkus = await getAllActiveFlashSaleSkus();
+    const pageSkus = flashSaleSkus.slice(skip, skip + limit);
+    if (!pageSkus.length) {
+      products = [];
+    } else {
+      products = await Product.aggregate([
+        { $match: { status: 'Active', sku: { $in: pageSkus } } },
+        { $addFields: { __promoOrder: { $indexOfArray: [pageSkus, '$sku'] } } },
+        { $sort: { __promoOrder: 1 } },
+        { $project: { __promoOrder: 0 } },
+      ]);
+    }
+  } else {
+    const pipeline = getPipelineByTab(tab, limit, skip);
+    products = await Product.aggregate(pipeline);
+  }
 
-  const products = await Product.aggregate(pipeline);
-  const data = products.map(product => {
-    const imageUrl = sanitizeListImage(product.image || product.imageUrl);
-    return {
-      ...product,
-      imageUrl,
-      image: imageUrl ? [imageUrl] : (Array.isArray(product.image) ? product.image : []),
-    };
-  });
+  const flashSaleBySku = await getActiveFlashSaleBySku(products.map(product => product.sku));
+
+  const data = products
+    .map(product => {
+      const priced = applyPromotionPricing(product, flashSaleBySku.get(String(product.sku)));
+      const imageUrl = sanitizeListImage(priced.image || priced.imageUrl);
+      return {
+        ...priced,
+        imageUrl,
+        image: imageUrl ? [imageUrl] : (Array.isArray(priced.image) ? priced.image : []),
+        hasDisplayDiscount: hasDisplayDiscount(priced),
+      };
+    })
+    .filter(product => tab !== 'promotion' || product.activePromotionId);
 
   res.json({
     success: true,

@@ -47,21 +47,23 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         WalletTransactionDto tx = transactions.get(position);
 
-        holder.tvTitle.setText(tx.getDescription());
+        String title = tx.getDescription();
+        holder.tvTitle.setText(title == null || title.trim().isEmpty() ? "Biến động số dư" : title);
         holder.tvDate.setText(formatDate(tx.getCreatedAt()));
 
         double amount = tx.getAmount();
         String formatted = CurrencyFormatter.formatVnd((long) Math.abs(amount));
 
-        // Choose icon semantically
-        String desc = tx.getDescription().toLowerCase();
+        String type = tx.getType() == null ? "" : tx.getType().toLowerCase(Locale.getDefault());
+        String desc = title == null ? "" : title.toLowerCase(Locale.getDefault());
         int iconRes;
-        if (desc.contains("nạp tiền")) {
+        if ("donation".equals(type) || desc.contains("quyên góp") || desc.contains("donate")
+                || desc.contains("trồng cây") || desc.contains("hạt giống")) {
+            iconRes = R.drawable.ic_tree_outline;
+        } else if ("deposit".equals(type) || desc.contains("nạp tiền")) {
             iconRes = R.drawable.ic_wallet;
-        } else if (desc.contains("thanh toán") || desc.contains("order") || desc.contains("đơn hàng")) {
+        } else if ("payment".equals(type) || desc.contains("thanh toán") || desc.contains("order") || desc.contains("đơn hàng")) {
             iconRes = R.drawable.ic_shopping_cart;
-        } else if (desc.contains("quyên góp") || desc.contains("donate") || desc.contains("trồng cây")) {
-            iconRes = R.drawable.ic_tree_stage_3;
         } else if (amount >= 0) {
             iconRes = R.drawable.ic_tx_receive;
         } else {

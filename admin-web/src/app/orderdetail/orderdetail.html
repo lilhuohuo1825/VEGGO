@@ -717,6 +717,15 @@
         Chấp nhận yêu cầu trả hàng
       </button>
 
+      <!-- Complete Return Button - Show for returning status (admin confirms done) -->
+      <button
+        class="btn-confirm-refund"
+        (click)="completeReturn()"
+        *ngIf="!isNewOrder && !isEditMode && order?.status === 'returning'"
+      >
+        Đã hoàn
+      </button>
+
       <!-- Reject Refund Button - Only show for processing_return status -->
       <button
         class="btn-reject-refund"

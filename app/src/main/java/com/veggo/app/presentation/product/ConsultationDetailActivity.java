@@ -235,6 +235,7 @@ public class ConsultationDetailActivity extends BaseActivity {
             return;
         }
         AppPreferences prefs = new AppPreferences(this);
+        final boolean wasLiked = question.isLikedBy(prefs.getCustomerId());
         viewModel.toggleQuestionLike(
                 product.getSku(),
                 question.getId(),
@@ -243,7 +244,21 @@ public class ConsultationDetailActivity extends BaseActivity {
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
                     public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
-                        // List refreshed via LiveData observer.
+                        boolean likedNow = !wasLiked;
+                        if (result != null) {
+                            for (com.veggo.app.domain.model.Consultation item : result) {
+                                if (item != null && question.getId().equals(item.getId())) {
+                                    likedNow = item.isLikedBy(prefs.getCustomerId());
+                                    break;
+                                }
+                            }
+                        }
+                        final boolean finalLikedNow = likedNow;
+                        runOnUiThread(() -> Toast.makeText(
+                                ConsultationDetailActivity.this,
+                                finalLikedNow ? R.string.consultation_like_success : R.string.consultation_unlike_success,
+                                Toast.LENGTH_SHORT
+                        ).show());
                     }
 
                     @Override
@@ -283,10 +298,14 @@ public class ConsultationDetailActivity extends BaseActivity {
 
                     @Override
                     public void onError(Throwable t) {
-                        runOnUiThread(() -> Toast.makeText(
-                                ConsultationDetailActivity.this,
-                                R.string.consultation_submit_network_error,
-                                Toast.LENGTH_SHORT).show());
+                        runOnUiThread(() -> {
+                            String message = getString(R.string.consultation_submit_network_error);
+                            if (t instanceof ApiHttpException
+                                    && ((ApiHttpException) t).getCode() == 400) {
+                                message = getString(R.string.consultation_reply_self_error);
+                            }
+                            Toast.makeText(ConsultationDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                        });
                     }
                 });
     }

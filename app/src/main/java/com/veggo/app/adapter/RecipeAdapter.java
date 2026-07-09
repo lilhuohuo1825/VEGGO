@@ -29,6 +29,15 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
 
     private List<Recipe> recipes = new ArrayList<>();
     private OnRecipeClickListener onRecipeClickListener;
+    private final int itemLayoutRes;
+
+    public RecipeAdapter() {
+        this(R.layout.item_recipe);
+    }
+
+    public RecipeAdapter(int itemLayoutRes) {
+        this.itemLayoutRes = itemLayoutRes;
+    }
 
     public void setRecipes(List<Recipe> recipes) {
         this.recipes = recipes;
@@ -46,7 +55,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recipe, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(itemLayoutRes, parent, false);
         return new ViewHolder(view);
     }
 
@@ -65,16 +74,34 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         }
 
         if (recipe.getRating() <= 0f && recipe.getReviewCount() <= 0) {
-            holder.rbRecipeRating.setVisibility(View.GONE);
-            holder.tvRecipeRatingValue.setVisibility(View.GONE);
-            holder.tvRecipeReviewCount.setVisibility(View.GONE);
+            if (holder.rbRecipeRating != null) {
+                holder.rbRecipeRating.setVisibility(View.GONE);
+            }
+            if (holder.tvRecipeRatingValue != null) {
+                holder.tvRecipeRatingValue.setVisibility(View.GONE);
+            }
+            if (holder.tvRecipeReviewCount != null) {
+                holder.tvRecipeReviewCount.setVisibility(View.GONE);
+            }
+            if (holder.rbRecipeRating != null && holder.rbRecipeRating.getParent() instanceof View) {
+                ((View) holder.rbRecipeRating.getParent()).setVisibility(View.GONE);
+            }
         } else {
-            holder.rbRecipeRating.setVisibility(View.VISIBLE);
-            holder.tvRecipeRatingValue.setVisibility(View.VISIBLE);
-            holder.tvRecipeReviewCount.setVisibility(View.VISIBLE);
-            holder.rbRecipeRating.setRating(recipe.getRating());
-            holder.tvRecipeRatingValue.setText(String.valueOf(recipe.getRating()));
-            holder.tvRecipeReviewCount.setText("(" + recipe.getReviewCount() + ")");
+            if (holder.rbRecipeRating != null) {
+                holder.rbRecipeRating.setVisibility(View.VISIBLE);
+                holder.rbRecipeRating.setRating(recipe.getRating());
+            }
+            if (holder.tvRecipeRatingValue != null) {
+                holder.tvRecipeRatingValue.setVisibility(View.VISIBLE);
+                holder.tvRecipeRatingValue.setText(String.valueOf(recipe.getRating()));
+            }
+            if (holder.tvRecipeReviewCount != null) {
+                holder.tvRecipeReviewCount.setVisibility(View.VISIBLE);
+                holder.tvRecipeReviewCount.setText("(" + recipe.getReviewCount() + ")");
+            }
+            if (holder.rbRecipeRating != null && holder.rbRecipeRating.getParent() instanceof View) {
+                ((View) holder.rbRecipeRating.getParent()).setVisibility(View.VISIBLE);
+            }
         }
         
         Glide.with(holder.itemView.getContext())
@@ -86,21 +113,23 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         FavoriteStore favoriteStore = new FavoriteStore(holder.itemView.getContext());
         boolean selected = favoriteStore.isFavorite(FavoriteStore.TYPE_RECIPE, recipe.getId());
         renderFavoriteIcon(holder, selected);
-        holder.ivBookmark.setOnClickListener(v -> {
-            boolean nowSelected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
-                    FavoriteStore.TYPE_RECIPE,
-                    recipe.getId(),
-                    recipe.getName(),
-                    favoriteSubtitle(recipe),
-                    recipe.getImageUrl()
-            ));
-            renderFavoriteIcon(holder, nowSelected);
-            Toast.makeText(
-                    holder.itemView.getContext(),
-                    nowSelected ? "Đã thêm vào yêu thích" : "Đã xoá khỏi yêu thích",
-                    Toast.LENGTH_SHORT
-            ).show();
-        });
+        if (holder.ivBookmark != null) {
+            holder.ivBookmark.setOnClickListener(v -> {
+                boolean nowSelected = favoriteStore.toggle(new FavoriteStore.FavoriteItem(
+                        FavoriteStore.TYPE_RECIPE,
+                        recipe.getId(),
+                        recipe.getName(),
+                        favoriteSubtitle(recipe),
+                        recipe.getImageUrl()
+                ));
+                renderFavoriteIcon(holder, nowSelected);
+                Toast.makeText(
+                        holder.itemView.getContext(),
+                        nowSelected ? "Đã thêm vào yêu thích" : "Đã xoá khỏi yêu thích",
+                        Toast.LENGTH_SHORT
+                ).show();
+            });
+        }
 
         holder.itemView.setOnClickListener(v -> {
             if (onRecipeClickListener == null) {
@@ -136,12 +165,18 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     }
 
     private void renderFavoriteIcon(ViewHolder holder, boolean selected) {
+        if (holder.ivBookmark == null) {
+            return;
+        }
         holder.ivBookmark.setImageResource(selected
                 ? R.drawable.ic_profile_menu_heart_filled
                 : R.drawable.ic_heart_outline_green);
-        int color = ContextCompat.getColor(holder.itemView.getContext(),
-                selected ? R.color.primary_main : R.color.white);
-        holder.ivBookmark.setImageTintList(ColorStateList.valueOf(color));
+        boolean onImageOverlay = holder.ivBookmark.getParent() instanceof android.widget.RelativeLayout;
+        int colorRes = selected || onImageOverlay
+                ? (selected ? R.color.primary_main : R.color.white)
+                : R.color.primary_main;
+        holder.ivBookmark.setImageTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(holder.itemView.getContext(), colorRes)));
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

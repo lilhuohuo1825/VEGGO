@@ -34,6 +34,7 @@ import com.veggo.app.data.remote.dto.CartDto;
 import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.utils.CurrencyFormatter;
 import com.veggo.app.core.utils.ProductImageUtils;
+import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.di.AppModule;
@@ -329,6 +330,7 @@ public class ProductDetailActivity extends BaseActivity {
             return;
         }
         AppPreferences prefs = new AppPreferences(this);
+        final boolean wasLiked = question.isLikedBy(prefs.getCustomerId());
         viewModel.toggleQuestionLike(
                 product.getSku(),
                 question.getId(),
@@ -337,7 +339,21 @@ public class ProductDetailActivity extends BaseActivity {
                 new ConsultationRepository.Callback<java.util.List<com.veggo.app.domain.model.Consultation>>() {
                     @Override
                     public void onSuccess(java.util.List<com.veggo.app.domain.model.Consultation> result) {
-                        // List refreshed via LiveData observer.
+                        boolean likedNow = !wasLiked;
+                        if (result != null) {
+                            for (com.veggo.app.domain.model.Consultation item : result) {
+                                if (item != null && question.getId().equals(item.getId())) {
+                                    likedNow = item.isLikedBy(prefs.getCustomerId());
+                                    break;
+                                }
+                            }
+                        }
+                        final boolean finalLikedNow = likedNow;
+                        runOnUiThread(() -> android.widget.Toast.makeText(
+                                ProductDetailActivity.this,
+                                finalLikedNow ? R.string.consultation_like_success : R.string.consultation_unlike_success,
+                                android.widget.Toast.LENGTH_SHORT
+                        ).show());
                     }
 
                     @Override
@@ -377,10 +393,17 @@ public class ProductDetailActivity extends BaseActivity {
 
                     @Override
                     public void onError(Throwable t) {
-                        runOnUiThread(() -> android.widget.Toast.makeText(
-                                ProductDetailActivity.this,
-                                R.string.consultation_submit_network_error,
-                                android.widget.Toast.LENGTH_SHORT).show());
+                        runOnUiThread(() -> {
+                            String message = getString(R.string.consultation_submit_network_error);
+                            if (t instanceof com.veggo.app.core.network.ApiHttpException
+                                    && ((com.veggo.app.core.network.ApiHttpException) t).getCode() == 400) {
+                                message = getString(R.string.consultation_reply_self_error);
+                            }
+                            android.widget.Toast.makeText(
+                                    ProductDetailActivity.this,
+                                    message,
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        });
                     }
                 });
     }
@@ -946,11 +969,7 @@ public class ProductDetailActivity extends BaseActivity {
     }
 
     private void updateProductCartBadge(int count) {
-        if (tvProductCartBadge == null) {
-            return;
-        }
-        tvProductCartBadge.setText(count > 99 ? "99+" : String.valueOf(count));
-        tvProductCartBadge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        BadgeUiHelper.applyAlertBadge(tvProductCartBadge, count);
     }
 
     private void playCartBounce() {

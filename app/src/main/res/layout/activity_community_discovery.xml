@@ -45,7 +45,7 @@
                     android:layout_gravity="center"
                     android:scaleType="centerInside"
                     android:src="@drawable/ic_left"
-                    app:tint="#57AF37" />
+                    app:tint="@color/primary_hover" />
             </FrameLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout

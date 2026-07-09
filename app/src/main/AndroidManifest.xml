@@ -166,6 +166,9 @@
             android:name=".presentation.profile.FavoritesActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.home.PopularRecipesActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.profile.CarbonHistoryActivity"
             android:exported="false" />
         <activity

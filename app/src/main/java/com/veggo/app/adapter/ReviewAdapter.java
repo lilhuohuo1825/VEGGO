@@ -13,8 +13,9 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.veggo.app.R;
+import com.veggo.app.core.utils.ReviewMediaHelper;
+import com.veggo.app.core.utils.UserAvatarHelper;
 import com.veggo.app.domain.model.Review;
 
 import java.util.ArrayList;
@@ -102,37 +103,30 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             rbReviewRating.setRating(review.getRating());
             tvReviewContent.setText(review.getContent());
             bindHelpfulState(review);
-
-            if (review.getAvatarUrl() != null && !review.getAvatarUrl().isEmpty()) {
-                Glide.with(itemView.getContext()).load(review.getAvatarUrl()).into(ivAvatar);
-            } else {
-                ivAvatar.setImageResource(R.color.neutral_40);
-            }
+            UserAvatarHelper.bind(ivAvatar, review.getAvatarUrl());
 
             List<String> images = review.getImageUrls();
             if (images != null && !images.isEmpty()) {
-                List<String> validImages = new ArrayList<>();
+                List<String> validMedia = new ArrayList<>();
                 for (String url : images) {
                     if (url != null && !url.trim().isEmpty()) {
-                        validImages.add(url);
+                        validMedia.add(url);
                     }
                 }
 
-                if (!validImages.isEmpty()) {
-                    cvReviewImage1.setVisibility(View.VISIBLE);
-                    Glide.with(itemView.getContext()).load(validImages.get(0)).into(ivReviewImage1);
+                if (!validMedia.isEmpty()) {
+                    ReviewMediaHelper.bindMediaCard(cvReviewImage1, ivReviewImage1, validMedia.get(0));
                 } else {
                     cvReviewImage1.setVisibility(View.GONE);
                 }
 
-                if (validImages.size() > 1) {
-                    cvReviewImage2.setVisibility(View.VISIBLE);
-                    Glide.with(itemView.getContext()).load(validImages.get(1)).into(ivReviewImage2);
+                if (validMedia.size() > 1) {
+                    ReviewMediaHelper.bindMediaCard(cvReviewImage2, ivReviewImage2, validMedia.get(1));
                 } else {
                     cvReviewImage2.setVisibility(View.GONE);
                 }
 
-                llReviewImages.setVisibility(validImages.isEmpty() ? View.GONE : View.VISIBLE);
+                llReviewImages.setVisibility(validMedia.isEmpty() ? View.GONE : View.VISIBLE);
             } else {
                 llReviewImages.setVisibility(View.GONE);
             }
@@ -167,8 +161,8 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
                 ivHelpfulIcon.clearColorFilter();
                 tvHelpfulReview.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.primary_main));
             } else {
-                ivHelpfulIcon.setImageResource(R.drawable.ic_heart_outline_green);
-                ivHelpfulIcon.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.neutral_60));
+                ivHelpfulIcon.setImageResource(R.drawable.ic_heart_outline_grey);
+                ivHelpfulIcon.clearColorFilter();
                 tvHelpfulReview.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.neutral_60));
             }
         }

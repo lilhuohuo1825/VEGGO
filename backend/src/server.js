@@ -37,6 +37,7 @@ const supportRoutes = require('./routes/supportRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const forecastRoutes = require('./routes/forecastRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const recurringOrderRoutes = require('./routes/recurringOrderRoutes');
 const mongoose = require('mongoose');
 const { verifyAccessToken } = require('./utils/jwt');
 const { createSupportSocket } = require('./sockets/supportSocket');
@@ -148,6 +149,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/recurring-orders', recurringOrderRoutes);
 
 // GET /api/promo-images/:token - lấy ảnh banner khuyến mãi theo token ngắn
 app.get('/api/promo-images/:token', async (req, res) => {
