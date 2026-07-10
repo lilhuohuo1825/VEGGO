@@ -158,6 +158,25 @@
                     android:textSize="16sp" />
 
                 <FrameLayout
+                    android:id="@+id/btnHomeCamera"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_home_mic"
+                    android:clickable="true"
+                    android:contentDescription="@string/scan_camera_title_ingredient"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_camera"
+                        app:tint="@color/neutral_80" />
+                </FrameLayout>
+
+                <FrameLayout
                     android:id="@+id/btnHomeMic"
                     android:layout_width="36dp"
                     android:layout_height="36dp"

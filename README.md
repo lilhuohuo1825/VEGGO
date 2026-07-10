@@ -120,6 +120,32 @@ Android emulator API URL:
 http://10.0.2.2:5001/api/
 ```
 
+Android real device on the same Wi-Fi:
+
+```properties
+# local.properties
+dev.api.mode=physical
+dev.api.host=<LAN-IP-máy-chạy-backend>
+```
+
+On macOS, get the LAN IP with:
+
+```bash
+ifconfig en0 | grep "inet "
+```
+
+The app will use:
+
+```text
+http://<LAN-IP-máy-chạy-backend>:5001/api/
+```
+
+After changing `local.properties`, rebuild and reinstall the app. `127.0.0.1` on a real device points to the phone itself, not the Mac. Only use `dev.api.mode=physical_usb` with:
+
+```bash
+adb reverse tcp:5001 tcp:5001
+```
+
 Run backend:
 
 ```bash

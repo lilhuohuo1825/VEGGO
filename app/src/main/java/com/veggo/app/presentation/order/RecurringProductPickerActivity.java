@@ -113,6 +113,9 @@ public class RecurringProductPickerActivity extends BaseActivity {
         ViewHolderSearch search = new ViewHolderSearch(findViewById(R.id.layoutSearch));
         search.input.setFocusable(true);
         search.input.setHint("Tìm kiếm");
+        if (search.cameraButton != null) {
+            search.cameraButton.setVisibility(View.GONE);
+        }
         search.input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
@@ -444,9 +447,11 @@ public class RecurringProductPickerActivity extends BaseActivity {
 
     private static class ViewHolderSearch {
         final EditText input;
+        final View cameraButton;
 
         ViewHolderSearch(android.view.View root) {
             input = root.findViewById(R.id.edtSearch);
+            cameraButton = root.findViewById(R.id.btnCamera);
         }
     }
 }

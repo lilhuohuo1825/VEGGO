@@ -78,6 +78,13 @@ public final class FridgeQuickScanHelper {
     }
 
     @NonNull
+    public static Intent createSearchSuggestionCameraIntent(@NonNull Context context) {
+        Intent intent = createCameraIntent(context, false, false, false);
+        intent.putExtra(NavbarScanCameraActivity.EXTRA_SEARCH_SUGGESTION_MODE, true);
+        return intent;
+    }
+
+    @NonNull
     public static Intent createCameraIntent(
             @NonNull Context context,
             boolean receiptMode,

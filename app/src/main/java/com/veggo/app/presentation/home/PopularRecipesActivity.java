@@ -29,6 +29,7 @@ import com.veggo.app.core.utils.JsonUtils;
 import com.veggo.app.core.utils.KeyboardUtils;
 import com.veggo.app.domain.model.Recipe;
 import com.veggo.app.presentation.community.InstructionRecipeDetailActivity;
+import com.veggo.app.presentation.profile.FridgeQuickScanHelper;
 import com.veggo.app.speech.SearchVoiceInputController;
 
 import java.lang.reflect.Type;
@@ -110,6 +111,12 @@ public class PopularRecipesActivity extends BaseActivity {
                     searchInput,
                     this::applySearchFilter
             );
+            View cameraButton = searchBarRoot.findViewById(R.id.btnCamera);
+            if (cameraButton != null) {
+                cameraButton.setOnClickListener(v ->
+                        startActivity(FridgeQuickScanHelper.createSearchSuggestionCameraIntent(this))
+                );
+            }
         }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

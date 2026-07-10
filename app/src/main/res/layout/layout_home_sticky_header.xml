@@ -55,11 +55,31 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:fontFamily="@font/inter"
             android:text="Tìm kiếm"
             android:textColor="#66167728"
             android:textSize="14sp" />
+
+        <FrameLayout
+            android:id="@+id/btnStickyCamera"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_home_mic"
+            android:clickable="true"
+            android:contentDescription="@string/scan_camera_title_ingredient"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_camera"
+                app:tint="@color/neutral_80" />
+        </FrameLayout>
 
         <FrameLayout
             android:id="@+id/btnStickyMic"

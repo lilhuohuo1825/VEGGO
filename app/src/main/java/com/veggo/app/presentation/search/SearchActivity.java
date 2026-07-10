@@ -21,6 +21,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.ui.ViewModelFactory;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
+import com.veggo.app.presentation.profile.FridgeQuickScanHelper;
 import com.veggo.app.presentation.product.ProductDetailActivity;
 
 import java.util.ArrayList;
@@ -85,6 +86,9 @@ public class SearchActivity extends AppCompatActivity {
                 binding.layoutSearch.getRoot(),
                 binding.layoutSearch.edtSearch,
                 () -> viewModel.setSearchQuery(binding.layoutSearch.edtSearch.getText().toString().trim())
+        );
+        binding.layoutSearch.btnCamera.setOnClickListener(v ->
+                startActivity(FridgeQuickScanHelper.createSearchSuggestionCameraIntent(this))
         );
     }
 

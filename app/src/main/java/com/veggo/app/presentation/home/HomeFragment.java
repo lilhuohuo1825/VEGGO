@@ -42,6 +42,7 @@ import com.veggo.app.presentation.home.PopularRecipesActivity;
 import com.veggo.app.presentation.checkout.PendingCheckoutStore;
 import com.veggo.app.presentation.product.AddToCartBottomSheetHelper;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
+import com.veggo.app.presentation.profile.FridgeQuickScanHelper;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -267,6 +268,8 @@ public class HomeFragment extends Fragment {
             intent.putExtra(com.veggo.app.presentation.search.SearchActivity.EXTRA_START_VOICE, true);
             startActivity(intent);
         };
+        View.OnClickListener openCameraScan = v ->
+                startActivity(FridgeQuickScanHelper.createSearchSuggestionCameraIntent(requireContext()));
         binding.layoutSearch.setOnClickListener(openSearchClick);
         binding.stickyHeader.layoutStickySearch.setOnClickListener(openSearchClick);
         if (binding.stickyHeader.layoutStickySearch.findViewById(R.id.edtSearch) != null) {
@@ -278,9 +281,17 @@ public class HomeFragment extends Fragment {
         if (homeMic != null) {
             homeMic.setOnClickListener(openSearchWithVoice);
         }
+        View homeCamera = binding.layoutSearch.findViewById(R.id.btnHomeCamera);
+        if (homeCamera != null) {
+            homeCamera.setOnClickListener(openCameraScan);
+        }
         View stickyMic = binding.stickyHeader.getRoot().findViewById(R.id.btnStickyMic);
         if (stickyMic != null) {
             stickyMic.setOnClickListener(openSearchWithVoice);
+        }
+        View stickyCamera = binding.stickyHeader.getRoot().findViewById(R.id.btnStickyCamera);
+        if (stickyCamera != null) {
+            stickyCamera.setOnClickListener(openCameraScan);
         }
 
         binding.btnChatbot.setOnClickListener(v -> startActivity(

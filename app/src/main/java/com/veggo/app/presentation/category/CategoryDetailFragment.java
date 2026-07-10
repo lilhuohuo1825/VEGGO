@@ -39,6 +39,7 @@ import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.speech.SearchVoiceInputController;
 import com.veggo.app.presentation.product.AddToCartBottomSheetHelper;
 import com.veggo.app.presentation.product.ProductDetailActivity;
+import com.veggo.app.presentation.profile.FridgeQuickScanHelper;
 import com.veggo.app.presentation.profile.TastePreferenceStore;
 
 import java.util.ArrayList;
@@ -185,6 +186,9 @@ public class CategoryDetailFragment extends Fragment {
                 binding.layoutSearch.getRoot(),
                 binding.layoutSearch.edtSearch,
                 this::scheduleApplyFiltersAndSort
+        );
+        binding.layoutSearch.btnCamera.setOnClickListener(v ->
+                startActivity(FridgeQuickScanHelper.createSearchSuggestionCameraIntent(requireContext()))
         );
         binding.categoryDetailBackButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()

@@ -194,6 +194,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".presentation.search.SearchImageSuggestionsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".presentation.profile.VeggoPayScanActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

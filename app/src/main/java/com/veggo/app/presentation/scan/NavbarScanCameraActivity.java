@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.veggo.app.R;
 import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
+import com.veggo.app.presentation.search.SearchImageSuggestionsActivity;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class NavbarScanCameraActivity extends AppCompatActivity {
     public static final String EXTRA_SCAN_RECEIPT_MODE = "EXTRA_SCAN_RECEIPT_MODE";
     public static final String EXTRA_DELIVER_RESULT = "EXTRA_DELIVER_RESULT";
     public static final String EXTRA_FROM_NAVBAR = "EXTRA_FROM_NAVBAR";
+    public static final String EXTRA_SEARCH_SUGGESTION_MODE = "EXTRA_SEARCH_SUGGESTION_MODE";
 
     private PreviewView previewView;
     private ImageCapture imageCapture;
@@ -76,7 +78,11 @@ public class NavbarScanCameraActivity extends AppCompatActivity {
         TextView hint = findViewById(R.id.scanHint);
         View scanFrame = findViewById(R.id.scanFrame);
 
-        if (isReceiptMode) {
+        if (getIntent().getBooleanExtra(EXTRA_SEARCH_SUGGESTION_MODE, false)) {
+            title.setText("Tìm sản phẩm bằng ảnh");
+            hint.setText("Chụp hoặc tải ảnh sản phẩm để VEGGO gợi ý sản phẩm phù hợp");
+            applyScanFrameSize(scanFrame, 1.2f);
+        } else if (isReceiptMode) {
             title.setText(R.string.scan_camera_title_receipt);
             hint.setText(R.string.scan_camera_hint_receipt);
             applyScanFrameSize(scanFrame, 1.35f);
@@ -206,6 +212,15 @@ public class NavbarScanCameraActivity extends AppCompatActivity {
             }
             result.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             setResult(RESULT_OK, result);
+            finish();
+            return;
+        }
+
+        if (getIntent().getBooleanExtra(EXTRA_SEARCH_SUGGESTION_MODE, false)) {
+            Intent intent = new Intent(this, SearchImageSuggestionsActivity.class);
+            intent.putExtra(SearchImageSuggestionsActivity.EXTRA_IMAGE_URI, imageUri.toString());
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
             finish();
             return;
         }
