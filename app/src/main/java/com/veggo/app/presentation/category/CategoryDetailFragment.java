@@ -62,6 +62,7 @@ public class CategoryDetailFragment extends Fragment {
     public static final String ARG_CATEGORY_ID = "arg_category_id";
     public static final String ARG_SUBCATEGORY_ID = "arg_subcategory_id";
     private static final long FILTER_DEBOUNCE_MS = 200L;
+    private static final long TAB_CONTENT_UPDATE_DELAY_MS = 120L;
 
     private FragmentCategoryDetailBinding binding;
     private CategoryRepository categoryRepository;
@@ -92,6 +93,7 @@ public class CategoryDetailFragment extends Fragment {
     private final Handler filterHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService filterExecutor = Executors.newSingleThreadExecutor();
     private Runnable pendingFilterRunnable;
+    private Runnable pendingTabLoadRunnable;
     private int filterGeneration = 0;
 
     @Nullable
@@ -203,7 +205,7 @@ public class CategoryDetailFragment extends Fragment {
                 } else {
                     selectedSubcategoryId = ""; // "Tất cả"
                 }
-                applyFiltersAndSort();
+                scheduleApplyFiltersAfterTabMotion();
             }
 
             @Override
@@ -709,6 +711,14 @@ public class CategoryDetailFragment extends Fragment {
         filterHandler.postDelayed(pendingFilterRunnable, FILTER_DEBOUNCE_MS);
     }
 
+    private void scheduleApplyFiltersAfterTabMotion() {
+        if (pendingTabLoadRunnable != null) {
+            filterHandler.removeCallbacks(pendingTabLoadRunnable);
+        }
+        pendingTabLoadRunnable = this::applyFiltersAndSort;
+        filterHandler.postDelayed(pendingTabLoadRunnable, TAB_CONTENT_UPDATE_DELAY_MS);
+    }
+
 
     private void loadActiveFlashSales() {
         PromotionApi promotionApi = ApiClient.createService(PromotionApi.class);
@@ -914,6 +924,10 @@ public class CategoryDetailFragment extends Fragment {
         if (pendingFilterRunnable != null) {
             filterHandler.removeCallbacks(pendingFilterRunnable);
             pendingFilterRunnable = null;
+        }
+        if (pendingTabLoadRunnable != null) {
+            filterHandler.removeCallbacks(pendingTabLoadRunnable);
+            pendingTabLoadRunnable = null;
         }
         if (voiceInputController != null) {
             voiceInputController.release();

@@ -2,6 +2,8 @@ package com.veggo.app.presentation.order;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -55,6 +57,8 @@ public class RecurringProductPickerActivity extends BaseActivity {
     private String selectedSubcategoryId = "";
     private String query = "";
     private boolean buildingTabs;
+    private final Handler tabHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingTabLoadRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -170,7 +174,7 @@ public class RecurringProductPickerActivity extends BaseActivity {
                 if (buildingTabs) return;
                 Object tag = tab.getTag();
                 selectedSubcategoryId = tag == null ? "" : String.valueOf(tag);
-                loadProductsForSelection();
+                scheduleLoadProductsAfterTabMotion();
             }
 
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
@@ -205,6 +209,14 @@ public class RecurringProductPickerActivity extends BaseActivity {
             }
             applyProductFilter();
         });
+    }
+
+    private void scheduleLoadProductsAfterTabMotion() {
+        if (pendingTabLoadRunnable != null) {
+            tabHandler.removeCallbacks(pendingTabLoadRunnable);
+        }
+        pendingTabLoadRunnable = this::loadProductsForSelection;
+        tabHandler.postDelayed(pendingTabLoadRunnable, 120L);
     }
 
     private void applyProductFilter() {
@@ -443,6 +455,15 @@ public class RecurringProductPickerActivity extends BaseActivity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (pendingTabLoadRunnable != null) {
+            tabHandler.removeCallbacks(pendingTabLoadRunnable);
+            pendingTabLoadRunnable = null;
+        }
+        super.onDestroy();
     }
 
     private static class ViewHolderSearch {

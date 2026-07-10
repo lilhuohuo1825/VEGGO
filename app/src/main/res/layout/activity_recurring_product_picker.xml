@@ -102,7 +102,16 @@
                     android:background="@android:color/transparent"
                     android:paddingStart="8dp"
                     android:paddingEnd="0dp"
+                    app:tabBackground="@android:color/transparent"
+                    app:tabIndicator="@drawable/bg_order_tab_indicator"
+                    app:tabIndicatorAnimationMode="elastic"
+                    app:tabIndicatorColor="@color/primary_main"
+                    app:tabIndicatorFullWidth="false"
+                    app:tabIndicatorHeight="8dp"
+                    app:tabRippleColor="@android:color/transparent"
+                    app:tabSelectedTextColor="@color/primary_main"
                     app:tabMode="scrollable"
+                    app:tabTextColor="@color/neutral_60"
                     app:tabTextAppearance="@android:style/TextAppearance.Small" />
 
                 <ImageView
