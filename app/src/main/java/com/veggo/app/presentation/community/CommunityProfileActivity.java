@@ -119,8 +119,6 @@ public class CommunityProfileActivity extends AppCompatActivity {
                 renderProfileFollow(counts.isFollowing);
             }
         }));
-
-        loadProfileContent();
     }
 
     private void setupAvatarPickers() {
@@ -131,6 +129,7 @@ public class CommunityProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        loadProfileContent();
     }
 
     private void loadProfileContent() {

@@ -308,7 +308,8 @@
             android:exported="false" />
         <activity
             android:name=".presentation.blog.BlogDetailActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".presentation.blog.BlogSearchActivity"
             android:exported="false" />

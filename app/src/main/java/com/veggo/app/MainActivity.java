@@ -114,6 +114,12 @@ public class MainActivity extends AppCompatActivity {
                 restoreBaseTabFragment();
             }
             updateSupportChatBubbleVisibility();
+            
+            // Cập nhật lại số lượng giỏ hàng trên trang chủ sau khi quay lại từ giỏ hàng (pop fragment)
+            Fragment visible = getVisibleMainFragment();
+            if (visible instanceof HomeFragment) {
+                ((HomeFragment) visible).refreshCartBadge();
+            }
         });
 
         // Seed database from JSON assets if needed

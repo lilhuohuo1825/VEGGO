@@ -784,6 +784,7 @@
         android:clickable="true"
         android:contentDescription="@string/chatbot_fab_content_description"
         android:elevation="8dp"
+        android:stateListAnimator="@null"
         android:focusable="true"
         android:src="@drawable/ic_chatbot" />
 

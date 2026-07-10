@@ -156,6 +156,18 @@ public class HomeFragment extends Fragment {
         observeViewModel();
         setupPullToRefresh();
 
+        // Đặt chiều cao tối thiểu cho danh sách sản phẩm và empty state bằng chiều cao của ScrollView
+        // để tránh bị cuộn nhảy (jump) khi chuyển tab do chiều cao content bị rút về 0.
+        binding.homeScrollView.post(() -> {
+            if (binding != null && binding.homeScrollView != null) {
+                int scrollViewHeight = binding.homeScrollView.getHeight();
+                if (scrollViewHeight > 0) {
+                    binding.rvProducts.setMinimumHeight(scrollViewHeight);
+                    binding.homeProductsEmptyState.setMinimumHeight(scrollViewHeight);
+                }
+            }
+        });
+
         homeViewModel.loadHomeData(requireContext());
         if (getArguments() != null
                 && getArguments().getBoolean(MainActivity.EXTRA_SCROLL_HOME_PRODUCTS, false)) {
@@ -439,6 +451,31 @@ public class HomeFragment extends Fragment {
         bannerAdapter = new BannerAdapter();
         binding.vpBanners.setOffscreenPageLimit(1);
         binding.vpBanners.setAdapter(bannerAdapter);
+
+        // Khắc phục lỗi vuốt ngang ViewPager2 bị sượng, đụng độ với SwipeRefreshLayout và NestedScrollView
+        View innerRecyclerView = binding.vpBanners.getChildAt(0);
+        if (innerRecyclerView != null) {
+            innerRecyclerView.setOnTouchListener((v, event) -> {
+                int action = event.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                    if (binding != null && binding.homeScrollView != null) {
+                        binding.homeScrollView.requestDisallowInterceptTouchEvent(true);
+                    }
+                    if (homeRefreshLayout != null) {
+                        homeRefreshLayout.requestDisallowInterceptTouchEvent(true);
+                    }
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    if (binding != null && binding.homeScrollView != null) {
+                        binding.homeScrollView.requestDisallowInterceptTouchEvent(false);
+                    }
+                    if (homeRefreshLayout != null) {
+                        homeRefreshLayout.requestDisallowInterceptTouchEvent(false);
+                    }
+                }
+                return false;
+            });
+        }
+
         bannerAdapter.setOnBannerClickListener(banner -> {
             Intent intent = new Intent(requireContext(), com.veggo.app.presentation.promotion.PromotionDetailActivity.class);
             intent.putExtra(com.veggo.app.presentation.promotion.PromotionDetailActivity.EXTRA_PROMOTION_ID, banner.getId());
@@ -783,7 +820,7 @@ public class HomeFragment extends Fragment {
         if (stickyNotify != null) stickyNotify.setOnClickListener(openNotifications);
     }
 
-    private void refreshCartBadge() {
+    public void refreshCartBadge() {
         if (!isAdded() || binding == null) {
             return;
         }

@@ -23,7 +23,6 @@ public class CommunityHomeActivity extends AppCompatActivity {
         binding = ActivityCommunityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         repository = new CommunityRepository(this);
-        bindAccountAvatar();
         CommunityUi.setupBottomNav(this, binding.communityBottomNavHost);
         binding.communityAvatar.setOnClickListener(v -> {
             Intent intent = new Intent(this, CommunityProfileActivity.class);
@@ -35,6 +34,12 @@ public class CommunityHomeActivity extends AppCompatActivity {
         binding.topChefSeeMore.setOnClickListener(v -> startActivity(new Intent(this, CommunityChefsActivity.class)));
         binding.recipesSeeMore.setOnClickListener(v -> startActivity(new Intent(this, CommunityRecipesActivity.class)));
         refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.communityHomeScroll, this::loadHome);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        bindAccountAvatar();
         loadHome();
     }
 

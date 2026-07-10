@@ -90,6 +90,18 @@
                         android:textColor="@color/neutral_80"
                         android:textSize="@dimen/text_sm" />
 
+                    <ImageView
+                        android:id="@+id/btnCopyOrderCode"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_copy"
+                        android:tint="@color/primary_hover"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Copy Order Code" />
+
                     <TextView
                         android:id="@+id/orderDetailCode"
                         android:layout_width="wrap_content"

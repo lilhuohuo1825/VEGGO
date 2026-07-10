@@ -3,7 +3,7 @@
     android:id="@+id/blogRandomRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/neutral_10"
+    android:background="@drawable/bg_dialog_blog_random"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -24,8 +24,7 @@
             android:layout_gravity="top|start"
             android:layout_marginStart="12dp"
             android:layout_marginTop="12dp"
-            android:backgroundTint="@color/white"
-            android:background="@drawable/bg_post_chip_on_hero"
+            android:background="@drawable/bg_blog_random_tag"
             android:gravity="center"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"

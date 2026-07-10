@@ -24,6 +24,7 @@ public class BlogHomeActivity extends AppCompatActivity {
     private List<BlogEntity> allBlogs = new ArrayList<>();
     private List<BlogEntity> randomPostBlogs = new ArrayList<>();
     private String selectedCategory = ALL_CATEGORY;
+    private BlogUi.CategoryTabsHolder categoryTabsHolder;
     private boolean randomPopupShown;
 
     @Override
@@ -34,6 +35,11 @@ public class BlogHomeActivity extends AppCompatActivity {
         repository = new BlogRepository(this);
         PullToRefreshHelper.bind(binding.blogHomeRefresh, binding.blogHomeScroll, () -> loadBlogs(true));
         renderLoading();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadBlogs(false);
     }
 
@@ -41,7 +47,22 @@ public class BlogHomeActivity extends AppCompatActivity {
         repository.getAll(blogs -> runOnUiThread(() -> {
             PullToRefreshHelper.finish(binding.blogHomeRefresh);
             allBlogs = new ArrayList<>(blogs);
-            randomizePostBlogs();
+            if (fromRefresh) {
+                randomPostBlogs.clear();
+            }
+            if (randomPostBlogs.isEmpty()) {
+                randomizePostBlogs();
+            } else {
+                for (BlogEntity oldBlog : randomPostBlogs) {
+                    for (BlogEntity newBlog : blogs) {
+                        if (oldBlog.getId().equals(newBlog.getId())) {
+                            oldBlog.setLikedByCurrentUser(newBlog.isLikedByCurrentUser());
+                            oldBlog.setLikeCount(newBlog.getLikeCount());
+                            break;
+                        }
+                    }
+                }
+            }
             render();
             if (!fromRefresh) {
                 showRandomPopupOnce();
@@ -90,11 +111,50 @@ public class BlogHomeActivity extends AppCompatActivity {
                 "Xem th\u00eam",
                 v -> startActivity(new Intent(this, BlogAllPostsActivity.class))
         );
-        BlogUi.addCategoryTabs(this, binding.blogHomeContainer, allBlogs, selectedCategory, category -> {
-            selectedCategory = category;
-            render();
+        categoryTabsHolder = BlogUi.addCategoryTabs(this, binding.blogHomeContainer, allBlogs, selectedCategory, category -> {
+            onCategorySelected(category);
         });
 
+        List<BlogEntity> preview = filterByCategory(randomPostBlogs);
+        int limit = Math.min(preview.size(), 5);
+        for (int index = 0; index < limit; index++) {
+            BlogUi.addPostItem(this, binding.blogHomeContainer, preview.get(index), repository, this::render);
+        }
+    }
+
+    private void onCategorySelected(String category) {
+        selectedCategory = category;
+        if (categoryTabsHolder != null) {
+            int selectedIndex = categoryTabsHolder.categories.indexOf(category);
+            if (selectedIndex >= 0) {
+                // 1. Cập nhật kiểu chữ của các tab (selected: semibold, unselected: regular)
+                for (int i = 0; i < categoryTabsHolder.tabViews.size(); i++) {
+                    TextView tab = categoryTabsHolder.tabViews.get(i);
+                    boolean isSelected = (i == selectedIndex);
+                    tab.setTextColor(androidx.core.content.ContextCompat.getColor(this, isSelected ? R.color.primary_main : R.color.neutral_70));
+                    android.graphics.Typeface tf = androidx.core.content.res.ResourcesCompat.getFont(this, isSelected ? R.font.inter_semibold : R.font.inter_regular);
+                    tab.setTypeface(tf);
+                }
+                
+                // 2. Chuyển chỉ báo xanh mượt mà
+                if (categoryTabsHolder.indicatorHelper != null) {
+                    categoryTabsHolder.indicatorHelper.selectTab(selectedIndex, true);
+                }
+                
+                // 3. Cuộn tab được chọn vào giữa màn hình (đảm bảo nhìn thấy được)
+                TextView selectedTabView = categoryTabsHolder.tabViews.get(selectedIndex);
+                categoryTabsHolder.scrollView.post(() -> {
+                    int scrollX = selectedTabView.getLeft() - (categoryTabsHolder.scrollView.getWidth() - selectedTabView.getWidth()) / 2;
+                    categoryTabsHolder.scrollView.smoothScrollTo(Math.max(scrollX, 0), 0);
+                });
+            }
+        }
+
+        // 4. Xóa và vẽ lại danh sách bài viết dưới các tab
+        while (binding.blogHomeContainer.getChildCount() > 4) {
+            binding.blogHomeContainer.removeViewAt(4);
+        }
+        
         List<BlogEntity> preview = filterByCategory(randomPostBlogs);
         int limit = Math.min(preview.size(), 5);
         for (int index = 0; index < limit; index++) {

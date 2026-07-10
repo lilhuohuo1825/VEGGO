@@ -17,6 +17,8 @@
         android:id="@+id/tvMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="64dp"
         android:background="@drawable/bg_chat_bot"
         android:fontFamily="@font/inter"
         android:padding="12dp"

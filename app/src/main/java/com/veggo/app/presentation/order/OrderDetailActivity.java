@@ -159,6 +159,20 @@ public class OrderDetailActivity extends BaseActivity {
             return;
         }
         AssetScreenData.setText(findViewById(android.R.id.content), R.id.orderDetailCode, order.orderId);
+        
+        View btnCopy = findViewById(R.id.btnCopyOrderCode);
+        if (btnCopy != null) {
+            btnCopy.setOnClickListener(v -> {
+                if (order.orderId != null) {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("Order Code", order.orderId);
+                    if (clipboard != null) {
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(OrderDetailActivity.this, "Đã sao chép mã đơn hàng thành công!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
         TextView tvStatus = findViewById(R.id.orderDetailStatus);
         if (tvStatus != null) {
             tvStatus.setText(AssetScreenData.statusLabel(order.status));

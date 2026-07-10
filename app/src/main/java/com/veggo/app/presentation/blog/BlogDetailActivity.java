@@ -31,6 +31,7 @@ public class BlogDetailActivity extends AppCompatActivity {
     private FavoriteStore favoriteStore;
     private String blogId;
     private BlogEntity currentBlog;
+    private int preFocusScrollY = -1;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -43,9 +44,32 @@ public class BlogDetailActivity extends AppCompatActivity {
 
         blogId = getIntent().getStringExtra(EXTRA_BLOG_ID);
         binding.blogCommentSend.setOnClickListener(v -> submitComment());
-        binding.blogDetailCommentIcon.setOnClickListener(v -> binding.blogDetailScroll.post(() ->
-                binding.blogDetailScroll.smoothScrollTo(0, binding.blogCommentsTitle.getTop())));
+        binding.blogDetailCommentIcon.setOnClickListener(v -> binding.blogDetailScroll.post(() -> {
+            if (binding != null && binding.blogCommentsTitle != null) {
+                int relativeTop = getRelativeTop(binding.blogCommentsTitle, binding.blogDetailScroll);
+                binding.blogDetailScroll.smoothScrollTo(0, relativeTop);
+            }
+        }));
         binding.blogDetailCommentIcon.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary_main)));
+        
+        binding.blogCommentInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                preFocusScrollY = binding.blogDetailScroll.getScrollY();
+                binding.blogDetailContainer.setPadding(0, 0, 0, dp(200));
+                scrollToCommentInput();
+            } else {
+                binding.blogDetailContainer.setPadding(0, 0, 0, dp(16));
+                if (preFocusScrollY != -1) {
+                    binding.blogDetailScroll.smoothScrollTo(0, preFocusScrollY);
+                    preFocusScrollY = -1;
+                }
+            }
+        });
+        binding.blogCommentInput.setOnClickListener(v -> {
+            binding.blogDetailContainer.setPadding(0, 0, 0, dp(200));
+            scrollToCommentInput();
+        });
+
         PullToRefreshHelper.bind(binding.blogDetailRefresh, binding.blogDetailScroll, this::loadBlog);
 
         if (blogId == null) {
@@ -53,6 +77,27 @@ public class BlogDetailActivity extends AppCompatActivity {
             return;
         }
         loadBlog();
+    }
+
+    private void scrollToCommentInput() {
+        if (binding == null) return;
+        binding.blogDetailScroll.postDelayed(() -> {
+            if (binding != null && binding.blogCommentInputRow != null) {
+                int relativeTop = getRelativeTop(binding.blogCommentInputRow, binding.blogDetailScroll);
+                binding.blogDetailScroll.smoothScrollTo(0, Math.max(relativeTop - dp(200), 0));
+            }
+        }, 250);
+    }
+
+    private int getRelativeTop(View view, View ancestor) {
+        if (view == null || view == ancestor) {
+            return 0;
+        }
+        android.view.ViewParent parent = view.getParent();
+        if (parent instanceof View) {
+            return view.getTop() + getRelativeTop((View) parent, ancestor);
+        }
+        return view.getTop();
     }
 
     private void loadBlog() {
@@ -71,7 +116,11 @@ public class BlogDetailActivity extends AppCompatActivity {
     }
 
     private void setupFixedBackButton() {
-        binding.blogDetailHeader.addView(BlogUi.createBackButton(this));
+        android.widget.ImageButton backButton = BlogUi.createBackButton(this);
+        backButton.setBackgroundResource(R.drawable.bg_community_circle);
+        int paddingPx = dp(10);
+        backButton.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+        binding.blogDetailHeader.addView(backButton);
         binding.blogDetailHeader.bringToFront();
     }
 
@@ -248,5 +297,31 @@ public class BlogDetailActivity extends AppCompatActivity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (ev.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            View v = getCurrentFocus();
+            if (v instanceof android.widget.EditText) {
+                android.graphics.Rect outRect = new android.graphics.Rect();
+                v.getGlobalVisibleRect(outRect);
+                android.graphics.Rect sendRect = new android.graphics.Rect();
+                if (binding != null && binding.blogCommentSend != null) {
+                    binding.blogCommentSend.getGlobalVisibleRect(sendRect);
+                }
+                
+                if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY()) 
+                        && !sendRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
+                    v.clearFocus();
+                    android.view.inputmethod.InputMethodManager imm = 
+                            (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    }
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev);
     }
 }

@@ -104,6 +104,7 @@
         android:background="@drawable/bg_scan_circle"
         android:clickable="true"
         android:elevation="8dp"
+        android:stateListAnimator="@null"
         android:focusable="true"
         android:translationY="-25dp"
         app:layout_constraintEnd_toEndOf="parent"

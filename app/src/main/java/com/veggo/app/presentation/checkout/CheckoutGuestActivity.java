@@ -607,6 +607,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         dialog.setContentView(R.layout.dialog_otp_veggo);
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
 
         TextView tvOtpTitle = dialog.findViewById(R.id.tvOtpTitle);
@@ -1059,6 +1060,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         dialog.setContentView(R.layout.dialog_otp_veggo);
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
 
         TextView otpMessage = dialog.findViewById(R.id.tvOtpMessage);

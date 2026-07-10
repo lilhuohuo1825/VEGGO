@@ -3,8 +3,10 @@
     android:id="@+id/blogCategoryTab"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:paddingEnd="16dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
     android:paddingBottom="8dp"
+    android:gravity="center"
     android:singleLine="true"
     android:textColor="@color/neutral_70"
     android:textSize="14sp" />

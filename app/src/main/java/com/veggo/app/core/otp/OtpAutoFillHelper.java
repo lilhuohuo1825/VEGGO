@@ -202,8 +202,13 @@ public final class OtpAutoFillHelper implements DefaultLifecycleObserver {
             return;
         }
         keyboardTarget.post(() -> {
+            if (keyboardTarget == null) return;
             keyboardTarget.requestFocus();
             notifyAutofillChanged();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(keyboardTarget, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            }
         });
     }
 

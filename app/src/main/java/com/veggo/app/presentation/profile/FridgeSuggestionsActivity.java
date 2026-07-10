@@ -297,7 +297,7 @@ public class FridgeSuggestionsActivity extends BaseActivity {
         if (diffDays < 0) {
             return "Đã hết hạn";
         } else if (diffDays == 0) {
-            return "Hết hạn hôm nay";
+            return "Hết hạn";
         } else {
             return "Còn " + diffDays + " ngày";
         }

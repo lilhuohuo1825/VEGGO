@@ -41,6 +41,25 @@ public final class BlogUi {
         void onBlogLikeChanged();
     }
 
+    public static final class CategoryTabsHolder {
+        public final HorizontalScrollView scrollView;
+        public final List<TextView> tabViews;
+        public final com.veggo.app.core.ui.CurvedTabIndicatorHelper indicatorHelper;
+        public final List<String> categories;
+
+        public CategoryTabsHolder(
+                HorizontalScrollView scrollView,
+                List<TextView> tabViews,
+                com.veggo.app.core.ui.CurvedTabIndicatorHelper indicatorHelper,
+                List<String> categories
+        ) {
+            this.scrollView = scrollView;
+            this.tabViews = tabViews;
+            this.indicatorHelper = indicatorHelper;
+            this.categories = categories;
+        }
+    }
+
     private BlogUi() {
     }
 
@@ -91,7 +110,7 @@ public final class BlogUi {
         parent.addView(row);
     }
 
-    public static void addCategoryTabs(
+    public static CategoryTabsHolder addCategoryTabs(
             Activity activity,
             LinearLayout parent,
             List<BlogEntity> blogs,
@@ -118,9 +137,33 @@ public final class BlogUi {
                 categories.add(category);
             }
         }
-        for (String category : categories) {
-            addTab(activity, row, category, category.equals(selectedCategory), listener);
+
+        List<String> categoriesList = new ArrayList<>(categories);
+        List<TextView> tabViews = new ArrayList<>();
+        List<com.veggo.app.core.ui.CurvedTabIndicatorHelper.TabItem> tabItems = new ArrayList<>();
+        int selectedIndex = 0;
+        int index = 0;
+        for (String category : categoriesList) {
+            boolean isSelected = category.equals(selectedCategory);
+            if (isSelected) {
+                selectedIndex = index;
+            }
+            TextView tabView = addTab(activity, row, category, isSelected, listener);
+            tabViews.add(tabView);
+            tabItems.add(new com.veggo.app.core.ui.CurvedTabIndicatorHelper.TabItem(tabView));
+            index++;
         }
+
+        com.veggo.app.core.ui.CurvedTabIndicatorHelper indicatorHelper = null;
+        if (!tabItems.isEmpty()) {
+            indicatorHelper = com.veggo.app.core.ui.CurvedTabIndicatorHelper.attach(
+                    scrollView,
+                    tabItems.toArray(new com.veggo.app.core.ui.CurvedTabIndicatorHelper.TabItem[0])
+            );
+            indicatorHelper.selectTab(selectedIndex, false);
+        }
+
+        return new CategoryTabsHolder(scrollView, tabViews, indicatorHelper, categoriesList);
     }
 
     public static void addFeaturedCard(Activity activity, LinearLayout parent, BlogEntity blog) {
@@ -171,7 +214,7 @@ public final class BlogUi {
         }
         BlogEntity blog = blogs.get(new Random().nextInt(blogs.size()));
         View view = LayoutInflater.from(activity).inflate(R.layout.dialog_blog_random, null, false);
-        bindImage(activity, view.findViewById(R.id.blogRandomImage), blog.getImageUrl(), 10);
+        bindImage(activity, view.findViewById(R.id.blogRandomImage), blog.getImageUrl(), 12);
         ((TextView) view.findViewById(R.id.blogRandomTitle)).setText(BlogText.clean(blog.getTitle()));
         ((TextView) view.findViewById(R.id.blogRandomExcerpt)).setText(BlogText.clean(blog.getExcerpt()));
         AlertDialog dialog = new AlertDialog.Builder(activity).setView(view).create();
@@ -194,12 +237,15 @@ public final class BlogUi {
         }
     }
 
-    private static void addTab(Activity activity, LinearLayout row, String title, boolean selected, CategoryClickListener listener) {
+    private static TextView addTab(Activity activity, LinearLayout row, String title, boolean selected, CategoryClickListener listener) {
         TextView tab = (TextView) LayoutInflater.from(activity).inflate(R.layout.item_blog_category_tab, row, false);
         tab.setText(title);
         tab.setTextColor(ContextCompat.getColor(activity, selected ? R.color.primary_main : R.color.neutral_70));
+        android.graphics.Typeface tf = androidx.core.content.res.ResourcesCompat.getFont(activity, selected ? R.font.inter_semibold : R.font.inter_regular);
+        tab.setTypeface(tf);
         tab.setOnClickListener(v -> listener.onCategoryClick(title));
         row.addView(tab);
+        return tab;
     }
 
     private static void bindMeta(View root, BlogEntity blog) {

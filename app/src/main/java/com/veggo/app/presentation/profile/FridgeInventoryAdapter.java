@@ -94,7 +94,7 @@ public class FridgeInventoryAdapter extends RecyclerView.Adapter<FridgeInventory
                     if (diffDays < 0) {
                         expiryStr = "Đã hết hạn";
                     } else if (diffDays == 0) {
-                        expiryStr = "Hết hạn hôm nay";
+                        expiryStr = "Hết hạn";
                     } else {
                         expiryStr = "Còn " + diffDays + " ngày";
                     }

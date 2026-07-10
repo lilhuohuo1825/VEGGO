@@ -139,7 +139,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             decreaseView.setVisibility(View.VISIBLE);
             quantityView.setVisibility(View.VISIBLE);
             increaseView.setVisibility(View.VISIBLE);
-            deleteView.setVisibility(editMode ? View.VISIBLE : View.GONE);
+            deleteView.setVisibility(View.VISIBLE);
 
             checkboxView.setOnClickListener(v -> dispatchCheckedChanged(listener));
             deleteView.setOnClickListener(v -> dispatchRemoved(listener));
@@ -160,15 +160,10 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 }
                 return true;
             });
-            setupSwipeToRevealDelete(editMode);
+            setupSwipeToRevealDelete();
         }
 
-        private void setupSwipeToRevealDelete(boolean editMode) {
-            if (!editMode) {
-                contentView.setOnTouchListener(null);
-                contentView.setClickable(true);
-                return;
-            }
+        private void setupSwipeToRevealDelete() {
             final float touchSlop = itemView.getResources().getDisplayMetrics().density * 8f;
             contentView.setOnTouchListener(new View.OnTouchListener() {
                 private float downX;
@@ -199,12 +194,15 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                         case MotionEvent.ACTION_MOVE:
                             float deltaX = event.getX() - downX;
                             float deltaY = event.getY() - downY;
-                            if (Math.abs(deltaX) > touchSlop && Math.abs(deltaX) > Math.abs(deltaY)) {
-                                swiping = true;
+                            // Hủy runnable long click ngay khi ngón tay di chuyển nhẹ để tránh đụng độ với thao tác vuốt xóa
+                            if (Math.abs(deltaX) > touchSlop / 2 || Math.abs(deltaY) > touchSlop / 2) {
                                 if (longPressRunnable != null) {
                                     contentView.removeCallbacks(longPressRunnable);
                                     longPressRunnable = null;
                                 }
+                            }
+                            if (Math.abs(deltaX) > touchSlop && Math.abs(deltaX) > Math.abs(deltaY)) {
+                                swiping = true;
                                 itemView.getParent().requestDisallowInterceptTouchEvent(true);
                             }
                             if (swiping) {
@@ -214,7 +212,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                                 downX = event.getX();
                                 return true;
                             }
-                            return true;
+                            return false;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             if (longPressRunnable != null) {
