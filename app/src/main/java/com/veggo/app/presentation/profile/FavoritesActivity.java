@@ -26,6 +26,7 @@ import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.utils.CurrencyFormatter;
@@ -50,6 +51,7 @@ public class FavoritesActivity extends BaseActivity {
     private TextView tabProductsText, tabBlogsText, tabDishesText;
     private TextView tabProductsBadge, tabBlogsBadge, tabDishesBadge;
     private View tabProductsIndicator, tabBlogsIndicator, tabDishesIndicator;
+    private CurvedTabIndicatorHelper tabIndicator;
     private View sectionProducts, sectionBlogs, sectionDishes;
     private FavoriteStore favoriteStore;
     private boolean isEnrichingFavorites;
@@ -86,6 +88,13 @@ public class FavoritesActivity extends BaseActivity {
         tabProductsIndicator = findViewById(R.id.favTabProductsIndicator);
         tabBlogsIndicator = findViewById(R.id.favTabBlogsIndicator);
         tabDishesIndicator = findViewById(R.id.favTabDishesIndicator);
+
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                null,
+                new CurvedTabIndicatorHelper.TabItem(tabProducts, tabProductsIndicator),
+                new CurvedTabIndicatorHelper.TabItem(tabBlogs, tabBlogsIndicator),
+                new CurvedTabIndicatorHelper.TabItem(tabDishes, tabDishesIndicator)
+        );
 
         sectionProducts = findViewById(R.id.sectionProducts);
         sectionBlogs = findViewById(R.id.sectionBlogs);
@@ -134,18 +143,19 @@ public class FavoritesActivity extends BaseActivity {
         // Update Tab Texts, Indicators and Badges
         tabProductsText.setTextColor(tab == FavTab.PRODUCTS ? activeColor : inactiveColor);
         tabProductsText.setTypeface(null, tab == FavTab.PRODUCTS ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        tabProductsIndicator.setVisibility(tab == FavTab.PRODUCTS ? View.VISIBLE : View.INVISIBLE);
         BadgeUiHelper.styleTabBadge(tabProductsBadge, tab == FavTab.PRODUCTS);
 
         tabBlogsText.setTextColor(tab == FavTab.BLOGS ? activeColor : inactiveColor);
         tabBlogsText.setTypeface(null, tab == FavTab.BLOGS ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        tabBlogsIndicator.setVisibility(tab == FavTab.BLOGS ? View.VISIBLE : View.INVISIBLE);
         BadgeUiHelper.styleTabBadge(tabBlogsBadge, tab == FavTab.BLOGS);
 
         tabDishesText.setTextColor(tab == FavTab.DISHES ? activeColor : inactiveColor);
         tabDishesText.setTypeface(null, tab == FavTab.DISHES ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        tabDishesIndicator.setVisibility(tab == FavTab.DISHES ? View.VISIBLE : View.INVISIBLE);
         BadgeUiHelper.styleTabBadge(tabDishesBadge, tab == FavTab.DISHES);
+
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(tab.ordinal());
+        }
 
         // Toggle Section Visibility
         sectionProducts.setVisibility(tab == FavTab.PRODUCTS ? View.VISIBLE : View.GONE);

@@ -21,6 +21,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
@@ -41,6 +42,7 @@ public class ReviewsActivity extends BaseActivity {
     private TextView doneTabBadge;
     private View waitingIndicator;
     private View doneIndicator;
+    private CurvedTabIndicatorHelper tabIndicator;
     private View waitingList;
     private View doneList;
     private View reviewsEmptyState;
@@ -66,6 +68,11 @@ public class ReviewsActivity extends BaseActivity {
         doneTabBadge = findViewById(R.id.reviewDoneTabBadge);
         waitingIndicator = findViewById(R.id.reviewWaitingIndicator);
         doneIndicator = findViewById(R.id.reviewDoneIndicator);
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                reviewsStatusScroll,
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.reviewWaitingTab), waitingIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.reviewDoneTab), doneIndicator)
+        );
         waitingList = findViewById(R.id.reviewWaitingList);
         doneList = findViewById(R.id.reviewDoneList);
         reviewsEmptyState = findViewById(R.id.reviewsEmptyState);
@@ -114,8 +121,9 @@ public class ReviewsActivity extends BaseActivity {
         showingDoneReviews = false;
         setActive(waitingTabText, waitingTabBadge, true);
         setActive(doneTabText, doneTabBadge, false);
-        waitingIndicator.setVisibility(View.VISIBLE);
-        doneIndicator.setVisibility(View.INVISIBLE);
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(0);
+        }
         boolean isEmpty = waitingOrders == null || waitingOrders.isEmpty();
         waitingList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         doneList.setVisibility(View.GONE);
@@ -129,8 +137,9 @@ public class ReviewsActivity extends BaseActivity {
         showingDoneReviews = true;
         setActive(waitingTabText, waitingTabBadge, false);
         setActive(doneTabText, doneTabBadge, true);
-        waitingIndicator.setVisibility(View.INVISIBLE);
-        doneIndicator.setVisibility(View.VISIBLE);
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(1);
+        }
         waitingList.setVisibility(View.GONE);
         boolean isEmpty = doneOrders == null || doneOrders.isEmpty();
         doneList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);

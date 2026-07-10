@@ -3,13 +3,14 @@
     android:id="@+id/orderHistoryRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9F8"
+    android:background="@color/background_main"
+    android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/orderHistoryHeader"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="?android:attr/actionBarSize"
         android:background="@color/background_main"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -53,6 +54,11 @@
             android:scaleType="centerInside"
             android:src="@drawable/ic_order_list_menu" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.3dp"
+        android:background="#616161" />
 
     <LinearLayout
         android:id="@+id/orderSearchContainer"
@@ -351,7 +357,7 @@
                 android:id="@+id/orderListScroll"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#F8F9F8"
+                android:background="@color/background_main"
                 android:clipToPadding="false"
                 android:overScrollMode="never"
                 android:paddingStart="@dimen/spacing_md"

@@ -255,10 +255,8 @@ public class PopularRecipesActivity extends BaseActivity {
                 if (inst == null) {
                     continue;
                 }
-                String videoId = extractYoutubeId(dish.video);
-                String thumbnailUrl = videoId != null
-                        ? "https://img.youtube.com/vi/" + videoId + "/mqdefault.jpg"
-                        : null;
+                String thumbnailUrl = com.veggo.app.core.utils.RecipeThumbnailUtils
+                        .resolveThumbnail(dish.video);
                 recipeList.add(new Recipe(
                         dish.id,
                         inst.dishName,
@@ -270,24 +268,6 @@ public class PopularRecipesActivity extends BaseActivity {
             }
         }
         return recipeList;
-    }
-
-    private String extractYoutubeId(String url) {
-        if (url == null) {
-            return null;
-        }
-        try {
-            if (url.contains("/embed/")) {
-                String temp = url.split("/embed/")[1];
-                if (temp.contains("?")) {
-                    return temp.split("\\?")[0];
-                }
-                return temp;
-            }
-        } catch (Exception ignored) {
-            return null;
-        }
-        return null;
     }
 
     private int countIngredients(String ingredients) {

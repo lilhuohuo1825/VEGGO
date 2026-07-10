@@ -6,6 +6,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -90,5 +91,34 @@ public final class OtpInputHelper {
             }
         }
         return builder.toString();
+    }
+
+    public static void fillFields(@NonNull EditText[] fields, @NonNull String otp) {
+        if (otp.length() != fields.length) {
+            return;
+        }
+        syncFields(fields, otp);
+        if (fields.length > 0 && fields[fields.length - 1] != null) {
+            fields[fields.length - 1].requestFocus();
+        }
+    }
+
+    public static void syncFields(@NonNull EditText[] fields, @NonNull String value) {
+        String digits = value.replaceAll("\\D", "");
+        for (int i = 0; i < fields.length; i++) {
+            EditText field = fields[i];
+            if (field == null) {
+                continue;
+            }
+            if (i < digits.length()) {
+                field.setText(String.valueOf(digits.charAt(i)));
+            } else {
+                field.setText("");
+            }
+        }
+    }
+
+    public static void configureAutofillHints(@NonNull EditText[] fields) {
+        // Keyboard autofill is handled by OtpAutoFillHelper's dedicated target field.
     }
 }

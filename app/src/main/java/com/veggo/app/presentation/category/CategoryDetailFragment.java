@@ -2,6 +2,8 @@ package com.veggo.app.presentation.category;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -47,6 +49,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.text.Normalizer;
 
 import retrofit2.Call;
@@ -56,6 +60,7 @@ import retrofit2.Response;
 public class CategoryDetailFragment extends Fragment {
     public static final String ARG_CATEGORY_ID = "arg_category_id";
     public static final String ARG_SUBCATEGORY_ID = "arg_subcategory_id";
+    private static final long FILTER_DEBOUNCE_MS = 200L;
 
     private FragmentCategoryDetailBinding binding;
     private CategoryRepository categoryRepository;
@@ -83,6 +88,10 @@ public class CategoryDetailFragment extends Fragment {
     private boolean isBuildingTabs = false;
     private SearchVoiceInputController voiceInputController;
     private SwipeRefreshLayout categoryDetailRefreshLayout;
+    private final Handler filterHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService filterExecutor = Executors.newSingleThreadExecutor();
+    private Runnable pendingFilterRunnable;
+    private int filterGeneration = 0;
 
     @Nullable
     @Override
@@ -113,6 +122,8 @@ public class CategoryDetailFragment extends Fragment {
         productRepository.observeCatalogProducts().observe(getViewLifecycleOwner(), products -> {
             if (products != null) {
                 catalogProducts = products;
+                updateCurrentProductsFromCatalog();
+                applyFiltersAndSort();
             }
         });
         tasteStore.syncFromMongo(() -> {
@@ -138,6 +149,7 @@ public class CategoryDetailFragment extends Fragment {
 
         // Product Grid
         productAdapter = new ProductAdapter();
+        productAdapter.setTastePreferenceStore(tasteStore);
         binding.rvProducts.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         binding.rvProducts.setAdapter(productAdapter);
         productAdapter.setOnProductClickListener(product -> {
@@ -162,7 +174,7 @@ public class CategoryDetailFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                applyFiltersAndSort();
+                scheduleApplyFiltersAndSort();
             }
 
             @Override
@@ -172,7 +184,7 @@ public class CategoryDetailFragment extends Fragment {
                 this,
                 binding.layoutSearch.getRoot(),
                 binding.layoutSearch.edtSearch,
-                this::applyFiltersAndSort
+                this::scheduleApplyFiltersAndSort
         );
         binding.categoryDetailBackButton.setOnClickListener(v ->
                 requireActivity().getOnBackPressedDispatcher().onBackPressed()
@@ -187,7 +199,7 @@ public class CategoryDetailFragment extends Fragment {
                 } else {
                     selectedSubcategoryId = ""; // "Tất cả"
                 }
-                loadProducts();
+                applyFiltersAndSort();
             }
 
             @Override
@@ -663,23 +675,36 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private void loadProducts() {
+        updateCurrentProductsFromCatalog();
+        applyFiltersAndSort();
+    }
+
+    private void updateCurrentProductsFromCatalog() {
         if (selectedCategoryId == null || selectedCategoryId.isEmpty()) {
-            productRepository.observeProducts().removeObservers(getViewLifecycleOwner());
-            productRepository.observeProducts().observe(getViewLifecycleOwner(), products -> {
-                if (products != null) {
-                    currentProducts = products;
-                    applyFiltersAndSort();
-                }
-            });
+            currentProducts = catalogProducts != null
+                    ? catalogProducts
+                    : Collections.emptyList();
             return;
         }
 
-        productRepository.observeProductsByCategory(selectedCategoryId).removeObservers(getViewLifecycleOwner());
-        productRepository.observeProductsByCategory(selectedCategoryId).observe(getViewLifecycleOwner(), products -> {
-            currentProducts = products != null ? products : Collections.emptyList();
-            applyFiltersAndSort();
-        });
+        List<Product> filtered = new ArrayList<>();
+        List<Product> source = catalogProducts != null ? catalogProducts : Collections.emptyList();
+        for (Product product : source) {
+            if (product != null && selectedCategoryId.equals(product.getCategoryId())) {
+                filtered.add(product);
+            }
+        }
+        currentProducts = filtered;
     }
+
+    private void scheduleApplyFiltersAndSort() {
+        if (pendingFilterRunnable != null) {
+            filterHandler.removeCallbacks(pendingFilterRunnable);
+        }
+        pendingFilterRunnable = this::applyFiltersAndSort;
+        filterHandler.postDelayed(pendingFilterRunnable, FILTER_DEBOUNCE_MS);
+    }
+
 
     private void loadActiveFlashSales() {
         PromotionApi promotionApi = ApiClient.createService(PromotionApi.class);
@@ -742,16 +767,20 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private boolean matchesSelectedSubcategory(Product product) {
+        return matchesSelectedSubcategory(product, selectedSubcategoryId);
+    }
+
+    private boolean matchesSelectedSubcategory(Product product, String subcategoryId) {
         if (product == null) {
             return false;
         }
-        if (selectedSubcategoryId == null || selectedSubcategoryId.isEmpty()) {
+        if (subcategoryId == null || subcategoryId.isEmpty()) {
             return true;
         }
-        if (selectedSubcategoryId.equals(product.getSubcategoryId())) {
+        if (subcategoryId.equals(product.getSubcategoryId())) {
             return true;
         }
-        return matchesSubcategoryFallback(product, selectedSubcategoryId);
+        return matchesSubcategoryFallback(product, subcategoryId);
     }
 
     private boolean matchesSubcategoryFallback(Product product, String subcategoryId) {
@@ -776,54 +805,76 @@ public class CategoryDetailFragment extends Fragment {
     }
 
     private void applyFiltersAndSort() {
-        if (currentProducts == null) return;
-
-        List<Product> filtered = new ArrayList<>();
-        
-        // 1. Filter by Price and Search Query
-        String query = binding.layoutSearch.edtSearch.getText().toString().toLowerCase();
-
-        for (Product product : currentProducts) {
-            Product displayProduct = applyFlashSalePricing(product);
-            boolean matchesSearch = query.isEmpty() || product.getName().toLowerCase().contains(query);
-            boolean matchesPrice = displayProduct.getPrice() >= selectedMinPrice
-                    && displayProduct.getPrice() <= selectedMaxPrice;
-            boolean matchesBrand = selectedBrand.isEmpty()
-                    || selectedBrand.equalsIgnoreCase(resolveBrandLabel(product));
-            boolean matchesSubcategory = matchesSelectedSubcategory(product);
-
-            if (matchesSearch && matchesPrice && matchesBrand && matchesSubcategory) {
-                if ("discount".equals(selectedSort)) {
-                    if (isDiscountedProduct(product)) {
-                        filtered.add(displayProduct);
-                    }
-                } else if ("organic".equals(selectedSort)) {
-                    if (product.getName().toLowerCase().contains("organic") || 
-                        (product.getDescription() != null && product.getDescription().toLowerCase().contains("organic"))) {
-                        filtered.add(displayProduct);
-                    }
-                } else {
-                    filtered.add(displayProduct);
-                }
-            }
+        if (currentProducts == null || binding == null) {
+            return;
         }
 
-        // 2. Sort
-        java.util.Collections.sort(filtered, (p1, p2) -> {
-            switch (selectedSort) {
-                case "low_high":
-                    return Long.compare(p1.getPrice(), p2.getPrice());
-                case "high_low":
-                    return Long.compare(p2.getPrice(), p1.getPrice());
-                case "popular":
-                    return Integer.compare(p2.getSoldCount(), p1.getSoldCount());
-                default:
-                    return 0;
-            }
-        });
+        final int generation = ++filterGeneration;
+        final List<Product> sourceProducts = new ArrayList<>(currentProducts);
+        final String query = binding.layoutSearch.edtSearch.getText().toString().toLowerCase(Locale.ROOT);
+        final String sort = selectedSort;
+        final int minPrice = selectedMinPrice;
+        final int maxPrice = selectedMaxPrice;
+        final String brand = selectedBrand;
+        final String subcategoryId = selectedSubcategoryId;
 
-        productAdapter.submitList(filtered);
-        updateEmptyState(filtered.isEmpty());
+        filterExecutor.execute(() -> {
+            List<Product> filtered = new ArrayList<>();
+
+            for (Product product : sourceProducts) {
+                Product displayProduct = applyFlashSalePricing(product);
+                if (displayProduct == null) {
+                    continue;
+                }
+                boolean matchesSearch = query.isEmpty()
+                        || product.getName().toLowerCase(Locale.ROOT).contains(query);
+                boolean matchesPrice = displayProduct.getPrice() >= minPrice
+                        && displayProduct.getPrice() <= maxPrice;
+                boolean matchesBrand = brand.isEmpty()
+                        || brand.equalsIgnoreCase(resolveBrandLabel(product));
+                boolean matchesSubcategory = matchesSelectedSubcategory(product, subcategoryId);
+
+                if (matchesSearch && matchesPrice && matchesBrand && matchesSubcategory) {
+                    if ("discount".equals(sort)) {
+                        if (isDiscountedProduct(product)) {
+                            filtered.add(displayProduct);
+                        }
+                    } else if ("organic".equals(sort)) {
+                        if (product.getName().toLowerCase(Locale.ROOT).contains("organic")
+                                || (product.getDescription() != null
+                                && product.getDescription().toLowerCase(Locale.ROOT).contains("organic"))) {
+                            filtered.add(displayProduct);
+                        }
+                    } else {
+                        filtered.add(displayProduct);
+                    }
+                }
+            }
+
+            Collections.sort(filtered, (p1, p2) -> {
+                switch (sort) {
+                    case "low_high":
+                        return Long.compare(p1.getPrice(), p2.getPrice());
+                    case "high_low":
+                        return Long.compare(p2.getPrice(), p1.getPrice());
+                    case "popular":
+                        return Integer.compare(p2.getSoldCount(), p1.getSoldCount());
+                    default:
+                        return 0;
+                }
+            });
+
+            if (binding == null || generation != filterGeneration) {
+                return;
+            }
+            binding.getRoot().post(() -> {
+                if (binding == null || generation != filterGeneration) {
+                    return;
+                }
+                productAdapter.submitList(filtered);
+                updateEmptyState(filtered.isEmpty());
+            });
+        });
     }
 
     private void filterProductsByName(String query) {
@@ -856,6 +907,10 @@ public class CategoryDetailFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (pendingFilterRunnable != null) {
+            filterHandler.removeCallbacks(pendingFilterRunnable);
+            pendingFilterRunnable = null;
+        }
         if (voiceInputController != null) {
             voiceInputController.release();
             voiceInputController = null;

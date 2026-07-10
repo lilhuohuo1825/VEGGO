@@ -28,6 +28,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.notification.EmulatorSmsSender;
+import com.veggo.app.core.otp.OtpAutoFillHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.CameraCaptureHelper;
@@ -593,12 +594,16 @@ public class PersonalInfoActivity extends BaseActivity {
         final int[] otpFailedAttempts = {0};
         final CountDownTimer[] otpTimer = {null};
         final EditText[] otpFields = getChangePhoneOtpFields(dialog);
+        final OtpAutoFillHelper[] otpAutoFillHelper = {null};
         OtpInputHelper.setupAutoShift(otpFields, primaryButton);
         KeyboardUtils.setupHideKeyboardOnOutsideTap(dialog);
 
         dialog.setOnDismissListener(d -> {
             if (otpTimer[0] != null) {
                 otpTimer[0].cancel();
+            }
+            if (otpAutoFillHelper[0] != null) {
+                otpAutoFillHelper[0].stop();
             }
         });
 
@@ -639,6 +644,8 @@ public class PersonalInfoActivity extends BaseActivity {
                 );
                 OtpInputHelper.clearFields(otpFields);
                 OtpInputHelper.focusFirst(otpFields);
+                otpAutoFillHelper[0] = OtpAutoFillHelper.create(PersonalInfoActivity.this, otpFields);
+                otpAutoFillHelper[0].start();
                 if (dialog.getWindow() != null) {
                     dialog.getWindow().setSoftInputMode(
                             android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE

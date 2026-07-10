@@ -27,6 +27,7 @@ import com.veggo.app.domain.model.Review;
 import com.veggo.app.domain.repository.ProductRepository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,6 +49,8 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private List<ProductDto> cachedProductDtos = null;
     private final Object cacheLock = new Object();
+    private final MutableLiveData<List<Product>> sharedCatalogLiveData = new MutableLiveData<>();
+    private volatile boolean sharedCatalogRequestInFlight = false;
 
     private final Context context;
 
@@ -60,7 +63,8 @@ public class ProductRepositoryImpl implements ProductRepository {
     private void getProductsFromApi(Callback<List<ProductDto>> callback) {
         synchronized (cacheLock) {
             if (cachedProductDtos != null) {
-                callback.onResponse(null, Response.success(cachedProductDtos));
+                List<ProductDto> cached = cachedProductDtos;
+                executor.execute(() -> callback.onResponse(null, Response.success(cached)));
                 return;
             }
         }
@@ -82,6 +86,74 @@ public class ProductRepositoryImpl implements ProductRepository {
                 }
             });
         }
+    }
+
+    private List<Product> mapDisplayableProducts(List<ProductDto> dtos) {
+        List<Product> products = new ArrayList<>();
+        if (dtos == null) {
+            return products;
+        }
+        for (ProductDto dto : dtos) {
+            Product product = ProductMapper.fromDto(dto);
+            if (ProductDisplayValidator.isDisplayable(product)) {
+                products.add(product);
+            }
+        }
+        return products;
+    }
+
+    private void ensureSharedCatalogLoaded() {
+        if (!com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context)) {
+            return;
+        }
+        if (sharedCatalogLiveData.getValue() != null || sharedCatalogRequestInFlight) {
+            return;
+        }
+        sharedCatalogRequestInFlight = true;
+        getProductsFromApi(new Callback<List<ProductDto>>() {
+            @Override
+            public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
+                executor.execute(() -> {
+                    try {
+                        List<ProductDto> dtos = response.body();
+                        if (response.isSuccessful() && dtos != null) {
+                            sharedCatalogLiveData.postValue(mapDisplayableProducts(dtos));
+                        } else {
+                            sharedCatalogLiveData.postValue(Collections.emptyList());
+                        }
+                    } finally {
+                        sharedCatalogRequestInFlight = false;
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Call<List<ProductDto>> call, Throwable t) {
+                sharedCatalogLiveData.postValue(Collections.emptyList());
+                sharedCatalogRequestInFlight = false;
+            }
+        });
+    }
+
+    private LiveData<List<Product>> observeFilteredCatalog(
+            java.util.function.Predicate<Product> predicate
+    ) {
+        ensureSharedCatalogLoaded();
+        MediatorLiveData<List<Product>> filteredLiveData = new MediatorLiveData<>();
+        filteredLiveData.addSource(sharedCatalogLiveData, products -> executor.execute(() -> {
+            if (products == null) {
+                filteredLiveData.postValue(Collections.emptyList());
+                return;
+            }
+            List<Product> filtered = new ArrayList<>();
+            for (Product product : products) {
+                if (predicate.test(product)) {
+                    filtered.add(product);
+                }
+            }
+            filteredLiveData.postValue(filtered);
+        }));
+        return filteredLiveData;
     }
 
     @Override
@@ -481,31 +553,8 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public LiveData<List<Product>> observeCatalogProducts() {
         if (com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            MutableLiveData<List<Product>> liveData = new MutableLiveData<>();
-            getProductsFromApi(new Callback<List<ProductDto>>() {
-                @Override
-                public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
-                    List<ProductDto> dtos = response.body();
-                    if (response.isSuccessful() && dtos != null) {
-                        List<Product> products = new ArrayList<>();
-                        for (ProductDto dto : dtos) {
-                            Product p = ProductMapper.fromDto(dto);
-                            if (ProductDisplayValidator.isDisplayable(p)) {
-                                products.add(p);
-                            }
-                        }
-                        liveData.postValue(products);
-                    } else {
-                        liveData.postValue(new ArrayList<>());
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<List<ProductDto>> call, Throwable t) {
-                    liveData.postValue(new ArrayList<>());
-                }
-            });
-            return liveData;
+            ensureSharedCatalogLoaded();
+            return sharedCatalogLiveData;
         } else {
             return Transformations.map(productDao.observeAllProductEntities(), this::toProductList);
         }
@@ -514,31 +563,9 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public LiveData<List<Product>> observeProductsByCategory(String categoryId) {
         if (com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            MutableLiveData<List<Product>> liveData = new MutableLiveData<>();
-            getProductsFromApi(new Callback<List<ProductDto>>() {
-                @Override
-                public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
-                    List<ProductDto> dtos = response.body();
-                    if (response.isSuccessful() && dtos != null) {
-                        List<Product> products = new ArrayList<>();
-                        for (ProductDto dto : dtos) {
-                            Product p = ProductMapper.fromDto(dto);
-                            if (ProductDisplayValidator.isDisplayable(p) && categoryId.equals(p.getCategoryId())) {
-                                products.add(p);
-                            }
-                        }
-                        liveData.postValue(products);
-                    } else {
-                        liveData.postValue(new ArrayList<>());
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<List<ProductDto>> call, Throwable t) {
-                    liveData.postValue(new ArrayList<>());
-                }
-            });
-            return liveData;
+            String normalizedCategoryId = categoryId == null ? "" : categoryId;
+            return observeFilteredCatalog(product ->
+                    normalizedCategoryId.equals(product.getCategoryId()));
         } else {
             refreshCatalogFromApi();
             return Transformations.map(productDao.observeProductsByCategory(categoryId), this::toProductList);
@@ -548,31 +575,9 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public LiveData<List<Product>> observeProductsBySubcategory(String subcategoryId) {
         if (com.veggo.app.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            MutableLiveData<List<Product>> liveData = new MutableLiveData<>();
-            getProductsFromApi(new Callback<List<ProductDto>>() {
-                @Override
-                public void onResponse(Call<List<ProductDto>> call, Response<List<ProductDto>> response) {
-                    List<ProductDto> dtos = response.body();
-                    if (response.isSuccessful() && dtos != null) {
-                        List<Product> products = new ArrayList<>();
-                        for (ProductDto dto : dtos) {
-                            Product p = ProductMapper.fromDto(dto);
-                            if (ProductDisplayValidator.isDisplayable(p) && subcategoryId.equals(p.getSubcategoryId())) {
-                                products.add(p);
-                            }
-                        }
-                        liveData.postValue(products);
-                    } else {
-                        liveData.postValue(new ArrayList<>());
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<List<ProductDto>> call, Throwable t) {
-                    liveData.postValue(new ArrayList<>());
-                }
-            });
-            return liveData;
+            String normalizedSubcategoryId = subcategoryId == null ? "" : subcategoryId;
+            return observeFilteredCatalog(product ->
+                    normalizedSubcategoryId.equals(product.getSubcategoryId()));
         } else {
             refreshCatalogFromApi();
             return Transformations.map(productDao.observeProductsBySubcategory(subcategoryId), this::toProductList);
@@ -584,6 +589,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         synchronized (cacheLock) {
             cachedProductDtos = null;
         }
+        sharedCatalogRequestInFlight = false;
+        sharedCatalogLiveData.postValue(null);
+        ensureSharedCatalogLoaded();
         refreshCatalogFromApi();
         com.veggo.app.core.network.FirebaseSyncManager.getInstance(context).syncProducts();
     }

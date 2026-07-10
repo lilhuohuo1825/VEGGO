@@ -59,6 +59,7 @@
     <color name="veggo_warning_soft">@color/secondary_bg</color>
     <color name="veggo_info_soft">@color/info_bg</color>
     <color name="veggo_success_soft">@color/primary_bg</color>
+    <color name="profile_card_border">#D6EFD0</color>
     <color name="veggo_danger_soft">@color/danger_bg</color>
     <color name="veggo_danger">@color/danger_main</color>
     <color name="order_status_pending">@color/secondary_hover</color>

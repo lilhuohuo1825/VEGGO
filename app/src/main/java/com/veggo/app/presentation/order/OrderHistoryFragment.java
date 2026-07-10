@@ -25,6 +25,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
@@ -66,6 +67,7 @@ public class OrderHistoryFragment extends BaseFragment {
     private String searchQuery = "";
     private String pendingStatusAfterLoad;
     private List<FridgeItemDto> fridgeItems = new ArrayList<>();
+    private CurvedTabIndicatorHelper tabIndicator;
 
     public static OrderHistoryFragment newInstance(boolean showBackButton) {
         OrderHistoryFragment fragment = new OrderHistoryFragment();
@@ -138,6 +140,14 @@ public class OrderHistoryFragment extends BaseFragment {
         view.findViewById(R.id.orderTabShipping).setOnClickListener(v -> showOrders("shipping"));
         view.findViewById(R.id.orderTabDelivered).setOnClickListener(v -> showOrders("delivered"));
         view.findViewById(R.id.orderTabCancelled).setOnClickListener(v -> showOrders("cancelled"));
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                orderStatusScroll,
+                new CurvedTabIndicatorHelper.TabItem(view.findViewById(R.id.orderTabAll), view.findViewById(R.id.orderTabAllIndicator)),
+                new CurvedTabIndicatorHelper.TabItem(view.findViewById(R.id.orderTabPending), view.findViewById(R.id.orderTabPendingIndicator)),
+                new CurvedTabIndicatorHelper.TabItem(view.findViewById(R.id.orderTabShipping), view.findViewById(R.id.orderTabShippingIndicator)),
+                new CurvedTabIndicatorHelper.TabItem(view.findViewById(R.id.orderTabDelivered), view.findViewById(R.id.orderTabDeliveredIndicator)),
+                new CurvedTabIndicatorHelper.TabItem(view.findViewById(R.id.orderTabCancelled), view.findViewById(R.id.orderTabCancelledIndicator))
+        );
         initialStatus = requireActivity().getIntent()
                 .getStringExtra(OrderHistoryFragmentExtras.EXTRA_INITIAL_STATUS);
         currentStatus = initialStatus;
@@ -403,10 +413,10 @@ public class OrderHistoryFragment extends BaseFragment {
     }
 
     private void updateSelectedTab(@Nullable String status) {
+        int index = statusTabIndex(status);
         setTabSelected(
                 R.id.orderTabAllText,
                 R.id.orderTabAllBadge,
-                R.id.orderTabAllIndicator,
                 status == null,
                 AssetScreenData.filterOrders(snapshot, null).size(),
                 R.id.orderTabAll
@@ -414,7 +424,6 @@ public class OrderHistoryFragment extends BaseFragment {
         setTabSelected(
                 R.id.orderTabPendingText,
                 R.id.orderTabPendingBadge,
-                R.id.orderTabPendingIndicator,
                 "pending".equals(status),
                 AssetScreenData.filterOrders(snapshot, "pending").size(),
                 R.id.orderTabPending
@@ -422,7 +431,6 @@ public class OrderHistoryFragment extends BaseFragment {
         setTabSelected(
                 R.id.orderTabShippingText,
                 R.id.orderTabShippingBadge,
-                R.id.orderTabShippingIndicator,
                 "shipping".equals(status),
                 AssetScreenData.filterOrders(snapshot, "shipping").size(),
                 R.id.orderTabShipping
@@ -430,7 +438,6 @@ public class OrderHistoryFragment extends BaseFragment {
         setTabSelected(
                 R.id.orderTabDeliveredText,
                 R.id.orderTabDeliveredBadge,
-                R.id.orderTabDeliveredIndicator,
                 "delivered".equals(status),
                 AssetScreenData.filterOrders(snapshot, "delivered").size(),
                 R.id.orderTabDelivered
@@ -438,21 +445,30 @@ public class OrderHistoryFragment extends BaseFragment {
         setTabSelected(
                 R.id.orderTabCancelledText,
                 R.id.orderTabCancelledBadge,
-                R.id.orderTabCancelledIndicator,
                 "cancelled".equals(status),
                 AssetScreenData.filterOrders(snapshot, "cancelled").size(),
                 R.id.orderTabCancelled
         );
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(index);
+        }
     }
 
-    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count, int tabId) {
+    private int statusTabIndex(@Nullable String status) {
+        if ("pending".equals(status)) return 1;
+        if ("shipping".equals(status)) return 2;
+        if ("delivered".equals(status)) return 3;
+        if ("cancelled".equals(status)) return 4;
+        return 0;
+    }
+
+    private void setTabSelected(int textId, int badgeId, boolean selected, int count, int tabId) {
         View root = getView();
         if (root == null) {
             return;
         }
         TextView text = root.findViewById(textId);
         TextView badge = root.findViewById(badgeId);
-        View indicator = root.findViewById(indicatorId);
         View tab = root.findViewById(tabId);
 
         if (text != null) {
@@ -461,16 +477,6 @@ public class OrderHistoryFragment extends BaseFragment {
         }
         if (badge != null) {
             BadgeUiHelper.applyTabBadge(badge, count, selected);
-        }
-        if (indicator != null) {
-            indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
-        }
-
-        if (selected && tab != null && orderStatusScroll != null) {
-            orderStatusScroll.post(() -> {
-                int scrollX = tab.getLeft() - (orderStatusScroll.getWidth() - tab.getWidth()) / 2;
-                orderStatusScroll.smoothScrollTo(scrollX, 0);
-            });
         }
     }
 

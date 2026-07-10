@@ -19,6 +19,7 @@ import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.CarbonHistoryReadState;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BaseActivity;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CertificateApi;
 import com.veggo.app.data.remote.api.ReviewApi;
@@ -51,6 +52,7 @@ public class CarbonHistoryActivity extends BaseActivity {
     private View reviewsList;
     private View redeemedList;
     private SwipeRefreshLayout carbonHistoryRefreshLayout;
+    private CurvedTabIndicatorHelper tabIndicator;
     private final List<String> latestItemIds = new ArrayList<>();
 
     @Override
@@ -73,10 +75,17 @@ public class CarbonHistoryActivity extends BaseActivity {
         reviewsList = findViewById(R.id.carbonHistoryReceivedList);
         redeemedList = findViewById(R.id.carbonHistoryRedeemedList);
 
-        findViewById(R.id.carbonTabAll).setOnClickListener(v -> showState(ordersTabText, ordersIndicator, ordersList));
-        findViewById(R.id.carbonTabReceived).setOnClickListener(v -> showState(reviewsTabText, reviewsIndicator, reviewsList));
-        findViewById(R.id.carbonTabRedeemed).setOnClickListener(v -> showState(redeemedTabText, redeemedIndicator, redeemedList));
-        showState(ordersTabText, ordersIndicator, ordersList);
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                null,
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.carbonTabAll), ordersIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.carbonTabReceived), reviewsIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.carbonTabRedeemed), redeemedIndicator)
+        );
+
+        findViewById(R.id.carbonTabAll).setOnClickListener(v -> showState(0));
+        findViewById(R.id.carbonTabReceived).setOnClickListener(v -> showState(1));
+        findViewById(R.id.carbonTabRedeemed).setOnClickListener(v -> showState(2));
+        showState(0);
         setupPullToRefresh();
         loadHistory();
     }
@@ -94,20 +103,18 @@ public class CarbonHistoryActivity extends BaseActivity {
         loadHistory();
     }
 
-    private void showState(TextView activeText, View activeIndicator, View activeList) {
-        setActive(ordersTabText, ordersIndicator, ordersTabText == activeText);
-        setActive(reviewsTabText, reviewsIndicator, reviewsTabText == activeText);
-        setActive(redeemedTabText, redeemedIndicator, redeemedTabText == activeText);
-
-        ordersList.setVisibility(ordersList == activeList ? View.VISIBLE : View.GONE);
-        reviewsList.setVisibility(reviewsList == activeList ? View.VISIBLE : View.GONE);
-        redeemedList.setVisibility(redeemedList == activeList ? View.VISIBLE : View.GONE);
-    }
-
-    private void setActive(TextView textView, View indicator, boolean active) {
-        textView.setTextColor(ContextCompat.getColor(this, active ? R.color.primary_main : R.color.neutral_60));
-        textView.setTypeface(textView.getTypeface(), active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        indicator.setVisibility(active ? View.VISIBLE : View.INVISIBLE);
+    private void showState(int index) {
+        TextView[] texts = {ordersTabText, reviewsTabText, redeemedTabText};
+        View[] lists = {ordersList, reviewsList, redeemedList};
+        for (int i = 0; i < texts.length; i++) {
+            boolean active = i == index;
+            texts[i].setTextColor(ContextCompat.getColor(this, active ? R.color.primary_main : R.color.neutral_60));
+            texts[i].setTypeface(texts[i].getTypeface(), active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+            lists[i].setVisibility(active ? View.VISIBLE : View.GONE);
+        }
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(index);
+        }
     }
 
     private void loadHistory() {

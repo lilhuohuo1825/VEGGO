@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.veggo.app.R;
 import com.veggo.app.adapter.WalletTransactionAdapter;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.WalletTransactionReadState;
@@ -36,6 +37,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
     private TextView tvTabAll, tvTabReceive, tvTabSend;
     private TextView badgeTabAll, badgeTabReceive, badgeTabSend;
     private View indicatorAll, indicatorReceive, indicatorSend;
+    private CurvedTabIndicatorHelper tabIndicator;
     private String currentFilter = "all"; // all, receive, send
 
     @Override
@@ -71,6 +73,13 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         indicatorReceive = findViewById(R.id.indicatorReceive);
         indicatorSend = findViewById(R.id.indicatorSend);
 
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                null,
+                new CurvedTabIndicatorHelper.TabItem(tabAll, indicatorAll),
+                new CurvedTabIndicatorHelper.TabItem(tabReceive, indicatorReceive),
+                new CurvedTabIndicatorHelper.TabItem(tabSend, indicatorSend)
+        );
+
         tabAll.setOnClickListener(v -> selectTab("all"));
         tabReceive.setOnClickListener(v -> selectTab("receive"));
         tabSend.setOnClickListener(v -> selectTab("send"));
@@ -90,6 +99,7 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         });
         rvTransactions.setAdapter(adapter);
 
+        selectTab("all");
         loadTransactions();
     }
 
@@ -107,13 +117,13 @@ public class VeggoPayHistoryActivity extends BaseActivity {
         int inactiveColor = android.graphics.Color.parseColor("#707070");
 
         tvTabAll.setTextColor("all".equals(filter) ? activeColor : inactiveColor);
-        indicatorAll.setVisibility("all".equals(filter) ? View.VISIBLE : View.INVISIBLE);
-
         tvTabReceive.setTextColor("receive".equals(filter) ? activeColor : inactiveColor);
-        indicatorReceive.setVisibility("receive".equals(filter) ? View.VISIBLE : View.INVISIBLE);
-
         tvTabSend.setTextColor("send".equals(filter) ? activeColor : inactiveColor);
-        indicatorSend.setVisibility("send".equals(filter) ? View.VISIBLE : View.INVISIBLE);
+
+        if (tabIndicator != null) {
+            int index = "receive".equals(filter) ? 1 : "send".equals(filter) ? 2 : 0;
+            tabIndicator.selectTab(index);
+        }
 
         updateTabBadges();
         applyFilter();

@@ -10,24 +10,20 @@
     <LinearLayout
         android:id="@+id/communityHomeHeader"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="?android:attr/actionBarSize"
         android:background="@color/neutral_10"
         android:gravity="center_vertical"
-        android:minHeight="64dp"
         android:orientation="horizontal"
         android:paddingStart="18dp"
-        android:paddingTop="16dp"
         android:paddingEnd="18dp"
-        android:paddingBottom="8dp"
-        android:translationZ="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:id="@+id/communityAvatar"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="@drawable/bg_community_circle"
             android:contentDescription="@string/nav_account"
             android:scaleType="centerCrop"
@@ -37,52 +33,55 @@
             android:id="@+id/communityLogo"
             android:layout_width="0dp"
             android:layout_height="38dp"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="10dp"
             android:layout_weight="1"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/app_name"
             android:scaleType="centerInside"
             android:src="@drawable/logo_full" />
 
         <FrameLayout
             android:id="@+id/communityAddButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="16dp"
             android:background="@drawable/bg_community_circle"
             android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Add"
             android:clipChildren="false"
-            android:clipToPadding="false">
+            android:clipToPadding="false"
+            android:contentDescription="Add"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
             <androidx.appcompat.widget.AppCompatImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="Add"
                 android:scaleType="centerInside"
                 android:src="@drawable/icon_plus"
-                app:tint="#57AF37"
-                android:contentDescription="Add" />
+                app:tint="#57AF37" />
         </FrameLayout>
+
         <FrameLayout
             android:id="@+id/communitySearchButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="@drawable/bg_community_circle"
             android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginStart="8dp"
-            android:contentDescription="Search"
             android:clipChildren="false"
-            android:clipToPadding="false">
+            android:clipToPadding="false"
+            android:contentDescription="Search"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
             <androidx.appcompat.widget.AppCompatImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="Search"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_search"
-                app:tint="@color/primary_main"
-                android:contentDescription="Search" />
+                app:tint="@color/primary_main" />
         </FrameLayout>
     </LinearLayout>
 

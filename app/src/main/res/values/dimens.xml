@@ -10,6 +10,7 @@
     <dimen name="profile_menu_icon_size">24dp</dimen>
     <dimen name="profile_menu_icon_size_large">25dp</dimen>
     <dimen name="profile_menu_chevron_size">22dp</dimen>
+    <dimen name="profile_card_elevation">2dp</dimen>
 
     <!-- Radius -->
     <dimen name="radius_sm">8dp</dimen>

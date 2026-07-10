@@ -103,16 +103,25 @@ public final class CameraCaptureHelper {
     }
 
     @NonNull
-    public static Uri createImageUri(@NonNull Context context) throws IOException {
+    public static File createImageFile(@NonNull Context context) throws IOException {
         File cacheDir = new File(context.getCacheDir(), "camera");
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
             throw new IOException("Unable to create camera cache directory");
         }
-        File imageFile = File.createTempFile("capture_", ".jpg", cacheDir);
+        return File.createTempFile("capture_", ".jpg", cacheDir);
+    }
+
+    @NonNull
+    public static Uri getUriForFile(@NonNull Context context, @NonNull File imageFile) {
         return FileProvider.getUriForFile(
                 context,
                 context.getPackageName() + ".fileprovider",
                 imageFile
         );
+    }
+
+    @NonNull
+    public static Uri createImageUri(@NonNull Context context) throws IOException {
+        return getUriForFile(context, createImageFile(context));
     }
 }

@@ -21,6 +21,7 @@ import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
@@ -49,6 +50,7 @@ public class ReturnsActivity extends BaseActivity {
     private View processingIndicator;
     private View completedIndicator;
     private View rejectedIndicator;
+    private CurvedTabIndicatorHelper tabIndicator;
     private View pendingList;
     private View processingList;
     private View completedList;
@@ -84,6 +86,13 @@ public class ReturnsActivity extends BaseActivity {
         processingIndicator = findViewById(R.id.returnProcessingIndicator);
         completedIndicator = findViewById(R.id.returnCompletedIndicator);
         rejectedIndicator = findViewById(R.id.returnRejectedIndicator);
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                returnsStatusScroll,
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.returnPendingTab), pendingIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.returnProcessingTab), processingIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.returnCompletedTab), completedIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.returnRejectedTab), rejectedIndicator)
+        );
         pendingList = findViewById(R.id.returnPendingList);
         processingList = findViewById(R.id.returnProcessingList);
         completedList = findViewById(R.id.returnCompletedList);
@@ -125,26 +134,33 @@ public class ReturnsActivity extends BaseActivity {
 
     private void showReturnState(String bucket) {
         selectedBucket = bucket;
+        int index = 0;
+        TextView activeTab = pendingTab;
+        View activeList = pendingList;
         if ("processing".equals(bucket)) {
-            showReturnState(processingTab, processingList);
+            index = 1;
+            activeTab = processingTab;
+            activeList = processingList;
         } else if ("completed".equals(bucket)) {
-            showReturnState(completedTab, completedList);
+            index = 2;
+            activeTab = completedTab;
+            activeList = completedList;
         } else if ("rejected".equals(bucket)) {
-            showReturnState(rejectedTab, rejectedList);
-        } else {
-            showReturnState(pendingTab, pendingList);
+            index = 3;
+            activeTab = rejectedTab;
+            activeList = rejectedList;
         }
+        showReturnState(index, activeTab, activeList);
     }
 
-    private void showReturnState(TextView activeTab, View activeList) {
+    private void showReturnState(int index, TextView activeTab, View activeList) {
         setActive(pendingTab, pendingBadge, pendingTab == activeTab);
         setActive(processingTab, processingBadge, processingTab == activeTab);
         setActive(completedTab, completedBadge, completedTab == activeTab);
         setActive(rejectedTab, rejectedBadge, rejectedTab == activeTab);
-        pendingIndicator.setVisibility(pendingTab == activeTab ? View.VISIBLE : View.INVISIBLE);
-        processingIndicator.setVisibility(processingTab == activeTab ? View.VISIBLE : View.INVISIBLE);
-        completedIndicator.setVisibility(completedTab == activeTab ? View.VISIBLE : View.INVISIBLE);
-        rejectedIndicator.setVisibility(rejectedTab == activeTab ? View.VISIBLE : View.INVISIBLE);
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(index);
+        }
 
         boolean isEmpty = false;
         if (activeList == pendingList) {

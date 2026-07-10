@@ -32,9 +32,8 @@ import com.veggo.app.presentation.community.CommunityHomeActivity;
 import com.veggo.app.presentation.home.HomeFragment;
 import com.veggo.app.presentation.order.OrderHistoryFragment;
 import com.veggo.app.presentation.profile.ProfileFragment;
-import com.veggo.app.core.utils.CameraCaptureHelper;
+import com.veggo.app.presentation.profile.FridgeQuickScanHelper;
 import com.veggo.app.core.utils.KeyboardUtils;
-import com.veggo.app.presentation.profile.AddFridgeIngredientActivity;
 import com.veggo.app.presentation.profile.LoginRequiredActivity;
 import com.veggo.app.presentation.profile.PostNotificationsActivity;
 import com.veggo.app.presentation.profile.ProfileLoggedInFragment;
@@ -63,8 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean supportSocketConnecting = false;
     private boolean supportSocketActive = false;
     private int lastSupportUnreadCount = 0;
-    private CameraCaptureHelper cameraCaptureHelper;
-    private boolean isScanReceiptMode = true;
     private View currentNotificationAlert;
     private final OrderNotificationRepository orderNotificationRepository = new OrderNotificationRepository();
     private final android.os.Handler notificationHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -93,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        cameraCaptureHelper = new CameraCaptureHelper(this);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -1084,50 +1080,15 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        android.app.Dialog dialog = new android.app.Dialog(this);
-        dialog.setContentView(R.layout.dialog_scan_options);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-
-        dialog.findViewById(R.id.dialogOptionScanReceipt).setOnClickListener(v -> {
-            dialog.dismiss();
-            isScanReceiptMode = true;
-            launchScanCamera();
-        });
-
-        dialog.findViewById(R.id.dialogOptionScanIngredient).setOnClickListener(v -> {
-            dialog.dismiss();
-            isScanReceiptMode = false;
-            launchScanCamera();
-        });
-
-        dialog.show();
-    }
-
-    private void launchScanCamera() {
-        cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+        FridgeQuickScanHelper.showScanOptionsDialog(this, new FridgeQuickScanHelper.OptionsListener() {
             @Override
-            public void onImageCaptured(@NonNull android.net.Uri imageUri) {
-                Intent intent = new Intent(MainActivity.this, AddFridgeIngredientActivity.class);
-                if (isScanReceiptMode) {
-                    intent.putExtra("EXTRA_AI_IMAGE_URI", imageUri.toString());
-                } else {
-                    intent.putExtra("EXTRA_AI_INGREDIENT_URI", imageUri.toString());
-                }
-                intent.putExtra("EXTRA_FROM_NAVBAR", true);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                startActivity(intent);
+            public void onReceiptScanSelected() {
+                startActivity(FridgeQuickScanHelper.createNavbarCameraIntent(MainActivity.this, true));
             }
 
             @Override
-            public void onPermissionDenied() {
-                android.widget.Toast.makeText(
-                        MainActivity.this,
-                        R.string.camera_permission_required,
-                        android.widget.Toast.LENGTH_SHORT
-                ).show();
+            public void onIngredientScanSelected() {
+                startActivity(FridgeQuickScanHelper.createNavbarCameraIntent(MainActivity.this, false));
             }
         });
     }

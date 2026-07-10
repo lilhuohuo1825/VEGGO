@@ -9,8 +9,8 @@
     <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="88dp"
-        android:gravity="bottom"
+        android:layout_height="?android:attr/actionBarSize"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
@@ -30,10 +30,10 @@
 
         <TextView
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            android:fontFamily="@font/encodesans_bold"
+            android:fontFamily="@font/inter_bold"
             android:gravity="center"
             android:text="Thanh toán"
             android:textColor="#1E1E1E"
@@ -41,9 +41,12 @@
             android:textStyle="bold" />
 
         <ImageView
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="center_vertical"
+            android:contentDescription="@string/profile_notifications"
+            android:padding="7dp"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_notify_xanh" />
     </LinearLayout>
     <View

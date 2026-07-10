@@ -21,6 +21,7 @@ import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.notification.EmulatorSmsSender;
+import com.veggo.app.core.otp.OtpAutoFillHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.data.remote.api.UserApi;
@@ -56,6 +57,7 @@ public class RegisterActivity extends BaseActivity {
     private long otpExpiresAt;
     private int otpFailedAttempts;
     private CountDownTimer otpTimer;
+    private OtpAutoFillHelper otpAutoFillHelper;
     private String checkedPhone = "";
     private boolean checkedPhoneExists;
     private boolean checkingPhone;
@@ -145,6 +147,11 @@ public class RegisterActivity extends BaseActivity {
             }
         });
         AuthFormUtils.wireOtpFields(getRegisterOtpFields(), this::handleVerifyRegister);
+        otpAutoFillHelper = OtpAutoFillHelper.attach(
+                this,
+                this,
+                getRegisterOtpFields()
+        );
     }
 
     private void handleRegister() {
@@ -237,6 +244,7 @@ public class RegisterActivity extends BaseActivity {
                 this,
                 "VEGGO: Ma OTP dang ky cua ban la " + currentOtp + ". Ma co hieu luc trong 60 giay."
         );
+        otpAutoFillHelper.start();
     }
 
     private void updateRegisterOtpDescription(long millisUntilFinished) {
@@ -366,6 +374,9 @@ public class RegisterActivity extends BaseActivity {
     }
 
     private void showRegisterForm() {
+        if (otpAutoFillHelper != null) {
+            otpAutoFillHelper.stop();
+        }
         layoutRegisterForm.setVisibility(View.VISIBLE);
         layoutVerifyForm.setVisibility(View.GONE);
     }

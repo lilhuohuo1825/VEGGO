@@ -27,6 +27,7 @@ import com.veggo.app.adapter.RecipeAdapter;
 import com.veggo.app.adapter.UtilityAdapter;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -107,6 +108,8 @@ public class HomeFragment extends Fragment {
     private android.widget.HorizontalScrollView inlineTabsHsv;
     /** HorizontalScrollView chứa tabs (sticky) */
     private android.widget.HorizontalScrollView stickyTabsHsv;
+    private CurvedTabIndicatorHelper inlineTabIndicator;
+    private CurvedTabIndicatorHelper stickyTabIndicator;
 
     private View[] bannerIndicators;
     private SwipeRefreshLayout homeRefreshLayout;
@@ -663,6 +666,30 @@ public class HomeFragment extends Fragment {
         stickyTabsBinding.stickyTabBestPriceContainer.setOnClickListener(v -> togglePriceTab());
         stickyTabsBinding.stickyTabBestPrice.setOnClickListener(v -> togglePriceTab());
         stickyTabsBinding.stickyPriceArrowGroup.setOnClickListener(v -> togglePriceTab());
+
+        inlineTabIndicator = CurvedTabIndicatorHelper.attach(
+                inlineTabsHsv,
+                homeTabColumn(binding.tabPopular, binding.tabPopularIndicator),
+                homeTabColumn(binding.tabTrending, binding.tabTrendingIndicator),
+                homeTabColumn(binding.tabNewest, binding.tabNewestIndicator),
+                homeTabColumn(binding.tabBestPriceContainer, binding.tabBestPriceIndicator),
+                homeTabColumn(binding.tabTopRated, binding.tabTopRatedIndicator),
+                homeTabColumn(binding.tabPromotion, binding.tabPromotionIndicator)
+        );
+        stickyTabIndicator = CurvedTabIndicatorHelper.attach(
+                stickyTabsHsv,
+                homeTabColumn(stickyTabsBinding.stickyTabPopular, stickyTabsBinding.stickyTabPopularIndicator),
+                homeTabColumn(stickyTabsBinding.stickyTabTrending, stickyTabsBinding.stickyTabTrendingIndicator),
+                homeTabColumn(stickyTabsBinding.stickyTabNewest, stickyTabsBinding.stickyTabNewestIndicator),
+                homeTabColumn(stickyTabsBinding.stickyTabBestPriceContainer, stickyTabsBinding.stickyTabBestPriceIndicator),
+                homeTabColumn(stickyTabsBinding.stickyTabTopRated, stickyTabsBinding.stickyTabTopRatedIndicator),
+                homeTabColumn(stickyTabsBinding.stickyTabPromotion, stickyTabsBinding.stickyTabPromotionIndicator)
+        );
+    }
+
+    private static CurvedTabIndicatorHelper.TabItem homeTabColumn(View innerView, View indicator) {
+        View tabColumn = innerView.getParent() instanceof View ? (View) innerView.getParent() : innerView;
+        return new CurvedTabIndicatorHelper.TabItem(tabColumn, indicator);
     }
 
     /**
@@ -938,6 +965,18 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    private int tabIndexFor(String activeTab) {
+        if (HomeViewModel.TAB_PRICE_DESC.equals(activeTab) || HomeViewModel.TAB_PRICE_ASC.equals(activeTab)) {
+            return 3;
+        }
+        for (int i = 0; i < TAB_KEYS.length; i++) {
+            if (TAB_KEYS[i].equals(activeTab)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     /**
      * Tự động cuộn HorizontalScrollView đến tab đang được chọn.
      * Đặc biệt khi chọn "Đánh giá cao", cuộn đến cuối.
@@ -1005,10 +1044,6 @@ public class HomeFragment extends Fragment {
                 binding.tabPopular, binding.tabTrending, binding.tabNewest,
                 null /* bestPrice handled separately */, binding.tabTopRated, binding.tabPromotion
         };
-        View[] inlineIndicators = {
-                binding.tabPopularIndicator, binding.tabTrendingIndicator, binding.tabNewestIndicator,
-                binding.tabBestPriceIndicator, binding.tabTopRatedIndicator, binding.tabPromotionIndicator
-        };
 
         // Sticky tabs
         TextView[] stickyTabs = {
@@ -1016,35 +1051,36 @@ public class HomeFragment extends Fragment {
                 stickyTabsBinding.stickyTabNewest, null /* bestPrice */, stickyTabsBinding.stickyTabTopRated,
                 stickyTabsBinding.stickyTabPromotion
         };
-        View[] stickyIndicators = {
-                stickyTabsBinding.stickyTabPopularIndicator, stickyTabsBinding.stickyTabTrendingIndicator,
-                stickyTabsBinding.stickyTabNewestIndicator, stickyTabsBinding.stickyTabBestPriceIndicator,
-                stickyTabsBinding.stickyTabTopRatedIndicator, stickyTabsBinding.stickyTabPromotionIndicator
-        };
 
         for (int i = 0; i < TAB_KEYS.length; i++) {
-            boolean isActive = TAB_KEYS[i].equals(activeTab);
+            boolean isActive = TAB_KEYS[i].equals(activeTab)
+                    || (i == 3 && isPriceTab);
 
             int color = androidx.core.content.ContextCompat.getColor(requireContext(),
                     isActive ? R.color.primary_main : R.color.neutral_60);
             android.graphics.Typeface typeface = isActive
                     ? androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.inter_semibold)
                     : androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.inter_regular);
-            int indicatorVis = isActive ? View.VISIBLE : View.INVISIBLE;
 
             // Inline (skip null = bestPrice)
             if (inlineTabs[i] != null) {
                 inlineTabs[i].setTextColor(color);
                 inlineTabs[i].setTypeface(typeface);
             }
-            inlineIndicators[i].setVisibility(indicatorVis);
 
             // Sticky (skip null = bestPrice)
             if (stickyTabs[i] != null) {
                 stickyTabs[i].setTextColor(color);
                 stickyTabs[i].setTypeface(typeface);
             }
-            stickyIndicators[i].setVisibility(indicatorVis);
+        }
+
+        int activeIndex = tabIndexFor(activeTab);
+        if (inlineTabIndicator != null) {
+            inlineTabIndicator.selectTab(activeIndex);
+        }
+        if (stickyTabIndicator != null) {
+            stickyTabIndicator.selectTab(activeIndex);
         }
 
         // ── Xử lý riêng tab Giá tốt và các mũi tên ────────────────────────────
@@ -1057,9 +1093,6 @@ public class HomeFragment extends Fragment {
         binding.tabBestPrice.setTypeface(priceTf);
         stickyTabsBinding.stickyTabBestPrice.setTextColor(priceColor);
         stickyTabsBinding.stickyTabBestPrice.setTypeface(priceTf);
-
-        binding.tabBestPriceIndicator.setVisibility(isPriceTab ? View.VISIBLE : View.INVISIBLE);
-        stickyTabsBinding.stickyTabBestPriceIndicator.setVisibility(isPriceTab ? View.VISIBLE : View.INVISIBLE);
 
         // Cập nhật mũi tên inline
         android.widget.ImageView inlineUp   = binding.getRoot().findViewById(R.id.homeImgPriceArrowUp);

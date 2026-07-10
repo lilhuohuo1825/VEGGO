@@ -19,6 +19,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import com.veggo.app.core.ui.BadgeUiHelper;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
@@ -65,6 +66,7 @@ public class PostNotificationsActivity extends BaseActivity {
     private LinearLayout notificationList;
     private String selectedCategory = CATEGORY_ORDERS;
     private SwipeRefreshLayout notificationsRefreshLayout;
+    private CurvedTabIndicatorHelper tabIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +79,25 @@ public class PostNotificationsActivity extends BaseActivity {
         findViewById(R.id.postNotificationTabQa).setOnClickListener(v -> showNotifications(CATEGORY_QA));
         findViewById(R.id.postNotificationTabOther).setOnClickListener(v -> showNotifications(CATEGORY_OTHER));
         findViewById(R.id.postNotificationsMarkAllRead).setOnClickListener(v -> markAllNotificationsRead());
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                (android.widget.HorizontalScrollView) findViewById(R.id.postNotificationCategoryScroll),
+                new CurvedTabIndicatorHelper.TabItem(
+                        findViewById(R.id.postNotificationTabOrders),
+                        findViewById(R.id.postNotificationTabOrdersIndicator)
+                ),
+                new CurvedTabIndicatorHelper.TabItem(
+                        findViewById(R.id.postNotificationTabCommunity),
+                        findViewById(R.id.postNotificationTabCommunityIndicator)
+                ),
+                new CurvedTabIndicatorHelper.TabItem(
+                        findViewById(R.id.postNotificationTabQa),
+                        findViewById(R.id.postNotificationTabQaIndicator)
+                ),
+                new CurvedTabIndicatorHelper.TabItem(
+                        findViewById(R.id.postNotificationTabOther),
+                        findViewById(R.id.postNotificationTabOtherIndicator)
+                )
+        );
         updateSelectedTab(selectedCategory);
         setupPullToRefresh();
         loadNotifications();
@@ -277,34 +298,47 @@ public class PostNotificationsActivity extends BaseActivity {
     }
 
     private void updateSelectedTab(String category) {
+        int index = categoryTabIndex(category);
         setTabSelected(
                 R.id.postNotificationTabOrdersText,
                 R.id.postNotificationTabOrdersBadge,
-                R.id.postNotificationTabOrdersIndicator,
                 CATEGORY_ORDERS.equals(category),
                 countUnreadNotifications(CATEGORY_ORDERS)
         );
         setTabSelected(
                 R.id.postNotificationTabCommunityText,
                 R.id.postNotificationTabCommunityBadge,
-                R.id.postNotificationTabCommunityIndicator,
                 CATEGORY_COMMUNITY.equals(category),
                 countUnreadNotifications(CATEGORY_COMMUNITY)
         );
         setTabSelected(
                 R.id.postNotificationTabQaText,
                 R.id.postNotificationTabQaBadge,
-                R.id.postNotificationTabQaIndicator,
                 CATEGORY_QA.equals(category),
                 countUnreadNotifications(CATEGORY_QA)
         );
         setTabSelected(
                 R.id.postNotificationTabOtherText,
                 R.id.postNotificationTabOtherBadge,
-                R.id.postNotificationTabOtherIndicator,
                 CATEGORY_OTHER.equals(category),
                 countUnreadNotifications(CATEGORY_OTHER)
         );
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(index);
+        }
+    }
+
+    private int categoryTabIndex(String category) {
+        switch (normalizeCategory(category)) {
+            case CATEGORY_COMMUNITY:
+                return 1;
+            case CATEGORY_QA:
+                return 2;
+            case CATEGORY_OTHER:
+                return 3;
+            default:
+                return 0;
+        }
     }
 
     private int countUnreadNotifications(String category) {
@@ -533,19 +567,15 @@ public class PostNotificationsActivity extends BaseActivity {
         return count;
     }
 
-    private void setTabSelected(int textId, int badgeId, int indicatorId, boolean selected, int count) {
+    private void setTabSelected(int textId, int badgeId, boolean selected, int count) {
         TextView text = findViewById(textId);
         TextView badge = findViewById(badgeId);
-        View indicator = findViewById(indicatorId);
         if (text != null) {
             text.setTextColor(getColor(selected ? R.color.primary_main : R.color.neutral_60));
             text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
         }
         if (badge != null) {
             BadgeUiHelper.applyTabBadge(badge, count, selected);
-        }
-        if (indicator != null) {
-            indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
         }
     }
 

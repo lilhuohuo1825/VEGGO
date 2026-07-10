@@ -1,14 +1,12 @@
 package com.veggo.app.presentation.profile;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
@@ -16,7 +14,6 @@ import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
-import com.veggo.app.core.utils.CameraCaptureHelper;
 import com.veggo.app.data.remote.api.FridgeApi;
 import com.veggo.app.data.remote.dto.FridgeItemDto;
 import com.veggo.app.presentation.common.AssetScreenData;
@@ -32,8 +29,6 @@ import java.util.TimeZone;
 public class SmartFridgeActivity extends BaseActivity {
 
     private SwipeRefreshLayout fridgeRefreshLayout;
-    private CameraCaptureHelper cameraCaptureHelper;
-    private boolean isScanReceiptMode = true;
 
     private final ActivityResultLauncher<Intent> addIngredientLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -44,6 +39,18 @@ public class SmartFridgeActivity extends BaseActivity {
             }
     );
 
+    private final ActivityResultLauncher<Intent> quickScanLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() != RESULT_OK || result.getData() == null) {
+                    return;
+                }
+                Intent intent = new Intent(this, AddFridgeIngredientActivity.class);
+                FridgeQuickScanHelper.copyScanExtras(intent, result.getData());
+                addIngredientLauncher.launch(intent);
+            }
+    );
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,7 +58,6 @@ public class SmartFridgeActivity extends BaseActivity {
             return;
         }
         setContentView(R.layout.activity_smart_fridge);
-        cameraCaptureHelper = new CameraCaptureHelper(this);
 
         findViewById(R.id.smartFridgeBackButton).setOnClickListener(v -> finish());
         findViewById(R.id.smartFridgeHistoryButton).setOnClickListener(v ->
@@ -83,52 +89,19 @@ public class SmartFridgeActivity extends BaseActivity {
     }
 
     private void openQuickScan() {
-        android.app.Dialog dialog = new android.app.Dialog(this);
-        dialog.setContentView(R.layout.dialog_scan_options);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            dialog.getWindow().setLayout(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-        }
-
-        dialog.findViewById(R.id.dialogOptionScanReceipt).setOnClickListener(v -> {
-            dialog.dismiss();
-            isScanReceiptMode = true;
-            launchQuickScanCamera();
-        });
-
-        dialog.findViewById(R.id.dialogOptionScanIngredient).setOnClickListener(v -> {
-            dialog.dismiss();
-            isScanReceiptMode = false;
-            launchQuickScanCamera();
-        });
-
-        dialog.show();
-    }
-
-    private void launchQuickScanCamera() {
-        cameraCaptureHelper.openCamera(new CameraCaptureHelper.Listener() {
+        FridgeQuickScanHelper.showScanOptionsDialog(this, new FridgeQuickScanHelper.OptionsListener() {
             @Override
-            public void onImageCaptured(@NonNull Uri imageUri) {
-                Intent intent = new Intent(SmartFridgeActivity.this, AddFridgeIngredientActivity.class);
-                if (isScanReceiptMode) {
-                    intent.putExtra("EXTRA_AI_IMAGE_URI", imageUri.toString());
-                } else {
-                    intent.putExtra("EXTRA_AI_INGREDIENT_URI", imageUri.toString());
-                }
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                addIngredientLauncher.launch(intent);
+            public void onReceiptScanSelected() {
+                quickScanLauncher.launch(
+                        FridgeQuickScanHelper.createFridgeCameraIntent(SmartFridgeActivity.this, true)
+                );
             }
 
             @Override
-            public void onPermissionDenied() {
-                Toast.makeText(
-                        SmartFridgeActivity.this,
-                        R.string.camera_permission_required,
-                        Toast.LENGTH_SHORT
-                ).show();
+            public void onIngredientScanSelected() {
+                quickScanLauncher.launch(
+                        FridgeQuickScanHelper.createFridgeCameraIntent(SmartFridgeActivity.this, false)
+                );
             }
         });
     }

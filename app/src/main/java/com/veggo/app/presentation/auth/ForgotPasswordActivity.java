@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.veggo.app.R;
 import com.veggo.app.core.notification.EmulatorSmsSender;
+import com.veggo.app.core.otp.OtpAutoFillHelper;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.MainActivity;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -51,6 +52,7 @@ public class ForgotPasswordActivity extends BaseActivity {
     private long otpExpiresAt;
     private int otpFailedAttempts;
     private CountDownTimer otpTimer;
+    private OtpAutoFillHelper otpAutoFillHelper;
     private String newPasswordToAutoLogin;
 
     @Override
@@ -142,6 +144,11 @@ public class ForgotPasswordActivity extends BaseActivity {
             }
         });
         AuthFormUtils.wireOtpFields(getForgotOtpFields(), this::handleVerifyOtp);
+        otpAutoFillHelper = OtpAutoFillHelper.attach(
+                this,
+                this,
+                getForgotOtpFields()
+        );
         for (EditText field : getForgotOtpFields()) {
             field.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -312,6 +319,7 @@ public class ForgotPasswordActivity extends BaseActivity {
                 this,
                 "VEGGO: Ma OTP dat lai mat khau cua ban la " + currentOtp + ". Ma co hieu luc trong 60 giay."
         );
+        otpAutoFillHelper.start();
     }
 
     private void updateForgotOtpDescription(long millisUntilFinished) {
@@ -372,6 +380,9 @@ public class ForgotPasswordActivity extends BaseActivity {
 
     private void showForgotForm() {
         hideForgotOtpAlert();
+        if (otpAutoFillHelper != null) {
+            otpAutoFillHelper.stop();
+        }
         layoutForgotForm.setVisibility(View.VISIBLE);
         layoutForgotVerifyForm.setVisibility(View.GONE);
         layoutResetForm.setVisibility(View.GONE);
@@ -385,6 +396,9 @@ public class ForgotPasswordActivity extends BaseActivity {
 
     private void showResetForm() {
         hideForgotOtpAlert();
+        if (otpAutoFillHelper != null) {
+            otpAutoFillHelper.stop();
+        }
         layoutForgotForm.setVisibility(View.GONE);
         layoutForgotVerifyForm.setVisibility(View.GONE);
         layoutResetForm.setVisibility(View.VISIBLE);

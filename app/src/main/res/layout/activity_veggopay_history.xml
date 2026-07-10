@@ -109,10 +109,10 @@
 
             <View
                 android:id="@+id/indicatorAll"
-                android:layout_width="70dp"
+                android:layout_width="match_parent"
                 android:layout_height="8dp"
                 android:layout_gravity="bottom|center_horizontal"
-                android:background="@drawable/bg_tab_line_curved" />
+                android:background="@drawable/bg_order_tab_indicator" />
         </FrameLayout>
 
         <!-- Tab: Nhận tiền -->
@@ -159,10 +159,10 @@
 
             <View
                 android:id="@+id/indicatorReceive"
-                android:layout_width="70dp"
+                android:layout_width="match_parent"
                 android:layout_height="8dp"
                 android:layout_gravity="bottom|center_horizontal"
-                android:background="@drawable/bg_tab_line_curved"
+                android:background="@drawable/bg_order_tab_indicator"
                 android:visibility="invisible" />
         </FrameLayout>
 
@@ -210,10 +210,10 @@
 
             <View
                 android:id="@+id/indicatorSend"
-                android:layout_width="70dp"
+                android:layout_width="match_parent"
                 android:layout_height="8dp"
                 android:layout_gravity="bottom|center_horizontal"
-                android:background="@drawable/bg_tab_line_curved"
+                android:background="@drawable/bg_order_tab_indicator"
                 android:visibility="invisible" />
         </FrameLayout>
     </LinearLayout>

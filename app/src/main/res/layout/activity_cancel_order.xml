@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_main"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="?android:attr/actionBarSize"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md">
+
+        <ImageView
+            android:id="@+id/cancelOrderBackButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/orders_back"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_left"
+            android:tint="@color/primary_hover" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/inter_bold"
+            android:gravity="center"
+            android:text="@string/cancel_order_title"
+            android:textColor="@color/neutral_100"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/spacing_md"
+        android:paddingEnd="@dimen/spacing_md"
+        android:paddingBottom="96dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/cancelOrderProductCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:background="@drawable/bg_order_detail_summary_card"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:id="@+id/cancelOrderOrderCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/neutral_70"
+                    android:textSize="@dimen/text_sm" />
+
+                <include layout="@layout/order_item_product_block" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/cancelReasonLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="@font/inter_semibold"
+                android:text="@string/cancel_order_reason_label"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md" />
+
+            <RadioGroup
+                android:id="@+id/cancelReasonGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/cancelReasonNoNeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/cancel_order_reason_no_need"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/cancelReasonChangeAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/cancel_order_reason_change_address"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/cancelReasonChangePayment"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/cancel_order_reason_change_payment"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/cancelReasonBetterPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/cancel_order_reason_better_price"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+
+                <RadioButton
+                    android:id="@+id/cancelReasonOther"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:buttonTint="@color/primary_main"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/cancel_order_reason_other"
+                    android:textColor="@color/neutral_100"
+                    android:textSize="@dimen/text_sm" />
+            </RadioGroup>
+
+            <TextView
+                android:id="@+id/cancelDescriptionLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:fontFamily="@font/inter_semibold"
+                android:text="@string/cancel_order_description_label"
+                android:textColor="@color/neutral_100"
+                android:textSize="@dimen/text_md" />
+
+            <EditText
+                android:id="@+id/cancelDescriptionInput"
+                android:layout_width="match_parent"
+                android:layout_height="116dp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_normal"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="top"
+                android:hint="@string/cancel_order_description_hint"
+                android:inputType="textMultiLine"
+                android:maxLines="5"
+                android:padding="12dp"
+                android:textColor="@color/neutral_100"
+                android:textColorHint="@color/neutral_50"
+                android:textSize="@dimen/text_sm" />
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/cancelOrderSubmitButton"
+        style="@style/Widget.Veggo.OrderActionButton.Primary.FullWidth"
+        android:layout_marginStart="@dimen/spacing_md"
+        android:layout_marginEnd="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_md"
+        android:text="@string/orders_cancel" />
+</LinearLayout>

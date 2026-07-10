@@ -94,7 +94,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp">
 
-                <com.google.android.material.tabs.TabLayout
+                <com.veggo.app.core.ui.VeggoTabLayout
                     android:id="@+id/recurringProductSubcategories"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -102,16 +102,8 @@
                     android:background="@android:color/transparent"
                     android:paddingStart="8dp"
                     android:paddingEnd="0dp"
-                    app:tabBackground="@android:color/transparent"
-                    app:tabIndicator="@drawable/bg_order_tab_indicator"
-                    app:tabIndicatorColor="@color/primary_main"
-                    app:tabIndicatorFullWidth="false"
-                    app:tabIndicatorHeight="8dp"
                     app:tabMode="scrollable"
-                    app:tabRippleColor="@android:color/transparent"
-                    app:tabSelectedTextColor="@color/primary_main"
-                    app:tabTextAppearance="@android:style/TextAppearance.Small"
-                    app:tabTextColor="@color/neutral_60" />
+                    app:tabTextAppearance="@android:style/TextAppearance.Small" />
 
                 <ImageView
                     android:id="@+id/recurringProductFilterButton"

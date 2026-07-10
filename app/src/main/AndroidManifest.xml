@@ -190,8 +190,13 @@
             android:name=".presentation.profile.VeggoPayMyQrActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.scan.NavbarScanCameraActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".presentation.profile.VeggoPayScanActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".presentation.profile.VeggoPayTransferActivity"
             android:exported="false" />

@@ -17,6 +17,7 @@ fun resolveApiBaseUrl(): String {
     val mode = localProperties.getProperty("dev.api.mode")?.trim()?.lowercase() ?: "emulator"
     val host = localProperties.getProperty("dev.api.host")?.trim()?.takeIf { it.isNotEmpty() }
     val resolvedHost = when (mode) {
+        "physical_usb", "usb" -> "127.0.0.1"
         "physical", "device", "real" -> host ?: error(
             "local.properties: set dev.api.host=<LAN-IP-máy-Mac> khi dev.api.mode=physical"
         )
@@ -119,6 +120,7 @@ dependencies {
 
     // Google & Facebook Login
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-auth-api-phone:18.1.0")
     // 16.3.0: stable AccessToken format for FirebaseAuth (17.x can break signInWithCredential)
     implementation("com.facebook.android:facebook-login:16.3.0")
 
@@ -126,7 +128,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
-// Thư viện Gson để đọc file JSON tự động
+    // Thư viện Gson để đọc file JSON tự động
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.mindrot:jbcrypt:0.4")
 
@@ -134,4 +136,12 @@ dependencies {
     implementation("io.socket:socket.io-client:2.1.0") {
         exclude(group = "org.json", module = "json")
     }
+
+    // In-app camera preview (navbar scan)
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+
+    // QR barcode scanning (VeggoPay)
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }

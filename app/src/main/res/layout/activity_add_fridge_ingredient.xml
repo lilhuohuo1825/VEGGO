@@ -8,7 +8,7 @@
     <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="?android:attr/actionBarSize"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="@dimen/spacing_md"
@@ -35,7 +35,7 @@
             android:gravity="center"
             android:text="@string/fridge_add_title"
             android:textColor="@color/neutral_100"
-            android:textSize="@dimen/text_xl"
+            android:textSize="@dimen/text_lg"
             android:textStyle="bold" />
 
         <Space android:layout_width="40dp" android:layout_height="40dp" />
@@ -85,18 +85,21 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_sm"
                         android:lineSpacingExtra="2dp"
-                        android:text="Scan nhanh hóa đơn đã mua"
+                        android:text="@string/fridge_scan_fast_subtitle"
                         android:textColor="@color/neutral_70"
                         android:textSize="@dimen/text_sm" />
 
                     <TextView
+                        android:id="@+id/fridgeQuickScanButton"
                         android:layout_width="160dp"
                         android:layout_height="42dp"
                         android:layout_marginTop="@dimen/spacing_md"
                         android:background="@drawable/bg_order_primary_button"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:text="SCAN HÓA ĐƠN"
+                        android:text="@string/fridge_scan_invoice"
                         android:textAllCaps="true"
                         android:textColor="@color/background_main"
                         android:textSize="@dimen/text_sm" />

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Widget.Veggo.CurvedTabLayout" parent="Widget.MaterialComponents.TabLayout">
+        <item name="tabIndicator">@drawable/bg_order_tab_indicator</item>
+        <item name="tabIndicatorColor">@color/primary_main</item>
+        <item name="tabIndicatorFullWidth">false</item>
+        <item name="tabIndicatorHeight">8dp</item>
+        <item name="tabIndicatorAnimationMode">elastic</item>
+        <item name="tabBackground">@android:color/transparent</item>
+        <item name="tabRippleColor">@android:color/transparent</item>
+        <item name="tabSelectedTextColor">@color/primary_main</item>
+        <item name="tabTextColor">@color/neutral_60</item>
+    </style>
+
+</resources>

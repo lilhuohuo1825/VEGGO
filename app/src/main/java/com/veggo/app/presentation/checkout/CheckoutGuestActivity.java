@@ -43,6 +43,7 @@ import com.veggo.app.core.address.AddressTreeLoader;
 import com.veggo.app.core.address.VietnamAddressTree;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.notification.EmulatorSmsSender;
+import com.veggo.app.core.otp.OtpAutoFillHelper;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.DeliveryTimeUtils;
@@ -640,11 +641,13 @@ public class CheckoutGuestActivity extends BaseActivity {
         otpMessage.setText("Nhập mã OTP 6 số đã gửi đến số điện thoại " + maskPhone(phone) + ".");
 
         wireOtpFields(otpFields, () -> verifyGuestOrderOtp(phone, dialog, otpFields, tvOtpError, btnResend));
+        final OtpAutoFillHelper otpAutoFillHelper = OtpAutoFillHelper.create(this, otpFields);
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnConfirm.setOnClickListener(v -> verifyGuestOrderOtp(phone, dialog, otpFields, tvOtpError, btnResend));
         btnResend.setOnClickListener(v ->
                 resendGuestOrderOtp(phone, otpFields, otpMessage, btnResend, tvOtpError));
         dialog.setOnDismissListener(dialogInterface -> {
+            otpAutoFillHelper.stop();
             if (guestOrderOtpTimer != null) {
                 guestOrderOtpTimer.cancel();
             }
@@ -652,6 +655,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         });
         dialog.show();
         startGuestOrderOtpTimer(otpMessage, btnResend);
+        otpAutoFillHelper.start();
         if (otpForSms != null && !otpForSms.trim().isEmpty()) {
             EmulatorSmsSender.send(
                     this,
@@ -1080,6 +1084,7 @@ public class CheckoutGuestActivity extends BaseActivity {
         }
 
         wireOtpFields(otpFields, () -> verifyExistingAccountOtp(user, createOrderAfterVerify, dialog, otpFields));
+        final OtpAutoFillHelper otpAutoFillHelper = OtpAutoFillHelper.create(this, otpFields);
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnConfirm.setOnClickListener(v -> verifyExistingAccountOtp(user, createOrderAfterVerify, dialog, otpFields));
         btnResend.setOnClickListener(v -> {
@@ -1092,12 +1097,14 @@ public class CheckoutGuestActivity extends BaseActivity {
             showOtpSmsOnDialog(dialog);
         });
         dialog.setOnDismissListener(dialogInterface -> {
+            otpAutoFillHelper.stop();
             if (accountOtpTimer != null) {
                 accountOtpTimer.cancel();
             }
         });
         dialog.show();
         startAccountOtpTimer(otpMessage, btnResend);
+        otpAutoFillHelper.start();
         showOtpSmsOnDialog(dialog);
         otpFields[0].requestFocus();
     }

@@ -17,6 +17,9 @@ import androidx.core.content.ContextCompat;
 
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
+import com.veggo.app.core.otp.OtpClipboardHelper;
+import com.veggo.app.core.otp.OtpMessageParser;
+import com.veggo.app.core.otp.OtpNotificationStore;
 
 public final class EmulatorSmsSender {
     public static final int REQUEST_SEND_SMS = 7312;
@@ -64,6 +67,8 @@ public final class EmulatorSmsSender {
                     .setContentIntent(pendingIntent);
             NotificationManagerCompat.from(activity)
                     .notify((int) System.currentTimeMillis(), builder.build());
+            storeOtpFromMessage(message);
+            publishOtpForKeyboard(activity, message);
             return true;
         } catch (Exception exception) {
             Toast.makeText(activity, "Không thể hiển thị thông báo OTP", Toast.LENGTH_SHORT).show();
@@ -83,6 +88,20 @@ public final class EmulatorSmsSender {
         }
         pendingMessage = null;
         Toast.makeText(activity, "Không thể hiển thị OTP vì chưa được cấp quyền thông báo", Toast.LENGTH_SHORT).show();
+    }
+
+    private static void storeOtpFromMessage(String message) {
+        String otp = OtpMessageParser.extract(message);
+        if (otp != null) {
+            OtpNotificationStore.save(message, otp);
+        }
+    }
+
+    private static void publishOtpForKeyboard(Activity activity, String message) {
+        String otp = OtpMessageParser.extract(message);
+        if (otp != null) {
+            OtpClipboardHelper.publishForKeyboardSuggestion(activity, otp);
+        }
     }
 
     private static void createChannel(Activity activity) {

@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.R;
+import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.data.local.entity.CommunityChefEntity;
 import com.veggo.app.data.local.entity.CommunityRecipeEntity;
 import com.veggo.app.databinding.ComponentBottomNavBinding;
@@ -39,6 +40,7 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
     private TextView chefsText;
     private View recipesIndicator;
     private View chefsIndicator;
+    private CurvedTabIndicatorHelper tabIndicator;
     private SwipeRefreshLayout refreshLayout;
     private SearchVoiceInputController voiceInputController;
     private int activeTab = TAB_RECIPES;
@@ -61,6 +63,11 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         chefsText = findViewById(R.id.discoveryChefsText);
         recipesIndicator = findViewById(R.id.discoveryRecipesIndicator);
         chefsIndicator = findViewById(R.id.discoveryChefsIndicator);
+        tabIndicator = CurvedTabIndicatorHelper.attach(
+                null,
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.discoveryRecipesTab), recipesIndicator),
+                new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.discoveryChefsTab), chefsIndicator)
+        );
         CommunityUi.setupBottomNav(this, ComponentBottomNavBinding.bind(findViewById(R.id.communityBottomNavHost)));
         refreshLayout = CommunityUi.setupPullToRefresh(this, R.id.discoveryScroll, this::loadDiscoveryData);
 
@@ -243,8 +250,9 @@ public class CommunityDiscoveryActivity extends AppCompatActivity {
         recipesText.setTypeface(null, recipesActive ? Typeface.BOLD : Typeface.NORMAL);
         chefsText.setTextColor(recipesActive ? muted : green);
         chefsText.setTypeface(null, recipesActive ? Typeface.NORMAL : Typeface.BOLD);
-        recipesIndicator.setVisibility(recipesActive ? View.VISIBLE : View.INVISIBLE);
-        chefsIndicator.setVisibility(recipesActive ? View.INVISIBLE : View.VISIBLE);
+        if (tabIndicator != null) {
+            tabIndicator.selectTab(recipesActive ? TAB_RECIPES : TAB_CHEFS);
+        }
         searchInput.setHint(recipesActive ? "Tìm kiếm công thức" : "Tìm kiếm đầu bếp");
     }
 

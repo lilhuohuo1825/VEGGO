@@ -27,6 +27,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     private OnAddProductClickListener addProductClickListener;
     private boolean horizontalScrollMode;
     private boolean promotionGridMode;
+    private TastePreferenceStore tasteStore;
 
     public void setPromotionGridMode(boolean promotionGridMode) {
         if (this.promotionGridMode == promotionGridMode) {
@@ -54,6 +55,10 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     public void setHorizontalScrollMode(boolean horizontalScrollMode) {
         this.horizontalScrollMode = horizontalScrollMode;
+    }
+
+    public void setTastePreferenceStore(TastePreferenceStore tasteStore) {
+        this.tasteStore = tasteStore;
     }
 
     public void setProducts(List<Product> products) {
@@ -89,7 +94,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     @Override
     public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
         Product product = products.get(position);
-        holder.bind(product, listener, addProductClickListener);
+        holder.bind(product, listener, addProductClickListener, tasteStore);
     }
 
     @Override
@@ -108,7 +113,8 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         public void bind(
                 final Product product,
                 final OnProductClickListener listener,
-                final OnAddProductClickListener addProductClickListener
+                final OnAddProductClickListener addProductClickListener,
+                final TastePreferenceStore tasteStore
         ) {
             binding.tvProductName.setText(product.getName());
             binding.tvProductPrice.setText(CurrencyFormatter.formatVnd(product.getPrice()));
@@ -125,8 +131,10 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 binding.tvOriginalPrice.setVisibility(View.GONE);
             }
 
-            TastePreferenceStore tasteStore = new TastePreferenceStore(binding.getRoot().getContext());
-            String tasteWarning = tasteStore.productWarning(product);
+            TastePreferenceStore activeTasteStore = tasteStore != null
+                    ? tasteStore
+                    : new TastePreferenceStore(binding.getRoot().getContext());
+            String tasteWarning = activeTasteStore.productWarning(product);
             if (tasteWarning.isEmpty()) {
                 binding.tvTasteTag.setVisibility(android.view.View.GONE);
             } else {

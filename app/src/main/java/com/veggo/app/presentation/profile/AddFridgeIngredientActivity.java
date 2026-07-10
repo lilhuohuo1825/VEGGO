@@ -133,6 +133,16 @@ public class AddFridgeIngredientActivity extends BaseActivity {
             }
     );
 
+    private final ActivityResultLauncher<Intent> quickScanLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() != RESULT_OK || result.getData() == null) {
+                    return;
+                }
+                handleQuickScanResult(result.getData());
+            }
+    );
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -191,45 +201,41 @@ public class AddFridgeIngredientActivity extends BaseActivity {
         findViewById(R.id.addFridgeSaveButton).setOnClickListener(v -> saveIngredients());
         
         findViewById(R.id.fridgeAddAnotherBlockBtn).setOnClickListener(v -> addManualBlock(null));
-
-        // Nút SCAN HÓA ĐƠN
-        View scanBtn = findViewById(R.id.addFridgeBackButton); // Temporary fallback, let's find the correct textview
-        // It's a TextView without ID in activity_add_fridge_ingredient.xml, wait, let's find it by view traversal or just assume it's the one with text "SCAN HÓA ĐƠN".
-        // Let's find it properly. Actually, we should assign an ID. But we can't easily now.
-        // Let's iterate to find it.
-        findScanButtonAndAttachListener(findViewById(android.R.id.content));
+        findViewById(R.id.fridgeQuickScanButton).setOnClickListener(v -> openQuickScan());
     }
-    
-    private void findScanButtonAndAttachListener(View view) {
-        if (view instanceof TextView && "SCAN HÓA ĐƠN".equals(((TextView) view).getText().toString())) {
-            view.setOnClickListener(v -> {
-                cameraMode = MODE_SCAN_RECEIPT;
-                android.app.Dialog dialog = new android.app.Dialog(this);
-                dialog.setContentView(R.layout.dialog_image_source);
-                if (dialog.getWindow() != null) {
-                    dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-                    dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-                }
 
-                dialog.findViewById(R.id.dialogOptionGallery).setOnClickListener(viewOption -> {
-                    dialog.dismiss();
-                    checkGalleryPermAndOpen();
-                });
+    private void openQuickScan() {
+        FridgeQuickScanHelper.showScanOptionsDialog(this, new FridgeQuickScanHelper.OptionsListener() {
+            @Override
+            public void onReceiptScanSelected() {
+                quickScanLauncher.launch(
+                        FridgeQuickScanHelper.createFridgeCameraIntent(AddFridgeIngredientActivity.this, true)
+                );
+            }
 
-                dialog.findViewById(R.id.dialogOptionCamera).setOnClickListener(viewOption -> {
-                    dialog.dismiss();
-                    checkCameraPermAndOpen();
-                });
+            @Override
+            public void onIngredientScanSelected() {
+                quickScanLauncher.launch(
+                        FridgeQuickScanHelper.createFridgeCameraIntent(AddFridgeIngredientActivity.this, false)
+                );
+            }
+        });
+    }
 
-                dialog.show();
-            });
+    private void handleQuickScanResult(@NonNull Intent data) {
+        String receiptUri = data.getStringExtra("EXTRA_AI_IMAGE_URI");
+        String ingredientUri = data.getStringExtra("EXTRA_AI_INGREDIENT_URI");
+        if (receiptUri != null) {
+            cameraMode = MODE_SCAN_RECEIPT;
+            analyzeImageWithAI(Uri.parse(receiptUri));
             return;
         }
-        if (view instanceof android.view.ViewGroup) {
-            android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                findScanButtonAndAttachListener(group.getChildAt(i));
-            }
+        if (ingredientUri != null && !blocks.isEmpty()) {
+            cameraMode = MODE_SCAN_INGREDIENT;
+            ManualBlockViewHolder firstBlock = blocks.get(0);
+            Uri imgUri = Uri.parse(ingredientUri);
+            addImageToBlock(firstBlock, imgUri);
+            recognizeIngredientFromImage(imgUri, firstBlock);
         }
     }
 

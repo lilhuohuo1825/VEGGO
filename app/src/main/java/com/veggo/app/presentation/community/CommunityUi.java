@@ -56,13 +56,26 @@ public final class CommunityUi {
         WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
         View header = findFixedHeader(activity);
         if (header != null) {
-            int left = header.getPaddingLeft();
-            int top = header.getPaddingTop();
-            int right = header.getPaddingRight();
-            int bottom = header.getPaddingBottom();
+            ViewGroup.LayoutParams params = header.getLayoutParams();
+            int baseTopMargin = 0;
+            if (params instanceof ViewGroup.MarginLayoutParams) {
+                baseTopMargin = ((ViewGroup.MarginLayoutParams) params).topMargin;
+            }
+            final int baseMargin = baseTopMargin;
             ViewCompat.setOnApplyWindowInsetsListener(header, (view, insets) -> {
                 int statusTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                view.setPadding(left, top + statusTop, right, bottom);
+                ViewGroup.LayoutParams lp = view.getLayoutParams();
+                if (lp instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
+                    mlp.topMargin = baseMargin + statusTop;
+                    view.setLayoutParams(mlp);
+                } else {
+                    int left = view.getPaddingLeft();
+                    int top = view.getPaddingTop();
+                    int right = view.getPaddingRight();
+                    int bottom = view.getPaddingBottom();
+                    view.setPadding(left, top + statusTop, right, bottom);
+                }
                 return insets;
             });
             ViewCompat.requestApplyInsets(header);

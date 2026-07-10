@@ -100,7 +100,7 @@
             <View
                 android:id="@+id/favTabProductsIndicator"
                 android:layout_width="match_parent"
-                android:layout_height="4dp"
+                android:layout_height="8dp"
                 android:background="@drawable/bg_order_tab_indicator"
                 android:visibility="visible" />
         </LinearLayout>
@@ -149,7 +149,7 @@
             <View
                 android:id="@+id/favTabBlogsIndicator"
                 android:layout_width="match_parent"
-                android:layout_height="4dp"
+                android:layout_height="8dp"
                 android:background="@drawable/bg_order_tab_indicator"
                 android:visibility="invisible" />
         </LinearLayout>
@@ -198,7 +198,7 @@
             <View
                 android:id="@+id/favTabDishesIndicator"
                 android:layout_width="match_parent"
-                android:layout_height="4dp"
+                android:layout_height="8dp"
                 android:background="@drawable/bg_order_tab_indicator"
                 android:visibility="invisible" />
         </LinearLayout>

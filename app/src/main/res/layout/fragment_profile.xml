@@ -1,15 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="@color/veggo_surface">
+    android:background="@color/background_main"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/profileTabHeader"
+        android:layout_width="match_parent"
+        android:layout_height="?android:attr/actionBarSize"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <Space
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/inter_bold"
+            android:gravity="center"
+            android:text="@string/nav_account"
+            android:textColor="#1E1E1E"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.3dp"
+        android:background="#616161" />
 
     <ScrollView
         android:id="@+id/profileGuestScroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/veggo_surface"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/background_main"
+        android:clipChildren="false"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:overScrollMode="never"
@@ -21,6 +57,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:orientation="vertical">
 
         <LinearLayout
@@ -28,6 +66,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_profile_guest_card"
+            android:elevation="@dimen/profile_card_elevation"
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:paddingStart="@dimen/spacing_lg"
@@ -103,6 +142,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
             android:background="@drawable/bg_profile_card"
+            android:elevation="@dimen/profile_card_elevation"
             android:orientation="vertical"
             android:paddingStart="@dimen/spacing_md"
             android:paddingTop="@dimen/spacing_md"
@@ -281,6 +321,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
             android:background="@drawable/bg_profile_card"
+            android:elevation="@dimen/profile_card_elevation"
             android:orientation="vertical"
             android:paddingStart="@dimen/spacing_md"
             android:paddingTop="@dimen/spacing_sm"
@@ -296,6 +337,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
             android:background="@drawable/bg_profile_card"
+            android:elevation="@dimen/profile_card_elevation"
             android:orientation="vertical"
             android:paddingStart="@dimen/spacing_md"
             android:paddingTop="@dimen/spacing_sm"
@@ -306,4 +348,4 @@
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
-</FrameLayout>
+</LinearLayout>

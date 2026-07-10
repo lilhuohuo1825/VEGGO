@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Widget.Veggo.OrderActionButton" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">@dimen/order_action_button_height</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+        <item name="android:gravity">center</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">@dimen/text_sm</item>
+        <item name="android:paddingStart">@dimen/order_action_button_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/order_action_button_padding_horizontal</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Primary" parent="Widget.Veggo.OrderActionButton">
+        <item name="android:background">@drawable/bg_order_primary_button</item>
+        <item name="android:textColor">@color/background_main</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Outline" parent="Widget.Veggo.OrderActionButton">
+        <item name="android:background">@drawable/bg_button_outline_green</item>
+        <item name="android:textColor">@color/primary_main</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Cancel" parent="Widget.Veggo.OrderActionButton">
+        <item name="android:background">@drawable/bg_order_cancel_button</item>
+        <item name="android:textColor">@color/primary_main</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.DangerOutline" parent="Widget.Veggo.OrderActionButton">
+        <item name="android:background">@drawable/bg_order_danger_outline_button</item>
+        <item name="android:textColor">@color/primary_main</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Primary.Weighted" parent="Widget.Veggo.OrderActionButton.Primary">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:minWidth">0dp</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Cancel.Weighted" parent="Widget.Veggo.OrderActionButton.Cancel">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:minWidth">0dp</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.Primary.FullWidth" parent="Widget.Veggo.OrderActionButton.Primary">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/order_action_button_height_large</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:textSize">@dimen/text_md</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.CardRow" parent="Widget.Veggo.OrderActionButton">
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.CardRow.Primary" parent="Widget.Veggo.OrderActionButton.Primary">
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.CardRow.Outline" parent="Widget.Veggo.OrderActionButton.Outline">
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.CardRow.Cancel" parent="Widget.Veggo.OrderActionButton.Cancel">
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+    </style>
+
+    <style name="Widget.Veggo.OrderActionButton.CardRow.DangerOutline" parent="Widget.Veggo.OrderActionButton.DangerOutline">
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:minWidth">@dimen/order_action_button_min_width</item>
+    </style>
+
+</resources>
