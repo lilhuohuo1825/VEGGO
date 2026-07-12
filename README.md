@@ -142,4 +142,6 @@ npm start
 
 - [docs/CHATBOT.md](docs/CHATBOT.md)
 - [docs/SPEECH.md](docs/SPEECH.md)
-
+- [docs/PRICE_FORECAST.md](docs/PRICE_FORECAST.md)
+- [docs/VEGGOPAY.md](docs/VEGGOPAY.md)
+- [docs/IMAGE_RECOGNITION.md](docs/IMAGE_RECOGNITION.md)
