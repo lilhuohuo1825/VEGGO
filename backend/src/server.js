@@ -41,6 +41,7 @@ const recurringOrderRoutes = require('./routes/recurringOrderRoutes');
 const mongoose = require('mongoose');
 const { verifyAccessToken } = require('./utils/jwt');
 const { createSupportSocket } = require('./sockets/supportSocket');
+const { createRealtimeSocket } = require('./sockets/realtimeSocket');
 
 const app = express();
 const server = http.createServer(app);
@@ -69,6 +70,7 @@ io.use((socket, next) => {
   }
 });
 
+createRealtimeSocket(io);
 createSupportSocket(io);
 
 app.use(cors());

@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -86,6 +87,7 @@ public class ReturnsActivity extends BaseActivity {
         processingIndicator = findViewById(R.id.returnProcessingIndicator);
         completedIndicator = findViewById(R.id.returnCompletedIndicator);
         rejectedIndicator = findViewById(R.id.returnRejectedIndicator);
+        returnsStatusScroll = findViewById(R.id.returnsStatusScroll);
         tabIndicator = CurvedTabIndicatorHelper.attach(
                 returnsStatusScroll,
                 new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.returnPendingTab), pendingIndicator),
@@ -98,7 +100,6 @@ public class ReturnsActivity extends BaseActivity {
         completedList = findViewById(R.id.returnCompletedList);
         rejectedList = findViewById(R.id.returnRejectedList);
         returnsEmptyState = findViewById(R.id.returnsEmptyState);
-        returnsStatusScroll = findViewById(R.id.returnsStatusScroll);
         returnListScroll = findViewById(R.id.returnListScroll);
         swipeRefreshLayout = findViewById(R.id.returnsSwipeRefresh);
         if (swipeRefreshLayout != null) {
@@ -213,13 +214,22 @@ public class ReturnsActivity extends BaseActivity {
 
     private void loadReturns(boolean fromSwipeRefresh) {
         new Thread(() -> {
-            AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
-            runOnUiThread(() -> {
-                bindReturnLists(snapshot);
-                if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    PullToRefreshHelper.finish(swipeRefreshLayout);
-                }
-            });
+            try {
+                AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
+                runOnUiThread(() -> {
+                    bindReturnLists(snapshot);
+                    if (fromSwipeRefresh && swipeRefreshLayout != null) {
+                        PullToRefreshHelper.finish(swipeRefreshLayout);
+                    }
+                });
+            } catch (Exception exception) {
+                runOnUiThread(() -> {
+                    if (fromSwipeRefresh && swipeRefreshLayout != null) {
+                        PullToRefreshHelper.finish(swipeRefreshLayout);
+                    }
+                    Toast.makeText(this, "Không thể tải danh sách đổi trả", Toast.LENGTH_SHORT).show();
+                });
+            }
         }).start();
     }
 

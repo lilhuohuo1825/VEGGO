@@ -8,6 +8,7 @@ const {
   isRecurringShipping,
   formatDeliveryWindow,
 } = require('../services/scheduledDeliveryReminderService');
+const { emitToAdmins, emitToCustomer } = require('../sockets/realtimeSocket');
 
 const router = express.Router();
 const Wallet = require('../models/Wallet');
@@ -97,14 +98,27 @@ const buildNotification = (customerId, orderId, title, body, type = 'status') =>
 
 const createOrderNotification = async (customerId, orderId, title, body, type = 'status') => {
   if (!customerId || !orderId) return;
-  await mongoose.connection.db
+  const notification = buildNotification(customerId, orderId, title, body, type);
+  const result = await mongoose.connection.db
     .collection('notifications')
-    .insertOne(buildNotification(customerId, orderId, title, body, type));
+    .insertOne(notification);
+  const savedNotification = { _id: result.insertedId, ...notification };
+
+  emitToCustomer(customerId, 'user:notification', savedNotification, {
+    entity: 'notification',
+    action: 'created',
+  });
+  emitToCustomer(customerId, 'order:notification', savedNotification, {
+    entity: 'order',
+    action: 'notification-created',
+  });
+
+  return savedNotification;
 };
 
 const createAdminNotification = async ({ type, customerId, orderId, orderTotal = 0, reason = '', title = '', message = '' }) => {
   if (!type || !orderId) return;
-  await mongoose.connection.db.collection('admin_notifications').insertOne({
+  const notification = {
     type,
     customerId,
     orderId,
@@ -116,7 +130,16 @@ const createAdminNotification = async ({ type, customerId, orderId, orderTotal =
     read: false,
     createdAt: new Date(),
     updatedAt: new Date(),
+  };
+  const result = await mongoose.connection.db.collection('admin_notifications').insertOne(notification);
+  const savedNotification = { _id: result.insertedId, ...notification };
+
+  emitToAdmins('admin:notification', savedNotification, {
+    entity: 'admin_notification',
+    action: 'created',
   });
+
+  return savedNotification;
 };
 
 const refreshCustomerMetricsAfterOrderChange = async (customerId, orderId, shouldEvaluateCertificate = false) => {
@@ -531,6 +554,14 @@ router.patch('/notifications/:customerId/read-all', asyncHandler(async (req, res
       }
     );
 
+  emitToCustomer(req.params.customerId, 'user:notifications-read', {
+    customerId: req.params.customerId,
+    modifiedCount: result.modifiedCount || 0,
+  }, {
+    entity: 'notification',
+    action: 'read-all',
+  });
+
   res.json({ success: true, modifiedCount: result.modifiedCount || 0 });
 }));
 
@@ -556,6 +587,11 @@ router.patch('/notifications/item/:notificationId/read', asyncHandler(async (req
   if (!result) {
     return res.status(404).json({ message: 'Notification not found' });
   }
+
+  emitToCustomer(result.CustomerID, 'user:notification-updated', result, {
+    entity: 'notification',
+    action: 'read',
+  });
 
   res.json({ success: true, notification: result });
 }));
@@ -744,6 +780,21 @@ router.post('/', asyncHandler(async (req, res) => {
   await recordPromotionUsage(orderDetailDoc.shippingPromotionId, orderId, customerId);
   await refreshCustomerMetricsAfterOrderChange(customerId, orderId, isDeliveredStatus(status));
   invalidateOrdersListCache();
+
+  const createdOrderPayload = {
+    _id: result.insertedId,
+    ...orderDoc,
+    items: detailItems,
+    shippingInfo: orderDetailDoc.shippingInfo || {},
+  };
+  emitToAdmins('order:created', createdOrderPayload, {
+    entity: 'order',
+    action: 'created',
+  });
+  emitToCustomer(customerId, 'order:created', createdOrderPayload, {
+    entity: 'order',
+    action: 'created',
+  });
 
   res.status(201).json({
     _id: result.insertedId,
@@ -966,6 +1017,14 @@ router.patch('/:orderId/status', asyncHandler(async (req, res) => {
   }
 
   invalidateOrdersListCache();
+  emitToAdmins('order:status-updated', result, {
+    entity: 'order',
+    action: 'status-updated',
+  });
+  emitToCustomer(result.CustomerID, 'order:status-updated', result, {
+    entity: 'order',
+    action: 'status-updated',
+  });
   res.json({ orderId, status: nextStatus, message: 'Order status updated' });
 }));
 
@@ -1001,6 +1060,14 @@ router.patch('/:orderId/payment-status', asyncHandler(async (req, res) => {
   );
 
   invalidateOrdersListCache();
+  emitToAdmins('order:payment-updated', result, {
+    entity: 'order',
+    action: 'payment-updated',
+  });
+  emitToCustomer(result.CustomerID, 'order:payment-updated', result, {
+    entity: 'order',
+    action: 'payment-updated',
+  });
   res.json({ orderId, paymentStatus, message: 'Payment status updated' });
 }));
 
@@ -1118,6 +1185,16 @@ router.put('/:id', asyncHandler(async (req, res) => {
     );
   }
   invalidateOrdersListCache();
+  if (updatedOrder) {
+    emitToAdmins('order:updated', updatedOrder, {
+      entity: 'order',
+      action: updateData.status ? 'status-updated' : 'updated',
+    });
+    emitToCustomer(updatedOrder.CustomerID, 'order:updated', updatedOrder, {
+      entity: 'order',
+      action: updateData.status ? 'status-updated' : 'updated',
+    });
+  }
   res.json(updatedOrder);
 }));
 
@@ -1144,7 +1221,18 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   await mongoose.connection.db.collection('orders').updateOne(query, {
     $set: { status: 'deleted', updatedAt: new Date() }
   });
+  const deletedOrder = await mongoose.connection.db.collection('orders').findOne(query);
   invalidateOrdersListCache();
+  if (deletedOrder) {
+    emitToAdmins('order:deleted', deletedOrder, {
+      entity: 'order',
+      action: 'deleted',
+    });
+    emitToCustomer(deletedOrder.CustomerID, 'order:deleted', deletedOrder, {
+      entity: 'order',
+      action: 'deleted',
+    });
+  }
   res.json({ success: true });
 }));
 

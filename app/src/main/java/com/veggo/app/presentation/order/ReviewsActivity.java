@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -68,6 +69,7 @@ public class ReviewsActivity extends BaseActivity {
         doneTabBadge = findViewById(R.id.reviewDoneTabBadge);
         waitingIndicator = findViewById(R.id.reviewWaitingIndicator);
         doneIndicator = findViewById(R.id.reviewDoneIndicator);
+        reviewsStatusScroll = findViewById(R.id.reviewsStatusScroll);
         tabIndicator = CurvedTabIndicatorHelper.attach(
                 reviewsStatusScroll,
                 new CurvedTabIndicatorHelper.TabItem(findViewById(R.id.reviewWaitingTab), waitingIndicator),
@@ -76,7 +78,6 @@ public class ReviewsActivity extends BaseActivity {
         waitingList = findViewById(R.id.reviewWaitingList);
         doneList = findViewById(R.id.reviewDoneList);
         reviewsEmptyState = findViewById(R.id.reviewsEmptyState);
-        reviewsStatusScroll = findViewById(R.id.reviewsStatusScroll);
         reviewListScroll = findViewById(R.id.reviewListScroll);
         swipeRefreshLayout = findViewById(R.id.reviewsSwipeRefresh);
         if (swipeRefreshLayout != null) {
@@ -174,13 +175,22 @@ public class ReviewsActivity extends BaseActivity {
 
     private void loadReviews(boolean fromSwipeRefresh) {
         new Thread(() -> {
-            AssetScreenData.Snapshot loaded = AssetScreenData.load(this);
-            runOnUiThread(() -> {
-                bindReviews(loaded);
-                if (fromSwipeRefresh && swipeRefreshLayout != null) {
-                    PullToRefreshHelper.finish(swipeRefreshLayout);
-                }
-            });
+            try {
+                AssetScreenData.Snapshot loaded = AssetScreenData.load(this);
+                runOnUiThread(() -> {
+                    bindReviews(loaded);
+                    if (fromSwipeRefresh && swipeRefreshLayout != null) {
+                        PullToRefreshHelper.finish(swipeRefreshLayout);
+                    }
+                });
+            } catch (Exception exception) {
+                runOnUiThread(() -> {
+                    if (fromSwipeRefresh && swipeRefreshLayout != null) {
+                        PullToRefreshHelper.finish(swipeRefreshLayout);
+                    }
+                    Toast.makeText(this, "Không thể tải đơn cần đánh giá", Toast.LENGTH_SHORT).show();
+                });
+            }
         }).start();
     }
 

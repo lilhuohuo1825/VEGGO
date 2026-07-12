@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { Subscription, filter, interval, of } from 'rxjs';
+import { NotificationService } from '../services/notification.service';
+import { Subscription, debounceTime, filter, interval, of } from 'rxjs';
 import {
   formatDeliveryWindowText,
   getOrderSourceClass,
@@ -24,8 +25,10 @@ export class OrdersManage implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private apiService = inject(ApiService);
+  private notificationService = inject(NotificationService);
   private routerSubscription?: Subscription;
   private dataRefreshSubscription?: Subscription;
+  private realtimeSubscription?: Subscription;
   private isLoadingOrders = false;
   private readonly REFRESH_INTERVAL = 30000;
 
@@ -104,6 +107,9 @@ export class OrdersManage implements OnInit, OnDestroy {
 
     this.loadData();
     this.startAutoRefresh();
+    this.realtimeSubscription = this.notificationService.orderChanged$
+      .pipe(debounceTime(150))
+      .subscribe(() => this.loadOrders(true));
 
     // Track previous URL and reload orders when navigating back from order detail
     this.previousUrl = this.router.url;
@@ -168,6 +174,9 @@ export class OrdersManage implements OnInit, OnDestroy {
     }
     if (this.dataRefreshSubscription) {
       this.dataRefreshSubscription.unsubscribe();
+    }
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
     }
   }
 

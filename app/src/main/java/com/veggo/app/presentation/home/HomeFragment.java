@@ -1,7 +1,9 @@
 package com.veggo.app.presentation.home;
 
 import android.content.Context;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.view.MotionEvent;
 import android.view.LayoutInflater;
@@ -29,6 +31,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
+import com.veggo.app.core.realtime.RealtimeEvents;
 import com.veggo.app.core.utils.CartCountUtils;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.core.preferences.PreferencesManager;
@@ -115,6 +118,23 @@ public class HomeFragment extends Fragment {
     private View[] bannerIndicators;
     private SwipeRefreshLayout homeRefreshLayout;
     private boolean homeRefreshPending;
+    private boolean realtimeReceiverRegistered;
+    private final BroadcastReceiver realtimeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null || binding == null) {
+                return;
+            }
+            String action = intent.getAction();
+            if (RealtimeEvents.ACTION_PROMOTION_CHANGED.equals(action)) {
+                homeRefreshPending = true;
+                homeViewModel.loadHomeData(requireContext());
+            } else if (RealtimeEvents.ACTION_NOTIFICATION_CHANGED.equals(action)
+                    || RealtimeEvents.ACTION_ORDER_CHANGED.equals(action)) {
+                refreshNotificationState(false);
+            }
+        }
+    };
 
     private static final int BANNER_LOOP_ANCHOR = Integer.MAX_VALUE / 2;
 
@@ -1193,7 +1213,9 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        registerRealtimeReceiver();
         refreshCartBadge();
+        refreshNotificationState(false);
         if (bannerAdapter != null && bannerAdapter.getRealCount() > 0)
             bannerHandler.postDelayed(bannerRunnable, 10000);
     }
@@ -1209,7 +1231,39 @@ public class HomeFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
+        unregisterRealtimeReceiver();
         bannerHandler.removeCallbacks(bannerRunnable);
+    }
+
+    private void registerRealtimeReceiver() {
+        if (realtimeReceiverRegistered || !isAdded()) {
+            return;
+        }
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RealtimeEvents.ACTION_PROMOTION_CHANGED);
+        filter.addAction(RealtimeEvents.ACTION_NOTIFICATION_CHANGED);
+        filter.addAction(RealtimeEvents.ACTION_ORDER_CHANGED);
+        ContextCompat.registerReceiver(
+                requireContext(),
+                realtimeReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+        );
+        realtimeReceiverRegistered = true;
+    }
+
+    private void unregisterRealtimeReceiver() {
+        if (!realtimeReceiverRegistered) {
+            return;
+        }
+        try {
+            Context context = getContext();
+            if (context != null) {
+                context.unregisterReceiver(realtimeReceiver);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        realtimeReceiverRegistered = false;
     }
 
     @Override
@@ -1217,6 +1271,7 @@ public class HomeFragment extends Fragment {
         if (binding != null && binding.homeScrollView != null) {
             savedScrollY = binding.homeScrollView.getScrollY();
         }
+        unregisterRealtimeReceiver();
         super.onDestroyView();
         binding = null;
         stickyTabsBinding = null;

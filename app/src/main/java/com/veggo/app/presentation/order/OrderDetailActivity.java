@@ -12,11 +12,13 @@ import android.widget.Toast;
 
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.content.IntentFilter;
 import com.veggo.app.MainActivity;
 import com.veggo.app.R;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.realtime.RealtimeEvents;
 import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.ui.PullToRefreshHelper;
 import com.veggo.app.data.remote.api.CartApi;
@@ -67,10 +69,53 @@ public class OrderDetailActivity extends BaseActivity {
         }
     }
 
+    private boolean realtimeReceiverRegistered = false;
+    private final android.content.BroadcastReceiver realtimeReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            if (intent == null || !RealtimeEvents.ACTION_ORDER_CHANGED.equals(intent.getAction())) {
+                return;
+            }
+            loadOrderDetail(false);
+        }
+    };
+
+    private void registerRealtimeReceiver() {
+        if (realtimeReceiverRegistered) {
+            return;
+        }
+        IntentFilter filter = new IntentFilter(RealtimeEvents.ACTION_ORDER_CHANGED);
+        androidx.core.content.ContextCompat.registerReceiver(
+                this,
+                realtimeReceiver,
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        );
+        realtimeReceiverRegistered = true;
+    }
+
+    private void unregisterRealtimeReceiver() {
+        if (!realtimeReceiverRegistered) {
+            return;
+        }
+        try {
+            unregisterReceiver(realtimeReceiver);
+        } catch (IllegalArgumentException ignored) {
+        }
+        realtimeReceiverRegistered = false;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        registerRealtimeReceiver();
         loadOrderDetail(false);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterRealtimeReceiver();
     }
 
     private void loadOrderDetail() {

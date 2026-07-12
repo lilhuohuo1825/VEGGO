@@ -8,6 +8,7 @@ const Promotion = require('../models/Promotion');
 const PromotionTarget = require('../models/PromotionTarget');
 const Product = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
+const { emitToAdmins, emitToAll } = require('../sockets/realtimeSocket');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -585,7 +586,19 @@ router.post('/', asyncHandler(async (req, res) => {
     updated_at: req.body.updated_at || new Date()
   };
   const result = await mongoose.connection.db.collection('promotions').insertOne(newPromo);
-  res.status(201).json({ success: true, data: { _id: result.insertedId, ...newPromo } });
+  const createdPromo = { _id: result.insertedId, ...newPromo };
+  emitToAdmins('promotion:created', createdPromo, {
+    entity: 'promotion',
+    action: 'created',
+  });
+  emitToAll('promotion:changed', {
+    action: 'created',
+    promotion: createdPromo,
+  }, {
+    entity: 'promotion',
+    action: 'created',
+  });
+  res.status(201).json({ success: true, data: createdPromo });
 }));
 
 router.put('/:id', asyncHandler(async (req, res) => {
@@ -610,6 +623,17 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
   });
   const updatedPromo = await mongoose.connection.db.collection('promotions').findOne(query);
+  emitToAdmins('promotion:updated', updatedPromo, {
+    entity: 'promotion',
+    action: 'updated',
+  });
+  emitToAll('promotion:changed', {
+    action: 'updated',
+    promotion: updatedPromo,
+  }, {
+    entity: 'promotion',
+    action: 'updated',
+  });
   res.json({ success: true, data: updatedPromo });
 }));
 
@@ -637,6 +661,20 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   const deleteTargetsResult = targetIds.length
     ? await mongoose.connection.db.collection('promotion_targets').deleteMany({ promotion_id: { $in: targetIds } })
     : { deletedCount: 0 };
+
+  emitToAdmins('promotion:deleted', promotion, {
+    entity: 'promotion',
+    action: 'deleted',
+  });
+  emitToAll('promotion:changed', {
+    action: 'deleted',
+    promotion,
+    deletedPromotionCount: deletePromotionResult.deletedCount || 0,
+    deletedPromotionTargetCount: deleteTargetsResult.deletedCount || 0,
+  }, {
+    entity: 'promotion',
+    action: 'deleted',
+  });
 
   res.json({
     success: true,

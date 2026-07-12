@@ -1,6 +1,9 @@
 package com.veggo.app.presentation.order;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +23,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.veggo.app.MainActivity;
@@ -27,6 +31,7 @@ import com.veggo.app.R;
 import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.CurvedTabIndicatorHelper;
 import com.veggo.app.core.ui.PullToRefreshHelper;
+import com.veggo.app.core.realtime.RealtimeEvents;
 import com.veggo.app.assets.AssetModels;
 import com.veggo.app.core.network.ApiClient;
 import com.veggo.app.core.preferences.AppPreferences;
@@ -68,6 +73,16 @@ public class OrderHistoryFragment extends BaseFragment {
     private String pendingStatusAfterLoad;
     private List<FridgeItemDto> fridgeItems = new ArrayList<>();
     private CurvedTabIndicatorHelper tabIndicator;
+    private boolean realtimeReceiverRegistered;
+    private final BroadcastReceiver realtimeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null || !RealtimeEvents.ACTION_ORDER_CHANGED.equals(intent.getAction())) {
+                return;
+            }
+            loadOrders(false);
+        }
+    };
 
     public static OrderHistoryFragment newInstance(boolean showBackButton) {
         OrderHistoryFragment fragment = new OrderHistoryFragment();
@@ -178,7 +193,48 @@ public class OrderHistoryFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        registerRealtimeReceiver();
         loadOrders(false);
+    }
+
+    @Override
+    public void onPause() {
+        unregisterRealtimeReceiver();
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroyView() {
+        unregisterRealtimeReceiver();
+        super.onDestroyView();
+    }
+
+    private void registerRealtimeReceiver() {
+        if (realtimeReceiverRegistered || !isAdded()) {
+            return;
+        }
+        IntentFilter filter = new IntentFilter(RealtimeEvents.ACTION_ORDER_CHANGED);
+        ContextCompat.registerReceiver(
+                requireContext(),
+                realtimeReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+        );
+        realtimeReceiverRegistered = true;
+    }
+
+    private void unregisterRealtimeReceiver() {
+        if (!realtimeReceiverRegistered) {
+            return;
+        }
+        try {
+            Context context = getContext();
+            if (context != null) {
+                context.unregisterReceiver(realtimeReceiver);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        realtimeReceiverRegistered = false;
     }
 
     private void loadOrders() {

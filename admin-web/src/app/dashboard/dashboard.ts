@@ -13,7 +13,8 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../services/api.service';
-import { interval, Subscription, forkJoin, of } from 'rxjs';
+import { NotificationService } from '../services/notification.service';
+import { interval, Subscription, forkJoin, merge, of } from 'rxjs';
 import { switchMap, catchError, debounceTime, retry, tap } from 'rxjs/operators';
 import { DashboardVnMapComponent } from './dashboard-vn-map/dashboard-vn-map.component';
 
@@ -40,7 +41,9 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private apiService = inject(ApiService);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private notificationService = inject(NotificationService);
   private refreshSubscription?: Subscription;
+  private realtimeSubscription?: Subscription;
 
   /**
    * Navigate to products page with stock filter and update sidebar active state
@@ -302,12 +305,21 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
     // Set up auto-refresh để tự động cập nhật khi có thay đổi
     this.startAutoRefresh();
+    this.realtimeSubscription = merge(
+      this.notificationService.orderChanged$,
+      this.notificationService.promotionChanged$
+    )
+      .pipe(debounceTime(200))
+      .subscribe(() => this.loadDashboardData());
   }
 
   ngOnDestroy() {
     // Cleanup: dừng auto-refresh khi component bị destroy
     if (this.refreshSubscription) {
       this.refreshSubscription.unsubscribe();
+    }
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
     }
   }
 

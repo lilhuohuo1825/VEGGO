@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, interval, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, interval, of } from 'rxjs';
 import { catchError, startWith, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { io, Socket } from 'socket.io-client';
 
 export interface AdminNotification {
   _id?: string;
@@ -24,6 +25,19 @@ export interface AdminNotification {
   updatedAt?: Date | string;
 }
 
+export interface RealtimeEnvelope<T = any> {
+  type: string;
+  entity?: string | null;
+  action?: string | null;
+  data: T;
+  occurredAt: string;
+}
+
+function socketBaseUrlFromApiUrl(apiUrl: string): string {
+  const trimmed = (apiUrl || '').replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,12 +52,121 @@ export class NotificationService {
   private newNotificationSubject = new BehaviorSubject<AdminNotification | null>(null);
   public newNotification$: Observable<AdminNotification | null> = this.newNotificationSubject.asObservable();
 
+  private orderChangedSubject = new Subject<RealtimeEnvelope>();
+  public orderChanged$: Observable<RealtimeEnvelope> = this.orderChangedSubject.asObservable();
+
+  private promotionChangedSubject = new Subject<RealtimeEnvelope>();
+  public promotionChanged$: Observable<RealtimeEnvelope> = this.promotionChangedSubject.asObservable();
+
+  private realtimeEventSubject = new Subject<RealtimeEnvelope>();
+  public realtimeEvent$: Observable<RealtimeEnvelope> = this.realtimeEventSubject.asObservable();
+
   private pollingInterval = 30000; // 30s – tránh spam API khi admin mở lâu
   private previousNotificationIds: Set<string> = new Set();
+  private socket: Socket | null = null;
 
   constructor(private http: HttpClient) {
+    this.ensureSocket();
     // Start polling for notifications
     this.startPolling();
+  }
+
+  private getAccessToken(): string | null {
+    const token = localStorage.getItem('adminAccessToken');
+    return token && token.trim() ? token.trim() : null;
+  }
+
+  private ensureSocket(): void {
+    if (this.socket) return;
+    const token = this.getAccessToken();
+    if (!token) return;
+
+    this.socket = io(socketBaseUrlFromApiUrl(environment.apiUrl), {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+    });
+
+    this.socket.on('admin:notification', (envelope: RealtimeEnvelope<AdminNotification>) => {
+      this.applyIncomingNotification(envelope?.data);
+    });
+
+    this.socket.on('admin:notification-updated', (envelope: RealtimeEnvelope<AdminNotification>) => {
+      this.applyUpdatedNotification(envelope?.data);
+    });
+
+    this.socket.on('order:created', (envelope: RealtimeEnvelope) => this.emitOrderChanged(envelope));
+    this.socket.on('order:updated', (envelope: RealtimeEnvelope) => this.emitOrderChanged(envelope));
+    this.socket.on('order:status-updated', (envelope: RealtimeEnvelope) => this.emitOrderChanged(envelope));
+    this.socket.on('order:payment-updated', (envelope: RealtimeEnvelope) => this.emitOrderChanged(envelope));
+    this.socket.on('order:deleted', (envelope: RealtimeEnvelope) => this.emitOrderChanged(envelope));
+
+    this.socket.on('promotion:created', (envelope: RealtimeEnvelope) => this.emitPromotionChanged(envelope));
+    this.socket.on('promotion:updated', (envelope: RealtimeEnvelope) => this.emitPromotionChanged(envelope));
+    this.socket.on('promotion:deleted', (envelope: RealtimeEnvelope) => this.emitPromotionChanged(envelope));
+    this.socket.on('promotion:changed', (envelope: RealtimeEnvelope) => this.emitPromotionChanged(envelope));
+
+    this.socket.on('realtime:event', (envelope: RealtimeEnvelope) => {
+      if (!envelope?.type) return;
+      this.realtimeEventSubject.next(envelope);
+      if (envelope.type.startsWith('order:')) {
+        this.emitOrderChanged(envelope);
+      } else if (envelope.type.startsWith('promotion:')) {
+        this.emitPromotionChanged(envelope);
+      }
+    });
+
+    this.socket.on('connect_error', () => {
+      // Polling remains the fallback source of truth.
+    });
+  }
+
+  private emitOrderChanged(envelope: RealtimeEnvelope | null | undefined): void {
+    if (!envelope) return;
+    this.orderChangedSubject.next(envelope);
+  }
+
+  private emitPromotionChanged(envelope: RealtimeEnvelope | null | undefined): void {
+    if (!envelope) return;
+    this.promotionChangedSubject.next(envelope);
+  }
+
+  private notificationId(notification: AdminNotification | null | undefined): string {
+    return String(notification?._id || notification?.id || '').trim();
+  }
+
+  private applyIncomingNotification(notification: AdminNotification | null | undefined): void {
+    const id = this.notificationId(notification);
+    if (!notification || !id) return;
+
+    const current = this.notificationsSubject.value;
+    if (current.some(item => this.notificationId(item) === id)) return;
+
+    const next = [notification, ...current].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    this.previousNotificationIds.add(id);
+    this.notificationsSubject.next(next);
+    this.updateUnreadCount(next);
+    if (!notification.read) {
+      this.newNotificationSubject.next(notification);
+    }
+  }
+
+  private applyUpdatedNotification(notification: AdminNotification | null | undefined): void {
+    const id = this.notificationId(notification);
+    if (!notification || !id) return;
+
+    const current = this.notificationsSubject.value;
+    const found = current.some(item => this.notificationId(item) === id);
+    const next = found
+      ? current.map(item => (this.notificationId(item) === id ? { ...item, ...notification } : item))
+      : [notification, ...current];
+
+    this.previousNotificationIds.add(id);
+    this.notificationsSubject.next(next);
+    this.updateUnreadCount(next);
   }
 
   /**
@@ -104,6 +227,7 @@ export class NotificationService {
    * Load notifications from API
    */
   loadNotifications(): void {
+    this.ensureSocket();
     this.http.get<{ success: boolean; data: AdminNotification[] }>(
       `${this.apiUrl}`
     ).pipe(
@@ -131,6 +255,7 @@ export class NotificationService {
    * Get unread count from API
    */
   loadUnreadCount(): void {
+    this.ensureSocket();
     this.http.get<{ success: boolean; count: number }>(
       `${this.apiUrl}/unread-count`
     ).pipe(

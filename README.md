@@ -1,152 +1,95 @@
-# VEGGO Android
+# VEGGO
 
-VEGGO is an Android Java project prepared for team development with XML layouts, ViewBinding, MVVM, Repository pattern, MongoDB Atlas through a backend API, Firebase services, and Room local cache.
+VEGGO là một hệ thống bán hàng và chăm sóc người dùng gồm 3 phần:
 
-## Clone and Team Setup
+- Ứng dụng Android cho khách hàng.
+- Backend Node.js/Express kết nối MongoDB Atlas, Firebase và Socket.IO.
+- Trang quản trị web Angular.
 
-Clone repo:
+## Tổng Quan Kiến Trúc
 
-```bash
-git clone https://github.com/lilhuohuo1825/VEGGO.git
-cd VEGGO
+Ứng dụng Android được xây theo các lớp:
+
+```text
+presentation -> domain -> data -> core
 ```
 
-Open the project root in Android Studio, then let Gradle sync before editing code.
+- `presentation/`: Activity, Fragment, ViewModel, UI state.
+- `domain/`: model nghiệp vụ, repository contract, use case.
+- `data/`: API, Firebase, Room, mapper, repository implementation.
+- `core/`: network, database, firebase, notification, preference, utility.
+- `adapter/`: RecyclerView adapters.
 
-Install backend dependencies:
+Backend đóng vai trò lớp trung gian:
 
-```bash
-cd backend
-npm install
+- Không kết nối MongoDB trực tiếp từ Android.
+- Cung cấp REST API cho app và admin web.
+- Hỗ trợ Socket.IO cho realtime chat/notification.
+- Tích hợp Firebase Admin, AI chatbot, payment, reminder job và một số tác vụ đồng bộ dữ liệu.
+
+## Cấu Trúc Dự Án
+
+- `app/`: mã nguồn Android.
+- `backend/`: API server Node.js.
+- `admin-web/`: dashboard quản trị Angular.
+- `docs/`: tài liệu cho chatbot và speech-to-text.
+- `vitacare-reference/`: thư mục tham chiếu/migration cũ, không thuộc luồng chạy chính của VEGGO.
+
+## Luồng Chạy Chính
+
+1. Android mở từ `OnboardingActivity`, sau đó vào `MainActivity`.
+2. `MainActivity` điều phối các tab chính như Home, Orders, Account, Community, Scan.
+3. ViewModel gọi repository, repository gọi API backend hoặc Room/Firebase.
+4. Backend xử lý nghiệp vụ, truy cập MongoDB Atlas, Firebase Admin, Socket.IO và các service phụ trợ.
+5. Admin web gọi cùng backend API để quản trị dữ liệu.
+
+## Tính Năng Chính
+
+- Đăng nhập, đăng ký, quên mật khẩu, Google/Facebook login.
+- Trang chủ, danh mục, tìm kiếm, chi tiết sản phẩm.
+- Giỏ hàng, checkout, thanh toán, đơn hàng, hoàn trả, đánh giá.
+- Chat hỗ trợ realtime.
+- Blog, cộng đồng, bài viết, bình luận.
+- Tủ lạnh thông minh, gợi ý món ăn, barcode scan, camera scan.
+- VeggoPay, ví điện tử, chuyển tiền, quét QR.
+- Điểm carbon, chứng nhận carbon.
+- Quản lý đơn lặp lại và nhắc lịch giao hàng.
+
+## Thiết Lập Môi Trường
+
+### Android
+
+- Android package: `com.veggo.app`
+- API URL được lấy từ `local.properties` hoặc mặc định theo chế độ emulator/physical device.
+
+Ví dụ:
+
+```properties
+dev.api.mode=emulator
 ```
 
-Create local backend env from the example:
+Hoặc khi chạy trên máy thật cùng mạng LAN:
+
+```properties
+dev.api.mode=physical
+dev.api.host=<LAN-IP-máy-chạy-backend>
+```
+
+### Backend
+
+Tạo file môi trường từ mẫu:
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-Update `backend/.env` with your own MongoDB Atlas URI and Firebase service account path. Do not commit `backend/.env`.
+Cần cấu hình tối thiểu:
 
-Firebase Android setup:
+- `MONGODB_URI`
+- `FIREBASE_SERVICE_ACCOUNT_PATH`
+- các biến AI/payment nếu có dùng
 
-- Download `google-services.json` from Firebase Console.
-- Put it at `app/google-services.json`.
-- Do not commit `google-services.json` unless the team explicitly decides to share the Firebase config.
-
-Before pushing code:
-
-```bash
-./gradlew :app:assembleDebug
-./gradlew :app:testDebugUnitTest
-cd backend
-npm run start
-```
-
-Branch workflow:
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/<your-feature-name>
-```
-
-Commit only source/config template files. Do not commit build outputs, secrets, local IDE files, APK/AAB files, keystores, or dependency folders.
-
-Push your feature branch:
-
-```bash
-git push -u origin feature/<your-feature-name>
-```
-
-## Main Layers
-
-- `presentation/`: Activity, Fragment, ViewModel, UI state for each feature.
-- `domain/`: App models, repository contracts, use cases.
-- `data/`: Repository implementations, API/Firebase data sources, DTOs, Room entities and DAOs, mappers.
-- `core/`: Shared infrastructure such as network, database, Firebase, preferences, base UI, utilities.
-- `adapter/`: RecyclerView adapters.
-
-## AI Chatbot (Trợ lý AI)
-
-Feature documentation: [`docs/CHATBOT.md`](docs/CHATBOT.md)
-
-Covers backend API, intent handling, product/recipe suggestions, Android UI, env config, and how to run locally.
-
-Speech-to-Text module: [`docs/SPEECH.md`](docs/SPEECH.md)
-
-Covers voice input module, Samsung/Google setup, and how to test microphone on emulator and real devices.
-
-## Asset Rules
-
-- UI icons and vector drawables: `app/src/main/res/drawable/`
-- Shape/background XML: `app/src/main/res/drawable/`
-- Local banners/illustrations/placeholders that should not be density-scaled: `app/src/main/res/drawable-nodpi/`
-- Launcher icon only: `app/src/main/res/mipmap-*`
-- Real product images: Firebase Storage. Store only image URLs in MongoDB Atlas.
-
-## Team Branches
-
-- `develop`: integration branch.
-- `feature/auth-profile`: auth and profile.
-- `feature/home-category`: home and category.
-- `feature/product`: product list/detail/search.
-- `feature/cart-checkout`: cart and checkout.
-- `feature/core-data`: API, Firebase, Room, shared setup.
-
-## Coding Rule
-
-Activity/Fragment should not call API, Firebase, or Room directly. Use this flow:
-
-```text
-Activity/Fragment -> ViewModel -> UseCase -> Repository -> RemoteDataSource/API/Firebase + DAO/Room
-```
-
-## Data Connection Setup
-
-### MongoDB Atlas
-
-Android must not connect directly to MongoDB Atlas. The MongoDB URI belongs in `backend/.env`, and the app calls the backend API.
-
-Backend local API:
-
-```text
-http://localhost:5001/api
-```
-
-Android emulator API URL:
-
-```text
-http://10.0.2.2:5001/api/
-```
-
-Android real device on the same Wi-Fi:
-
-```properties
-# local.properties
-dev.api.mode=physical
-dev.api.host=<LAN-IP-máy-chạy-backend>
-```
-
-On macOS, get the LAN IP with:
-
-```bash
-ifconfig en0 | grep "inet "
-```
-
-The app will use:
-
-```text
-http://<LAN-IP-máy-chạy-backend>:5001/api/
-```
-
-After changing `local.properties`, rebuild and reinstall the app. `127.0.0.1` on a real device points to the phone itself, not the Mac. Only use `dev.api.mode=physical_usb` with:
-
-```bash
-adb reverse tcp:5001 tcp:5001
-```
-
-Run backend:
+Khởi động backend:
 
 ```bash
 cd backend
@@ -162,22 +105,41 @@ GET http://localhost:5001/api/health
 
 ### Firebase
 
-The Android package name is:
+- `app/google-services.json` cho Android.
+- `backend/firebase-service-account.json` cho Firebase Admin ở backend.
 
-```text
-com.veggo.app
+## Chạy Dự Án
+
+### Android
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
 ```
 
-Download `google-services.json` from Firebase Console and put it here:
+### Backend
 
-```text
-app/google-services.json
+```bash
+cd backend
+npm run dev
 ```
 
-For backend Firebase Admin features, download the Firebase service account JSON and put it here:
+### Admin Web
 
-```text
-backend/firebase-service-account.json
+```bash
+cd admin-web
+npm install
+npm start
 ```
 
-Do not commit `.env`, Firebase service account files, keystores, generated build files, or `node_modules`.
+## Quy Ước Làm Việc
+
+- Không commit file nhạy cảm: `.env`, service account, keystore, APK/AAB, `node_modules`, file IDE local.
+- Không để Android truy cập MongoDB Atlas trực tiếp.
+- Giữ logic nghiệp vụ trong ViewModel/UseCase/Repository, không gọi API trực tiếp từ Activity/Fragment.
+
+## Tài Liệu Liên Quan
+
+- [docs/CHATBOT.md](docs/CHATBOT.md)
+- [docs/SPEECH.md](docs/SPEECH.md)
+

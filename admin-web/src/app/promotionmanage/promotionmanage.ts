@@ -1,11 +1,11 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { ApiService } from '../services/api.service';
 import { NotificationService } from '../services/notification.service';
-import { forkJoin } from 'rxjs';
+import { Subscription, debounceTime, forkJoin } from 'rxjs';
 
 /**
  * ============================================================================
@@ -139,11 +139,16 @@ type TargetType = PromotionScope | 'Subcategory';
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
-export class PromotionManage implements OnInit {
+export class PromotionManage implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private apiService = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   private notificationService = inject(NotificationService);
+  private realtimeSubscription?: Subscription;
+  private readonly documentClickListener = () => {
+    this.showSortDropdown = false;
+    this.cdr.detectChanges();
+  };
 
   // Data
   promotions: Promotion[] = [];
@@ -238,12 +243,17 @@ export class PromotionManage implements OnInit {
   ngOnInit(): void {
     this.loadPromotions();
     this.loadTargetOptions();
+    this.realtimeSubscription = this.notificationService.promotionChanged$
+      .pipe(debounceTime(150))
+      .subscribe(() => this.loadPromotions(true));
     
     // Global click listener to close dropdowns
-    document.addEventListener('click', () => {
-      this.showSortDropdown = false;
-      this.cdr.detectChanges();
-    });
+    document.addEventListener('click', this.documentClickListener);
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeSubscription?.unsubscribe();
+    document.removeEventListener('click', this.documentClickListener);
   }
 
   /**
@@ -1047,10 +1057,14 @@ export class PromotionManage implements OnInit {
     this.cdr.detectChanges();
   }
 
-  loadPromotions(): void {
-    this.isLoading = true;
+  loadPromotions(silent = false): void {
+    if (!silent) {
+      this.isLoading = true;
+    }
     
-    console.log('🔄 Loading promotions from MongoDB API (promotions, promotion_usage, promotion_target)...');
+    if (!silent) {
+      console.log('🔄 Loading promotions from MongoDB API (promotions, promotion_usage, promotion_target)...');
+    }
     // Load promotions, usage counts, and targets in parallel from 3 collections
     forkJoin({
       promotions: this.apiService.getPromotions(),
@@ -1058,9 +1072,11 @@ export class PromotionManage implements OnInit {
       targets: this.apiService.getPromotionTargets()
     }).subscribe({
       next: ({ promotions: data, usage: usageMap, targets: targetsData }) => {
-        console.log(`✅ Loaded ${data.length} promotions from MongoDB`);
-        console.log(`✅ Loaded usage counts for ${Object.keys(usageMap).length} promotions`);
-        console.log(`✅ Loaded ${targetsData.length} promotion targets from MongoDB`);
+        if (!silent) {
+          console.log(`✅ Loaded ${data.length} promotions from MongoDB`);
+          console.log(`✅ Loaded usage counts for ${Object.keys(usageMap).length} promotions`);
+          console.log(`✅ Loaded ${targetsData.length} promotion targets from MongoDB`);
+        }
         
         // Tự động kiểm tra và cập nhật status theo thời gian thực (chỉ khi không đang update)
         if (!this.isUpdatingStatuses) {
@@ -2851,5 +2867,4 @@ export class PromotionManage implements OnInit {
     return `${day}/${month}/${year}`;
   }
 }
-
 

@@ -22,6 +22,7 @@ import androidx.fragment.app.FragmentManager;
 
 import com.veggo.app.core.ui.BadgeUiHelper;
 import com.veggo.app.core.ui.BottomNavController;
+import com.veggo.app.core.realtime.RealtimeEvents;
 import com.veggo.app.core.preferences.AppPreferences;
 import com.veggo.app.data.remote.dto.OrderNotificationDto;
 import com.veggo.app.data.repository.OrderNotificationRepository;
@@ -48,6 +49,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import java.util.List;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SELECTED_NAV_ITEM = "extra_selected_nav_item";
@@ -244,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         boolean show = shouldShowSupportChatBubble();
         bubble.setVisibility(show ? View.VISIBLE : View.GONE);
         if (!show) {
-            disconnectSupportChatSocket();
+            updateSupportChatSocketListener();
             return;
         }
         fetchSupportChatUnreadCount();
@@ -337,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateSupportChatSocketListener() {
-        if (!shouldShowSupportChatBubble() || !new AppPreferences(this).isLoggedIn()) {
+        if (!new AppPreferences(this).isLoggedIn()) {
             disconnectSupportChatSocket();
             return;
         }
@@ -382,11 +384,55 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onUserNotification(JSONObject notificationJson) {
+                runOnUiThread(() -> {
+                    refreshGlobalNotificationAlert(false);
+                    broadcastRealtime(RealtimeEvents.ACTION_NOTIFICATION_CHANGED,
+                            realtimeType(notificationJson, "user:notification"),
+                            notificationJson);
+                });
+            }
+
+            @Override
+            public void onOrderUpdated(JSONObject orderJson) {
+                runOnUiThread(() -> {
+                    refreshGlobalNotificationAlert(false);
+                    String type = realtimeType(orderJson, "order:changed");
+                    broadcastRealtime(RealtimeEvents.ACTION_ORDER_CHANGED, type, orderJson);
+                    broadcastRealtime(RealtimeEvents.ACTION_NOTIFICATION_CHANGED, type, orderJson);
+                });
+            }
+
+            @Override
+            public void onPromotionChanged(JSONObject promotionJson) {
+                runOnUiThread(() ->
+                        broadcastRealtime(RealtimeEvents.ACTION_PROMOTION_CHANGED,
+                                realtimeType(promotionJson, "promotion:changed"),
+                                promotionJson));
+            }
+
+            @Override
             public void onError(String message) {
                 supportSocketConnecting = false;
                 supportSocketActive = false;
             }
         });
+    }
+
+    private String realtimeType(JSONObject payload, String fallback) {
+        if (payload == null) {
+            return fallback;
+        }
+        String type = payload.optString("type", "");
+        return TextUtils.isEmpty(type) ? fallback : type;
+    }
+
+    private void broadcastRealtime(String action, String type, JSONObject payload) {
+        Intent intent = new Intent(action);
+        intent.setPackage(getPackageName());
+        intent.putExtra(RealtimeEvents.EXTRA_TYPE, type);
+        intent.putExtra(RealtimeEvents.EXTRA_PAYLOAD, payload != null ? payload.toString() : "{}");
+        sendBroadcast(intent);
     }
 
     private void disconnectSupportChatSocket() {
@@ -629,7 +675,6 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         notificationHandler.removeCallbacks(notificationPollRunnable);
         notificationHandler.removeCallbacks(supportChatPollRunnable);
-        disconnectSupportChatSocket();
     }
 
     @Override

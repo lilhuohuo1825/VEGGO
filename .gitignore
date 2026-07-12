@@ -13,3 +13,10 @@ backend/node_modules/
 backend/.env
 backend/firebase-service-account.json
 app/google-services.json
+vitacare-reference/
+README_CHANGELOG.md
+backend-restart.log
+crash_log.txt
+veggo-emulator.log
+bugreport-*.zip
+debug.cer

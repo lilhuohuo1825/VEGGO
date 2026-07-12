@@ -37,10 +37,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.util.Log;
 
 import retrofit2.Response;
 
 public class ReturnRequestActivity extends BaseActivity {
+    private static final String TAG = "ReturnRequestActivity";
 
     private String orderId;
     private RadioGroup reasonGroup;
@@ -101,26 +103,36 @@ public class ReturnRequestActivity extends BaseActivity {
 
     private void bindOrderSummary() {
         new Thread(() -> {
-            AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
-            AssetModels.Order order = null;
-            for (AssetModels.Order item : snapshot.orders) {
-                if (item.orderId != null && item.orderId.equals(orderId)) {
-                    order = item;
-                    break;
+            try {
+                AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
+                AssetModels.Order order = null;
+                if (snapshot != null && snapshot.orders != null) {
+                    for (AssetModels.Order item : snapshot.orders) {
+                        if (item != null && item.orderId != null && item.orderId.equals(orderId)) {
+                            order = item;
+                            break;
+                        }
+                    }
                 }
-            }
-            AssetModels.Order finalOrder = order;
-            AssetModels.OrderDetail detail = order == null ? null : snapshot.detailByOrderId.get(order.orderId);
-            runOnUiThread(() -> {
-                if (finalOrder == null || detail == null) {
-                    Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
+                AssetModels.Order finalOrder = order;
+                AssetModels.OrderDetail detail = order == null || snapshot == null ? null : snapshot.detailByOrderId.get(order.orderId);
+                runOnUiThread(() -> {
+                    if (finalOrder == null || detail == null) {
+                        Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                    AssetScreenData.setText(findViewById(android.R.id.content), R.id.returnRequestOrderCode,
+                            "Giao hàng tận nơi · " + finalOrder.orderId);
+                    AssetScreenData.bindProductBlock(this, findViewById(R.id.returnRequestProductCard), detail, finalOrder);
+                });
+            } catch (Exception exception) {
+                Log.e(TAG, "Failed to load return request", exception);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Không thể mở trang đổi trả", Toast.LENGTH_SHORT).show();
                     finish();
-                    return;
-                }
-                AssetScreenData.setText(findViewById(android.R.id.content), R.id.returnRequestOrderCode,
-                        "Giao hàng tận nơi · " + finalOrder.orderId);
-                AssetScreenData.bindProductBlock(this, findViewById(R.id.returnRequestProductCard), detail, finalOrder);
-            });
+                });
+            }
         }).start();
     }
 

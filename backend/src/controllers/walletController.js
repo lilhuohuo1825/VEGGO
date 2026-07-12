@@ -3,6 +3,8 @@ const WalletTransaction = require('../models/WalletTransaction');
 const User = require('../models/User');
 const Tree = require('../models/Tree');
 const { recalculateCustomerCarbon } = require('../services/certificateService');
+const { emitToCustomer } = require('../sockets/realtimeSocket');
+const mongoose = require('mongoose');
 
 const CARBON_SYNC_VERSION = 2;
 const WATER_CARBON_COST = 5;
@@ -440,6 +442,9 @@ exports.transferMoney = async (req, res) => {
     await senderWallet.save();
     await recipientWallet.save();
 
+    const senderUser = await User.findOne({ CustomerID: senderCustomerId });
+    const senderName = senderUser ? senderUser.FullName : senderCustomerId;
+
     const txId = generateTransactionId();
     await recordWalletTransaction({
       customerId: senderCustomerId,
@@ -452,8 +457,36 @@ exports.transferMoney = async (req, res) => {
       customerId: recipientCustomerId,
       amount: numAmount,
       type: 'transfer_receive',
-      description: `Nhận tiền từ ${senderWallet.customerId}`,
+      description: `Nhận tiền từ ${senderName}`,
       referenceId: txId,
+    });
+
+    // Create and send real-time notification
+    const formattedAmount = numAmount.toLocaleString('vi-VN') + ' ₫';
+    const notification = {
+      CustomerID: recipientCustomerId,
+      OrderID: txId,
+      category: 'orders',
+      type: 'payment',
+      title: 'Nhận tiền VeggoPay',
+      body: `Bạn đã nhận được ${formattedAmount} từ ${senderName}.`,
+      action: 'Chi tiết giao dịch',
+      iconText: '$',
+      targetType: 'wallet',
+      targetId: txId,
+      isRead: false,
+      createdAt: new Date(),
+    };
+
+    const notificationResult = await mongoose.connection.db
+      .collection('notifications')
+      .insertOne(notification);
+
+    const savedNotification = { _id: notificationResult.insertedId, ...notification };
+
+    emitToCustomer(recipientCustomerId, 'user:notification', savedNotification, {
+      entity: 'notification',
+      action: 'created',
     });
 
     res.json({

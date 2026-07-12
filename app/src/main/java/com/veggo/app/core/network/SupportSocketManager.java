@@ -22,6 +22,10 @@ public class SupportSocketManager {
         void onTypingUpdate(JSONObject typingJson);
         void onUnreadUpdate(int unreadCountUser);
         void onError(String message);
+        default void onRealtimeEvent(JSONObject eventJson) {}
+        default void onUserNotification(JSONObject notificationJson) {}
+        default void onOrderUpdated(JSONObject orderJson) {}
+        default void onPromotionChanged(JSONObject promotionJson) {}
     }
 
     @Nullable
@@ -69,6 +73,48 @@ public class SupportSocketManager {
                 if (args[0] instanceof JSONObject) {
                     JSONObject json = (JSONObject) args[0];
                     listener.onUnreadUpdate(json.optInt("unreadCountUser", 0));
+                }
+            });
+            socket.on("realtime:event", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onRealtimeEvent((JSONObject) args[0]);
+                }
+            });
+            socket.on("user:notification", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onUserNotification((JSONObject) args[0]);
+                }
+            });
+            socket.on("order:created", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onOrderUpdated((JSONObject) args[0]);
+                }
+            });
+            socket.on("order:updated", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onOrderUpdated((JSONObject) args[0]);
+                }
+            });
+            socket.on("order:status-updated", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onOrderUpdated((JSONObject) args[0]);
+                }
+            });
+            socket.on("order:payment-updated", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onOrderUpdated((JSONObject) args[0]);
+                }
+            });
+            socket.on("promotion:changed", (Emitter.Listener) args -> {
+                if (listener == null || args == null || args.length == 0) return;
+                if (args[0] instanceof JSONObject) {
+                    listener.onPromotionChanged((JSONObject) args[0]);
                 }
             });
             socket.connect();

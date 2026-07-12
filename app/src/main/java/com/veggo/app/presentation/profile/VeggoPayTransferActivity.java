@@ -20,11 +20,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.veggo.app.R;
+import com.veggo.app.core.notification.EmulatorSmsSender;
+import com.veggo.app.core.otp.OtpAutoFillHelper;
 import com.veggo.app.core.preferences.AppPreferences;
+import com.veggo.app.core.ui.BaseActivity;
 import com.veggo.app.core.utils.CurrencyFormatter;
+import com.veggo.app.core.utils.KeyboardUtils;
 import com.veggo.app.data.remote.dto.WalletDto;
 import com.veggo.app.data.repository.WalletRepository;
 import com.veggo.app.di.AppModule;
@@ -34,12 +37,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-public class VeggoPayTransferActivity extends AppCompatActivity {
+public class VeggoPayTransferActivity extends BaseActivity {
 
     private EditText edtRecipientPhone, edtAmount, edtNote;
     private ScrollView scrollFormView;
     private View layoutFormContainer;
-    private LinearLayout layoutReceiptView;
+    private View layoutReceiptView;
     private TextView tvSourceBalance, tvRecipientStatus;
     private TextView tvReceiptAmount, tvReceiptRecipient, tvReceiptNote, tvReceiptTxId;
     
@@ -52,6 +55,7 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
     private String currentGeneratedOtp = "";
     private int incorrectOtpAttempts = 0;
     private CountDownTimer otpTimer;
+    private OtpAutoFillHelper otpAutoFillHelper;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -227,25 +231,12 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
         Random random = new Random();
         currentGeneratedOtp = String.format("%06d", random.nextInt(900000) + 100000);
         incorrectOtpAttempts = 0;
-        sendOtpSystemNotification(currentGeneratedOtp);
-    }
-
-    private void sendOtpSystemNotification(String otp) {
-        android.app.NotificationManager notificationManager = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        String channelId = "veggopay_otp_channel";
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, "VeggoPay OTP", android.app.NotificationManager.IMPORTANCE_HIGH);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("Mã OTP VeggoPay")
-                .setContentText("Mã OTP chuyển tiền của bạn là: " + otp + ". Hiệu lực trong 60 giây.")
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true);
-
-        notificationManager.notify(2002, builder.build());
+        EmulatorSmsSender.send(
+                this,
+                "VEGGO: Ma OTP chuyen tien cua ban la "
+                        + currentGeneratedOtp
+                        + ". Ma co hieu luc trong 60 giay."
+        );
     }
 
     private void showOtpVerificationDialog(String phone, double amount, String note) {
@@ -281,6 +272,18 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
             dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
 
+        // Setup OTP Keyboard AutoFill
+        otpAutoFillHelper = OtpAutoFillHelper.create(this, pinFields);
+        otpAutoFillHelper.start();
+
+        dialog.setOnDismissListener(d -> {
+            if (otpTimer != null) otpTimer.cancel();
+            if (otpAutoFillHelper != null) {
+                otpAutoFillHelper.stop();
+            }
+            KeyboardUtils.hideKeyboard(this);
+        });
+
         // Add countdown timer text dynamically below the pin fields
         LinearLayout rootContainer = dialog.findViewById(R.id.layoutPinContainer);
         TextView tvTimer = new TextView(this);
@@ -315,7 +318,6 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
         startCountdownTimer(tvTimer, dialog);
 
         btnCancel.setOnClickListener(v -> {
-            if (otpTimer != null) otpTimer.cancel();
             dialog.dismiss();
         });
 
@@ -335,7 +337,6 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
                 incorrectOtpAttempts++;
                 Toast.makeText(this, "Mã OTP không chính xác. Còn lại " + (3 - incorrectOtpAttempts) + " lần thử.", Toast.LENGTH_SHORT).show();
                 if (incorrectOtpAttempts >= 3) {
-                    if (otpTimer != null) otpTimer.cancel();
                     dialog.dismiss();
                     Toast.makeText(this, "Bạn đã nhập sai quá 3 lần. Giao dịch bị hủy.", Toast.LENGTH_LONG).show();
                 }
@@ -343,7 +344,6 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
             }
 
             // OTP verified successfully
-            if (otpTimer != null) otpTimer.cancel();
             dialog.dismiss();
             
             // Perform money transfer using dummy OTP_VERIFIED flag
@@ -438,6 +438,9 @@ public class VeggoPayTransferActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (otpTimer != null) {
             otpTimer.cancel();
+        }
+        if (otpAutoFillHelper != null) {
+            otpAutoFillHelper.stop();
         }
         super.onDestroy();
     }

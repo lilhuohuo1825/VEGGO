@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.util.Log;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -56,6 +57,7 @@ import okhttp3.RequestBody;
 import retrofit2.Response;
 
 public class ReviewOrderActivity extends BaseActivity {
+    private static final String TAG = "ReviewOrderActivity";
 
     private final List<ProductReviewForm> forms = new ArrayList<>();
     private LinearLayout formsContainer;
@@ -146,12 +148,12 @@ public class ReviewOrderActivity extends BaseActivity {
 
     private void loadOrder() {
         new Thread(() -> {
-            AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
-            AssetModels.OrderDetail detail = snapshot.detailByOrderId.get(orderId);
-            String customerId = new AppPreferences(this).getCustomerId();
-            Map<String, Object> reviewsBySku = new HashMap<>();
-            boolean editable = false;
             try {
+                AssetScreenData.Snapshot snapshot = AssetScreenData.load(this);
+                AssetModels.OrderDetail detail = snapshot == null ? null : snapshot.detailByOrderId.get(orderId);
+                String customerId = new AppPreferences(this).getCustomerId();
+                Map<String, Object> reviewsBySku = new HashMap<>();
+                boolean editable = false;
                 if (customerId != null && !customerId.trim().isEmpty()) {
                     ReviewApi reviewApi = ApiClient.createService(ReviewApi.class);
                     Response<Map<String, Object>> response = reviewApi.getOrderReviews(orderId, customerId).execute();
@@ -169,24 +171,28 @@ public class ReviewOrderActivity extends BaseActivity {
                         }
                     }
                 }
-            } catch (Exception ignored) {
-                // Fall back to blank forms when review lookup fails.
-            }
 
-            String orderStatus = "";
-            if (snapshot.orders != null) {
-                for (AssetModels.Order order : snapshot.orders) {
-                    if (orderId != null && orderId.equals(order.orderId)) {
-                        orderStatus = order.status == null ? "" : order.status;
-                        break;
+                String orderStatus = "";
+                if (snapshot != null && snapshot.orders != null) {
+                    for (AssetModels.Order order : snapshot.orders) {
+                        if (order != null && orderId != null && orderId.equals(order.orderId)) {
+                            orderStatus = order.status == null ? "" : order.status;
+                            break;
+                        }
                     }
                 }
-            }
 
-            final boolean finalEditable = editable;
-            final Map<String, Object> finalReviewsBySku = reviewsBySku;
-            final String finalOrderStatus = orderStatus;
-            runOnUiThread(() -> bindForms(detail, finalReviewsBySku, finalEditable, finalOrderStatus));
+                final boolean finalEditable = editable;
+                final Map<String, Object> finalReviewsBySku = reviewsBySku;
+                final String finalOrderStatus = orderStatus;
+                runOnUiThread(() -> bindForms(detail, finalReviewsBySku, finalEditable, finalOrderStatus));
+            } catch (Exception exception) {
+                Log.e(TAG, "Failed to load review order", exception);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Không thể mở trang đánh giá", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            }
         }).start();
     }
 

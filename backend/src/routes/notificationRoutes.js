@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const asyncHandler = require('../middleware/asyncHandler');
+const { emitToAdmins } = require('../sockets/realtimeSocket');
 
 const router = express.Router();
 
@@ -43,6 +44,11 @@ router.put('/:notificationId/read', asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Notification not found' });
   }
 
+  emitToAdmins('admin:notification-updated', result, {
+    entity: 'admin_notification',
+    action: 'read',
+  });
+
   res.json({ success: true, data: result });
 }));
 
@@ -73,6 +79,11 @@ router.put('/:notificationId/status', asyncHandler(async (req, res) => {
   if (!result) {
     return res.status(404).json({ success: false, message: 'Notification not found' });
   }
+
+  emitToAdmins('admin:notification-updated', result, {
+    entity: 'admin_notification',
+    action: 'status-updated',
+  });
 
   res.json({ success: true, data: result });
 }));

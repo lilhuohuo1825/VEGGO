@@ -246,149 +246,165 @@
         </RelativeLayout>
 
         <!-- Success Receipt View (Initially Gone) -->
-        <LinearLayout
+        <RelativeLayout
             android:id="@+id/layoutReceiptView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#FFFFFF"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
             android:padding="24dp"
             android:visibility="gone">
 
-            <ImageView
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:layout_marginTop="32dp"
-                android:src="@drawable/ic_success" />
+            <!-- Center container for Mascot and Title -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/receiptBottomContainer"
+                android:layout_alignParentTop="true"
+                android:gravity="center"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Chuyển tiền thành công"
-                android:textColor="@color/primary_main"
-                android:textSize="20sp" />
+                <ImageView
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:src="@drawable/ic_success" />
 
-            <!-- Receipt Card Detail -->
-            <androidx.cardview.widget.CardView
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Chuyển tiền thành công"
+                    android:textColor="@color/primary_main"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <!-- Bottom Container for Card and Button -->
+            <LinearLayout
+                android:id="@+id/receiptBottomContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                app:cardBackgroundColor="#F9F9FB"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp">
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp">
 
-                <LinearLayout
+                <!-- Receipt Card Detail -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    app:cardBackgroundColor="#F9F9FB"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp">
 
-                    <TextView
-                        android:id="@+id/tvReceiptAmount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:text="100.000 ₫"
-                        android:textColor="#1E1E1E"
-                        android:textSize="24sp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginVertical="16dp"
-                        android:background="#E0E0E0" />
-
-                    <!-- Recipient detail row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:layout_width="100dp"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
-                            android:text="Người nhận"
-                            android:textColor="#888888"
-                            android:textSize="14sp" />
-                        <TextView
-                            android:id="@+id/tvReceiptRecipient"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/inter_medium"
-                            android:gravity="end"
-                            android:text="Nguyễn Văn B (0987654321)"
-                            android:textColor="#1E1E1E"
-                            android:textSize="14sp" />
-                    </LinearLayout>
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
-                    <!-- Message detail row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="100dp"
+                            android:id="@+id/tvReceiptAmount"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
-                            android:text="Lời nhắn"
-                            android:textColor="#888888"
-                            android:textSize="14sp" />
-                        <TextView
-                            android:id="@+id/tvReceiptNote"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/inter_medium"
-                            android:gravity="end"
-                            android:text="Chuyển tiền ăn trưa"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:text="100.000 ₫"
                             android:textColor="#1E1E1E"
-                            android:textSize="14sp" />
-                    </LinearLayout>
+                            android:textSize="24sp" />
 
-                    <!-- Transaction code row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:layout_width="100dp"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
-                            android:text="Mã giao dịch"
-                            android:textColor="#888888"
-                            android:textSize="14sp" />
-                        <TextView
-                            android:id="@+id/tvReceiptTxId"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/inter_medium"
-                            android:gravity="end"
-                            android:text="VP98273618"
-                            android:textColor="#1E1E1E"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="16dp"
+                            android:background="#E0E0E0" />
 
-            <TextView
-                android:id="@+id/btnReceiptDone"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="36dp"
-                android:background="@drawable/bg_button_primary"
-                android:fontFamily="@font/inter_semibold"
-                android:gravity="center"
-                android:text="Hoàn thành"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp" />
-        </LinearLayout>
+                        <!-- Recipient detail row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:text="Người nhận"
+                                android:textColor="#888888"
+                                android:textSize="14sp" />
+                            <TextView
+                                android:id="@+id/tvReceiptRecipient"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/inter_medium"
+                                android:gravity="end"
+                                android:text="Nguyễn Văn B (0987654321)"
+                                android:textColor="#1E1E1E"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+
+                        <!-- Message detail row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:text="Lời nhắn"
+                                android:textColor="#888888"
+                                android:textSize="14sp" />
+                            <TextView
+                                android:id="@+id/tvReceiptNote"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/inter_medium"
+                                android:gravity="end"
+                                android:text="Chuyển tiền ăn trưa"
+                                android:textColor="#1E1E1E"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+
+                        <!-- Transaction code row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:text="Mã giao dịch"
+                                android:textColor="#888888"
+                                android:textSize="14sp" />
+                            <TextView
+                                android:id="@+id/tvReceiptTxId"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/inter_medium"
+                                android:gravity="end"
+                                android:text="VP98273618"
+                                android:textColor="#1E1E1E"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/btnReceiptDone"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:fontFamily="@font/inter_semibold"
+                    android:gravity="center"
+                    android:text="Hoàn thành"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </RelativeLayout>
     </FrameLayout>
 </LinearLayout>
